@@ -45,7 +45,7 @@ final readonly class FileUploadTool implements McpTool
 
     public function description(): string
     {
-        return 'Dépose dans la bibliothèque de fichiers un petit fichier fourni en base64 (2 Mo au plus) : tableur, image, script, archive… Le nom doit porter l\'extension. Mêmes contrôles qu\'un dépôt dans MonCampus (types acceptés, quota, antivirus). Pour un support rédigé, préférer file_create.';
+        return 'Dépose dans la bibliothèque de fichiers un petit fichier fourni en base64 (2 Mo au plus) : tableur, image, script, archive… Le nom doit porter l\'extension. Mêmes contrôles qu\'un dépôt dans MonCampus (types acceptés, quota, antivirus). Pour un support rédigé, préférer file_create ; pour un fichier plus gros, ou que tu as sur disque, file_upload_url.';
     }
 
     public function inputSchema(): array

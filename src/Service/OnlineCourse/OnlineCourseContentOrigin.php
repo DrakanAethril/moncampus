@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\OnlineCourse;
 
+use App\Entity\OnlineCourse;
 use App\Entity\OnlineCourseMaterialRevision;
 use App\Service\FileUploadService;
 
@@ -27,6 +28,14 @@ class OnlineCourseContentOrigin
     public function url(OnlineCourseMaterialRevision $revision): string
     {
         return $this->fileUploads->url($revision->getStorageKey());
+    }
+
+    /** The course's picture, from the CDN like its materials; null when it has none. */
+    public function imageUrl(OnlineCourse $course): ?string
+    {
+        $key = $course->getImageKey();
+
+        return null === $key ? null : $this->fileUploads->url($key);
     }
 
     /**

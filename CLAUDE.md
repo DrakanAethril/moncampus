@@ -80,7 +80,7 @@ asked — made the second run throw « A lock is already in place ».
 | `app:mail:relink-applications` | **Repair pass, not scheduled.** Re-reads the Courrier pro mails that have a student but no démarche, and files the ones that *quote* a send: the Message-ID a failure notice copies back, failing that the failing address found among the recipients of that student's own sends — and only when every match agrees on **one** démarche. The whole rule lives in `App\Service\SchoolMailApplicationRecovery`, which the inbound worker now applies on arrival; the command exists only for the rows written before it. `--dry-run` names each mail and the evidence found, which is how it should be read first: it files mails under démarches nobody named |
 | `app:import-edt-timetable`, `app:import-edt-periods` | Timetable import from the school's EDT export |
 | `app:import-notion-sequences` | One-off import of pedagogical sequences from a Notion export |
-| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity` and on `QuizAttemptEvent`, **24 months after the last activity on a learning-path follow-up** (`LearningPathEnrollment`, with its visits and attempts), **90 days on `ConsoleSession`** with the screen transcripts it carries, **30 days past expiry on the Claude connector's OAuth codes and tokens** (and on the clients nobody ever consented to, and on the dead mobile sessions), and **24 months on `JobboardOffer`** read on the advert's publication date (an offer with no date is judged on the day it was first seen — `sort_date` holds 1000-01-01 for those and reading the threshold against it would empty the board). **Scheduled daily at 03:15** — it was never wired to the old crontab, and the schedule is what finally runs it. The journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
+| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity` and on `QuizAttemptEvent`, **24 months after the last activity on a learning-path follow-up** (`LearningPathEnrollment`, with its visits and attempts), **90 days on `ConsoleSession`** with the screen transcripts it carries, **30 days past expiry on the Claude connector's OAuth codes and tokens** (and on its upload addresses, on the clients nobody ever consented to, and on the dead mobile sessions), and **24 months on `JobboardOffer`** read on the advert's publication date (an offer with no date is judged on the day it was first seen — `sort_date` holds 1000-01-01 for those and reading the threshold against it would empty the board). **Scheduled daily at 03:15** — it was never wired to the old crontab, and the schedule is what finally runs it. The journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
 | `app:antivirus:check` | **Diagnostic, not scheduled.** Scans a clean file and the EICAR test string through the configured `ANTIVIRUS_DSN`; exits non-zero unless uploads are genuinely being refused. The state it exists for is the silent one — a blank DSN disables scanning without announcing it anywhere |
 | `app:help:sync-content` | Creates the missing help sections/articles from `App\Help\HelpContentCatalog`; never overwrites what an admin has edited (`--refresh` also rewrites the untouched ones). Run it once after a deploy that adds catalogue entries |
 | `app:vm-batch:advance` | Continues every VM deployment already under way, one machine per pass. **Scheduled every minute.** It is what makes a deployment survive the browser tab that started it — without it the batch screen's own loop is the only thing pressing, and a closed tab leaves machines cloned and never configured. It never *starts* a deployment: a batch whose machines are all still `planned` is a plan, not an instruction |
@@ -281,6 +281,16 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `lesson_log_attach` files a document under one part, through the same `EDIT`: a library file as a
   **reference** (`UploadIntake::store()`, like `file_link`) or an http(s) link. It follows its part's
   visibility, and the same document filed twice under one part answers the row already there.
+  **Files reach the platform, the platform never fetches them**: `file_upload` takes a small
+  file as base64; `file_upload_url` hands out an address (`/mcp/uploads/{secret}`,
+  `App\Entity\McpUploadSlot`) that Claude's sandbox sends **one** file to with
+  `curl -X PUT --data-binary`. The address is bound beforehand to the teacher, the connection, the
+  folder, the name, the exact size and an optional SHA-256; it lives 15 minutes, serves once
+  (spent by an atomic UPDATE, a refused send spends it too) and dies with its connection. Its own
+  `mcp_upload` firewall turns the secret into the teacher (`McpUploadSlotAuthenticator`, the
+  `calendar` shape), and the body - streamed to disk, never a string - goes through
+  `FileLibraryWriter::writeFile()`: type, quota, antivirus like any upload. Every answer is JSON,
+  refusals included: curl's output is all the model reads.
   `progression_get` is **read-only**: Claude suggests a progression, the teacher builds it on the
   progression screens (`McpTimetable` holds the shared doors). `format_guide` is assembled from the import assistants' own catalogues,
   so the screen's prompt and the connector's guide cannot drift. `Feature::ClaudeConnector` is off
@@ -353,6 +363,10 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     bytes and never the address of the material; the revision before the live one is kept (« Revenir
     à la révision »), older ones go to the deferred purge. A file picked from the bibliothèque is
     **copied** here, unlike everywhere else where a link is a reference (`OnlineCourseMaterialStore`).
+  - **A course has a picture** (`OnlineCourse::$imageKey`, `OnlineCourseImageStore`): JPEG, PNG or
+    WebP, 5 Mo, under `online-courses/{course}/{token}/image/` with a new random name at each
+    change (no stale CDN copy), a library file copied like a material. Shown on the public card,
+    in « Mes cours » and as `og:image`; the connector sets it by `imageFileId` only.
   - `OnlineCourseMaterialKind` is the catalogue of natures (what each accepts, its label, its
     player); `OnlineCourseTag` is **per author** (UNIQUE owner + normalized label), created by typing.
   - **An interactive course is a `.zip` holding an `index.html`**, unpacked file by file under the

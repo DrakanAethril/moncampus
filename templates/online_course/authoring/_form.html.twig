@@ -16,6 +16,23 @@
     {{ form_row(form.slug) }}
 {% endif %}
 {{ form_row(form.summary) }}
+{# The picture of the card (App\Service\OnlineCourse\OnlineCourseImageStore). Shown at the size the
+   public card draws it, so the author sees the crop a reader will. #}
+<div class="mb-3">
+    {{ form_label(form.image) }}
+    {% if course.imageKey %}
+        <img src="{{ file_url(course.imageKey) }}" alt="" class="cm-oc-image-preview">
+    {% endif %}
+    {{ form_widget(form.image) }}
+    {{ form_help(form.image) }}
+    {{ form_errors(form.image) }}
+    {% if course.imageKey %}
+        {{ form_row(form.removeImage) }}
+    {% else %}
+        {# Nothing to remove - still rendered, so form_end()'s rest does not draw it unstyled. #}
+        <div hidden>{{ form_widget(form.removeImage) }}</div>
+    {% endif %}
+</div>
 <div class="mb-3">
     {{ form_label(form.description) }}
     {{ form_widget(form.description, {attr: {

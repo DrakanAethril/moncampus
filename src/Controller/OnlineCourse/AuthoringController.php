@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\OnlineCourse;
 
 use App\Attribute\RequiresFeature;
+use App\Entity\FileLibraryNode;
 use App\Entity\OnlineCourse;
 use App\Enum\Feature;
 use App\Enum\OnlineCourseMaterialKind;
@@ -16,18 +17,23 @@ use App\Repository\OnlineCourseRepository;
 use App\Repository\OnlineCourseTagRepository;
 use App\Security\Voter\OnlineCourseVoter;
 use App\Service\FormValue;
+use App\Service\OnlineCourse\OnlineCourseImageStore;
+use App\Service\OnlineCourse\OnlineCourseMaterialRefused;
 use App\Service\OnlineCourse\OnlineCoursePublicationRefused;
 use App\Service\OnlineCourse\OnlineCourseTagResolver;
 use App\Service\OnlineCourse\OnlineCourseWriter;
 use App\Service\QueryValue;
+use App\Service\StagedUpload;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * « Outils › Cours en ligne », the author's side (design/validated/cours-en-ligne.md, §8): the list
@@ -81,7 +87,7 @@ class AuthoringController extends AbstractController
     }
 
     #[Route(path: '/tools/online-courses/new', name: 'app_online_courses_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, OnlineCourseWriter $writer, EntityManagerInterface $entityManager): Response
+    public function new(Request $request, OnlineCourseWriter $writer, EntityManagerInterface $entityManager, OnlineCourseImageStore $images, TranslatorInterface $translator): Response
     {
         $user = $this->currentUser();
         $course = new OnlineCourse($user, '', '');
@@ -92,6 +98,9 @@ class AuthoringController extends AbstractController
             $writer->describe($course, $course->getDescription());
             $writer->tag($course, OnlineCourseTagResolver::labelsOf(FormValue::string($form, 'tags')));
             $entityManager->persist($course);
+            $entityManager->flush();
+            // A second flush: the picture is filed under the course's id, which the first one gave.
+            $this->applyImage($form, $course, $images, $translator);
             $entityManager->flush();
 
             $this->addFlash('success', 'onlineCourseCreatedFlashMessage');
@@ -106,7 +115,7 @@ class AuthoringController extends AbstractController
     }
 
     #[Route(path: '/tools/online-courses/{id}', name: 'app_online_courses_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
-    public function edit(int $id, Request $request, OnlineCourseRepository $courses, OnlineCoursePageRepository $pages, OnlineCourseTagRepository $tags, OnlineCourseWriter $writer, EntityManagerInterface $entityManager, LearningPathRepository $paths): Response
+    public function edit(int $id, Request $request, OnlineCourseRepository $courses, OnlineCoursePageRepository $pages, OnlineCourseTagRepository $tags, OnlineCourseWriter $writer, EntityManagerInterface $entityManager, LearningPathRepository $paths, OnlineCourseImageStore $images, TranslatorInterface $translator): Response
     {
         $course = $this->findCourse($id, $courses);
         $form = $this->createForm(OnlineCourseType::class, $course);
@@ -116,6 +125,7 @@ class AuthoringController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $writer->describe($course, $course->getDescription());
             $writer->tag($course, OnlineCourseTagResolver::labelsOf(FormValue::string($form, 'tags')));
+            $this->applyImage($form, $course, $images, $translator);
             $entityManager->flush();
             $tags->deleteUnusedForOwner($course->getOwner());
 
@@ -218,6 +228,29 @@ class AuthoringController extends AbstractController
     public function tags(Request $request, OnlineCourseTagRepository $tags): JsonResponse
     {
         return $this->json($tags->searchForOwner($this->currentUser(), QueryValue::trimmed($request, 'q')));
+    }
+
+    /**
+     * A new picture wins over « Retirer la vignette » ticked in the same submission. A refusal is
+     * a flash, not an invalid form: the picker has already checked the file against the same
+     * policy, so only a library file the picker could not sniff gets here - and the rest of the
+     * card is still worth saving.
+     *
+     * @param FormInterface<mixed> $form
+     */
+    private function applyImage(FormInterface $form, OnlineCourse $course, OnlineCourseImageStore $images, TranslatorInterface $translator): void
+    {
+        $image = $form->get('image')->getData();
+
+        if ($image instanceof StagedUpload || $image instanceof FileLibraryNode) {
+            try {
+                $images->set($course, $image);
+            } catch (OnlineCourseMaterialRefused $refused) {
+                $this->addFlash('error', $translator->trans($refused->getMessage(), $refused->parameters));
+            }
+        } elseif (true === $form->get('removeImage')->getData()) {
+            $images->remove($course);
+        }
     }
 
     /**

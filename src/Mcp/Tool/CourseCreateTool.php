@@ -40,7 +40,7 @@ final readonly class CourseCreateTool implements McpTool
 
     public function description(): string
     {
-        return 'Crée un cours en ligne de l\'enseignant, en brouillon : titre (obligatoire), résumé, description en Markdown, tags, durée estimée. Les supports s\'ajoutent ensuite avec course_material_add ; la mise en ligne se fait avec course_publish. Renvoie le courseId, le lien de la fiche et le lien d\'aperçu.';
+        return 'Crée un cours en ligne de l\'enseignant, en brouillon : titre (obligatoire), résumé, description en Markdown, tags, durée estimée, vignette (« imageFileId », une image de la bibliothèque). Les supports s\'ajoutent ensuite avec course_material_add ; la mise en ligne se fait avec course_publish. Renvoie le courseId, le lien de la fiche et le lien d\'aperçu.';
     }
 
     public function inputSchema(): array
@@ -68,9 +68,15 @@ final readonly class CourseCreateTool implements McpTool
         $this->onlineCourses->assertAuthor();
 
         $title = $call->requiredString('title');
+        $image = $this->fields->image($call);
         $course = $this->writer->create($call->user, $title, '' === trim($call->arguments->string('slug')) ? null : $call->arguments->string('slug'));
         $this->fields->apply($course, $this->withoutSlug($call));
         $this->entityManager->flush();
+        if (null !== $image) {
+            // After the first flush: the picture is filed under the course's id.
+            $this->fields->applyImage($course, $image);
+            $this->entityManager->flush();
+        }
 
         $data = $this->onlineCourses->describe($course);
 

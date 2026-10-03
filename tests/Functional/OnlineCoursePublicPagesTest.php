@@ -11,12 +11,14 @@ use App\Enum\OnlineCourseMaterialKind;
 use App\Enum\OnlineCourseStatus;
 use App\Service\OnlineCourse\OnlineCourseContentOrigin;
 use App\Service\OnlineCourse\OnlineCourseHandleRefused;
+use App\Service\OnlineCourse\OnlineCourseImageStore;
 use App\Service\OnlineCourse\OnlineCourseMaterialRefused;
 use App\Service\OnlineCourse\OnlineCourseMaterialStore;
 use App\Service\OnlineCourse\OnlineCoursePageHandles;
 use App\Service\OnlineCourse\OnlineCoursePublicationRefused;
 use App\Service\OnlineCourse\OnlineCourseWriter;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DomCrawler\Field\ChoiceFormField;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
@@ -314,6 +316,47 @@ class OnlineCoursePublicPagesTest extends FunctionalTestCase
         // A PDF has a full page too; a video has none, the browser's own controls being enough.
         $this->assertAnonymous('/courses/tharaud/les-jointures-sql/pdf/play', 200);
         $this->assertAnonymous('/courses/tharaud/les-jointures-sql/interactive/play/more', 404);
+    }
+
+    public function testACoursePictureShowsOnItsCardAndInALinkPreviewUntilRemoved(): void
+    {
+        $this->page($this->teacher, 'tharaud');
+        $course = $this->course($this->teacher, 'Les jointures SQL', publish: true);
+        $path = tempnam(sys_get_temp_dir(), 'course-png-');
+        self::assertIsString($path);
+        file_put_contents($path, (string) base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', true));
+        static::getContainer()->get(OnlineCourseImageStore::class)->set($course, new UploadedFile($path, 'vignette.png', 'image/png', null, true));
+        $this->em->flush();
+        $key = (string) $course->getImageKey();
+
+        $this->assertAnonymous('/courses/tharaud', 200);
+        self::assertStringContainsString('cm-pub-card__image', (string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString($key, (string) $this->client->getResponse()->getContent());
+        $this->assertAnonymous('/courses/tharaud/'.$course->getSlug(), 200);
+        self::assertSelectorExists('meta[property="og:image"][content$="'.$key.'"]');
+
+        // A picture is no material: the store refuses a PDF.
+        try {
+            static::getContainer()->get(OnlineCourseImageStore::class)->set($course, $this->pdf('cours.pdf'));
+            self::fail('A PDF is not a picture.');
+        } catch (OnlineCourseMaterialRefused $refused) {
+            self::assertSame('onlineCourseImageWrongTypeMessage', $refused->getMessage());
+        }
+
+        $this->client->loginUser($this->teacher);
+        $crawler = $this->client->request('GET', '/tools/online-courses/'.$course->getId());
+        $this->assertResponseIsSuccessful();
+        $form = $crawler->filter('form[name="online_course"]')->form();
+        $removeImage = $form['online_course[removeImage]'];
+        self::assertInstanceOf(ChoiceFormField::class, $removeImage);
+        $removeImage->tick();
+        $this->client->submit($form);
+        $this->assertResponseRedirects('/tools/online-courses/'.$course->getId());
+
+        $this->em->clear();
+        $reloaded = $this->em->find(OnlineCourse::class, $course->getId());
+        self::assertNull($reloaded?->getImageKey());
+        self::assertEquals(1, $this->em->getConnection()->fetchOne('SELECT COUNT(*) FROM deleted_object WHERE storage_key LIKE ?', ['%'.$key]));
     }
 
     private function assertAnonymous(string $path, int $expected): void

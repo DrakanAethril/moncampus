@@ -12,6 +12,10 @@
     <meta property="og:title" content="{{ course.title }}">
     <meta property="og:description" content="{{ course.summary }}">
     <meta property="og:type" content="article">
+    {% if course.imageKey %}
+        <meta property="og:image" content="{{ file_url(course.imageKey) }}">
+        <meta name="twitter:card" content="summary_large_image">
+    {% endif %}
     {% if not course.published %}<meta name="robots" content="noindex">{% endif %}
 {% endblock %}
 
