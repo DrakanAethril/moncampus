@@ -1,4 +1,4 @@
-{% extends 'layout/public.html.twig' %}
+{% extends 'online_course/public/_course_layout.html.twig' %}
 
 {# One question of a course's test, drawn by the very partials the passation uses
    (quiz/_question_take_body.html.twig) - twelve types, written once, as on a path's quiz. No verdict
@@ -7,9 +7,6 @@
 {% block public_title %}{{ 'onlineCourseTestLabel'|trans }} · {{ course.title }}{% endblock %}
 
 {% block public_meta %}<meta name="robots" content="noindex">{% endblock %}
-
-{% block public_home_url %}{{ path('app_public_courses_page', {handle: page.handle}) }}{% endblock %}
-{% block public_home_label %}{{ page.title }}{% endblock %}
 
 {% block public_main %}
     {{ include('online_course/public/_test_head.html.twig') }}

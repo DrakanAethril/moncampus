@@ -1,4 +1,4 @@
-{% extends 'layout/public.html.twig' %}
+{% extends 'online_course/public/_course_layout.html.twig' %}
 
 {# The page of one course (design/validated/cours-en-ligne.md, §5): its card, one tab per material,
    and the material itself, read from the CDN - the application serves no byte of it. Each tab is a
@@ -18,17 +18,6 @@
     {% endif %}
     {% if not course.published %}<meta name="robots" content="noindex">{% endif %}
 {% endblock %}
-
-{# The teacher's banner and no footer, like their page (§21): a course is read as part of it. The
-   banner's title leads back to that page and is no heading - the course's title is this one's. #}
-{% block public_header %}
-    {{ include('online_course/public/_page_header.html.twig', {
-        banner_url: path('app_public_courses_page', {handle: page.handle}),
-        banner_heading: false,
-    }) }}
-{% endblock %}
-
-{% block public_footer %}{% endblock %}
 
 {% block public_main %}
     {% if not course.published %}

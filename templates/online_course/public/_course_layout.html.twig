@@ -1,0 +1,16 @@
+{% extends 'layout/public.html.twig' %}
+
+{# The screens of one course - its page and its test (design/validated/cours-en-ligne.md, §21):
+   read as part of the teacher's page, so under the teacher's banner and with no footer, like it.
+   The banner's title leads back to that page and is no heading - each screen has its own.
+
+   Variables: page. #}
+
+{% block public_header %}
+    {{ include('online_course/public/_page_header.html.twig', {
+        banner_url: path('app_public_courses_page', {handle: page.handle}),
+        banner_heading: false,
+    }) }}
+{% endblock %}
+
+{% block public_footer %}{% endblock %}
