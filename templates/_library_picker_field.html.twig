@@ -7,13 +7,15 @@
    controller already listening on it (quiz-pool, quiz-launch) goes on working untouched.
 
    Parameters: `field` the form child, `placeholder` what the button says while nothing is chosen,
-   `select_attr` the attributes the select must keep (its targets and actions).
+   `select_attr` the attributes the select must keep (its targets and actions), `clearable` true
+   for an optional field - a « Retirer » button beside, since the modal itself only ever picks
+   something.
 
    A screen with no Symfony form at all - Outils > Concours live - `embed`s this template instead and
    overrides the `select` block with its own `<select>`. The wrapper, the button and the contract
    with library_picker_controller.js stay written once. #}
 {% set placeholder = placeholder|default('libraryPickerChooseAction'|trans) %}
-<div class="cm-pickfield" data-picker-field data-picker-placeholder="{{ placeholder }}">
+<div class="cm-pickfield {{ clearable|default(false) ? 'cm-pickfield--clearable' }}" data-picker-field data-picker-placeholder="{{ placeholder }}">
     {% block select %}{{ form_widget(field, {attr: {class: 'cm-pickfield__select'}|merge(select_attr|default({}))}) }}{% endblock %}
     <button type="button" class="cm-pickfield__button" data-action="library-picker#open">
         <span class="cm-pickfield__ico" aria-hidden="true">
@@ -24,4 +26,10 @@
         <span class="cm-pickfield__label" data-picker-label>{{ placeholder }}</span>
         <span class="cm-pickfield__action">{{ 'libraryPickerBrowseAction'|trans }}</span>
     </button>
+    {% if clearable|default(false) %}
+        <button type="button" class="cm-pickfield__clear" data-action="library-picker#clear"
+                title="{{ 'libraryPickerClearAction'|trans }}" aria-label="{{ 'libraryPickerClearAction'|trans }}">
+            <twig:ux:icon name="x" width="14" height="14"/>
+        </button>
+    {% endif %}
 </div>

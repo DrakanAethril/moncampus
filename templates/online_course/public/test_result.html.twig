@@ -1,0 +1,50 @@
+{% extends 'layout/public.html.twig' %}
+
+{# The end of a course's test: the score and the correction - each question asked, right or wrong,
+   with its explanation. No threshold: a test opens nothing, it tells the reader where they stand.
+   Nothing of it is kept beyond the reader's session. #}
+
+{% block public_title %}{{ 'onlineCourseTestLabel'|trans }} · {{ course.title }}{% endblock %}
+
+{% block public_meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block public_home_url %}{{ path('app_public_courses_page', {handle: page.handle}) }}{% endblock %}
+{% block public_home_label %}{{ page.title }}{% endblock %}
+
+{% block public_main %}
+    {{ include('online_course/public/_test_head.html.twig') }}
+
+    <div class="cm-lp-question">
+        <div class="cm-lp-question__body">
+            <div class="cm-lp-result cm-lp-result--neutral">
+                <span class="cm-lp-result__score">{{ run.scorePercent }} %</span>
+                <span class="cm-lp-result__text">
+                    <b>{{ 'learningPathResultCountLabel'|trans({'%correct%': run.correctCount, '%total%': run.questionCount}) }}</b>
+                </span>
+            </div>
+
+            {% if run.questionCount > 0 %}
+                <ol class="cm-lp-correction">
+                    {% for drawn in run.questions %}
+                        <li class="cm-lp-correction__item cm-lp-correction__item--{{ drawn.correct ? 'right' : 'wrong' }}">
+                            <span class="cm-lp-correction__mark">
+                                <twig:ux:icon name="{{ drawn.correct ? 'check' : 'x' }}" width="14" height="14"/>
+                            </span>
+                            <span class="cm-lp-correction__text">
+                                <b>{{ drawn.label ?: 'learningPathQuestionUntitledLabel'|trans }}</b>
+                                {% if explanations[drawn.id] is defined %}
+                                    <span>{{ explanations[drawn.id] }}</span>
+                                {% endif %}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% endif %}
+
+            <div class="cm-lp-stepnav">
+                <twig:Cm:Button variant="outline" href="{{ path('app_public_courses_course', {handle: page.handle, slug: course.slug}) }}">{{ 'onlineCourseTestBackToCourseAction'|trans }}</twig:Cm:Button>
+                <twig:Cm:Button variant="primary" href="{{ path('app_public_courses_test', {handle: page.handle, slug: course.slug}) }}">{{ 'onlineCourseTestAgainAction'|trans }}</twig:Cm:Button>
+            </div>
+        </div>
+    </div>
+{% endblock %}

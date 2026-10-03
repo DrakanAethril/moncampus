@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Entity\OnlineCourse;
+use App\Entity\QuizTemplate;
+use App\Repository\QuizTemplateRepository;
 use App\Service\OnlineCourse\OnlineCourseImageStore;
 use App\Service\OnlineCourse\OnlineCourseWriter;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
@@ -34,11 +37,17 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * "image" and "removeImage" are not mapped either: the picture is a file the controller hands to
  * App\Service\OnlineCourse\OnlineCourseImageStore, once the course has an id to file it under.
+ *
+ * "quiz" - the test « Test » launches on the course's card - is not mapped: the controller hands it
+ * to App\Service\OnlineCourse\OnlineCourseWriter::linkQuiz(), the one door the connector goes
+ * through too. Its choices already hold the rule (the author's own quizzes that ask something), so a
+ * forged id is refused by the form before the writer is reached.
  */
 class OnlineCourseType extends AbstractType
 {
     public function __construct(
         private readonly OnlineCourseWriter $writer,
+        private readonly QuizTemplateRepository $quizzes,
     ) {
     }
 
@@ -96,6 +105,20 @@ class OnlineCourseType extends AbstractType
                 'label' => 'onlineCourseRemoveImageFieldLabel',
                 'mapped' => false,
                 'required' => false,
+            ])
+            ->add('quiz', EntityType::class, [
+                'class' => QuizTemplate::class,
+                'label' => 'onlineCourseQuizFieldLabel',
+                'help' => 'onlineCourseQuizFieldHelp',
+                'mapped' => false,
+                'required' => false,
+                'placeholder' => 'onlineCourseQuizPlaceholder',
+                'choices' => $course instanceof OnlineCourse ? array_values(array_filter(
+                    $this->quizzes->findPickable($course->getOwner()),
+                    static fn (QuizTemplate $quiz): bool => !$quiz->getQuestions()->isEmpty(),
+                )) : [],
+                'choice_label' => static fn (QuizTemplate $quiz): string => $quiz->getName() ?? '',
+                'data' => $course instanceof OnlineCourse ? $course->getQuizTemplate() : null,
             ]);
 
         if (!$frozen) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\OnlineCourse;
 
 use App\Entity\OnlineCourse;
+use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\OnlineCourseStatus;
 use App\Repository\OnlineCoursePageRepository;
@@ -28,6 +29,8 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
  *   publishRefusals() names everything missing at once rather than the first thing.
  * - **A published course is taken offline before it is deleted** (the Voter says so too).
  * - The description is HTML through the library's sanitizer, whatever wrote it.
+ * - **The test quiz is a quiz of the author's own library that has something to ask** - the rule
+ *   a path's quiz step holds (App\Service\LearningPath\LearningPathWriter).
  *
  * Nothing here flushes: the caller owns the unit of work.
  */
@@ -111,6 +114,29 @@ class OnlineCourseWriter
     {
         $this->tagResolver->apply($course, $labels);
         $course->touch();
+    }
+
+    /**
+     * Links the quiz « Test » launches, or unlinks it with null. Linking one to a published course
+     * puts it online at once: whoever may read the course may take it.
+     *
+     * @throws OnlineCourseQuizRefused
+     */
+    public function linkQuiz(OnlineCourse $course, ?QuizTemplate $quiz): void
+    {
+        if (null !== $quiz) {
+            if ($quiz->getTeacher() !== $course->getOwner()) {
+                throw new OnlineCourseQuizRefused('onlineCourseQuizNotOwnMessage');
+            }
+            if ($quiz->getQuestions()->isEmpty()) {
+                throw new OnlineCourseQuizRefused('onlineCourseQuizEmptyMessage', ['%quiz%' => (string) $quiz->getName()]);
+            }
+        }
+
+        if ($course->getQuizTemplate() !== $quiz) {
+            $course->setQuizTemplate($quiz);
+            $course->touch();
+        }
     }
 
     /**

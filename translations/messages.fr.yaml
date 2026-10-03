@@ -2954,6 +2954,7 @@ quizLaunchTemplateRequiredError: 'Choisissez le quiz à lancer.'
 # la bibliothèque de quiz en dit.
 libraryPickerChooseAction: 'Choisir…'
 libraryPickerBrowseAction: 'Parcourir'
+libraryPickerClearAction: 'Retirer'
 libraryPickerSearchPlaceholder: 'Rechercher…'
 libraryPickerNoMatchMessage: 'Aucun résultat pour cette recherche.'
 libraryPickerEmptyMessage: 'Cette bibliothèque est vide.'
@@ -10615,6 +10616,18 @@ onlineCourseTagsFieldHelp: "Vos tags regroupent et filtrent vos cours sur votre 
 onlineCourseImageFieldLabel: "Vignette"
 onlineCourseImageFieldHelp: "Image de la carte du cours sur votre page et de l’aperçu d’un lien partagé : JPEG, PNG ou WebP, 5 Mo au plus, au format 16/9 de préférence. Une image prise dans la bibliothèque est copiée dans le cours."
 onlineCourseRemoveImageFieldLabel: "Retirer la vignette"
+onlineCourseQuizFieldLabel: "Quiz de test"
+onlineCourseQuizFieldHelp: "Facultatif. Un lien « Test » apparaît sur la carte du cours : quiconque lit le cours, même sans compte, passe ce quiz autant de fois qu’il le souhaite, avec la correction à la fin. Rien n’en est enregistré."
+onlineCourseQuizPlaceholder: "Aucun quiz de test"
+onlineCourseQuizPickerEmptyMessage: "Votre bibliothèque ne contient aucun quiz qui ait au moins une question."
+onlineCourseQuizNotOwnMessage: "Un cours ne prend comme test qu’un quiz de votre bibliothèque."
+onlineCourseQuizEmptyMessage: "Le quiz « %quiz% » n’a aucune question : il ne peut pas servir de test."
+onlineCourseTestLabel: "Test"
+onlineCourseTestCardTitle: "Se tester sur ce cours"
+onlineCourseTestTitle: "Test · %course%"
+onlineCourseTestNothingRecordedHint: "Autant d’essais que vous le souhaitez, une nouvelle série à chaque fois. Rien n’est enregistré."
+onlineCourseTestBackToCourseAction: "Revenir au cours"
+onlineCourseTestAgainAction: "Recommencer"
 onlineCourseImageWrongTypeMessage: "Cette image ne convient pas comme vignette. Types acceptés : %extensions%."
 onlineCourseImageTooLargeMessage: "Cette image est trop lourde pour une vignette. %max% au plus."
 onlineCourseTagInputPlaceholder: "Tapez pour retrouver un tag ou en créer un"

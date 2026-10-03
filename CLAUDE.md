@@ -363,6 +363,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     bytes and never the address of the material; the revision before the live one is kept (« Revenir
     à la révision »), older ones go to the deferred purge. A file picked from the bibliothèque is
     **copied** here, unlike everywhere else where a link is a reference (`OnlineCourseMaterialStore`).
+  - **A course may carry a test quiz** (`OnlineCourse::$quizTemplate`, spec §18): one quiz of the
+    author's own library with a question (`OnlineCourseWriter::linkQuiz()`, the screen's picker and
+    the connector's `quizId` alike), offered as « Test » on the public card. Taken at
+    `/courses/{handle}/{slug}/test` by whoever may read the course, **without an account too**, as
+    often as wanted, a new draw each time - and **recorded nowhere**: the run lives in the reader's
+    session (`OnlineCourseTestRunner`). The card is no longer an `<a>`: its title's link is
+    stretched over it, so « Test » can be a link of its own.
   - **A course has a picture** (`OnlineCourse::$imageKey`, `OnlineCourseImageStore`): JPEG, PNG or
     WebP, 5 Mo, under `online-courses/{course}/{token}/image/` with a new random name at each
     change (no stale CDN copy), a library file copied like a material. Shown on the public card,

@@ -2432,6 +2432,7 @@ quizLaunchTemplateFieldLabel: 'Quiz to launch'
 quizLaunchTemplateRequiredError: 'Pick the quiz to launch.'
 libraryPickerChooseAction: 'Pick...'
 libraryPickerBrowseAction: 'Browse'
+libraryPickerClearAction: 'Remove'
 libraryPickerSearchPlaceholder: 'Search...'
 libraryPickerNoMatchMessage: 'Nothing matches that search.'
 libraryPickerEmptyMessage: 'This library is empty.'
@@ -9380,6 +9381,18 @@ onlineCourseTagsFieldHelp: "Your tags group and filter your courses on your page
 onlineCourseImageFieldLabel: "Thumbnail"
 onlineCourseImageFieldHelp: "Picture of the course card on your page and of a shared link’s preview: JPEG, PNG or WebP, 5 MB at most, preferably 16:9. A picture taken from the library is copied into the course."
 onlineCourseRemoveImageFieldLabel: "Remove the thumbnail"
+onlineCourseQuizFieldLabel: "Test quiz"
+onlineCourseQuizFieldHelp: "Optional. A « Test » link appears on the course’s card: anyone reading the course, even without an account, takes this quiz as many times as they like, with the correction at the end. Nothing of it is recorded."
+onlineCourseQuizPlaceholder: "No test quiz"
+onlineCourseQuizPickerEmptyMessage: "Your library holds no quiz with at least one question."
+onlineCourseQuizNotOwnMessage: "A course only takes a quiz from your library as its test."
+onlineCourseQuizEmptyMessage: "The quiz “%quiz%” has no question: it cannot be a test."
+onlineCourseTestLabel: "Test"
+onlineCourseTestCardTitle: "Test yourself on this course"
+onlineCourseTestTitle: "Test · %course%"
+onlineCourseTestNothingRecordedHint: "As many tries as you like, a new set each time. Nothing is recorded."
+onlineCourseTestBackToCourseAction: "Back to the course"
+onlineCourseTestAgainAction: "Try again"
 onlineCourseImageWrongTypeMessage: "This picture does not suit a thumbnail. Accepted types: %extensions%."
 onlineCourseImageTooLargeMessage: "This picture is too large for a thumbnail. %max% at most."
 onlineCourseTagInputPlaceholder: "Type to find a tag or create one"
