@@ -42,6 +42,7 @@ class PlatformScheduleTest extends KernelTestCase
             'app:rncp:fetch' => '* * * * *',
             'app:proxmox:check' => '*/5 * * * *',
             'app:proxmox:scan-addresses' => '2-59/5 * * * *',
+            'app:class-board:photo' => '7 * * * *',
             'app:mail:reconcile' => '30 2 * * *',
             'app:uploads:purge' => '0 3 * * *',
             'app:purge-platform-activity' => '15 3 * * *',

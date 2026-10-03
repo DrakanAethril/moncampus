@@ -313,6 +313,7 @@ starts the worker by itself: `up --wait` brings it up with the rest.
 | `app:rncp:fetch` | every minute | Portfolio: France compétences' open data, below |
 | `app:proxmox:check` | every 5 minutes | the command's own docblock |
 | `app:proxmox:scan-addresses` | every 5 minutes, offset by 2 | the command's own docblock |
+| `app:class-board:photo` | every hour, at :07 | The virtual board's photograph of the day, below |
 | `app:mail:reconcile` | 02:30 | Courrier pro, below |
 | `app:uploads:purge` | 03:00 | the command's own docblock (design/validated/object-deletion.md) |
 | `app:purge-platform-activity` | 03:15 | Retention |
@@ -480,6 +481,31 @@ download the export elsewhere and run `bin/console app:rncp:fetch --file=/path/t
 The official E5 template (annexe VI-1) is **not** in the code: the administration uploads the .xlsx
 of each session in Référentiels > BTS SIO > Modèles officiels, and nothing exports an .xlsx for a
 session without a template in service.
+
+## The virtual board's photograph of the day (scheduled)
+
+A virtual board on « Nature » (the default) shows a new photograph every day, drawn from Wikimedia
+Commons' « Featured pictures » of landscapes, mountains, forests, lakes, waterfalls, coasts and trees
+(`App\Service\ClassBoard\CommonsNaturePhotos`). Only **photographs** are taken - a JPEG carrying
+its camera's EXIF, so no painting, drawing or render - landscape between 4:3 and 2:1, at least
+1 920 px wide, under CC0, public domain, CC BY or CC BY-SA. The board prints the credit those
+licences ask for (author, licence, Wikimedia Commons) in its bottom-right corner.
+
+- `app:class-board:photo`, **every hour at :07**. The first pass of the day fetches the photograph
+  (1 920 px, a few hundred kilobytes), writes it under `class-board-photos/` in the uploads bucket
+  and records it in `class_board_photo`; the later passes find it there. No photograph shown in the
+  last two years is drawn again.
+- **Cleaning** is the same command: a photograph's bytes go two days after its own day, through the
+  platform's deferred deletion (origin `class-board-photo`, one day of retention, removed by
+  `app:uploads:purge`). The rows stay - they are what prevents a repeat - and weigh nothing.
+- `--replace` draws another photograph for today (one nobody likes, say); the previous one is cleaned
+  like any other.
+
+A Commons that does not answer is a *warning* and a retry the next hour, never a non-zero exit;
+meanwhile the boards keep the last photograph, and with none at all, the CC0 one shipped with the
+application (`assets/images/class-board/`, credited in NOTICE). The server must reach
+`commons.wikimedia.org` and `thumb.wikimedia.org` over HTTPS; classroom browsers never call Wikimedia,
+they read the copy from the CDN.
 
 ## Opening the Claude connector
 

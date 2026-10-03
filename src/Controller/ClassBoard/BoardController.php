@@ -12,6 +12,7 @@ use App\Security\Voter\ClassBoardVoter;
 use App\Service\ClassBoard\ClassBoardDrawings;
 use App\Service\ClassBoard\ClassBoardLayout;
 use App\Service\ClassBoard\ClassBoardNaming;
+use App\Service\ClassBoard\ClassBoardPhotoOfTheDay;
 use App\Service\ClassBoard\ClassBoardView;
 use App\Service\ClassBoard\ClassBoardWidgetData;
 use App\Service\ClassBoard\InvalidClassBoardLayoutException;
@@ -40,7 +41,7 @@ class BoardController extends AbstractController
     public const string CSRF_TOKEN_ID = 'class_board';
 
     #[Route(path: '/tools/boards/{id}', name: 'app_class_board_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(int $id, Request $request, ClassBoardRepository $repository, ClassBoardView $view, ClassBoardWidgetData $widgetData, Authorization $mercureAuthorization): Response
+    public function show(int $id, Request $request, ClassBoardRepository $repository, ClassBoardView $view, ClassBoardWidgetData $widgetData, Authorization $mercureAuthorization, ClassBoardPhotoOfTheDay $photoOfTheDay): Response
     {
         $board = $this->findBoard($id, $repository);
         $widgets = $view->widgets($board);
@@ -56,6 +57,8 @@ class BoardController extends AbstractController
             'dock' => $view->dock($board, $this->currentUser()),
             'classState' => $widgetData->classState($board),
             'backgrounds' => ClassBoardBackground::cases(),
+            // Read whatever the board's background: « Nature » can be picked without a reload.
+            'photo' => $photoOfTheDay->shown(),
         ]);
     }
 

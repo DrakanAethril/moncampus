@@ -67,6 +67,9 @@ class ObjectStore
     public const array RETENTION_DAYS_BY_ORIGIN = [
         'staged' => 1,
         'import' => 1,
+        // The virtual board's photograph of the day: a copy of a Commons file, gone from every
+        // board once its day has passed - nobody's file, nothing to restore.
+        'class-board-photo' => 1,
     ];
 
     /**
@@ -99,6 +102,7 @@ class ObjectStore
         'online-courses' => 'online-course',
         'staged' => 'staged',
         'diagnostics' => 'diagnostics',
+        'class-board-photos' => 'class-board-photo',
     ];
 
     public function __construct(
