@@ -354,6 +354,14 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     whoever creates it; publishing asks for a title, a summary, a material and a page with an
     address (`OnlineCourseWriter::publishRefusals()` names all that is missing); a published course
     is taken offline before it is deleted.
+  - **A teacher's page is theirs, not the establishment's**: their banner (`OnlineCoursePage`'s
+    title, colours, height in px and optional picture - `OnlineCourseImageStore` - drawn by
+    `online_course/_page_banner.html.twig` for the page and for the « Ma page » preview alike)
+    replaces the shell's bar; no emblem, no teacher name, no footer. The courses come in rows -
+    « Récemment mis à jour », then one per tag in alphabetical order - each cut to one line by
+    `online_course_row_controller.js`; « Voir tout » is `?tag=` / `?view=recent` on the same
+    address. A signed-in visitor gets the app's own user menu (`layout/_user_menu.html.twig`,
+    shared with the app shell, which is why it takes `compact` and `impersonation`).
   - **The page's address changes at any time**, during diffusion included: every address a page
     carried keeps its row (`OnlineCoursePageHandle`, UNIQUE), so the old one answers a 301 and is
     never given to another teacher (`OnlineCoursePageHandles`). It is never the login. A course's own

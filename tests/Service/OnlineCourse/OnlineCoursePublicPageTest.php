@@ -12,8 +12,8 @@ use App\Service\OnlineCourse\OnlineCoursePublicPage;
 use PHPUnit\Framework\TestCase;
 
 /**
- * What a teacher's public page shows of a list of courses: the filters narrow, the tags are counted
- * on the whole page, and the « par thème » view loses no course.
+ * What a teacher's public page shows of a list of courses: the newest first, one row per tag in
+ * alphabetical order, and filters that narrow.
  */
 class OnlineCoursePublicPageTest extends TestCase
 {
@@ -54,27 +54,29 @@ class OnlineCoursePublicPageTest extends TestCase
         self::assertSame([$osi, $joins], $this->page->filter([$osi, $joins], '  ', []));
     }
 
-    public function testChipsCountTheWholePageAndMarkTheActiveOnes(): void
+    public function testTheMostRecentlyUpdatedComesFirstAndANeverEditedCourseCountsFromItsCreation(): void
     {
-        $courses = [$this->course('A', ['SQL', 'SLAM']), $this->course('B', ['SQL']), $this->course('C', [])];
+        $old = $this->course('Ancien', [], '', '2026-09-01 10:00');
+        $edited = $this->course('Modifié hier', [], '', '2026-10-02 08:00');
+        $created = $this->course('Créé ce matin', []);
 
-        self::assertSame([
-            ['label' => 'SLAM', 'key' => 'slam', 'count' => 1, 'active' => false],
-            ['label' => 'SQL', 'key' => 'sql', 'count' => 2, 'active' => true],
-        ], $this->page->chips($courses, ['sql']));
+        self::assertEquals($created->getCreatedAt(), $created->getUpdatedAt());
+        self::assertSame([$created, $edited, $old], OnlineCoursePublicPage::newestFirst([$old, $created, $edited]));
     }
 
-    public function testByThemeACourseSitsUnderEachOfItsTagsAndAnUntaggedOneIsNotLost(): void
+    public function testOneRowPerTagInAlphabeticalOrderKeepingTheCoursesOrder(): void
     {
         $joins = $this->course('Les jointures SQL', ['SQL', 'SLAM']);
+        $model = $this->course('Le modèle relationnel', ['SQL']);
+        $osi = $this->course('Le modèle OSI', ['Réseau']);
         $untagged = $this->course('Divers', []);
 
-        $groups = $this->page->groups([$joins, $untagged]);
+        $rows = $this->page->groups([$model, $joins, $osi, $untagged]);
 
-        self::assertSame(['SLAM', 'SQL', ''], array_column($groups, 'label'));
-        self::assertSame([$joins], $groups[0]['courses']);
-        self::assertSame([$joins], $groups[1]['courses']);
-        self::assertSame([$untagged], $groups[2]['courses']);
+        self::assertSame(['Réseau', 'SLAM', 'SQL'], array_column($rows, 'label'));
+        self::assertSame([$osi], $rows[0]['courses']);
+        self::assertSame([$joins], $rows[1]['courses']);
+        self::assertSame([$model, $joins], $rows[2]['courses']);
     }
 
     public function testTwoSpellingsOfATagAreOneTag(): void
@@ -86,10 +88,13 @@ class OnlineCoursePublicPageTest extends TestCase
     /**
      * @param list<string> $tags
      */
-    private function course(string $title, array $tags, string $summary = ''): OnlineCourse
+    private function course(string $title, array $tags, string $summary = '', ?string $updatedAt = null): OnlineCourse
     {
         $course = new OnlineCourse($this->owner, $title, 'slug');
         $course->setSummary($summary);
+        if (null !== $updatedAt) {
+            (new \ReflectionProperty(OnlineCourse::class, 'updatedAt'))->setValue($course, new \DateTimeImmutable($updatedAt));
+        }
         foreach ($tags as $tag) {
             $course->addTag(new OnlineCourseTag($this->owner, $tag));
         }

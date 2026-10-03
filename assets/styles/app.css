@@ -12932,28 +12932,73 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 .cm-pub-prose > :last-child { margin-bottom: 0; }
 .cm-pub-prose img { max-width: 100%; height: auto; }
 
-.cm-pub-filters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-.cm-pub-search { flex: 1 1 280px; display: flex; gap: 8px; margin: 0; }
+.cm-pub-search { flex: 0 1 380px; display: flex; gap: 8px; margin: 0 0 0 auto; }
 .cm-pub-search input {
     flex: 1; min-width: 0; border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
     background: var(--cm-surface); color: var(--cm-ink); padding: 7px 12px; font: 400 14px var(--cm-font-ui);
 }
 .cm-pub-search input:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 1px; }
-.cm-pub-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
-.cm-pub-chip {
-    border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
-    border-radius: 999px; padding: 3px 12px; font: 600 13px var(--cm-font-ui); text-decoration: none;
-}
-.cm-pub-chip small { font-weight: 400; color: var(--cm-faint); margin-left: 2px; }
-.cm-pub-chip:hover { border-color: var(--cm-brand); color: var(--cm-ink); text-decoration: none; }
-.cm-pub-chip.is-active { background: var(--cm-topbar-bg); border-color: var(--cm-topbar-bg); color: #fff; }
-.cm-pub-chip.is-active small { color: var(--cm-topbar-tx); }
-.cm-pub-chip:focus-visible, .cm-pub-card:focus-visible, .cm-pub-tabs__tab:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
+.cm-pub-card:focus-visible, .cm-pub-tabs__tab:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
 .cm-pub-empty { color: var(--cm-muted); border: 1px dashed var(--cm-border); border-radius: var(--cm-radius-sm); padding: 22px; text-align: center; }
-.cm-pub-group { margin-bottom: 22px; }
-.cm-pub-group__title { font: 600 18px var(--cm-font-title); color: var(--cm-ink); margin: 0 0 10px; }
 
-.cm-pub-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+/* A teacher's page (online_course/public/page.html.twig): their banner in place of the shell's
+   bar - colours chosen by the teacher, so the controls over it carry their own surface - then the
+   rows of courses, each cut to one line by online_course_row_controller.js. */
+.cm-pub-banner {
+    /* No overflow clip: the user menu drops out of it, over the page - hence the z-index too. */
+    position: relative; z-index: 3; display: grid; place-items: center; min-height: var(--cm-pub-banner-height, 230px);
+    padding: 56px 24px 24px; background: var(--cm-pub-banner-bg, var(--cm-topbar-bg)); color: var(--cm-pub-banner-ink, #fff);
+}
+.cm-pub-banner__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cm-pub-banner__title {
+    position: relative; z-index: 1; margin: 0; max-width: 900px; text-align: center; text-wrap: balance;
+    font: 600 clamp(26px, 4.2vw, 42px)/1.15 var(--cm-font-title); color: var(--cm-pub-banner-ink, #fff); overflow-wrap: anywhere;
+}
+.cm-pub-banner.has-image .cm-pub-banner__title { text-shadow: 0 1px 14px rgba(0, 0, 0, .35); }
+.cm-pub-banner__bar { position: absolute; z-index: 2; top: 14px; right: 18px; display: flex; align-items: center; gap: 10px; }
+.cm-pub-banner__bar .cm-btn--outline { background: var(--cm-surface); border-color: var(--cm-border); color: var(--cm-ink); box-shadow: 0 1px 4px rgba(18, 52, 77, .18); }
+.cm-pub-banner__bar .cm-btn--outline:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+.cm-pub-banner__bar .cm-theme { background: var(--cm-surface); box-shadow: 0 1px 4px rgba(18, 52, 77, .18); }
+.cm-pub-banner__user .cm-user__avatar { box-shadow: 0 0 0 2px rgba(255, 255, 255, .9), 0 1px 4px rgba(18, 52, 77, .25); }
+.cm-pub-intro { max-width: 72ch; margin-bottom: 18px; }
+.cm-pub-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+.cm-pub-toolbar:empty { display: none; }
+
+.cm-pub-row { position: relative; margin-bottom: 30px; }
+.cm-pub-row__head, .cm-pub-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.cm-pub-row__title, .cm-pub-section-head__title { font: 600 19px var(--cm-font-title); color: var(--cm-ink); margin: 0; }
+.cm-pub-row__count {
+    display: inline-block; vertical-align: 2px; margin-left: 6px; padding: 1px 8px; border-radius: 999px;
+    background: var(--cm-border-soft); color: var(--cm-muted); font: 600 12px var(--cm-font-ui); font-variant-numeric: tabular-nums;
+}
+.cm-pub-row__all, .cm-pub-section-head__back { flex: none; font-weight: 600; font-size: 13.5px; color: var(--cm-brand); text-decoration: none; }
+.cm-pub-row__all:hover, .cm-pub-section-head__back:hover { text-decoration: underline; color: var(--cm-brand); }
+.cm-pub-section-head__back { display: inline-flex; align-items: center; gap: 5px; }
+/* One line: further rows take no height. The padding keeps a focused card's outline inside the clip. */
+.cm-pub-row__track { grid-template-rows: auto; grid-auto-rows: 0; row-gap: 0; overflow: hidden; padding: 3px; margin: -3px; }
+.cm-pub-row__track > [hidden], .cm-pub-row__next[hidden] { display: none; }
+.cm-pub-row__next {
+    position: absolute; z-index: 2; top: 50%; right: 10px; transform: translateY(-50%);
+    width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--cm-surface); color: var(--cm-ink); box-shadow: 0 2px 10px rgba(18, 52, 77, .28);
+    opacity: 0; transition: opacity .15s ease;
+}
+.cm-pub-card:hover > .cm-pub-row__next, .cm-pub-row__next:focus-visible { opacity: 1; }
+.cm-pub-row__next:hover { color: var(--cm-brand); }
+.cm-pub-row__next:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
+@media (hover: none) { .cm-pub-row__next { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cm-pub-row__next { transition: none; } }
+@media (max-width: 760px) {
+    .cm-pub-banner { min-height: calc(var(--cm-pub-banner-height, 230px) * .75); padding: 56px 16px 20px; }
+    .cm-pub-banner__bar { top: 12px; right: 12px; }
+    .cm-pub-search { flex-basis: 100%; }
+}
+
+/* The banner's preview on « Ma page »: the same markup, at its real height. */
+.cm-oc-banner-preview { border-radius: var(--cm-radius-sm); overflow: hidden; border: 1px solid var(--cm-border); }
+.cm-oc-banner-preview .cm-pub-banner { z-index: auto; padding: 24px 20px; }
+
+.cm-pub-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
 .cm-pub-card {
     display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: var(--cm-text);
     background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
@@ -13052,7 +13097,6 @@ a.cm-pub-tag:hover { color: var(--cm-ink); text-decoration: none; }
 .cm-oc-errors .invalid-feedback { display: block; font-size: 13.5px; }
 
 /* ---------- Learning paths (design/validated/cours-en-ligne.md §10) ---------- */
-.cm-pub-pagetabs { margin-bottom: 14px; }
 .cm-oc-publish { display: flex; align-items: center; gap: 8px; margin: 0; }
 .cm-oc-publish .form-select { width: auto; }
 .cm-lp-bar { display: block; height: 6px; background: var(--cm-border); border-radius: 3px; overflow: hidden; }

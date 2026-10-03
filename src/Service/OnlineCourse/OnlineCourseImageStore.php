@@ -6,6 +6,7 @@ namespace App\Service\OnlineCourse;
 
 use App\Entity\FileLibraryNode;
 use App\Entity\OnlineCourse;
+use App\Entity\OnlineCoursePage;
 use App\Service\FileUploadService;
 use App\Service\StagedUpload;
 use App\Service\UploadIntake;
@@ -27,6 +28,10 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  *   serves the old one from cache; the one replaced goes to the deferred purge.
  *
  * JPEG, PNG or WebP, 5 Mo at most: a picture drawn at card size, not a print.
+ *
+ * The banner picture of a teacher's page goes through here too, under the same rules, in
+ * `online-courses/pages/{page}/banner/` - no token there: the page is public once online, and its
+ * banner with it.
  */
 class OnlineCourseImageStore
 {
@@ -74,16 +79,7 @@ class OnlineCourseImageStore
         $this->assertAccepted($file);
 
         $id = $course->getId() ?? throw new \LogicException('A course is given a picture once it has been saved.');
-        $prefix = \sprintf('online-courses/%d/%s/image/', $id, $course->getStorageToken());
-        $name = bin2hex(random_bytes(8)).'.'.UploadIntake::extension($file);
-
-        if ($file instanceof FileLibraryNode) {
-            $source = $file->getStorageKey() ?? throw new OnlineCourseMaterialRefused('onlineCourseMaterialNoFileMessage');
-            $key = $prefix.$name;
-            $this->fileUploads->copy($source, $key);
-        } else {
-            $key = $this->intake->store($file, $prefix, $name);
-        }
+        $key = $this->store($file, \sprintf('online-courses/%d/%s/image/', $id, $course->getStorageToken()));
 
         $previous = $course->getImageKey();
         $course->setImageKey($key);
@@ -104,5 +100,57 @@ class OnlineCourseImageStore
         $course->setImageKey(null);
         $course->touch();
         $this->fileUploads->delete($previous);
+    }
+
+    /**
+     * Gives the page this banner picture, in place of the one it had. The page must have been
+     * flushed once: its id is part of the folder.
+     *
+     * @throws OnlineCourseMaterialRefused
+     */
+    public function setPageBanner(OnlineCoursePage $page, UploadedFile|StagedUpload|FileLibraryNode $file): void
+    {
+        $this->assertAccepted($file);
+
+        $id = $page->getId() ?? throw new \LogicException('A page is given a banner once it has been saved.');
+        $key = $this->store($file, \sprintf('online-courses/pages/%d/banner/', $id));
+
+        $previous = $page->getBannerImageKey();
+        $page->setBannerImageKey($key);
+
+        if (null !== $previous) {
+            $this->fileUploads->delete($previous);
+        }
+    }
+
+    public function removePageBanner(OnlineCoursePage $page): void
+    {
+        $previous = $page->getBannerImageKey();
+        if (null === $previous) {
+            return;
+        }
+
+        $page->setBannerImageKey(null);
+        $this->fileUploads->delete($previous);
+    }
+
+    /**
+     * Writes the file under the folder with a new random name - a library file copied, never
+     * referenced - and answers its key.
+     *
+     * @throws OnlineCourseMaterialRefused
+     */
+    private function store(UploadedFile|StagedUpload|FileLibraryNode $file, string $prefix): string
+    {
+        $name = bin2hex(random_bytes(8)).'.'.UploadIntake::extension($file);
+
+        if ($file instanceof FileLibraryNode) {
+            $source = $file->getStorageKey() ?? throw new OnlineCourseMaterialRefused('onlineCourseMaterialNoFileMessage');
+            $this->fileUploads->copy($source, $prefix.$name);
+
+            return $prefix.$name;
+        }
+
+        return $this->intake->store($file, $prefix, $name);
     }
 }
