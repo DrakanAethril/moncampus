@@ -12976,7 +12976,7 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 .cm-pub-section-head__back { display: inline-flex; align-items: center; gap: 5px; }
 /* One line: further rows take no height. The padding keeps a focused card's outline inside the clip. */
 .cm-pub-row__track { grid-template-rows: auto; grid-auto-rows: 0; row-gap: 0; overflow: hidden; padding: 3px; margin: -3px; }
-.cm-pub-row__track > [hidden], .cm-pub-row__next[hidden] { display: none; }
+.cm-pub-row__track > [hidden], .cm-pub-row__next[hidden], .cm-pub-row__all[hidden] { display: none; }
 .cm-pub-row__next {
     position: absolute; z-index: 2; top: 50%; right: 10px; transform: translateY(-50%);
     width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
@@ -12998,13 +12998,32 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 .cm-oc-banner-preview { border-radius: var(--cm-radius-sm); overflow: hidden; border: 1px solid var(--cm-border); }
 .cm-oc-banner-preview .cm-pub-banner { z-index: auto; padding: 24px 20px; }
 
-.cm-pub-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.cm-pub-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 18px; }
 .cm-pub-card {
     display: flex; flex-direction: column; overflow: hidden; text-decoration: none; color: var(--cm-text);
     background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
 }
 .cm-pub-card:hover { border-color: var(--cm-brand); text-decoration: none; color: var(--cm-text); }
-.cm-pub-card__image { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--cm-border-soft); }
+/* A course's cover (online_course/public/_card.html.twig): its picture or, without one, the band's
+   tint; the natures of its materials as pictograms in the corner; its summary over the whole cover
+   when the card is hovered or focused. */
+.cm-pub-card__cover { position: relative; aspect-ratio: 16 / 9; overflow: hidden; }
+.cm-pub-card__image { display: block; width: 100%; height: 100%; object-fit: cover; background: var(--cm-border-soft); }
+.cm-pub-card__kinds { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.cm-pub-card__kind {
+    display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(18, 52, 77, .78); color: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+}
+.cm-pub-card__kind.is-main { background: var(--cm-brand); }
+.cm-pub-card__cover .cm-pub-card__summary {
+    /* Under no pointer: a click on it still reaches the title's link stretched below. */
+    position: absolute; inset: 0; z-index: 1; margin: 0; padding: 14px 18px; overflow: hidden; pointer-events: none;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6;
+    background: rgba(18, 52, 77, .92); color: #fff; font-size: 14px; line-height: 1.5;
+    opacity: 0; transition: opacity .18s ease;
+}
+.cm-pub-card:hover .cm-pub-card__summary, .cm-pub-card:focus-within .cm-pub-card__summary { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .cm-pub-card__cover .cm-pub-card__summary { transition: none; } }
 .cm-pub-card__band { padding: 12px 14px; font: 600 12px var(--cm-font-mono); letter-spacing: .3px; }
 .cm-pub-card__band--1 { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
 .cm-pub-card__band--2 { background: var(--cm-green-bg); color: var(--cm-green-tx); }
@@ -13013,12 +13032,8 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 .cm-pub-card__body { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px 14px; flex: 1; }
 .cm-pub-card__title { font: 600 17px/1.25 var(--cm-font-title); color: var(--cm-ink); }
 .cm-pub-card__summary { color: var(--cm-muted); font-size: 13.5px; flex: 1; }
-.cm-pub-card__kinds {
-    display: flex; flex-wrap: wrap; gap: 4px 12px; padding-top: 8px; border-top: 1px solid var(--cm-border-soft);
-    font-size: 12.5px; color: var(--cm-muted);
-}
-.cm-pub-card__kinds .is-main { color: var(--cm-ink); font-weight: 700; }
-.cm-pub-card__duration { margin-left: auto; font-variant-numeric: tabular-nums; }
+.cm-pub-card__meta { margin-top: auto; display: flex; align-items: center; gap: 12px; font-size: 12.5px; color: var(--cm-muted); }
+.cm-pub-card__duration { font-variant-numeric: tabular-nums; }
 /* The course's card is led by its title's link, stretched over the whole card; « Test » sits above
    that layer, so it stays a link of its own. */
 .cm-pub-card--stretched { position: relative; }
@@ -13030,9 +13045,8 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 .cm-pub-card--stretched:has(.cm-pub-card__link:focus-visible) { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
 .cm-pub-card__test {
     position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 4px;
-    color: var(--cm-brand); font-weight: 700; text-decoration: none;
+    margin-left: auto; color: var(--cm-brand); font-weight: 700; text-decoration: none;
 }
-.cm-pub-card__test.is-pushed { margin-left: auto; }
 .cm-pub-card__test:hover { text-decoration: underline; color: var(--cm-brand); }
 .cm-pub-card__test:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 2px; border-radius: 2px; }
 .cm-pub-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
