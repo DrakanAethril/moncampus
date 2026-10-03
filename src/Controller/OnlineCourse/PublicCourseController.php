@@ -11,7 +11,6 @@ use App\Repository\OnlineCourseRepository;
 use App\Security\Voter\OnlineCourseVoter;
 use App\Service\OnlineCourse\OnlineCourseContentOrigin;
 use App\Service\OnlineCourse\OnlineCoursePageHandles;
-use App\Service\OnlineCourse\OnlineCoursePublicPage;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -49,7 +48,7 @@ class PublicCourseController extends AbstractController
     }
 
     #[Route(path: '/courses/{handle}/{slug}/{material}', name: 'app_public_courses_course', requirements: ['handle' => self::SEGMENT, 'slug' => self::SEGMENT, 'material' => self::SEGMENT], defaults: ['material' => null], methods: ['GET'])]
-    public function show(string $handle, string $slug, ?string $material, Request $request, OnlineCoursePublicPage $publicPage): Response
+    public function show(string $handle, string $slug, ?string $material, Request $request): Response
     {
         $found = $this->find($handle, $slug, $material, $request);
         if ($found instanceof RedirectResponse) {
@@ -68,7 +67,6 @@ class PublicCourseController extends AbstractController
             'frameAllowed' => null === $current || $this->frameAllowed($current, $request),
             'isOwner' => null !== $viewer && $course->isOwnedBy($viewer),
             'canUnpublish' => $this->isGranted(OnlineCourseVoter::UNPUBLISH, $course),
-            'siblings' => $this->siblings($course, $publicPage->all($page)),
         ]);
     }
 
@@ -141,30 +139,5 @@ class PublicCourseController extends AbstractController
         ]);
 
         return false;
-    }
-
-    /**
-     * « Du même auteur »: up to three other public courses, the ones sharing a tag first.
-     *
-     * @param list<OnlineCourse> $all
-     *
-     * @return list<OnlineCourse>
-     */
-    private function siblings(OnlineCourse $course, array $all): array
-    {
-        $others = array_values(array_filter($all, static fn (OnlineCourse $other): bool => $other !== $course));
-
-        $shared = static function (OnlineCourse $other) use ($course): int {
-            $count = 0;
-            foreach ($other->getTags() as $tag) {
-                $count += $course->hasTag($tag->getNormalizedLabel()) ? 1 : 0;
-            }
-
-            return $count;
-        };
-
-        usort($others, static fn (OnlineCourse $a, OnlineCourse $b): int => [$shared($b), $a->getTitle()] <=> [$shared($a), $b->getTitle()]);
-
-        return \array_slice($others, 0, 3);
     }
 }

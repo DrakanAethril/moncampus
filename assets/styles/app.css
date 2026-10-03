@@ -13013,12 +13013,7 @@ a.cm-pub-tag:hover { color: var(--cm-ink); text-decoration: none; }
 .cm-pub-viewer__fallback { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0; padding: 10px 14px; border-top: 1px solid var(--cm-border-soft); color: var(--cm-muted); font-size: 12.5px; }
 .cm-pub-viewer--video { background: #0b1620; }
 .cm-pub-viewer__video { display: block; width: 100%; max-height: 78vh; background: #0b1620; }
-.cm-pub-below { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; margin-top: 18px; align-items: start; }
-.cm-pub-below > :only-child { grid-column: 1 / -1; }
-@media (max-width: 760px) { .cm-pub-below { grid-template-columns: minmax(0, 1fr); } .cm-pub__main { padding: 16px; } .cm-pub__bar { padding: 10px 16px; } }
-.cm-pub-box { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 16px; }
-.cm-pub-box__title { font: 600 16px var(--cm-font-title); color: var(--cm-ink); margin: 0 0 8px; }
-.cm-pub-siblings { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+@media (max-width: 760px) { .cm-pub__main { padding: 16px; } .cm-pub__bar { padding: 10px 16px; } }
 
 /* ---------- Interactive course: the frame, and the full page ---------- */
 .cm-pub-viewer--interactive { background: #0b1620; }

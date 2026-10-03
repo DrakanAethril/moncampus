@@ -101,24 +101,4 @@
     {% else %}
         <p class="cm-pub-empty">{{ 'onlineCoursePublicNoMaterialLabel'|trans }}</p>
     {% endif %}
-
-    <div class="cm-pub-below">
-        {% if course.description %}
-            <section class="cm-pub-box">
-                <h2 class="cm-pub-box__title">{{ 'onlineCoursePublicAboutHeading'|trans }}</h2>
-                <div class="cm-pub-prose">{{ course.description|raw }}</div>
-            </section>
-        {% endif %}
-        {% if siblings is not empty %}
-            <section class="cm-pub-box">
-                <h2 class="cm-pub-box__title">{{ 'onlineCoursePublicSiblingsHeading'|trans }}</h2>
-                <ul class="cm-pub-siblings">
-                    {% for sibling in siblings %}
-                        <li><a href="{{ path('app_public_courses_course', {handle: page.handle, slug: sibling.slug}) }}">{{ sibling.title }}</a></li>
-                    {% endfor %}
-                    <li><a href="{{ path('app_public_courses_page', {handle: page.handle}) }}">{{ 'onlineCoursePublicAllCoursesAction'|trans }}</a></li>
-                </ul>
-            </section>
-        {% endif %}
-    </div>
 {% endblock %}
