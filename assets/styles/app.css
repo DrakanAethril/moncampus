@@ -12405,6 +12405,7 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
     position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
     font-family: var(--cm-font-ui); color: var(--cb-ink); color-scheme: light;
 }
+.cm-cb[data-background="nature"] { background: #2b3523; }
 .cm-cb[data-background="slate"] { background: #1d2a33; }
 .cm-cb[data-background="navy"] { background: #0e2a3f; }
 .cm-cb[data-background="chalkboard"] { background: #213d33; }
@@ -12414,6 +12415,19 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
     position: relative; aspect-ratio: 16 / 9; width: min(100vw, calc(100vh * 16 / 9)); max-height: 100vh;
     container-type: inline-size; overflow: hidden; user-select: none;
 }
+/* « Nature »: the photograph of the day, which the page hands over in --cb-nature-photo (a copy of
+   a Commons file in the uploads bucket, App\Service\ClassBoard\ClassBoardPhotoOfTheDay). Until the
+   first one is fetched, the photograph shipped with the application: Ciucaș Peak, Romania, by David
+   Marcu - CC0, credited in NOTICE. Neither is ever hotlinked from a third party. */
+.cm-cb { --cb-nature-photo: url('../images/class-board/nature-ciucas.webp'); }
+.cm-cb[data-background="nature"] .cm-cb__surface { background: #2b3523 var(--cb-nature-photo) center / cover no-repeat; }
+.cm-cb__credit {
+    position: absolute; right: 1%; bottom: .6%; z-index: 0; margin: 0; max-width: 24%;
+    font-size: .62em; line-height: 1.3; text-align: right; color: rgba(255, 255, 255, .78);
+    text-shadow: 0 0 .4em rgba(0, 0, 0, .85);
+}
+.cm-cb__credit a { color: inherit; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .4); }
+.cm-cb:not([data-background="nature"]) .cm-cb__credit { display: none; }
 .cm-cb[data-background="slate"] .cm-cb__surface { background: radial-gradient(120% 90% at 30% 20%, #2c3d49 0%, #1d2a33 70%); }
 .cm-cb[data-background="navy"] .cm-cb__surface { background: linear-gradient(160deg, #18476a 0%, #12344d 60%, #0e2a3f 100%); }
 .cm-cb[data-background="chalkboard"] .cm-cb__surface { background: radial-gradient(120% 90% at 40% 30%, #2e5446 0%, #213d33 75%); }
@@ -12452,6 +12466,7 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 .cm-cb__backgrounds[hidden] { display: none; }
 .cm-cb__backgrounds button { width: 4.2em; height: 2.6em; border-radius: .5em; border: .15em solid transparent; cursor: pointer; padding: 0; font-size: 1em; }
 .cm-cb__backgrounds button[aria-pressed="true"] { border-color: var(--cb-gold); }
+.cm-cb__backgrounds button[data-background="nature"] { background-image: var(--cb-nature-photo); background-size: cover; background-position: center; }
 .cm-cb__backgrounds span { display: block; font-size: .75em; color: var(--cb-chrome-text); margin-top: .25em; text-align: center; }
 .cm-cb__dock {
     position: absolute; left: 50%; bottom: 1.3%; transform: translateX(-50%); z-index: 100000;

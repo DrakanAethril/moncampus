@@ -54,7 +54,7 @@ class ClassBoard
     private string $name = '';
 
     #[ORM\Column(length: 20, enumType: ClassBoardBackground::class)]
-    private ClassBoardBackground $background = ClassBoardBackground::Slate;
+    private ClassBoardBackground $background = ClassBoardBackground::Nature;
 
     /** @var list<array<string, mixed>> */
     #[ORM\Column(type: Types::JSON)]
