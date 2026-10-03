@@ -500,7 +500,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   rule. A « Balises spécifiques » course runs on Départ, Arrivée and the flags it names, in order or
   not: **`EcoCourse::getRaceCheckpoints()` is the only list a course is read through** (scan,
   ranking, maps, statistics, runner API), never the parcours' own - and the runner app is sent
-  `runnerMode()` (imposed/free order), which it already understands. The same Flutter app also
+  `runnerMode()` (imposed/free order), which it already understands. **Any flag may be renamed**
+(screen 1e, `App\Service\Eco\EcoCheckpointRenamer`), Départ and Arrivée included: a flag's role
+is its type and position, never its name - nothing may test a name. A course not yet closed has
+an « Affiche QR » (`app_eco_course_join_pdf`): an A4 page whose QR opens `/eco-app/?code=…`, which
+the PWA's join screen reads (a race under way on that phone still wins). The same Flutter app also
   runs **as a PWA at `/eco-app/`** (`public/eco-app/`, a build output of the e-CO repo's
   `tool/build_pwa.sh` - never edited here; its README says what the web build changes): same
   origin as the API, offline queue in IndexedDB, and its own service worker, which also sends that

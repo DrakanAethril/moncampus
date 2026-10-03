@@ -203,8 +203,8 @@ class EcoCourseStatsCalculator
         $segments[$key] ??= [
             'fromPosition' => $leg['fromPosition'],
             'toPosition' => $leg['toPosition'],
-            'fromLabel' => $this->positionLabel($leg['fromPosition'], $leg['fromName']),
-            'toLabel' => $this->positionLabel($leg['toPosition'], $leg['toName']),
+            'fromLabel' => $this->positionLabel($leg['fromPosition'], $leg['fromType']),
+            'toLabel' => $this->positionLabel($leg['toPosition'], $leg['toType']),
             'seconds' => [],
             'bestSeconds' => null,
             'bestPseudo' => null,
@@ -313,7 +313,7 @@ class EcoCourseStatsCalculator
             $distances = $scanDistances[$id] ?? [];
 
             $rows[] = [
-                'label' => $this->positionLabel($checkpoint->getPosition(), $checkpoint->getName() ?? '', $checkpoint->getType()),
+                'label' => $this->positionLabel($checkpoint->getPosition(), $checkpoint->getType()),
                 'name' => $checkpoint->getName() ?? '',
                 'foundBy' => $foundBy[$id] ?? 0,
                 'runnerCount' => \count($runners),
@@ -328,24 +328,11 @@ class EcoCourseStatsCalculator
         return $rows;
     }
 
-    /**
-     * The short "D" / "4" / "A" label, from a checkpoint's position when its type isn't at hand
-     * (legs only carry positions and names).
-     */
-    private function positionLabel(int $position, string $name, ?EcoCheckpointType $type = null): string
+    // The short "D" / "4" / "A" label - from the flag's type, never its name, which the teacher
+    // may change.
+    private function positionLabel(int $position, EcoCheckpointType $type): string
     {
-        $type ??= match (true) {
-            0 === $position => EcoCheckpointType::Start,
-            default => EcoCheckpointType::Checkpoint,
-        };
-
-        return match ($type) {
-            EcoCheckpointType::Start => 'D',
-            EcoCheckpointType::Finish => 'A',
-            // A leg's far end can be the Arrivée, which positions alone cannot tell from a numbered
-            // balise - its name is the only thing left to go on.
-            EcoCheckpointType::Checkpoint => 'Arrivée' === $name ? 'A' : (string) $position,
-        };
+        return $type->shortLetter() ?? (string) $position;
     }
 
     /**
