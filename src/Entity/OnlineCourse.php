@@ -29,7 +29,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * its first publication on ($publishedAt, set once and never cleared), so that a link handed to a
  * class survives a change of title.
  *
- * `$storageToken` is the random segment of every object the course stores
+ * `$storageToken` is the random segment of every object the course stores - its picture included
  * (`online-courses/{id}/{token}/…`). Materials are served by the CDN, whose addresses are permanent
  * and unauthenticated: the token is what keeps a draft's files from being guessed.
  */
@@ -83,6 +83,15 @@ class OnlineCourse
 
     #[ORM\Column(length: 32)]
     private string $storageToken;
+
+    /**
+     * The course's picture, on its card and in a link's preview: a key under the course's own
+     * folder, served by the CDN like its materials. Written by
+     * App\Service\OnlineCourse\OnlineCourseImageStore alone, which copies a library file rather
+     * than referencing it - for the same reason as a material.
+     */
+    #[ORM\Column(name: 'image_key', length: 255, nullable: true)]
+    private ?string $imageKey = null;
 
     /** @var Collection<int, OnlineCourseTag> */
     #[ORM\ManyToMany(targetEntity: OnlineCourseTag::class)]
@@ -232,6 +241,18 @@ class OnlineCourse
     public function getStorageToken(): string
     {
         return $this->storageToken;
+    }
+
+    public function getImageKey(): ?string
+    {
+        return $this->imageKey;
+    }
+
+    public function setImageKey(?string $imageKey): static
+    {
+        $this->imageKey = $imageKey;
+
+        return $this;
     }
 
     /** @return Collection<int, OnlineCourseTag> */

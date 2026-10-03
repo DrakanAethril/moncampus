@@ -48,36 +48,49 @@ final readonly class FileLibraryWriter
 
         try {
             file_put_contents($path, $bytes);
-            $file = new UploadedFile($path, $fileName, null, null, true);
 
-            $violations = $this->validator->validate($file, new AllowedUpload($this->uploadPolicy->policyFor($fileName)));
-            if ($violations->count() > 0) {
-                throw new FileLibraryWriteRefused((string) $violations->get(0)->getMessage());
-            }
-
-            $size = \strlen($bytes);
-            if (!$this->quota->accepts($owner, $size)) {
-                $refusal = $this->quota->refusal($owner, $size);
-
-                throw new FileLibraryWriteRefused($this->translator->trans($refusal['key'], $refusal['parameters']));
-            }
-
-            $extension = strtolower(pathinfo($fileName, \PATHINFO_EXTENSION));
-            try {
-                $key = $this->uploads->upload(
-                    FileLibraryNodeManager::UPLOAD_PREFIX,
-                    bin2hex(random_bytes(16)).('' === $extension ? '' : '.'.$extension),
-                    $file,
-                );
-            } catch (InfectedUploadException $exception) {
-                throw new FileLibraryWriteRefused($this->translator->trans('fileLibraryWriteInfectedMessage', ['%name%' => $fileName]), 0, $exception);
-            } catch (ClamAvUnavailableException $exception) {
-                throw new FileLibraryWriteRefused($this->translator->trans('fileLibraryWriteScanUnavailableMessage'), 0, $exception);
-            }
-
-            return $this->nodes->createFile($owner, $folder, $fileName, $key, $fileName, $file->getMimeType() ?? 'application/octet-stream', $size);
+            return $this->writeFile($owner, $folder, $fileName, $path);
         } finally {
             @unlink($path);
         }
+    }
+
+    /**
+     * The same, from a file already on disk - what the connector's upload address receives, whose
+     * body may weigh 200 Mo and must never become a PHP string. The file is left where it is: the
+     * caller made it, the caller removes it.
+     *
+     * @throws FileLibraryWriteRefused
+     */
+    public function writeFile(User $owner, ?FileLibraryNode $folder, string $fileName, string $path): FileLibraryNode
+    {
+        $file = new UploadedFile($path, $fileName, null, null, true);
+
+        $violations = $this->validator->validate($file, new AllowedUpload($this->uploadPolicy->policyFor($fileName)));
+        if ($violations->count() > 0) {
+            throw new FileLibraryWriteRefused((string) $violations->get(0)->getMessage());
+        }
+
+        $size = (int) filesize($path);
+        if (!$this->quota->accepts($owner, $size)) {
+            $refusal = $this->quota->refusal($owner, $size);
+
+            throw new FileLibraryWriteRefused($this->translator->trans($refusal['key'], $refusal['parameters']));
+        }
+
+        $extension = strtolower(pathinfo($fileName, \PATHINFO_EXTENSION));
+        try {
+            $key = $this->uploads->upload(
+                FileLibraryNodeManager::UPLOAD_PREFIX,
+                bin2hex(random_bytes(16)).('' === $extension ? '' : '.'.$extension),
+                $file,
+            );
+        } catch (InfectedUploadException $exception) {
+            throw new FileLibraryWriteRefused($this->translator->trans('fileLibraryWriteInfectedMessage', ['%name%' => $fileName]), 0, $exception);
+        } catch (ClamAvUnavailableException $exception) {
+            throw new FileLibraryWriteRefused($this->translator->trans('fileLibraryWriteScanUnavailableMessage'), 0, $exception);
+        }
+
+        return $this->nodes->createFile($owner, $folder, $fileName, $key, $fileName, $file->getMimeType() ?? 'application/octet-stream', $size);
     }
 }

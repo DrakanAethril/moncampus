@@ -241,6 +241,7 @@ final readonly class McpOnlineCourses
             'summary' => $course->getSummary(),
             'estimatedMinutes' => $course->getEstimatedMinutes(),
             'tags' => $this->tagLabels($course),
+            'imageUrl' => $this->origin->imageUrl($course),
             'materials' => array_map(fn (OnlineCourseMaterial $material): array => $this->describeMaterial($material), array_values($course->getMaterials()->toArray())),
             'editUrl' => $this->editUrl($course),
             'publicUrl' => $this->publicUrl($course),

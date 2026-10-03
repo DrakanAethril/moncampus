@@ -85,6 +85,19 @@ security:
             entry_point: App\Security\McpAccessTokenAuthenticator
             custom_authenticators:
                 - App\Security\McpAccessTokenAuthenticator
+        # The upload addresses of the Claude connector (App\Controller\McpUploadController): Claude's
+        # sandbox sends one file with `curl -X PUT`, carrying neither a cookie nor a bearer - the
+        # secret in the URL is the whole of the identity, as for `calendar` below, and it turns into
+        # the teacher who asked for the address (App\Security\McpUploadSlotAuthenticator). Security
+        # is on: the library's voter, the features and the quota answer for that teacher unchanged.
+        # `^/mcp$` above does not match these paths, which is why they need a firewall of their own.
+        mcp_upload:
+            pattern: ^/mcp/uploads/
+            stateless: true
+            provider: app_user_provider
+            user_checker: App\Security\AccountStatusChecker
+            custom_authenticators:
+                - App\Security\McpUploadSlotAuthenticator
         # iCalendar subscriptions to the emploi du temps. A firewall of its own, before `main`,
         # because the caller is Google's or Apple's server fetching a .ics on a schedule: it carries
         # no cookie, and `main` would answer it with a redirect to /login that a calendar client
@@ -194,6 +207,9 @@ security:
         # answered by that firewall's entry point (401 + WWW-Authenticate), which is what an MCP
         # client needs to discover where to sign in. Listed for the reader, like the line above.
         - { path: ^/mcp$, roles: ROLE_USER }
+        # Its upload addresses, on the same reasoning: the `mcp_upload` firewall has made the
+        # teacher the user, and an address that opens nothing never gets here (404 first).
+        - { path: ^/mcp/uploads/, roles: ROLE_USER }
         # The Proxmox console. Admin-only, and stricter than /settings on purpose: staff have no
         # business starting or stopping a hypervisor's machines. Must sit above the '^/,
         # roles: ROLE_USER' catch-all like every other rule here - a rule placed after it never

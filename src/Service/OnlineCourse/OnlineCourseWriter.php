@@ -39,6 +39,7 @@ class OnlineCourseWriter
         private readonly OnlineCourseTagRepository $tags,
         private readonly OnlineCourseTagResolver $tagResolver,
         private readonly OnlineCourseMaterialStore $materials,
+        private readonly OnlineCourseImageStore $images,
         private readonly EntityManagerInterface $entityManager,
         private readonly HelpSlug $slug,
         #[Target('app.library_content')] private readonly HtmlSanitizerInterface $sanitizer,
@@ -168,6 +169,7 @@ class OnlineCourseWriter
     {
         $owner = $course->getOwner();
         $this->materials->removeAll($course);
+        $this->images->remove($course);
         $this->entityManager->remove($course);
         $this->entityManager->flush();
         $this->tags->deleteUnusedForOwner($owner);
