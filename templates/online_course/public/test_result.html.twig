@@ -1,0 +1,37 @@
+{% extends 'layout/public.html.twig' %}
+
+{# The end of a course's test: the score, and nothing else. No question is marked right or wrong
+   and no answer is given - the test sends the reader back to the course when the score is not good
+   enough, it does not teach the answers. At or above the author's threshold, « Bravo »; below it,
+   the course first, then another go. Nothing of it is kept beyond the reader's session. #}
+
+{% block public_title %}{{ 'onlineCourseTestLabel'|trans }} · {{ course.title }}{% endblock %}
+
+{% block public_meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block public_home_url %}{{ path('app_public_courses_page', {handle: page.handle}) }}{% endblock %}
+{% block public_home_label %}{{ page.title }}{% endblock %}
+
+{% block public_main %}
+    {{ include('online_course/public/_test_head.html.twig') }}
+
+    {% set course_url = path('app_public_courses_course', {handle: page.handle, slug: course.slug}) %}
+    {% set again_url = path('app_public_courses_test', {handle: page.handle, slug: course.slug}) %}
+
+    <div class="cm-lp-question">
+        <div class="cm-lp-question__body">
+            <div class="cm-lp-result cm-lp-result--{{ passed ? 'passed' : 'failed' }}" role="status">
+                <span class="cm-lp-result__score">{{ run.scorePercent }} %</span>
+                <span class="cm-lp-result__text">
+                    <b>{{ (passed ? 'onlineCourseTestPassedTitle' : 'onlineCourseTestFailedTitle')|trans }}</b>
+                    <span>{{ (passed ? 'onlineCourseTestPassedText' : 'onlineCourseTestFailedText')|trans({'%percent%': course.testPassPercent}) }}</span>
+                </span>
+            </div>
+
+            <div class="cm-lp-stepnav">
+                <twig:Cm:Button variant="outline" href="{{ again_url }}">{{ 'onlineCourseTestAgainAction'|trans }}</twig:Cm:Button>
+                <twig:Cm:Button variant="primary" href="{{ course_url }}">{{ (passed ? 'onlineCourseTestBackToCourseAction' : 'onlineCourseTestReviewCourseAction')|trans }}</twig:Cm:Button>
+            </div>
+        </div>
+    </div>
+{% endblock %}

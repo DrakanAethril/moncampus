@@ -16,6 +16,7 @@ use App\Service\OnlineCourse\OnlineCourseMaterialRefused;
 use App\Service\OnlineCourse\OnlineCourseMaterialStore;
 use App\Service\OnlineCourse\OnlineCoursePageHandles;
 use App\Service\OnlineCourse\OnlineCoursePublicationRefused;
+use App\Service\OnlineCourse\OnlineCourseTagResolver;
 use App\Service\OnlineCourse\OnlineCourseWriter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DomCrawler\Field\ChoiceFormField;
@@ -88,6 +89,48 @@ class OnlineCoursePublicPagesTest extends FunctionalTestCase
         foreach (['?q=', '?tag=', '?tag=sql', '?tag[]=sql&tag[]=slam', '?view=themes', '?view=', '?tag[x][y]=1'] as $query) {
             $this->assertAnonymous('/courses/tharaud'.$query, 200);
         }
+    }
+
+    public function testAPageShowsItsBannerAndItsCoursesInARowPerTag(): void
+    {
+        $page = $this->page($this->teacher, 'tharaud');
+        $page->setTitle('Les cours de S. Tharaud')->setBannerColor('#204060')->setTitleColor('#FFEE00')->setBannerHeight(9000);
+        $tags = static::getContainer()->get(OnlineCourseTagResolver::class);
+        $joins = $this->course($this->teacher, 'Les jointures SQL', publish: true);
+        $tags->apply($joins, ['SQL', 'Bases de données']);
+        $osi = $this->course($this->teacher, 'Le modèle OSI', publish: true);
+        $tags->apply($osi, ['Réseau']);
+        $this->em->flush();
+
+        $this->assertAnonymous('/courses/tharaud', 200);
+        $crawler = $this->client->getCrawler();
+        // The colours as typed, lower-cased; a height out of bounds kept to the highest.
+        self::assertSame('Les cours de S. Tharaud', trim($crawler->filter('.cm-pub-banner__title')->text()));
+        self::assertStringContainsString('--cm-pub-banner-bg: #204060; --cm-pub-banner-ink: #ffee00; --cm-pub-banner-height: 600px;', (string) $crawler->filter('.cm-pub-banner')->attr('style'));
+        // The recent row first, with every course, then the tags in alphabetical order.
+        self::assertSame(['Récemment mis à jour 2', 'Bases de données 1', 'Réseau 1', 'SQL 1'], $crawler->filter('.cm-pub-row__title')->each(static fn ($title): string => preg_replace('/\s+/', ' ', trim($title->text())) ?? ''));
+        self::assertSame('/courses/tharaud?tag=reseau', $crawler->filter('.cm-pub-row')->eq(2)->filter('.cm-pub-row__all')->attr('href'));
+        // The teacher's page, not the establishment's: no emblem, no footer.
+        self::assertCount(0, $crawler->filter('.cm-pub__medallion, .cm-pub__foot'));
+
+        $this->assertAnonymous('/courses/tharaud?tag=reseau', 200);
+        $content = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('Le modèle OSI', $content);
+        self::assertStringNotContainsString('Les jointures SQL', $content);
+    }
+
+    public function testASignedInVisitorFindsTheirMenuAndTheWayBack(): void
+    {
+        $this->page($this->teacher, 'tharaud');
+        $this->course($this->teacher, 'Les jointures SQL', publish: true);
+
+        $this->client->loginUser($this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'course.reader'));
+        $crawler = $this->client->request('GET', '/courses/tharaud');
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $crawler->filter('.cm-pub-banner__bar .cm-user__avatar'));
+        self::assertCount(1, $crawler->filter('.cm-pub-banner__bar a[href="/logout"]'));
+        self::assertCount(1, $crawler->filter('.cm-pub-banner__bar a[href="/"]'));
     }
 
     public function testAnAddressThePageLeftKeepsRedirecting(): void

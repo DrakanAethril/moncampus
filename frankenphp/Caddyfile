@@ -88,6 +88,22 @@
 	redir /campus-app /campus-app/ 308
 	rewrite /campus-app/ /campus-app/index.html
 
+	# The Claude connector's upload addresses (App\Controller\McpUploadController) take one file as
+	# a raw PUT body, sent with `curl --data-binary` - which labels it
+	# application/x-www-form-urlencoded unless told otherwise. Symfony's Request::createFromGlobals()
+	# hands every PUT to request_parse_body(), so a .zip or a video was decoded as a form: past
+	# 1000 `&` in the bytes it died on « Input variables exceeded 1000 » (max_input_vars) before
+	# routing, and below that it still parsed the whole file for nothing. The body is a file, never a
+	# form: say so here, whatever the client sent, and the controller reads it untouched. Raising
+	# max_input_vars would only have moved the limit a binary file can cross.
+	# Matched on the ORIGINAL path: Caddy runs `rewrite` before `request_header`, so by then
+	# @phpRoute has already turned the path into /index.php and `path /mcp/uploads/*` never matches.
+	@mcpUpload {
+		method PUT
+		vars_regexp {http.request.orig_uri.path} ^/mcp/uploads/
+	}
+	request_header @mcpUpload Content-Type application/octet-stream
+
 	@phpRoute {
 		not path /.well-known/mercure*
 		not file {path}

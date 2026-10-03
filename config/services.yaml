@@ -252,6 +252,19 @@ services:
         arguments:
             $rncpHttpClient: '@app.rncp_http_client'
 
+    # Wikimedia Commons (the virtual board's photograph of the day). Read by app:class-board:photo
+    # only, never while a screen waits. Wikimedia's policy asks every client to name itself and say
+    # where to reach its author.
+    app.commons_http_client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
+        arguments:
+            $defaultOptions: { timeout: 20, max_connect_duration: 10, headers: { 'User-Agent': 'Formatool/1.0 (virtual board photo of the day; https://github.com/DrakanAethril/moncampus)' } }
+
+    App\Service\ClassBoard\CommonsNaturePhotos:
+        arguments:
+            $commonsHttpClient: '@app.commons_http_client'
+
     # --- Courrier pro ---------------------------------------------------------------------
     # The Courrier pro storage and queues live in *another AWS account* than the uploads above
     # (the one carrying SES and the Route 53 zone) and in another region (eu-west-3, imposed by

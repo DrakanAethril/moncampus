@@ -21,15 +21,20 @@ final class QuizQuestionTakeView
 {
     /**
      * @param array<string, float> $numericVariables the values a calculée asks this person for
+     * @param bool                 $shuffleAnswers   every type's answer rows in a random order - a
+     *                                               course's test asks for it, so that a reader
+     *                                               coming back cannot answer by position. « Vrai »
+     *                                               and « Faux » keep their order: swapping them
+     *                                               hides nothing and only confuses
      *
      * @return array<string, mixed>
      */
-    public static function of(QuizQuestion $question, array $numericVariables): array
+    public static function of(QuizQuestion $question, array $numericVariables, bool $shuffleAnswers = false): array
     {
         $answers = $question->getAnswers()->toArray();
         // An "ordre" is answered by rearranging: handing the rows in their stored order would be
         // handing the answer.
-        if (QuestionType::Ordre === $question->getType()) {
+        if (QuestionType::Ordre === $question->getType() || ($shuffleAnswers && QuestionType::VraiFaux !== $question->getType())) {
             shuffle($answers);
         }
 

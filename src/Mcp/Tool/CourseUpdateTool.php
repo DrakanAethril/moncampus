@@ -40,7 +40,7 @@ final readonly class CourseUpdateTool implements McpTool
 
     public function description(): string
     {
-        return 'Modifie la fiche d\'un cours en ligne de l\'enseignant : seuls les champs fournis sont écrits, les autres restent tels quels. « tags » remplace la liste entière ; « imageFileId » (une image de la bibliothèque) remplace la vignette. L\'adresse (« slug ») ne change plus après la première publication. Un cours publié est modifié en ligne immédiatement.';
+        return 'Modifie la fiche d\'un cours en ligne de l\'enseignant : seuls les champs fournis sont écrits, les autres restent tels quels. « tags » remplace la liste entière ; « imageFileId » (une image de la bibliothèque) remplace la vignette ; « quizId » lie le quiz de test (lien « Test » de la carte du cours), null le retire ; « testPassPercent » fixe son seuil de réussite (80 % par défaut). L\'adresse (« slug ») ne change plus après la première publication. Un cours publié est modifié en ligne immédiatement.';
     }
 
     public function inputSchema(): array
@@ -75,7 +75,7 @@ final readonly class CourseUpdateTool implements McpTool
             $written[] = 'imageFileId';
         }
         if ([] === $written) {
-            throw new McpToolException('Aucun champ à modifier : nomme au moins un de « title », « slug », « summary », « description », « estimatedMinutes », « tags », « imageFileId ».');
+            throw new McpToolException('Aucun champ à modifier : nomme au moins un de « title », « slug », « summary », « description », « estimatedMinutes », « tags », « quizId », « testPassPercent », « imageFileId ».');
         }
 
         $this->entityManager->flush();

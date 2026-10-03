@@ -40,7 +40,7 @@ final readonly class CourseCreateTool implements McpTool
 
     public function description(): string
     {
-        return 'Crée un cours en ligne de l\'enseignant, en brouillon : titre (obligatoire), résumé, description en Markdown, tags, durée estimée, vignette (« imageFileId », une image de la bibliothèque). Les supports s\'ajoutent ensuite avec course_material_add ; la mise en ligne se fait avec course_publish. Renvoie le courseId, le lien de la fiche et le lien d\'aperçu.';
+        return 'Crée un cours en ligne de l\'enseignant, en brouillon : titre (obligatoire), résumé, description en Markdown, tags, durée estimée, vignette (« imageFileId », une image de la bibliothèque), quiz de test (« quizId », un quiz de la bibliothèque, ouvert par le lien « Test » de la carte du cours, et son seuil « testPassPercent », 80 % par défaut). Les supports s\'ajoutent ensuite avec course_material_add ; la mise en ligne se fait avec course_publish. Renvoie le courseId, le lien de la fiche et le lien d\'aperçu.';
     }
 
     public function inputSchema(): array

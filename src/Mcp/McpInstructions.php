@@ -27,7 +27,7 @@ final class McpInstructions
         3. Valide si possible le document (`quiz_validate`, `sequence_validate`) avant de créer ; corrige les erreurs signalées et recommence.
         4. Après chaque création, donne à l'enseignant le lien MonCampus renvoyé par l'outil pour qu'il vérifie.
         5. Une évaluation créée n'est visible des étudiants qu'à sa date de visibilité : signale-la toujours à l'enseignant.
-        6. Pour déposer un fichier que tu as produit : `file_create` pour un support rédigé, `file_upload` (base64) pour un petit fichier, `file_upload_url` pour tout autre (PDF, archive .zip, vidéo, image) — tu l'envoies alors toi-même avec `curl -X PUT --data-binary`. Le `fileId` obtenu sert ensuite partout (`course_material_add`, `lesson_log_attach`, vignette d'un cours…).
+        6. Pour déposer un fichier que tu as produit : `file_create` pour un support rédigé, `file_upload` (base64) pour un petit fichier, `file_upload_url` pour tout autre (PDF, archive .zip, vidéo, image) — tu l'envoies alors toi-même avec `curl -X PUT -H "Content-Type: application/octet-stream" --data-binary`. Le `fileId` obtenu sert ensuite partout (`course_material_add`, `lesson_log_attach`, vignette d'un cours…).
 
         Emploi du temps, cahier de texte, progression :
         - Une séance se retrouve avec `timetable_get` (date, classe, matière) : c'est son `sessionId` que prennent `lesson_log_get` et `lesson_log_write`. Si plusieurs séances correspondent, demande laquelle.

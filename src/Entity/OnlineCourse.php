@@ -40,6 +40,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[UniqueEntity(fields: ['owner', 'slug'], message: 'onlineCourseSlugTakenMessage', errorPath: 'slug')]
 class OnlineCourse
 {
+    public const int DEFAULT_TEST_PASS_PERCENT = 80;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -92,6 +94,25 @@ class OnlineCourse
      */
     #[ORM\Column(name: 'image_key', length: 255, nullable: true)]
     private ?string $imageKey = null;
+
+    /**
+     * The quiz a reader may test themselves on, « Test » on the course's card: a quiz of the
+     * author's own library, taken as many times as wanted and recorded nowhere
+     * (App\Service\OnlineCourse\OnlineCourseTestRunner). Written by
+     * App\Service\OnlineCourse\OnlineCourseWriter::linkQuiz() alone, which holds the rule on it.
+     * A quiz deleted from the library leaves the course without a test, never without a course.
+     */
+    #[ORM\ManyToOne(targetEntity: QuizTemplate::class)]
+    #[ORM\JoinColumn(name: 'quiz_template_id', nullable: true, onDelete: 'SET NULL')]
+    private ?QuizTemplate $quizTemplate = null;
+
+    /**
+     * The share of right answers that earns « Bravo » at the end of the test; below it, the reader
+     * is sent back to the course. Set when the quiz is linked; kept when it is unlinked, so that
+     * linking another one does not silently fall back to the default.
+     */
+    #[ORM\Column(name: 'test_pass_percent')]
+    private int $testPassPercent = self::DEFAULT_TEST_PASS_PERCENT;
 
     /** @var Collection<int, OnlineCourseTag> */
     #[ORM\ManyToMany(targetEntity: OnlineCourseTag::class)]
@@ -253,6 +274,39 @@ class OnlineCourse
         $this->imageKey = $imageKey;
 
         return $this;
+    }
+
+    public function getQuizTemplate(): ?QuizTemplate
+    {
+        return $this->quizTemplate;
+    }
+
+    public function setQuizTemplate(?QuizTemplate $quizTemplate): static
+    {
+        $this->quizTemplate = $quizTemplate;
+
+        return $this;
+    }
+
+    public function getTestPassPercent(): int
+    {
+        return $this->testPassPercent;
+    }
+
+    public function setTestPassPercent(int $testPassPercent): static
+    {
+        $this->testPassPercent = max(1, min(100, $testPassPercent));
+
+        return $this;
+    }
+
+    /**
+     * Whether « Test » is offered: a quiz is linked and still has a question. A quiz emptied in the
+     * library since it was linked is a link to nothing, not a test with no question.
+     */
+    public function hasTest(): bool
+    {
+        return null !== $this->quizTemplate && !$this->quizTemplate->getQuestions()->isEmpty();
     }
 
     /** @return Collection<int, OnlineCourseTag> */

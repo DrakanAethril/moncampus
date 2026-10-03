@@ -1,0 +1,13 @@
+{# What a course's test screens share: the trail back to the course and its page, and the title. #}
+<nav class="cm-pub-crumb">
+    <a href="{{ path('app_public_courses_page', {handle: page.handle}) }}">{{ page.title }}</a>
+    <span aria-hidden="true">›</span>
+    <a href="{{ path('app_public_courses_course', {handle: page.handle, slug: course.slug}) }}">{{ course.title }}</a>
+    <span aria-hidden="true">›</span>
+    <a class="current" href="{{ path('app_public_courses_test', {handle: page.handle, slug: course.slug}) }}" aria-current="page">{{ 'onlineCourseTestLabel'|trans }}</a>
+</nav>
+
+<div class="cm-pub-head">
+    <h1 class="cm-pub-head__title">{{ 'onlineCourseTestTitle'|trans({'%course%': course.title}) }}</h1>
+    <p class="cm-pub-head__sub">{{ 'onlineCourseTestNothingRecordedHint'|trans }}</p>
+</div>

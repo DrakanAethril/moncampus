@@ -10,7 +10,10 @@
 
    A trail drawn here opens on the teacher's page, never on « Accueil », which leads to a screen
    that asks for an account: Cm:Breadcrumb is therefore not used, and
-   tests/Functional/BreadcrumbConventionTest.php only looks at the screens of the app layout. #}
+   tests/Functional/BreadcrumbConventionTest.php only looks at the screens of the app layout.
+
+   A teacher's page (online_course/public/page.html.twig) replaces the bar with its own banner and
+   draws no footer: `public_header` and `public_footer` are there for it. Its courses keep both. #}
 
 {% block title %}{% block public_title %}{% endblock %}{% endblock %}
 
@@ -22,6 +25,7 @@
 {% block body %}
     {% set current_theme = app.user ? app.user.themePreference : app.request.cookies.get('theme') %}
     <div class="cm-pub {% block public_modifier %}{% endblock %}">
+        {% block public_header %}
         <header class="cm-pub__bar">
             <a class="cm-pub__brand" href="{% block public_home_url %}{{ path('app_home') }}{% endblock %}">
                 <span class="cm-pub__medallion"><img src="{{ asset('images/embleme-white.png') }}" alt=""></span>
@@ -46,6 +50,7 @@
                 {% endif %}
             </div>
         </header>
+        {% endblock %}
 
         {% for label, messages in app.flashes %}
             {% for message in messages %}
@@ -57,6 +62,7 @@
             {% block public_main %}{% endblock %}
         </main>
 
+        {% block public_footer %}
         <footer class="cm-pub__foot">
             <span>Institution Beaupeyrat</span>
             {% set source_url = public_source_url() %}
@@ -64,5 +70,6 @@
                 <a href="{{ source_url }}" target="_blank" rel="noopener">{{ 'publicShellSourceLink'|trans }}</a>
             {% endif %}
         </footer>
+        {% endblock %}
     </div>
 {% endblock %}

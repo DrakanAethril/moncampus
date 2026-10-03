@@ -41,7 +41,7 @@ export default class extends Controller {
         this.field = field;
         this.trigger = event.currentTarget;
         // The empty value is the placeholder, not a choice: the way to pick nothing is to not open
-        // this modal at all.
+        // this modal at all - or, on an optional field, its « Retirer » button.
         this.allowed = new Set(Array.from(select.options).map((option) => option.value).filter((value) => value !== ''));
 
         this.searchTarget.value = '';
@@ -96,6 +96,21 @@ export default class extends Controller {
         this.sync(this.field);
 
         this.close(event);
+    }
+
+    // An optional field's « Retirer »: back to the placeholder, announced like a choice.
+    clear(event) {
+        event.preventDefault();
+
+        const field = event.currentTarget.closest('[data-picker-field]');
+        const select = field === null ? null : field.querySelector('select');
+        if (select === null) {
+            return;
+        }
+
+        select.value = '';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        this.sync(field);
     }
 
     toggle(event) {

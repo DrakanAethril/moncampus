@@ -66,6 +66,9 @@ final class PlatformSchedule implements ScheduleProviderInterface
         // from each other so the two never start in the same minute.
         'app:proxmox:check' => '*/5 * * * *',
         'app:proxmox:scan-addresses' => '2-59/5 * * * *',
+        // The virtual board's photograph of the day: fetched by the first pass after midnight, the
+        // others only clean - an hour later is the retry when Commons did not answer.
+        'app:class-board:photo' => '7 * * * *',
         // The night, spread so each pass has the database to itself.
         'app:mail:reconcile' => '30 2 * * *',
         'app:uploads:purge' => '0 3 * * *',

@@ -17,8 +17,13 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * A teacher's public page, `/courses/{handle}` (design/validated/cours-en-ligne.md, §5): their
- * published courses, searched, filtered by tag or grouped by tag. Read without an account.
+ * A teacher's public page, `/courses/{handle}` (design/validated/cours-en-ligne.md, §5): under the
+ * teacher's banner, their published courses in rows - the most recently updated first, then one
+ * row per tag in alphabetical order. Read without an account.
+ *
+ * Each row's « Voir tout » is the same address with a query: `?tag=sql` for a tag's courses,
+ * `?view=recent` for all of them; a search is `?q=`. Those three show a full list instead of the
+ * rows, so every state of the page still has an address that can be handed out.
  *
  * **There is deliberately nothing above it.** No route lists the teachers and `/courses` alone
  * matches nothing: a common catalogue was proposed and refused, and a page is reached by the link
@@ -50,8 +55,9 @@ class PublicPageController extends AbstractController
 
         $search = QueryValue::trimmed($request, 'q');
         $tagKeys = self::tagKeys($request);
-        $courses = $publicPage->filter($all, $search, $tagKeys);
-        $byTheme = 'themes' === QueryValue::trimmed($request, 'view');
+        $rows = $publicPage->groups($all);
+        $showRecent = 'recent' === QueryValue::trimmed($request, 'view');
+        $listed = '' !== $search || [] !== $tagKeys || $showRecent;
 
         // The teacher's learning paths, for a signed-in visitor the establishment lets follow them -
         // and nothing about them for anybody else: not a tab, not a count.
@@ -62,10 +68,12 @@ class PublicPageController extends AbstractController
             'page' => $page,
             'isOwner' => $isOwner,
             'total' => \count($all),
-            'courses' => $courses,
-            'groups' => $byTheme ? $publicPage->groups($courses) : [],
-            'byTheme' => $byTheme,
-            'chips' => $publicPage->chips($all, $tagKeys),
+            'all' => $all,
+            'rows' => $rows,
+            'listed' => $listed,
+            'courses' => $listed ? $publicPage->filter($all, $search, $tagKeys) : [],
+            // What the list is named after: the tags asked for, by the labels the rows show.
+            'listedTags' => array_values(array_filter($rows, static fn (array $row): bool => \in_array($row['key'], $tagKeys, true))),
             'search' => $search,
             'tagKeys' => $tagKeys,
             'learningPaths' => $learningPaths,

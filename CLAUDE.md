@@ -92,6 +92,7 @@ asked — made the second run throw « A lock is already in place ».
 | `app:eco:read-terrain` | **Scheduled every minute.** Asks the IGN's Géoplateforme what e-CO's statistics read: the terrain analysis of the oldest parcours waiting for one (button « Analyser le terrain », last flag located, or a race on a parcours never analysed), then the terrain altitude / path / wood of every GPS fix of the oldest closed race not yet read. A Géoplateforme that does not answer is a *warning* and a retry next minute, never a non-zero exit. See `docs/production.md`, « e-CO and the IGN's Géoplateforme » |
 | `app:rncp:fetch` | **Scheduled every minute.** Serves the « Récupérer chez France compétences » requests of the portfolio's Référentiels tab: finds the day's `export-fiches-rncp-v4-1-*.zip` through the data.gouv.fr API (no URL written down), downloads it once into `var/rncp/`, streams through it (`XMLReader` over `zip://`) and writes the fiche into the `RncpImport`. Nothing requested, nothing downloaded. A network failure is « En échec » on screen, never a non-zero exit. `--file=` reads a local export |
 | `app:rncp:check` | **Scheduled Mondays 05:30.** Rereads each référentiel's RNCP fiche - still active, end of registration, a fiche that now replaces it - into `Referential::$rncpWatch`; the Référentiels screen turns a change into a banner, logged at *warning*. Never rewrites a référentiel: a new fiche is a new version |
+| `app:class-board:photo` | **Scheduled every hour at :07.** The virtual board's photograph of the day (« Nature », the default background): the first pass of the day draws a photograph from Wikimedia Commons' featured nature categories (`App\Service\ClassBoard\CommonsNaturePhotos`; `CommonsPhoto::fromImageInfo()` is the whole rule - camera EXIF, 4:3 to 2:1, CC0/PD/BY/BY-SA), copies it into the uploads bucket and records it (`ClassBoardPhoto`), the others only clean: bytes deleted two days after their day, rows kept so nothing repeats within two years. A Commons that does not answer is a *warning*, never a non-zero exit. `--replace` draws another one for today |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
 ## Runtime architecture (Docker layer)
@@ -284,7 +285,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   **Files reach the platform, the platform never fetches them**: `file_upload` takes a small
   file as base64; `file_upload_url` hands out an address (`/mcp/uploads/{secret}`,
   `App\Entity\McpUploadSlot`) that Claude's sandbox sends **one** file to with
-  `curl -X PUT --data-binary`. The address is bound beforehand to the teacher, the connection, the
+  `curl -X PUT -H "Content-Type: application/octet-stream" --data-binary` - Caddy forces that type on the path anyway (`@mcpUpload`): curl's default form type made `Request::createFromGlobals()` decode the file as form fields and die on `max_input_vars`. The address is bound beforehand to the teacher, the connection, the
   folder, the name, the exact size and an optional SHA-256; it lives 15 minutes, serves once
   (spent by an atomic UPDATE, a refused send spends it too) and dies with its connection. Its own
   `mcp_upload` firewall turns the secret into the teacher (`McpUploadSlotAuthenticator`, the
@@ -353,6 +354,14 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     whoever creates it; publishing asks for a title, a summary, a material and a page with an
     address (`OnlineCourseWriter::publishRefusals()` names all that is missing); a published course
     is taken offline before it is deleted.
+  - **A teacher's page is theirs, not the establishment's**: their banner (`OnlineCoursePage`'s
+    title, colours, height in px and optional picture - `OnlineCourseImageStore` - drawn by
+    `online_course/_page_banner.html.twig` for the page and for the « Ma page » preview alike)
+    replaces the shell's bar; no emblem, no teacher name, no footer. The courses come in rows -
+    « Récemment mis à jour », then one per tag in alphabetical order - each cut to one line by
+    `online_course_row_controller.js`; « Voir tout » is `?tag=` / `?view=recent` on the same
+    address. A signed-in visitor gets the app's own user menu (`layout/_user_menu.html.twig`,
+    shared with the app shell, which is why it takes `compact` and `impersonation`).
   - **The page's address changes at any time**, during diffusion included: every address a page
     carried keeps its row (`OnlineCoursePageHandle`, UNIQUE), so the old one answers a 301 and is
     never given to another teacher (`OnlineCoursePageHandles`). It is never the login. A course's own
@@ -363,6 +372,17 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     bytes and never the address of the material; the revision before the live one is kept (« Revenir
     à la révision »), older ones go to the deferred purge. A file picked from the bibliothèque is
     **copied** here, unlike everywhere else where a link is a reference (`OnlineCourseMaterialStore`).
+  - **A course may carry a test quiz** (`OnlineCourse::$quizTemplate`, spec §18): one quiz of the
+    author's own library with a question (`OnlineCourseWriter::linkQuiz()`, the screen's picker and
+    the connector's `quizId` alike), offered as « Test » on the public card. Taken at
+    `/courses/{handle}/{slug}/test` by whoever may read the course, **without an account too**, as
+    often as wanted: every question, questions and answers shuffled at each go, and **at the end the
+    success rate alone** - never which question was right, never an answer, so that a low score
+    sends the reader back to the course rather than to the answers. « Bravo » from the author's
+    threshold (`OnlineCourse::$testPassPercent`, 80 % by default, `testPassPercent` on the
+    connector), « Revoir le cours » below. **Recorded nowhere**: the run lives in the reader's
+    session (`OnlineCourseTestRunner`). The card is no longer an `<a>`: its title's link is
+    stretched over it, so « Test » can be a link of its own.
   - **A course has a picture** (`OnlineCourse::$imageKey`, `OnlineCourseImageStore`): JPEG, PNG or
     WebP, 5 Mo, under `online-courses/{course}/{token}/image/` with a new random name at each
     change (no stale CDN copy), a library file copied like a material. Shown on the public card,
@@ -632,6 +652,7 @@ New per-object rules belong in a Voter, not inline in a controller.
 | Google Maps (JavaScript API) | « Trouver une entreprise » and the vivier's fiches: the map, loaded **only after the visitor agrees** (`google_map_controller.js`, cookie `google_maps_consent`); itineraries are plain links, the billed Directions API is never called. An empty key draws no map | `GOOGLE_MAPS_API_KEY` |
 | IGN Géoplateforme | e-CO: map tiles (browser and phone, WMTS) and terrain readings (server: altimetry, BD TOPO WFS, pedestrian routing, reverse geocoding). « Trouver une entreprise »: forward geocoding of a commune (never an address) and of the school. Open, keyless, Etalab 2.0 - credit the IGN | — |
 | data.gouv.fr (France compétences) | Portfolio: the RNCP fiche of a référentiel, read from the daily open-data export by `app:rncp:fetch` / `app:rncp:check` - never during a request. Open, keyless, Licence Ouverte 2.0 | — |
+| Wikimedia Commons | The virtual board's photograph of the day, fetched by `app:class-board:photo` only and served from the uploads bucket - classroom browsers never call Wikimedia. Open, keyless; CC0/PD/CC BY/CC BY-SA, credited on the board | — |
 | claude.ai (Anthropic) | Calls the Claude connector (`/mcp`, OAuth) from `160.79.104.0/21` — inbound only, the app never calls Anthropic | — |
 
 `.env.prod.local` **on the development machine holds decoy values.** Never infer the real production

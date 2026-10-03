@@ -7,6 +7,8 @@ namespace App\Controller\OnlineCourse;
 use App\Attribute\RequiresFeature;
 use App\Entity\FileLibraryNode;
 use App\Entity\OnlineCourse;
+use App\Entity\QuizFolder;
+use App\Entity\QuizTemplate;
 use App\Enum\Feature;
 use App\Enum\OnlineCourseMaterialKind;
 use App\Enum\OnlineCourseStatus;
@@ -15,11 +17,14 @@ use App\Repository\LearningPathRepository;
 use App\Repository\OnlineCoursePageRepository;
 use App\Repository\OnlineCourseRepository;
 use App\Repository\OnlineCourseTagRepository;
+use App\Repository\QuizFolderRepository;
 use App\Security\Voter\OnlineCourseVoter;
 use App\Service\FormValue;
+use App\Service\LibraryPickerTree;
 use App\Service\OnlineCourse\OnlineCourseImageStore;
 use App\Service\OnlineCourse\OnlineCourseMaterialRefused;
 use App\Service\OnlineCourse\OnlineCoursePublicationRefused;
+use App\Service\OnlineCourse\OnlineCourseQuizRefused;
 use App\Service\OnlineCourse\OnlineCourseTagResolver;
 use App\Service\OnlineCourse\OnlineCourseWriter;
 use App\Service\QueryValue;
@@ -87,7 +92,7 @@ class AuthoringController extends AbstractController
     }
 
     #[Route(path: '/tools/online-courses/new', name: 'app_online_courses_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, OnlineCourseWriter $writer, EntityManagerInterface $entityManager, OnlineCourseImageStore $images, TranslatorInterface $translator): Response
+    public function new(Request $request, OnlineCourseWriter $writer, EntityManagerInterface $entityManager, OnlineCourseImageStore $images, TranslatorInterface $translator, QuizFolderRepository $folders, LibraryPickerTree $pickerTree): Response
     {
         $user = $this->currentUser();
         $course = new OnlineCourse($user, '', '');
@@ -97,6 +102,7 @@ class AuthoringController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $writer->describe($course, $course->getDescription());
             $writer->tag($course, OnlineCourseTagResolver::labelsOf(FormValue::string($form, 'tags')));
+            $this->applyQuiz($form, $course, $writer, $translator);
             $entityManager->persist($course);
             $entityManager->flush();
             // A second flush: the picture is filed under the course's id, which the first one gave.
@@ -111,11 +117,12 @@ class AuthoringController extends AbstractController
         return $this->render('online_course/authoring/new.html.twig', [
             'form' => $form,
             'course' => $course,
+            'quizPickerTree' => $this->quizPickerTree($form, $folders, $pickerTree),
         ]);
     }
 
     #[Route(path: '/tools/online-courses/{id}', name: 'app_online_courses_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
-    public function edit(int $id, Request $request, OnlineCourseRepository $courses, OnlineCoursePageRepository $pages, OnlineCourseTagRepository $tags, OnlineCourseWriter $writer, EntityManagerInterface $entityManager, LearningPathRepository $paths, OnlineCourseImageStore $images, TranslatorInterface $translator): Response
+    public function edit(int $id, Request $request, OnlineCourseRepository $courses, OnlineCoursePageRepository $pages, OnlineCourseTagRepository $tags, OnlineCourseWriter $writer, EntityManagerInterface $entityManager, LearningPathRepository $paths, OnlineCourseImageStore $images, TranslatorInterface $translator, QuizFolderRepository $folders, LibraryPickerTree $pickerTree): Response
     {
         $course = $this->findCourse($id, $courses);
         $form = $this->createForm(OnlineCourseType::class, $course);
@@ -125,6 +132,7 @@ class AuthoringController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $writer->describe($course, $course->getDescription());
             $writer->tag($course, OnlineCourseTagResolver::labelsOf(FormValue::string($form, 'tags')));
+            $this->applyQuiz($form, $course, $writer, $translator);
             $this->applyImage($form, $course, $images, $translator);
             $entityManager->flush();
             $tags->deleteUnusedForOwner($course->getOwner());
@@ -147,6 +155,7 @@ class AuthoringController extends AbstractController
             'publishRefusals' => $writer->publishRefusals($course),
             'kinds' => self::offeredKinds(),
             'paths' => $paths->findUsingCourse($course),
+            'quizPickerTree' => $this->quizPickerTree($form, $folders, $pickerTree),
         ]);
     }
 
@@ -251,6 +260,60 @@ class AuthoringController extends AbstractController
         } elseif (true === $form->get('removeImage')->getData()) {
             $images->remove($course);
         }
+    }
+
+    /**
+     * The test quiz chosen on the card - or none - and its threshold. A refusal is a flash, like the picture's: the
+     * field's choices already hold the writer's rule, so only a quiz emptied between the display and
+     * the submit gets here, and the rest of the card is still worth saving.
+     *
+     * @param FormInterface<mixed> $form
+     */
+    private function applyQuiz(FormInterface $form, OnlineCourse $course, OnlineCourseWriter $writer, TranslatorInterface $translator): void
+    {
+        $quiz = $form->get('quiz')->getData();
+        // Left empty, the threshold is the default rather than a refusal: it is a detail of the test.
+        $passPercent = $form->get('testPassPercent')->getData();
+
+        try {
+            $writer->linkQuiz($course, $quiz instanceof QuizTemplate ? $quiz : null, \is_int($passPercent) ? $passPercent : OnlineCourse::DEFAULT_TEST_PASS_PERCENT);
+        } catch (OnlineCourseQuizRefused $refused) {
+            $this->addFlash('error', $translator->trans($refused->getMessage(), $refused->parameters));
+        }
+    }
+
+    /**
+     * The quiz library as the picker modal walks it - the field's own choices in the author's own
+     * folders, so the modal cannot offer what the field would refuse.
+     *
+     * @param FormInterface<mixed> $form
+     *
+     * @return array{folders: list<array<string, mixed>>, items: list<array<string, mixed>>}
+     */
+    private function quizPickerTree(FormInterface $form, QuizFolderRepository $folders, LibraryPickerTree $pickerTree): array
+    {
+        /** @var list<QuizTemplate> $quizzes */
+        $quizzes = $form->get('quiz')->getConfig()->getOption('choices');
+
+        return $pickerTree->build(
+            array_map(
+                static fn (QuizFolder $folder): array => [
+                    'id' => (int) $folder->getId(),
+                    'parentId' => $folder->getParent()?->getId(),
+                    'name' => $folder->getName(),
+                ],
+                $folders->findAllFor($this->currentUser()),
+            ),
+            array_map(
+                static fn (QuizTemplate $quiz): array => [
+                    'id' => (int) $quiz->getId(),
+                    'folderId' => $quiz->getFolder()?->getId(),
+                    'label' => $quiz->getName() ?? '',
+                    'count' => $quiz->getQuestions()->count(),
+                ],
+                $quizzes,
+            ),
+        );
     }
 
     /**

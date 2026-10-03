@@ -44,6 +44,10 @@ class BucketWritePathsTest extends TestCase
         // one thing it writes unscanned is a page of text the Claude connector composed, which is
         // not a file anybody handed over.
         \App\Service\OnlineCourse\OnlineCourseBundlePublisher::class,
+        // The sixth: the virtual board's photograph of the day, copied from Wikimedia Commons by a
+        // scheduled command (App\Command\ClassBoardPhotoCommand). Nobody hands it over, but it is
+        // bytes from elsewhere all the same - it scans before it writes.
+        \App\Service\ClassBoard\ClassBoardPhotoOfTheDay::class,
     ];
 
     /**

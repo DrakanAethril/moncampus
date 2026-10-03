@@ -13,7 +13,10 @@
 {% block title %}{{ board.name }}{% endblock %}
 
 {% block body %}
+{# « Nature » is the photograph of the day (App\Service\ClassBoard\ClassBoardPhotoOfTheDay), stored
+   with the uploads; without one yet, app.css falls back to the photograph shipped with the app. #}
 <div class="cm-cb" data-background="{{ board.background.value }}"
+     {% if photo and photo.storageKey %}style="--cb-nature-photo: url('{{ file_url(photo.storageKey)|e('css') }}')"{% endif %}
      data-controller="class-board"
      data-class-board-revision-value="{{ board.revision }}"
      data-class-board-csrf-value="{{ csrf_token('class_board') }}"
@@ -35,6 +38,16 @@
             {% for view in widgets %}
                 {% include 'class_board/_widget.html.twig' %}
             {% endfor %}
+
+            {# The credit the licence asks for, under every widget. Shown on « Nature » only. #}
+            {% if photo and photo.storageKey %}
+                <p class="cm-cb__credit">
+                    {{ 'classBoardPhotoCreditLabel'|trans }}
+                    <a href="{{ photo.sourceUrl }}" target="_blank" rel="noopener noreferrer">{{ photo.author|length > 60 ? photo.author|slice(0, 59) ~ '…' : photo.author }}</a>
+                    · {% if photo.licenseUrl %}<a href="{{ photo.licenseUrl }}" target="_blank" rel="noopener noreferrer">{{ photo.licenseName }}</a>{% else %}{{ photo.licenseName }}{% endif %}
+                    · Wikimedia Commons
+                </p>
+            {% endif %}
 
             <div class="cm-cb__bar" data-class-board-target="chrome">
                 {% if board.program %}
@@ -68,7 +81,9 @@
             <div class="cm-cb__backgrounds" data-class-board-target="backgrounds" hidden>
                 {% for background in backgrounds %}
                     <div>
-                        <button type="button" style="background: {{ background.swatch }}"
+                        {# background-color, not the shorthand: app.css draws the photograph's
+                           swatch as an image over it. #}
+                        <button type="button" style="background-color: {{ background.swatch }}"
                                 aria-pressed="{{ background == board.background ? 'true' : 'false' }}"
                                 aria-label="{{ background.labelKey|trans }}"
                                 data-background="{{ background.value }}"

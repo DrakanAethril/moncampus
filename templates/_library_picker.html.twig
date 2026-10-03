@@ -11,6 +11,9 @@
    <select>, and library_picker_controller.js reads it there before opening: rendering the tree once
    per field would be the same list three times over, and three chances for them to disagree.
 
+   The modal usually sits inside the screen's form: Enter in its search field is held back, or the
+   browser's implicit submission would post the form in the middle of a choice.
+
    Parameters: `tree` from App\Service\LibraryPickerTree, `title`, `search_placeholder`,
    `count_label` the unit an item counts in (« questions »), `empty_message` for a library with
    nothing in it. #}
@@ -63,7 +66,7 @@
         <div class="cm-picker__search">
             <input type="search" class="form-control" autocomplete="off"
                    placeholder="{{ search_placeholder|default('libraryPickerSearchPlaceholder'|trans) }}"
-                   data-library-picker-target="search" data-action="input->library-picker#search">
+                   data-library-picker-target="search" data-action="input->library-picker#search keydown.enter->library-picker#search:prevent">
         </div>
         <div class="cm-picker__body">
             <ul class="cm-picker__tree" data-library-picker-target="tree">

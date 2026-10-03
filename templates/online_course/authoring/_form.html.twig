@@ -60,3 +60,31 @@
     <small class="form-hint">{{ 'onlineCourseTagsFieldHelp'|trans }}</small>
 </div>
 {{ form_row(form.estimatedMinutes) }}
+{# The test « Test » opens on the course's card: a quiz of the author's library, chosen in the
+   library's own picker (templates/_library_picker_field.html.twig), and optional - « Retirer » takes
+   it off. The picker's <select> stays the field. #}
+<div class="mb-3" data-controller="library-picker">
+    {{ form_label(form.quiz) }}
+    {% include '_library_picker_field.html.twig' with {
+        field: form.quiz,
+        placeholder: 'onlineCourseQuizPlaceholder'|trans,
+        clearable: true,
+    } only %}
+    {{ form_help(form.quiz) }}
+    {{ form_errors(form.quiz) }}
+    <div class="cm-oc-test-threshold">
+        {{ form_label(form.testPassPercent) }}
+        <div class="cm-oc-test-threshold__input">
+            {{ form_widget(form.testPassPercent) }}<span aria-hidden="true">%</span>
+        </div>
+        {{ form_help(form.testPassPercent) }}
+        {{ form_errors(form.testPassPercent) }}
+    </div>
+    {% include '_library_picker.html.twig' with {
+        tree: quizPickerTree,
+        title: 'quizPickerTitle'|trans,
+        search_placeholder: 'quizPickerSearchPlaceholder'|trans,
+        count_label: 'quizQuestionsCountLabel'|trans,
+        empty_message: 'onlineCourseQuizPickerEmptyMessage'|trans,
+    } only %}
+</div>

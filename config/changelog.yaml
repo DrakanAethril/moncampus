@@ -26,6 +26,22 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.03.3'
+      date: '2026-10-03'
+      summary: "Les cours en ligne, toujours en essai, peuvent proposer un quiz pour se tester, et la page de chaque enseignant prend un bandeau à ses couleurs. Le tableau virtuel s'ouvre chaque jour sur une nouvelle photo de nature."
+      entries:
+          - type: modification
+            title: "Cours en ligne, en essai : un quiz de test sur un cours, à passer sans compte et autant de fois qu'on veut"
+            detail: "Questions et réponses sont mélangées à chaque essai et seul le pourcentage de réussite s'affiche : « Bravo ! » au-dessus du seuil choisi par l'enseignant, une invitation à revoir le cours en dessous. Rien n'est enregistré."
+          - type: modification
+            title: "Cours en ligne, en essai : un bandeau personnalisable sur la page de l'enseignant, ses cours présentés en lignes par tag, et une page de cours allégée"
+          - type: nouveaute
+            title: "Tableau virtuel : une photo de nature nouvelle chaque jour, en fond par défaut"
+            detail: "Les photographies, sous licence libre, viennent de Wikimedia Commons ; leur auteur est crédité sur le tableau."
+          - type: modification
+            title: "Connecteur Claude : associer un quiz de test à un cours et régler son seuil de réussite"
+          - type: fix
+            title: "Connecteur Claude : le dépôt d'un fichier volumineux, archive ou vidéo, n'échoue plus"
     - version: '2026.10.03.2'
       date: '2026-10-03'
       summary: "Les cours en ligne, toujours en essai, se présentent avec une vignette. Le connecteur Claude dépose des fichiers volumineux dans la bibliothèque sans les recopier."
