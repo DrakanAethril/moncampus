@@ -263,7 +263,7 @@ class AuthoringController extends AbstractController
     }
 
     /**
-     * The test quiz chosen on the card - or none. A refusal is a flash, like the picture's: the
+     * The test quiz chosen on the card - or none - and its threshold. A refusal is a flash, like the picture's: the
      * field's choices already hold the writer's rule, so only a quiz emptied between the display and
      * the submit gets here, and the rest of the card is still worth saving.
      *
@@ -272,9 +272,11 @@ class AuthoringController extends AbstractController
     private function applyQuiz(FormInterface $form, OnlineCourse $course, OnlineCourseWriter $writer, TranslatorInterface $translator): void
     {
         $quiz = $form->get('quiz')->getData();
+        // Left empty, the threshold is the default rather than a refusal: it is a detail of the test.
+        $passPercent = $form->get('testPassPercent')->getData();
 
         try {
-            $writer->linkQuiz($course, $quiz instanceof QuizTemplate ? $quiz : null);
+            $writer->linkQuiz($course, $quiz instanceof QuizTemplate ? $quiz : null, \is_int($passPercent) ? $passPercent : OnlineCourse::DEFAULT_TEST_PASS_PERCENT);
         } catch (OnlineCourseQuizRefused $refused) {
             $this->addFlash('error', $translator->trans($refused->getMessage(), $refused->parameters));
         }

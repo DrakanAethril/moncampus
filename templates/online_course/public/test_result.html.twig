@@ -1,8 +1,9 @@
 {% extends 'layout/public.html.twig' %}
 
-{# The end of a course's test: the score and the correction - each question asked, right or wrong,
-   with its explanation. No threshold: a test opens nothing, it tells the reader where they stand.
-   Nothing of it is kept beyond the reader's session. #}
+{# The end of a course's test: the score, and nothing else. No question is marked right or wrong
+   and no answer is given - the test sends the reader back to the course when the score is not good
+   enough, it does not teach the answers. At or above the author's threshold, « Bravo »; below it,
+   the course first, then another go. Nothing of it is kept beyond the reader's session. #}
 
 {% block public_title %}{{ 'onlineCourseTestLabel'|trans }} · {{ course.title }}{% endblock %}
 
@@ -14,36 +15,22 @@
 {% block public_main %}
     {{ include('online_course/public/_test_head.html.twig') }}
 
+    {% set course_url = path('app_public_courses_course', {handle: page.handle, slug: course.slug}) %}
+    {% set again_url = path('app_public_courses_test', {handle: page.handle, slug: course.slug}) %}
+
     <div class="cm-lp-question">
         <div class="cm-lp-question__body">
-            <div class="cm-lp-result cm-lp-result--neutral">
+            <div class="cm-lp-result cm-lp-result--{{ passed ? 'passed' : 'failed' }}" role="status">
                 <span class="cm-lp-result__score">{{ run.scorePercent }} %</span>
                 <span class="cm-lp-result__text">
-                    <b>{{ 'learningPathResultCountLabel'|trans({'%correct%': run.correctCount, '%total%': run.questionCount}) }}</b>
+                    <b>{{ (passed ? 'onlineCourseTestPassedTitle' : 'onlineCourseTestFailedTitle')|trans }}</b>
+                    <span>{{ (passed ? 'onlineCourseTestPassedText' : 'onlineCourseTestFailedText')|trans({'%percent%': course.testPassPercent}) }}</span>
                 </span>
             </div>
 
-            {% if run.questionCount > 0 %}
-                <ol class="cm-lp-correction">
-                    {% for drawn in run.questions %}
-                        <li class="cm-lp-correction__item cm-lp-correction__item--{{ drawn.correct ? 'right' : 'wrong' }}">
-                            <span class="cm-lp-correction__mark">
-                                <twig:ux:icon name="{{ drawn.correct ? 'check' : 'x' }}" width="14" height="14"/>
-                            </span>
-                            <span class="cm-lp-correction__text">
-                                <b>{{ drawn.label ?: 'learningPathQuestionUntitledLabel'|trans }}</b>
-                                {% if explanations[drawn.id] is defined %}
-                                    <span>{{ explanations[drawn.id] }}</span>
-                                {% endif %}
-                            </span>
-                        </li>
-                    {% endfor %}
-                </ol>
-            {% endif %}
-
             <div class="cm-lp-stepnav">
-                <twig:Cm:Button variant="outline" href="{{ path('app_public_courses_course', {handle: page.handle, slug: course.slug}) }}">{{ 'onlineCourseTestBackToCourseAction'|trans }}</twig:Cm:Button>
-                <twig:Cm:Button variant="primary" href="{{ path('app_public_courses_test', {handle: page.handle, slug: course.slug}) }}">{{ 'onlineCourseTestAgainAction'|trans }}</twig:Cm:Button>
+                <twig:Cm:Button variant="outline" href="{{ again_url }}">{{ 'onlineCourseTestAgainAction'|trans }}</twig:Cm:Button>
+                <twig:Cm:Button variant="primary" href="{{ course_url }}">{{ (passed ? 'onlineCourseTestBackToCourseAction' : 'onlineCourseTestReviewCourseAction')|trans }}</twig:Cm:Button>
             </div>
         </div>
     </div>

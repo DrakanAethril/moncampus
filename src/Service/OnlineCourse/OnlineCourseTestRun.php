@@ -14,11 +14,10 @@ namespace App\Service\OnlineCourse;
  * pure so that it can be tested without a session (App\Service\OnlineCourse\OnlineCourseTestRunner
  * stores it).
  *
- * The draw is frozen like a path attempt's (App\Entity\LearningPathQuizAttempt): the label of each
- * question is copied at the draw, so the correction reads what was asked even if the quiz is edited
- * in the library meanwhile.
+ * It keeps ids and verdicts and nothing else: the end of a test shows the score alone, never which
+ * question was right, so there is no correction to freeze.
  *
- * @phpstan-type DrawnQuestion array{id: int, label: string, answered: bool, correct: bool}
+ * @phpstan-type DrawnQuestion array{id: int, answered: bool, correct: bool}
  * @phpstan-type StoredRun array{courseId: int, quizId: int, seed: int, questions: list<DrawnQuestion>, finished: bool}
  */
 final class OnlineCourseTestRun
@@ -36,13 +35,13 @@ final class OnlineCourseTestRun
     }
 
     /**
-     * @param array<array-key, array{id: int, label: string}> $drawn the questions, in the order they will be asked
+     * @param array<array-key, int> $questionIds the questions, in the order they will be asked
      */
-    public static function draw(int $courseId, int $quizId, array $drawn, int $seed): self
+    public static function draw(int $courseId, int $quizId, array $questionIds, int $seed): self
     {
         return new self($courseId, $quizId, $seed, array_values(array_map(
-            static fn (array $question): array => ['id' => $question['id'], 'label' => $question['label'], 'answered' => false, 'correct' => false],
-            $drawn,
+            static fn (int $id): array => ['id' => $id, 'answered' => false, 'correct' => false],
+            $questionIds,
         )), false);
     }
 
@@ -59,11 +58,11 @@ final class OnlineCourseTestRun
 
         $questions = [];
         foreach ($stored['questions'] as $question) {
-            if (!\is_array($question) || !\is_int($question['id'] ?? null) || !\is_string($question['label'] ?? null)
+            if (!\is_array($question) || !\is_int($question['id'] ?? null)
                 || !\is_bool($question['answered'] ?? null) || !\is_bool($question['correct'] ?? null)) {
                 return null;
             }
-            $questions[] = ['id' => $question['id'], 'label' => $question['label'], 'answered' => $question['answered'], 'correct' => $question['correct']];
+            $questions[] = ['id' => $question['id'], 'answered' => $question['answered'], 'correct' => $question['correct']];
         }
 
         return new self($stored['courseId'], $stored['quizId'], $stored['seed'], $questions, $stored['finished']);
@@ -79,12 +78,6 @@ final class OnlineCourseTestRun
             'questions' => $this->questions,
             'finished' => $this->finished,
         ];
-    }
-
-    /** @return list<DrawnQuestion> */
-    public function questions(): array
-    {
-        return $this->questions;
     }
 
     public function questionId(int $index): ?int

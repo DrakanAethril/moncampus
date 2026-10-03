@@ -72,6 +72,14 @@
     } only %}
     {{ form_help(form.quiz) }}
     {{ form_errors(form.quiz) }}
+    <div class="cm-oc-test-threshold">
+        {{ form_label(form.testPassPercent) }}
+        <div class="cm-oc-test-threshold__input">
+            {{ form_widget(form.testPassPercent) }}<span aria-hidden="true">%</span>
+        </div>
+        {{ form_help(form.testPassPercent) }}
+        {{ form_errors(form.testPassPercent) }}
+    </div>
     {% include '_library_picker.html.twig' with {
         tree: quizPickerTree,
         title: 'quizPickerTitle'|trans,

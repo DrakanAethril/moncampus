@@ -117,12 +117,13 @@ class OnlineCourseWriter
     }
 
     /**
-     * Links the quiz « Test » launches, or unlinks it with null. Linking one to a published course
-     * puts it online at once: whoever may read the course may take it.
+     * Links the quiz « Test » launches, or unlinks it with null, with the share of right answers
+     * that earns « Bravo ». Linking one to a published course puts it online at once: whoever may
+     * read the course may take it.
      *
      * @throws OnlineCourseQuizRefused
      */
-    public function linkQuiz(OnlineCourse $course, ?QuizTemplate $quiz): void
+    public function linkQuiz(OnlineCourse $course, ?QuizTemplate $quiz, int $passPercent = OnlineCourse::DEFAULT_TEST_PASS_PERCENT): void
     {
         if (null !== $quiz) {
             if ($quiz->getTeacher() !== $course->getOwner()) {
@@ -131,10 +132,16 @@ class OnlineCourseWriter
             if ($quiz->getQuestions()->isEmpty()) {
                 throw new OnlineCourseQuizRefused('onlineCourseQuizEmptyMessage', ['%quiz%' => (string) $quiz->getName()]);
             }
+            if ($passPercent < 1 || $passPercent > 100) {
+                throw new OnlineCourseQuizRefused('onlineCourseQuizPassPercentMessage');
+            }
         }
 
-        if ($course->getQuizTemplate() !== $quiz) {
+        if ($course->getQuizTemplate() !== $quiz || (null !== $quiz && $course->getTestPassPercent() !== $passPercent)) {
             $course->setQuizTemplate($quiz);
+            if (null !== $quiz) {
+                $course->setTestPassPercent($passPercent);
+            }
             $course->touch();
         }
     }

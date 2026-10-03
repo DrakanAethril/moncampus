@@ -367,7 +367,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     author's own library with a question (`OnlineCourseWriter::linkQuiz()`, the screen's picker and
     the connector's `quizId` alike), offered as « Test » on the public card. Taken at
     `/courses/{handle}/{slug}/test` by whoever may read the course, **without an account too**, as
-    often as wanted, a new draw each time - and **recorded nowhere**: the run lives in the reader's
+    often as wanted: every question, questions and answers shuffled at each go, and **at the end the
+    success rate alone** - never which question was right, never an answer, so that a low score
+    sends the reader back to the course rather than to the answers. « Bravo » from the author's
+    threshold (`OnlineCourse::$testPassPercent`, 80 % by default, `testPassPercent` on the
+    connector), « Revoir le cours » below. **Recorded nowhere**: the run lives in the reader's
     session (`OnlineCourseTestRunner`). The card is no longer an `<a>`: its title's link is
     stretched over it, so « Test » can be a link of its own.
   - **A course has a picture** (`OnlineCourse::$imageKey`, `OnlineCourseImageStore`): JPEG, PNG or
