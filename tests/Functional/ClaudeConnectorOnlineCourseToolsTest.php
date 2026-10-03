@@ -181,6 +181,7 @@ class ClaudeConnectorOnlineCourseToolsTest extends FunctionalTestCase
         self::assertFalse($created['isError'], $created['text']);
         self::assertIsArray($created['data']['quiz']);
         self::assertSame($quiz->getId(), $created['data']['quiz']['quizId']);
+        self::assertSame(80, $created['data']['quiz']['passPercent']);
         self::assertArrayHasKey('testUrl', $created['data']['quiz']);
         $courseId = $created['data']['courseId'];
 
@@ -188,7 +189,12 @@ class ClaudeConnectorOnlineCourseToolsTest extends FunctionalTestCase
         $renamed = $this->callTool($token, 'course_update', ['courseId' => $courseId, 'title' => 'Les clés SQL'])['data']['quiz'];
         self::assertIsArray($renamed);
         self::assertSame($quiz->getId(), $renamed['quizId']);
+        $threshold = $this->callTool($token, 'course_update', ['courseId' => $courseId, 'testPassPercent' => 60])['data']['quiz'];
+        self::assertIsArray($threshold);
+        self::assertSame(60, $threshold['passPercent']);
+        self::assertTrue($this->callTool($token, 'course_update', ['courseId' => $courseId, 'testPassPercent' => 120])['isError']);
         self::assertNull($this->callTool($token, 'course_update', ['courseId' => $courseId, 'quizId' => null])['data']['quiz']);
+        self::assertTrue($this->callTool($token, 'course_update', ['courseId' => $courseId, 'testPassPercent' => 70])['isError']);
 
         // Somebody else's quiz, and an empty one, are refused - and a refused create leaves nothing.
         $colleagueQuiz = $this->quizOf($this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.colleague'), withQuestion: true);

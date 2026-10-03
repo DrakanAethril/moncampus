@@ -21,8 +21,14 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * A course's test, `/courses/{handle}/{slug}/test`: the quiz its author linked to it, reached from
- * « Test » on its card. One question at a time, the correction at the end, as many goes as wanted
- * with a new draw each time - and nothing recorded (App\Service\OnlineCourse\OnlineCourseTestRunner).
+ * « Test » on its card. Every question of the quiz, one at a time, questions and answers in a new
+ * random order at every go, as many goes as wanted - and nothing recorded
+ * (App\Service\OnlineCourse\OnlineCourseTestRunner).
+ *
+ * **The end shows the score and nothing else**: no question marked right or wrong, no correction.
+ * The point is to send the reader back to the course when the score is not good enough, not to
+ * let them learn the answers or chase the questions they missed. Above the author's threshold the
+ * screen says « Bravo », below it suggests reading the course again.
  *
  * Read by whoever may read the course - App\Security\Voter\OnlineCourseVoter's VIEW, a visitor
  * without an account included - and 404 for a course with no test. No App\Attribute\RequiresFeature,
@@ -85,7 +91,7 @@ class PublicCourseTestController extends AbstractController
             'course' => $course,
             'run' => $run,
             'index' => $index,
-            ...QuizQuestionTakeView::of($question, $this->runner->variablesFor($run, $question)),
+            ...QuizQuestionTakeView::of($question, $this->runner->variablesFor($run, $question), shuffleAnswers: true),
         ]);
     }
 
@@ -137,7 +143,7 @@ class PublicCourseTestController extends AbstractController
             'page' => $page,
             'course' => $course,
             'run' => $run,
-            'explanations' => $this->runner->explanations($course, $run),
+            'passed' => $run->scorePercent() >= $course->getTestPassPercent(),
         ]);
     }
 

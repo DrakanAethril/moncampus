@@ -12817,6 +12817,9 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 .cm-oc-table__course { display: flex; align-items: flex-start; gap: 10px; }
 .cm-oc-table__image { flex: none; width: 64px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 4px; border: 1px solid var(--cm-border-soft); }
 .cm-oc-image-preview { display: block; width: 100%; max-width: 320px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--cm-radius-sm); border: 1px solid var(--cm-border); margin-bottom: 8px; }
+/* A course's test: the share of right answers that earns « Bravo », under the quiz it applies to. */
+.cm-oc-test-threshold { margin-top: 12px; }
+.cm-oc-test-threshold__input { display: flex; align-items: center; gap: 6px; max-width: 140px; }
 .cm-oc-table__none { color: var(--cm-faint); font-size: 12.5px; }
 .cm-oc-table__date { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--cm-muted); }
 .cm-oc-badges { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -13094,8 +13097,6 @@ a.cm-pub-tag:hover { color: var(--cm-ink); text-decoration: none; }
 .cm-lp-result { display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-radius: var(--cm-radius-sm); margin-bottom: 14px; }
 .cm-lp-result--passed { background: var(--cm-green-bg); color: var(--cm-green-tx); }
 .cm-lp-result--failed { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
-/* A course's test: no threshold, so no verdict colour either - only where the reader stands. */
-.cm-lp-result--neutral { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
 .cm-lp-result__score { font: 600 34px var(--cm-font-title); font-variant-numeric: tabular-nums; }
 .cm-lp-result__text b, .cm-lp-result__text span { display: block; }
 .cm-lp-correction { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }

@@ -20,6 +20,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Range;
 
 /**
  * The card of an online course (design/validated/cours-en-ligne.md, §8): what its author's public
@@ -38,8 +39,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * "image" and "removeImage" are not mapped either: the picture is a file the controller hands to
  * App\Service\OnlineCourse\OnlineCourseImageStore, once the course has an id to file it under.
  *
- * "quiz" - the test « Test » launches on the course's card - is not mapped: the controller hands it
- * to App\Service\OnlineCourse\OnlineCourseWriter::linkQuiz(), the one door the connector goes
+ * "quiz" - the test « Test » launches on the course's card - and "testPassPercent", the share of
+ * right answers that earns « Bravo », are not mapped: the controller hands both to
+ * App\Service\OnlineCourse\OnlineCourseWriter::linkQuiz(), the one door the connector goes
  * through too. Its choices already hold the rule (the author's own quizzes that ask something), so a
  * forged id is refused by the form before the writer is reached.
  */
@@ -119,6 +121,15 @@ class OnlineCourseType extends AbstractType
                 )) : [],
                 'choice_label' => static fn (QuizTemplate $quiz): string => $quiz->getName() ?? '',
                 'data' => $course instanceof OnlineCourse ? $course->getQuizTemplate() : null,
+            ])
+            ->add('testPassPercent', IntegerType::class, [
+                'label' => 'onlineCourseTestPassPercentFieldLabel',
+                'help' => 'onlineCourseTestPassPercentFieldHelp',
+                'mapped' => false,
+                'required' => false,
+                'data' => $course instanceof OnlineCourse ? $course->getTestPassPercent() : OnlineCourse::DEFAULT_TEST_PASS_PERCENT,
+                'constraints' => [new Range(min: 1, max: 100)],
+                'attr' => ['min' => 1, 'max' => 100, 'step' => 1],
             ]);
 
         if (!$frozen) {

@@ -14,7 +14,7 @@ class OnlineCourseTestRunTest extends TestCase
 {
     public function testAnsweringEveryQuestionEndsTheRunAndScoresIt(): void
     {
-        $run = OnlineCourseTestRun::draw(7, 3, [['id' => 11, 'label' => 'A'], ['id' => 12, 'label' => 'B'], ['id' => 13, 'label' => 'C']], 42);
+        $run = OnlineCourseTestRun::draw(7, 3, [11, 12, 13], 42);
 
         self::assertSame(0, $run->nextIndex());
         $run->record(0, true);
@@ -31,7 +31,7 @@ class OnlineCourseTestRunTest extends TestCase
 
     public function testAQuestionKeepsItsFirstVerdict(): void
     {
-        $run = OnlineCourseTestRun::draw(7, 3, [['id' => 11, 'label' => 'A'], ['id' => 12, 'label' => 'B']], 42);
+        $run = OnlineCourseTestRun::draw(7, 3, [11, 12], 42);
 
         $run->record(0, false);
         $run->record(0, true);
@@ -52,7 +52,7 @@ class OnlineCourseTestRunTest extends TestCase
 
     public function testItSurvivesTheSessionAndRefusesAnythingElse(): void
     {
-        $run = OnlineCourseTestRun::draw(7, 3, [['id' => 11, 'label' => 'A']], 42);
+        $run = OnlineCourseTestRun::draw(7, 3, [11], 42);
         $run->record(0, true);
 
         $back = OnlineCourseTestRun::fromArray($run->toArray());

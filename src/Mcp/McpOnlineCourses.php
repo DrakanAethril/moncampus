@@ -253,6 +253,7 @@ final readonly class McpOnlineCourses
                 'quizId' => $course->getQuizTemplate()->getId(),
                 'name' => $course->getQuizTemplate()->getName(),
                 'questionCount' => $course->getQuizTemplate()->getQuestions()->count(),
+                'passPercent' => $course->getTestPassPercent(),
                 'testUrl' => $course->hasTest() ? $this->testUrl($course) : null,
             ],
             'materials' => array_map(fn (OnlineCourseMaterial $material): array => $this->describeMaterial($material), array_values($course->getMaterials()->toArray())),

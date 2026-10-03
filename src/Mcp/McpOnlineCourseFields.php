@@ -132,19 +132,34 @@ final readonly class McpOnlineCourseFields
             $written[] = 'tags';
         }
 
-        // null unlinks: the test is optional, and taking it off is a field like any other.
-        if (\array_key_exists('quizId', $given)) {
-            // Only a real null unlinks: a value that reads as no number is a mistake, not « retirer ».
-            $quizId = null === $given['quizId'] ? null : $call->optionalId('quizId');
-            if (null !== $given['quizId'] && null === $quizId) {
-                throw new McpToolException('« quizId » est l\'identifiant d\'un quiz de la bibliothèque (library_list), ou null pour retirer le test.');
+        // null unlinks: the test is optional, and taking it off is a field like any other. The
+        // threshold alone may change too, on the quiz already linked.
+        if (\array_key_exists('quizId', $given) || \array_key_exists('testPassPercent', $given)) {
+            $quiz = $course->getQuizTemplate();
+            if (\array_key_exists('quizId', $given)) {
+                // Only a real null unlinks: a value that reads as no number is a mistake, not « retirer ».
+                $quizId = null === $given['quizId'] ? null : $call->optionalId('quizId');
+                if (null !== $given['quizId'] && null === $quizId) {
+                    throw new McpToolException('« quizId » est l\'identifiant d\'un quiz de la bibliothèque (library_list), ou null pour retirer le test.');
+                }
+                $quiz = null === $quizId ? null : $this->library->quiz($quizId, QuizTemplateVoter::VIEW);
+                $written[] = 'quizId';
             }
+
+            $passPercent = $course->getTestPassPercent();
+            if (\array_key_exists('testPassPercent', $given)) {
+                if (null === $quiz) {
+                    throw new McpToolException('« testPassPercent » est le seuil du quiz de test : lie d\'abord un quiz avec « quizId ».');
+                }
+                $passPercent = $call->arguments->int('testPassPercent') ?? throw new McpToolException('« testPassPercent » est un pourcentage entier entre 1 et 100.');
+                $written[] = 'testPassPercent';
+            }
+
             try {
-                $this->writer->linkQuiz($course, null === $quizId ? null : $this->library->quiz($quizId, QuizTemplateVoter::VIEW));
+                $this->writer->linkQuiz($course, $quiz, $passPercent);
             } catch (OnlineCourseQuizRefused $refused) {
                 throw $this->onlineCourses->quizRefusal($refused);
             }
-            $written[] = 'quizId';
         }
 
         $course->touch();
@@ -166,7 +181,8 @@ final readonly class McpOnlineCourseFields
             'description' => ['type' => 'string', 'description' => 'Présentation du cours, en Markdown (prérequis, objectifs, plan).'],
             'estimatedMinutes' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 6000, 'description' => 'Durée estimée, en minutes.'],
             'tags' => ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 100], 'maxItems' => 12, 'description' => 'Les tags du cours (remplacent les précédents). Réutilise ceux de course_tag_list.'],
-            'quizId' => ['type' => ['integer', 'null'], 'description' => 'Le quiz de test du cours : un quiz de la bibliothèque de l\'enseignant (library_list) qui a au moins une question. Il s\'ouvre par le lien « Test » de la carte du cours, se passe autant de fois qu\'on veut, par quiconque lit le cours, même sans compte, et rien n\'en est enregistré. null le retire.'],
+            'quizId' => ['type' => ['integer', 'null'], 'description' => 'Le quiz de test du cours : un quiz de la bibliothèque de l\'enseignant (library_list) qui a au moins une question. Il s\'ouvre par le lien « Test » de la carte du cours et se passe autant de fois qu\'on veut, par quiconque lit le cours, même sans compte : toutes les questions, questions et réponses mélangées à chaque essai ; à la fin, seul le pourcentage de réussite s\'affiche (jamais quelles questions sont justes), avec « Bravo » au-dessus du seuil et l\'invitation à revoir le cours en dessous. Rien n\'en est enregistré. null le retire.'],
+            'testPassPercent' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100, 'description' => 'Seuil de réussite du quiz de test, en pourcentage de bonnes réponses (80 par défaut). Ne s\'applique qu\'avec un quiz lié.'],
             'imageFileId' => ['type' => 'integer', 'description' => 'La vignette du cours : une image (JPEG, PNG ou WebP, 5 Mo au plus, 16/9 de préférence) de la bibliothèque de fichiers (file_list, ou déposée avec file_upload_url). Elle est copiée dans le cours et remplace la précédente.'],
         ];
     }

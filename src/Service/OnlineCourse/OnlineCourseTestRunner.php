@@ -13,8 +13,9 @@ use App\Service\VideoCueGrader;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Taking a course's test (« Test » on its card): the quiz its author linked, as many times as
- * wanted, a new draw each time, the correction at the end.
+ * Taking a course's test (« Test » on its card): every question of the quiz its author linked,
+ * as many times as wanted, in a new order each time - and at the end the score alone, never which
+ * question was right (App\Controller\OnlineCourse\PublicCourseTestController says why).
  *
  * **Nothing is recorded.** A course is read without an account and so is its test: the run lives in
  * the reader's session (App\Service\OnlineCourse\OnlineCourseTestRun), one per course, and a new go
@@ -51,7 +52,7 @@ class OnlineCourseTestRunner
         return null !== $run && null !== $quiz && $run->courseId === $course->getId() && $run->quizId === $quiz->getId() ? $run : null;
     }
 
-    /** A new go: the whole quiz, shuffled. The one before, if any, is forgotten. */
+    /** A new go: every question of the quiz, shuffled. The one before, if any, is forgotten. */
     public function start(OnlineCourse $course): OnlineCourseTestRun
     {
         $quiz = $course->getQuizTemplate() ?? throw new \LogicException('A course without a test cannot be tested.');
@@ -63,7 +64,7 @@ class OnlineCourseTestRunner
         shuffle($questions);
 
         $run = OnlineCourseTestRun::draw((int) $course->getId(), (int) $quiz->getId(), array_map(
-            static fn (QuizQuestion $question): array => ['id' => (int) $question->getId(), 'label' => mb_substr(trim(strip_tags((string) $question->getLabel())), 0, 300)],
+            static fn (QuizQuestion $question): int => (int) $question->getId(),
             $questions,
         ), random_int(1, 2_147_483_647));
 
@@ -119,27 +120,6 @@ class OnlineCourseTestRunner
     public function variablesFor(OnlineCourseTestRun $run, QuizQuestion $question): array
     {
         return $this->grader->variablesFor($question, 0, $run->seed);
-    }
-
-    /**
-     * The explanation of each question asked, by question id - read from the library as it stands,
-     * since the correction is shown the moment the run ends.
-     *
-     * @return array<int, string>
-     */
-    public function explanations(OnlineCourse $course, OnlineCourseTestRun $run): array
-    {
-        $ids = array_column($run->questions(), 'id');
-        $explanations = [];
-
-        foreach ([] === $ids ? [] : $this->questions->findBy(['id' => $ids]) as $question) {
-            $explanation = trim((string) $question->getExplanation());
-            if ('' !== $explanation && $this->belongs($question, $course->getQuizTemplate())) {
-                $explanations[(int) $question->getId()] = $explanation;
-            }
-        }
-
-        return $explanations;
     }
 
     private function belongs(QuizQuestion $question, ?QuizTemplate $quiz): bool

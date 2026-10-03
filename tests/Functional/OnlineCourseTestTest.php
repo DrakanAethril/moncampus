@@ -21,7 +21,8 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
  * A course's test (« Test » on its card): the quiz its author linked, taken by whoever reads the
- * course - without an account too - as many times as wanted, and recorded nowhere.
+ * course - without an account too - as many times as wanted, and recorded nowhere. The end gives
+ * the score alone: never which question was right, never an answer.
  */
 class OnlineCourseTestTest extends FunctionalTestCase
 {
@@ -50,12 +51,33 @@ class OnlineCourseTestTest extends FunctionalTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('a.cm-pub-card__test[href="'.$url.'"]');
 
-        $this->takeTheTest($url, right: true);
-        self::assertStringContainsString('100 %', (string) $this->client->getResponse()->getContent());
+        // Above the default 80 %: « Bravo », and the score alone - no question, no answer.
+        $this->takeTheTest($url, [true, true]);
+        $content = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('100 %', $content);
+        self::assertStringContainsString('Bravo', $content);
+        self::assertStringNotContainsString('clé primaire', $content);
+        self::assertSelectorNotExists('.cm-lp-correction');
 
-        // Again, from the start: a new run, nothing kept of the previous one but in the session.
-        $this->takeTheTest($url, right: false);
-        self::assertStringContainsString('0 %', (string) $this->client->getResponse()->getContent());
+        // Again, from the start: a new run. Below the threshold, back to the course.
+        $this->takeTheTest($url, [true, false]);
+        $content = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('50 %', $content);
+        self::assertStringContainsString('Revoyez le cours', $content);
+        self::assertStringNotContainsString('Bravo', $content);
+    }
+
+    public function testTheThresholdIsTheAuthors(): void
+    {
+        $course = $this->course('Les clés', publish: true);
+        $this->writer->linkQuiz($course, $this->quiz($this->teacher), 50);
+        $this->em->flush();
+
+        $this->takeTheTest('/courses/cours-sql/'.$course->getSlug().'/test', [false, true]);
+        self::assertStringContainsString('Bravo', (string) $this->client->getResponse()->getContent());
+
+        $this->expectException(OnlineCourseQuizRefused::class);
+        $this->writer->linkQuiz($course, $course->getQuizTemplate(), 0);
     }
 
     public function testNoQuizNoTest(): void
@@ -112,11 +134,15 @@ class OnlineCourseTestTest extends FunctionalTestCase
         self::assertSelectorExists('[data-picker-item][data-value="'.$quiz->getId().'"]');
 
         $form = $crawler->filter('form[name="online_course"]')->form();
+        self::assertSame('80', $form['online_course[testPassPercent]']->getValue());
         $form['online_course[quiz]'] = (string) $quiz->getId();
+        $form['online_course[testPassPercent]'] = '65';
         $this->client->submit($form);
         self::assertResponseRedirects('/tools/online-courses/'.$course->getId());
         $this->em->clear();
-        self::assertSame($quiz->getId(), $this->em->find(OnlineCourse::class, $course->getId())?->getQuizTemplate()?->getId());
+        $linked = $this->em->find(OnlineCourse::class, $course->getId());
+        self::assertSame($quiz->getId(), $linked?->getQuizTemplate()?->getId());
+        self::assertSame(65, $linked->getTestPassPercent());
 
         $crawler = $this->client->request('GET', '/tools/online-courses/'.$course->getId());
         $form = $crawler->filter('form[name="online_course"]')->form();
@@ -127,11 +153,14 @@ class OnlineCourseTestTest extends FunctionalTestCase
         self::assertNull($this->em->find(OnlineCourse::class, $course->getId())?->getQuizTemplate());
     }
 
-    private function takeTheTest(string $url, bool $right): void
+    /**
+     * @param list<bool> $verdicts whether each question, in the order it is asked, is answered right
+     */
+    private function takeTheTest(string $url, array $verdicts): void
     {
         $crawler = $this->client->request('GET', $url);
 
-        for ($guard = 0; $guard < 5 && 200 === $this->client->getResponse()->getStatusCode(); ++$guard) {
+        foreach ($verdicts as $right) {
             self::assertResponseIsSuccessful();
             $form = $crawler->filter('form.cm-lp-question__body');
             self::assertCount(1, $form);
@@ -143,12 +172,9 @@ class OnlineCourseTestTest extends FunctionalTestCase
             ]);
             self::assertTrue($this->client->getResponse()->isRedirect());
             $crawler = $this->client->followRedirect();
-            if (str_ends_with((string) $this->client->getRequest()->getPathInfo(), '/result')) {
-                return;
-            }
         }
 
-        self::fail('The test never reached its result.');
+        self::assertStringEndsWith('/result', $this->client->getRequest()->getPathInfo());
     }
 
     private function answerId(Crawler $form, string $label): string
