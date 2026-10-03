@@ -61,6 +61,9 @@ class OnlineCourseTestTest extends FunctionalTestCase
         self::assertStringContainsString('Bravo', $content);
         self::assertStringNotContainsString('clé primaire', $content);
         self::assertSelectorNotExists('.cm-lp-correction');
+        // Under the teacher's banner, with no footer, like the course itself.
+        self::assertSelectorExists('.cm-pub-banner a.cm-pub-banner__link[href="/courses/cours-sql"]');
+        self::assertSelectorNotExists('.cm-pub__bar, .cm-pub__foot');
 
         // Again, from the start: a new run. Below the threshold, back to the course.
         $this->takeTheTest($url, [true, false]);
