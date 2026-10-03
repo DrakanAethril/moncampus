@@ -7,11 +7,12 @@ import { Controller } from '@hotwired/stimulus';
  * The grid decides how many columns fit (`repeat(auto-fill, minmax(…))`); this counts them, hides
  * the cards beyond - `hidden`, so a keyboard does not walk into cards nobody sees - and moves the
  * arrow to the row's own page into the last card shown, where hovering that card reveals it.
+ * When every course fits, « Voir tout » and the arrow lead to nothing more and are hidden.
  * Counted again whenever the row changes width.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['track', 'next'];
+    static targets = ['track', 'next', 'all'];
 
     connect() {
         this.observer = new ResizeObserver(() => this.layout());
@@ -28,12 +29,15 @@ export default class extends Controller {
         const columns = getComputedStyle(this.trackTarget).gridTemplateColumns.split(' ').filter(Boolean).length || 1;
         const shown = Math.min(columns, cards.length);
 
+        const more = cards.length > shown;
+
         cards.forEach((card, index) => { card.hidden = index >= shown; });
+        this.allTarget.hidden = !more;
+        this.nextTarget.hidden = !more;
 
         const last = cards[shown - 1];
-        if (last) {
+        if (last && more) {
             last.append(this.nextTarget);
-            this.nextTarget.hidden = false;
         }
     }
 }

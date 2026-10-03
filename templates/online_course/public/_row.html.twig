@@ -2,16 +2,17 @@
    many courses it holds, « Voir tout » on the right, and the courses on **one** line - as many as
    that line holds. online_course_row_controller.js counts the columns, hides the cards that do not
    fit (out of the tab order too) and hands the last one shown the arrow to the row's own page,
-   which appears when that card is hovered.
+   which appears when that card is hovered. When the line holds every course, there is nothing more
+   to see: « Voir tout » and the arrow are both hidden.
 
    Without JavaScript the line is cut by the grid itself (`grid-auto-rows: 0`), and « Voir tout »
-   still leads to every course.
+   stays, since nothing then says whether a course was cut.
 
    Variables: title, row_courses, more_url. #}
 <section class="cm-pub-row" data-controller="online-course-row">
     <div class="cm-pub-row__head">
         <h2 class="cm-pub-row__title">{{ title }} <span class="cm-pub-row__count">{{ row_courses|length }}</span></h2>
-        <a class="cm-pub-row__all" href="{{ more_url }}">{{ 'onlineCoursePublicSeeAllAction'|trans }}</a>
+        <a class="cm-pub-row__all" href="{{ more_url }}" data-online-course-row-target="all">{{ 'onlineCoursePublicSeeAllAction'|trans }}</a>
     </div>
     <div class="cm-pub-cards cm-pub-row__track" data-online-course-row-target="track">
         {% for course in row_courses %}

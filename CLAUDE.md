@@ -357,7 +357,10 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   - **A teacher's page is theirs, not the establishment's**: their banner (`OnlineCoursePage`'s
     title, colours, height in px and optional picture - `OnlineCourseImageStore` - drawn by
     `online_course/_page_banner.html.twig` for the page and for the « Ma page » preview alike)
-    replaces the shell's bar; no emblem, no teacher name, no footer. The courses come in rows -
+    replaces the shell's bar; no emblem, no teacher name, no footer - and so on a course's page and
+    its test screens too (`online_course/public/_course_layout.html.twig`), where the banner's title
+    leads back to the teacher's page (`_page_header.html.twig`, one copy for all). With no footer
+    left on these screens, the source-code link (AGPL §13) is in « À propos ». The courses come in rows -
     « Récemment mis à jour », then one per tag in alphabetical order - each cut to one line by
     `online_course_row_controller.js`; « Voir tout » is `?tag=` / `?view=recent` on the same
     address. A signed-in visitor gets the app's own user menu (`layout/_user_menu.html.twig`,
@@ -497,7 +500,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   rule. A « Balises spécifiques » course runs on Départ, Arrivée and the flags it names, in order or
   not: **`EcoCourse::getRaceCheckpoints()` is the only list a course is read through** (scan,
   ranking, maps, statistics, runner API), never the parcours' own - and the runner app is sent
-  `runnerMode()` (imposed/free order), which it already understands. The same Flutter app also
+  `runnerMode()` (imposed/free order), which it already understands. **Any flag may be renamed**
+(screen 1e, `App\Service\Eco\EcoCheckpointRenamer`), Départ and Arrivée included: a flag's role
+is its type and position, never its name - nothing may test a name. A course not yet closed has
+an « Affiche QR » (`app_eco_course_join_pdf`): an A4 page whose QR opens `/eco-app/?code=…`, which
+the PWA's join screen reads (a race under way on that phone still wins). The same Flutter app also
   runs **as a PWA at `/eco-app/`** (`public/eco-app/`, a build output of the e-CO repo's
   `tool/build_pwa.sh` - never edited here; its README says what the web build changes): same
   origin as the API, offline queue in IndexedDB, and its own service worker, which also sends that

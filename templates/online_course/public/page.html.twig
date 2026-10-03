@@ -25,36 +25,11 @@
 
 {% block public_modifier %}cm-pub--page{% endblock %}
 
-{% block public_header %}
-    {% embed 'online_course/_page_banner.html.twig' with {
-        banner_title: page.title,
-        title_color: page.titleColor,
-        banner_color: page.bannerColor,
-        banner_height: page.bannerHeight,
-        image_key: page.bannerImageKey,
-    } %}
-        {% block bar %}
-            <div class="cm-pub-banner__bar">
-                {% if app.user %}
-                    <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_home') }}">{{ 'publicShellBackAction'|trans }}</twig:Cm:Button>
-                    {# The app shell's own menu, avatar alone: theme, profile and sign-out live in it. #}
-                    <div class="cm-pub-banner__user">{{ include('layout/_user_menu.html.twig', {compact: true}) }}</div>
-                {% else %}
-                    {% set visitor_theme = app.request.cookies.get('theme') %}
-                    <span class="cm-theme" data-controller="theme" data-theme-authenticated-value="false">
-                        <button type="button" class="{{ visitor_theme != 'dark' ? 'is-on' }}" data-action="theme#setLight" aria-label="{{ 'themeLightLabel'|trans }}">☀</button>
-                        <button type="button" class="{{ visitor_theme == 'dark' ? 'is-on' }}" data-action="theme#setDark" aria-label="{{ 'themeDarkLabel'|trans }}">☾</button>
-                    </span>
-                    <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_login') }}">{{ 'publicShellSignInAction'|trans }}</twig:Cm:Button>
-                {% endif %}
-            </div>
-        {% endblock %}
-    {% endembed %}
-{% endblock %}
+{% block public_header %}{{ include('online_course/public/_page_header.html.twig') }}{% endblock %}
 
 {# No footer on a teacher's page - the user's decision of 2026-10-03: neither the establishment's
-   name nor the licence line. The source-code link (AGPL §13) stays on the course pages this page
-   leads to, and in « À propos ». #}
+   name nor the licence line. A course's screens have none either (§21); the source-code link
+   (AGPL §13) stays in « À propos ». #}
 {% block public_footer %}{% endblock %}
 
 {% block public_main %}

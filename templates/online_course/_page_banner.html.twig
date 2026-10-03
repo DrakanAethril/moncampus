@@ -10,8 +10,14 @@
 
    The height is the teacher's too, in pixels, a quarter less on a phone (app.css).
 
-   Variables: banner_title, title_color, banner_color, banner_height, image_key (nullable); the `bar` block holds
-   what sits in the top right corner. #}
+   A course's page draws the same banner over its course (§21): the course's title is then that
+   page's heading, so the banner's title is no <h1> there, and it leads back to the teacher's page.
+
+   Variables: banner_title, title_color, banner_color, banner_height, image_key (nullable),
+   banner_url (optional: the title becomes a link), banner_heading (optional, true by default: the
+   title is the page's <h1>); the `bar` block holds what sits in the top right corner. #}
+{% set banner_url = banner_url ?? null %}
+{% set banner_tag = (banner_heading ?? true) ? 'h1' : 'p' %}
 {% set title_color = title_color matches '/^#[0-9a-fA-F]{6}$/' ? title_color : '#ffffff' %}
 {% set banner_color = banner_color matches '/^#[0-9a-fA-F]{6}$/' ? banner_color : '#12344d' %}
 {% set banner_height = banner_height matches '/^[0-9]{1,4}$/' ? banner_height : 230 %}
@@ -21,5 +27,7 @@
         <img class="cm-pub-banner__image" src="{{ file_url(image_key) }}" alt="">
     {% endif %}
     {% block bar %}{% endblock %}
-    <h1 class="cm-pub-banner__title">{{ banner_title }}</h1>
+    <{{ banner_tag }} class="cm-pub-banner__title">
+        {%- if banner_url %}<a class="cm-pub-banner__link" href="{{ banner_url }}">{{ banner_title }}</a>{% else %}{{ banner_title }}{% endif -%}
+    </{{ banner_tag }}>
 </header>

@@ -3289,6 +3289,14 @@ ecoActionStartLabel: 'Démarrer'
 ecoActionCloseLabel: 'Clôturer'
 ecoActionCloseCourseLabel: 'Clôturer la course'
 ecoActionDuplicateLabel: 'Dupliquer'
+ecoActionJoinPdfLabel: 'Affiche QR'
+ecoActionJoinPdfHintText: "Page A4 à imprimer ou projeter : son QR code ouvre e-CO avec le code de la course déjà saisi."
+ecoCourseJoinPdfFailedFlashMessage: "L'affiche PDF n'a pas pu être produite — réessayez dans quelques instants."
+ecoCourseJoinPdfLeadText: 'Scannez pour rejoindre la course'
+ecoCourseJoinPdfCodeLabel: 'Code de la course'
+ecoCourseJoinPdfStepScanText: "1. Scannez le QR code avec l'appareil photo du téléphone."
+ecoCourseJoinPdfStepPseudoText: '2. Choisissez votre pseudo : le code est déjà saisi.'
+ecoCourseJoinPdfStepJoinText: "3. Touchez « Rejoindre la course » dès qu'elle est lancée."
 ecoActionLiveLabel: 'Suivi live'
 ecoActionResultsLabel: 'Résultats'
 ecoActionStatisticsLabel: 'Statistiques'
@@ -3415,7 +3423,8 @@ ecoCheckpointShortCodeColumnLabel: 'Code court'
 ecoCheckpointToleranceColumnLabel: 'Tolérance'
 ecoCheckpointLocationColumnLabel: 'Localisation'
 ecoCheckpointNotLocatedLabel: 'Non localisée'
-ecoCheckpointDefaultToleranceNoteText: "Tolérance par défaut : %default% m — modifiable balise par balise. Le code court permet la validation manuelle si le QR est illisible."
+ecoCheckpointDefaultToleranceNoteText: "Nom et tolérance modifiables balise par balise (tolérance par défaut : %default% m) ; le nom est celui imprimé sur la page de la balise. Le code court permet la validation manuelle si le QR est illisible."
+ecoCheckpointNameFieldLabel: 'Nom de la balise %code%'
 ecoCheckpointMapEmptyText: "Aucune balise n'est encore localisée : la carte apparaîtra dès le premier scan sur le terrain."
 ecoCheckpointMapLocatedLegendLabel: 'Localisée'
 ecoCheckpointMapToLocateLegendLabel: '{1}%count% à localiser|]1,Inf[%count% à localiser'

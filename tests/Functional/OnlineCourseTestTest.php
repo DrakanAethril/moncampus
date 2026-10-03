@@ -50,6 +50,9 @@ class OnlineCourseTestTest extends FunctionalTestCase
         $this->client->request('GET', '/courses/cours-sql');
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('a.cm-pub-card__test[href="'.$url.'"]');
+        // And next to the materials on the course's own page.
+        $this->client->request('GET', '/courses/cours-sql/'.$course->getSlug());
+        self::assertSelectorExists('.cm-pub-tabs a.cm-pub-tabs__tab--test[href="'.$url.'"]');
 
         // Above the default 80 %: « Bravo », and the score alone - no question, no answer.
         $this->takeTheTest($url, [true, true]);
@@ -58,6 +61,9 @@ class OnlineCourseTestTest extends FunctionalTestCase
         self::assertStringContainsString('Bravo', $content);
         self::assertStringNotContainsString('clé primaire', $content);
         self::assertSelectorNotExists('.cm-lp-correction');
+        // Under the teacher's banner, with no footer, like the course itself.
+        self::assertSelectorExists('.cm-pub-banner a.cm-pub-banner__link[href="/courses/cours-sql"]');
+        self::assertSelectorNotExists('.cm-pub__bar, .cm-pub__foot');
 
         // Again, from the start: a new run. Below the threshold, back to the course.
         $this->takeTheTest($url, [true, false]);
@@ -86,6 +92,8 @@ class OnlineCourseTestTest extends FunctionalTestCase
 
         $this->client->request('GET', '/courses/cours-sql');
         self::assertSelectorNotExists('a.cm-pub-card__test');
+        $this->client->request('GET', '/courses/cours-sql/'.$course->getSlug());
+        self::assertSelectorNotExists('.cm-pub-tabs__tab--test');
         $this->client->request('GET', '/courses/cours-sql/'.$course->getSlug().'/test');
         self::assertResponseStatusCodeSame(404);
     }

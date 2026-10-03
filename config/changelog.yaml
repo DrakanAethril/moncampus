@@ -26,6 +26,16 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.03.4'
+      date: '2026-10-03'
+      summary: "Les balises d'un parcours e-CO se renomment, et une course s'annonce par une affiche dont le QR code ouvre directement l'application avec son code. Les cours en ligne, toujours en essai, gagnent une présentation en grandes vignettes."
+      entries:
+          - type: modification
+            title: "e-CO : toute balise peut être renommée, départ et arrivée compris ; le nouveau nom est repris sur les documents imprimés"
+          - type: nouveaute
+            title: "e-CO : une affiche à imprimer pour chaque course, dont le QR code ouvre l'application e-CO avec le code de la course déjà saisi"
+          - type: modification
+            title: "Cours en ligne, en essai : les cours présentés en grandes vignettes, le résumé au survol, et le test accessible depuis la page du cours"
     - version: '2026.10.03.3'
       date: '2026-10-03'
       summary: "Les cours en ligne, toujours en essai, peuvent proposer un quiz pour se tester, et la page de chaque enseignant prend un bandeau à ses couleurs. Le tableau virtuel s'ouvre chaque jour sur une nouvelle photo de nature."

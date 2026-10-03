@@ -1,4 +1,4 @@
-{% extends 'layout/public.html.twig' %}
+{% extends 'online_course/public/_course_layout.html.twig' %}
 
 {# The page of one course (design/validated/cours-en-ligne.md, §5): its card, one tab per material,
    and the material itself, read from the CDN - the application serves no byte of it. Each tab is a
@@ -18,9 +18,6 @@
     {% endif %}
     {% if not course.published %}<meta name="robots" content="noindex">{% endif %}
 {% endblock %}
-
-{% block public_home_url %}{{ path('app_public_courses_page', {handle: page.handle}) }}{% endblock %}
-{% block public_home_label %}{{ page.title }}{% endblock %}
 
 {% block public_main %}
     {% if not course.published %}
@@ -79,6 +76,13 @@
                         <twig:ux:icon name="{{ material.kind.icon }}" width="15" height="15"/>{{ material.label ?? material.kind.labelKey|trans }}
                     </a>
                 {% endfor %}
+                {# Not a material: the quiz the author linked, on its own screens (§18). #}
+                {% if course.hasTest %}
+                    <a class="cm-pub-tabs__tab cm-pub-tabs__tab--test" href="{{ path('app_public_courses_test', {handle: page.handle, slug: course.slug}) }}"
+                       title="{{ 'onlineCourseTestCardTitle'|trans }}">
+                        <twig:ux:icon name="clipboard-check" width="15" height="15"/>{{ 'onlineCourseTestLabel'|trans }}
+                    </a>
+                {% endif %}
             </nav>
             {# A material shown in a frame opens alone in the window (§7); an interactive course
                goes full screen as well. A video has the browser's own controls for both. #}
