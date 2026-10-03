@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.03.2'
+      date: '2026-10-03'
+      summary: "Les cours en ligne, toujours en essai, se présentent avec une vignette. Le connecteur Claude dépose des fichiers volumineux dans la bibliothèque sans les recopier."
+      entries:
+          - type: modification
+            title: "Cours en ligne, en essai : une vignette illustre chaque cours sur la page de l'enseignant et dans l'aperçu d'un lien partagé"
+          - type: modification
+            title: "Connecteur Claude : déposer dans la bibliothèque un fichier volumineux (PDF, archive, vidéo) et choisir la vignette d'un cours"
+            detail: "Le fichier passe les mêmes contrôles qu'un dépôt : types acceptés, quota, antivirus."
     - version: '2026.10.03'
       date: '2026-10-03'
       summary: "L'administration essaie les cours en ligne avant leur ouverture : chaque enseignant pourra publier ses cours sur sa propre page, lisible sans compte, et les enchaîner en parcours avec des quiz de validation. Le tableau virtuel crée ses groupes sur place."
