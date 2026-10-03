@@ -41,6 +41,9 @@
                                     <td><span class="badge {{ course.status.badgeClass }}">{{ course.status.labelKey|trans }}</span></td>
                                     <td>{{ course.runners|length > 0 ? course.runners|length : '—' }}</td>
                                     <td class="cm-actions">
+                                        {% if course.status.value != 'closed' %}
+                                            <a href="{{ path('app_eco_course_join_pdf', {id: course.id}) }}" class="cm-action--neutral" title="{{ 'ecoActionJoinPdfHintText'|trans }}">{{ 'ecoActionJoinPdfLabel'|trans }}</a>
+                                        {% endif %}
                                         {% if course.status.value == 'in_progress' %}
                                             <a href="{{ path('app_eco_course_live', {id: course.id}) }}" class="cm-action--positive">{{ 'ecoActionLiveLabel'|trans }}</a>
                                             <form method="post" action="{{ path('app_eco_course_close', {id: course.id}) }}" class="d-inline">

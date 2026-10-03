@@ -29,7 +29,11 @@ use App\Service\EcoPerformanceAnalyzer;
 use App\Service\EcoRaceRanking;
 use App\Service\EcoRunnerStatsCalculator;
 use App\Service\EcoRunnerTrace;
+use App\Service\GotenbergClient;
+use App\Service\GotenbergUnavailableException;
 use Doctrine\ORM\EntityManagerInterface;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\SvgWriter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -39,6 +43,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -117,6 +122,50 @@ class EcoCourseController extends AbstractController
         return $this->render('eco/course_edit.html.twig', [
             'course' => $course,
             'form' => $form,
+        ]);
+    }
+
+    /**
+     * The A4 poster a teacher prints or projects before the start: a QR code that opens the e-CO
+     * PWA (public/eco-app/, served from this very origin) with the course's code already typed -
+     * the app reads `?code=` on its join screen - and the code written out for whoever types it.
+     * Offered as soon as the course exists, started or not: the poster is put up before the start,
+     * and a runner who joins too early is told the course has not begun. A closed course has none.
+     */
+    #[Route(path: '/eco/courses/{id}/join-pdf', name: 'app_eco_course_join_pdf')]
+    public function joinPdf(int $id, Request $request, EcoCourseRepository $repository, GotenbergClient $gotenbergClient): Response
+    {
+        $course = $this->findCourseOrNotFound($repository, $id);
+        if (EcoCourseStatus::Closed === $course->getStatus()) {
+            throw $this->createNotFoundException();
+        }
+
+        $code = (string) $course->getCode();
+        $joinUrl = $request->getSchemeAndHttpHost().'/eco-app/?'.http_build_query(['code' => $code]);
+        $qrSvg = (new Builder(
+            writer: new SvgWriter(),
+            data: $joinUrl,
+            size: 600,
+            margin: 10,
+        ))->build()->getString();
+
+        try {
+            $pdf = $gotenbergClient->convertHtmlToPdf($this->renderView('eco/course_join_pdf.html.twig', [
+                'course' => $course,
+                'joinUrl' => $joinUrl,
+                'qrSvg' => $qrSvg,
+            ]));
+        } catch (GotenbergUnavailableException) {
+            $this->addFlash('error', 'ecoCourseJoinPdfFailedFlashMessage');
+
+            return $this->redirectToRoute('app_eco_course_index', ['parcoursId' => $course->getParcours()->getId()]);
+        }
+
+        $filename = (new AsciiSlugger())->slug($course->getName() ?? $code)->lower()->toString();
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, \sprintf('eco-course-%s.pdf', $filename)),
         ]);
     }
 

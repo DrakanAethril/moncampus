@@ -28,6 +28,10 @@ class EcoCheckpoint
     // flags take it - an existing flag keeps the radius it was given.
     public const int DEFAULT_TOLERANCE_METERS = 60;
 
+    // A renamed flag's longest name (App\Service\Eco\EcoCheckpointRenamer): what still fits the
+    // printed page of the flag on two lines. The column itself is wider.
+    public const int NAME_MAX_LENGTH = 40;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

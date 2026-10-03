@@ -12,6 +12,7 @@ use App\Enum\Feature;
 use App\Form\EcoParcoursCreateType;
 use App\Repository\EcoParcoursRepository;
 use App\Security\Voter\EcoParcoursVoter;
+use App\Service\Eco\EcoCheckpointRenamer;
 use App\Service\Eco\EcoParcoursSharing;
 use App\Service\Eco\EcoToleranceAdvisor;
 use App\Service\Eco\EcoToleranceEditor;
@@ -134,7 +135,7 @@ class EcoParcoursController extends AbstractController
     }
 
     #[Route(path: '/eco/parcours/{id}/configure', name: 'app_eco_parcours_configure')]
-    public function configure(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository, EcoToleranceAdvisor $toleranceAdvisor, EcoToleranceEditor $toleranceEditor): Response
+    public function configure(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository, EcoToleranceAdvisor $toleranceAdvisor, EcoToleranceEditor $toleranceEditor, EcoCheckpointRenamer $renamer): Response
     {
         $parcours = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(EcoParcoursVoter::EDIT, $parcours);
@@ -144,6 +145,7 @@ class EcoParcoursController extends AbstractController
                 throw $this->createAccessDeniedException('Invalid CSRF token.');
             }
 
+            $renamer->apply($parcours, PostValue::all($request, 'name'), $this->currentUser());
             $toleranceEditor->apply($parcours, PostValue::all($request, 'tolerance'), $this->currentUser());
             $entityManager->flush();
 

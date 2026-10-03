@@ -8,6 +8,7 @@ use App\Entity\EcoCheckpoint;
 use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoPositionPing;
 use App\Entity\EcoRunner;
+use App\Enum\EcoCheckpointType;
 use App\Enum\EcoScanResult;
 use App\Service\Eco\EcoTerrainStats;
 
@@ -49,6 +50,8 @@ use App\Service\Eco\EcoTerrainStats;
  *     fromCheckpointId: int,
  *     fromPosition: int,
  *     toPosition: int,
+ *     fromType: EcoCheckpointType,
+ *     toType: EcoCheckpointType,
  *     bestSeconds?: ?int,
  *     gapSeconds?: ?int,
  *     isBest?: bool,
@@ -176,6 +179,9 @@ class EcoPerformanceAnalyzer
                 'fromCheckpointId' => (int) $fromCheckpoint->getId(),
                 'fromPosition' => $fromCheckpoint->getPosition(),
                 'toPosition' => $toCheckpoint->getPosition(),
+                // A flag's role, never read off its name: a teacher may rename any flag.
+                'fromType' => $fromCheckpoint->getType(),
+                'toType' => $toCheckpoint->getType(),
             ];
         }
 

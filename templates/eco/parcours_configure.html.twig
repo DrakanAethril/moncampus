@@ -41,8 +41,13 @@
                                 <tr>
                                     <td><span class="font-monospace fw-bold">{{ checkpoint.type.shortLetter ?? checkpoint.position }}</span></td>
                                     <td>
-                                        {{ checkpoint.name }}
-                                        {% if checkpoint.note %}<span class="text-secondary">({{ checkpoint.note }})</span>{% endif %}
+                                        {# Saved with the tolerances; the printed page of the flag shows it. #}
+                                        <input type="text" name="name[{{ checkpoint.id }}]" form="eco-parcours-configure-form"
+                                               value="{{ checkpoint.name }}" required
+                                               maxlength="{{ constant('App\\Entity\\EcoCheckpoint::NAME_MAX_LENGTH') }}"
+                                               aria-label="{{ 'ecoCheckpointNameFieldLabel'|trans({'%code%': checkpoint.shortCode}) }}"
+                                               class="form-control form-control-sm" style="min-width: 150px;">
+                                        {% if checkpoint.note %}<div class="text-secondary small mt-1">({{ checkpoint.note }})</div>{% endif %}
                                     </td>
                                     <td><span class="font-monospace">{{ checkpoint.shortCode }}</span></td>
                                     <td>
