@@ -51,6 +51,12 @@ class OnlineCoursePublicPagesTest extends FunctionalTestCase
         self::assertStringNotContainsString('Le modèle OSI', (string) $this->client->getResponse()->getContent());
 
         $this->assertAnonymous('/courses/tharaud/'.$public->getSlug(), 200);
+        // Under the teacher's banner, which leads back to their page, and with no footer: the
+        // course's title is the one heading.
+        $crawler = $this->client->getCrawler();
+        self::assertSame('/courses/tharaud', $crawler->filter('.cm-pub-banner a.cm-pub-banner__link')->attr('href'));
+        self::assertSame(['Les jointures SQL'], $crawler->filter('h1')->each(static fn ($title): string => trim($title->text())));
+        self::assertCount(0, $crawler->filter('.cm-pub__bar, .cm-pub__foot'));
         $this->assertAnonymous('/courses/tharaud/'.$public->getSlug().'/pdf', 200);
         $this->assertAnonymous('/courses/tharaud/'.$public->getSlug().'/video', 404);
         $this->assertAnonymous('/courses/tharaud/'.$draft->getSlug(), 404);
