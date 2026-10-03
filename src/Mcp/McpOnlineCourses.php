@@ -23,6 +23,7 @@ use App\Service\LearningPath\LearningPathRefused;
 use App\Service\LearningPath\LearningPathWriter;
 use App\Service\OnlineCourse\OnlineCourseContentOrigin;
 use App\Service\OnlineCourse\OnlineCourseMaterialRefused;
+use App\Service\OnlineCourse\OnlineCourseQuizRefused;
 use App\Service\OnlineCourse\OnlineCourseWriter;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
@@ -224,6 +225,12 @@ final readonly class McpOnlineCourses
         return new McpToolException($this->translator->trans($refused->getMessage(), $refused->parameters, 'messages', 'fr'));
     }
 
+    /** A quiz that cannot be a course's test, in the words the screen shows. */
+    public function quizRefusal(OnlineCourseQuizRefused $refused): McpToolException
+    {
+        return new McpToolException($this->translator->trans($refused->getMessage(), $refused->parameters, 'messages', 'fr'));
+    }
+
     /**
      * A course as every tool answers it: what it is, where it stands, what it carries, where it can
      * be checked.
@@ -242,6 +249,12 @@ final readonly class McpOnlineCourses
             'estimatedMinutes' => $course->getEstimatedMinutes(),
             'tags' => $this->tagLabels($course),
             'imageUrl' => $this->origin->imageUrl($course),
+            'quiz' => null === $course->getQuizTemplate() ? null : [
+                'quizId' => $course->getQuizTemplate()->getId(),
+                'name' => $course->getQuizTemplate()->getName(),
+                'questionCount' => $course->getQuizTemplate()->getQuestions()->count(),
+                'testUrl' => $course->hasTest() ? $this->testUrl($course) : null,
+            ],
             'materials' => array_map(fn (OnlineCourseMaterial $material): array => $this->describeMaterial($material), array_values($course->getMaterials()->toArray())),
             'editUrl' => $this->editUrl($course),
             'publicUrl' => $this->publicUrl($course),
@@ -302,6 +315,14 @@ final readonly class McpOnlineCourses
         $page = $this->pages->findOneByOwner($course->getOwner());
 
         return null === $page ? null : $this->links->url('app_public_courses_course', ['handle' => $page->getHandle(), 'slug' => $course->getSlug()]);
+    }
+
+    /** Where « Test » leads on the course's card. Null while the author has no page yet. */
+    public function testUrl(OnlineCourse $course): ?string
+    {
+        $page = $this->pages->findOneByOwner($course->getOwner());
+
+        return null === $page ? null : $this->links->url('app_public_courses_test', ['handle' => $page->getHandle(), 'slug' => $course->getSlug()]);
     }
 
     public function pageUrl(User $owner): ?string

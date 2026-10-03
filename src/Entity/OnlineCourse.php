@@ -93,6 +93,17 @@ class OnlineCourse
     #[ORM\Column(name: 'image_key', length: 255, nullable: true)]
     private ?string $imageKey = null;
 
+    /**
+     * The quiz a reader may test themselves on, « Test » on the course's card: a quiz of the
+     * author's own library, taken as many times as wanted and recorded nowhere
+     * (App\Service\OnlineCourse\OnlineCourseTestRunner). Written by
+     * App\Service\OnlineCourse\OnlineCourseWriter::linkQuiz() alone, which holds the rule on it.
+     * A quiz deleted from the library leaves the course without a test, never without a course.
+     */
+    #[ORM\ManyToOne(targetEntity: QuizTemplate::class)]
+    #[ORM\JoinColumn(name: 'quiz_template_id', nullable: true, onDelete: 'SET NULL')]
+    private ?QuizTemplate $quizTemplate = null;
+
     /** @var Collection<int, OnlineCourseTag> */
     #[ORM\ManyToMany(targetEntity: OnlineCourseTag::class)]
     #[ORM\JoinTable(name: 'online_course_tag_link')]
@@ -253,6 +264,27 @@ class OnlineCourse
         $this->imageKey = $imageKey;
 
         return $this;
+    }
+
+    public function getQuizTemplate(): ?QuizTemplate
+    {
+        return $this->quizTemplate;
+    }
+
+    public function setQuizTemplate(?QuizTemplate $quizTemplate): static
+    {
+        $this->quizTemplate = $quizTemplate;
+
+        return $this;
+    }
+
+    /**
+     * Whether « Test » is offered: a quiz is linked and still has a question. A quiz emptied in the
+     * library since it was linked is a link to nothing, not a test with no question.
+     */
+    public function hasTest(): bool
+    {
+        return null !== $this->quizTemplate && !$this->quizTemplate->getQuestions()->isEmpty();
     }
 
     /** @return Collection<int, OnlineCourseTag> */

@@ -7,8 +7,10 @@ namespace App\Mcp;
 use App\Entity\FileLibraryNode;
 use App\Entity\OnlineCourse;
 use App\Repository\OnlineCourseRepository;
+use App\Security\Voter\QuizTemplateVoter;
 use App\Service\OnlineCourse\OnlineCourseImageStore;
 use App\Service\OnlineCourse\OnlineCourseMaterialRefused;
+use App\Service\OnlineCourse\OnlineCourseQuizRefused;
 use App\Service\OnlineCourse\OnlineCourseWriter;
 
 /**
@@ -130,6 +132,21 @@ final readonly class McpOnlineCourseFields
             $written[] = 'tags';
         }
 
+        // null unlinks: the test is optional, and taking it off is a field like any other.
+        if (\array_key_exists('quizId', $given)) {
+            // Only a real null unlinks: a value that reads as no number is a mistake, not « retirer ».
+            $quizId = null === $given['quizId'] ? null : $call->optionalId('quizId');
+            if (null !== $given['quizId'] && null === $quizId) {
+                throw new McpToolException('« quizId » est l\'identifiant d\'un quiz de la bibliothèque (library_list), ou null pour retirer le test.');
+            }
+            try {
+                $this->writer->linkQuiz($course, null === $quizId ? null : $this->library->quiz($quizId, QuizTemplateVoter::VIEW));
+            } catch (OnlineCourseQuizRefused $refused) {
+                throw $this->onlineCourses->quizRefusal($refused);
+            }
+            $written[] = 'quizId';
+        }
+
         $course->touch();
 
         return $written;
@@ -149,6 +166,7 @@ final readonly class McpOnlineCourseFields
             'description' => ['type' => 'string', 'description' => 'Présentation du cours, en Markdown (prérequis, objectifs, plan).'],
             'estimatedMinutes' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 6000, 'description' => 'Durée estimée, en minutes.'],
             'tags' => ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 100], 'maxItems' => 12, 'description' => 'Les tags du cours (remplacent les précédents). Réutilise ceux de course_tag_list.'],
+            'quizId' => ['type' => ['integer', 'null'], 'description' => 'Le quiz de test du cours : un quiz de la bibliothèque de l\'enseignant (library_list) qui a au moins une question. Il s\'ouvre par le lien « Test » de la carte du cours, se passe autant de fois qu\'on veut, par quiconque lit le cours, même sans compte, et rien n\'en est enregistré. null le retire.'],
             'imageFileId' => ['type' => 'integer', 'description' => 'La vignette du cours : une image (JPEG, PNG ou WebP, 5 Mo au plus, 16/9 de préférence) de la bibliothèque de fichiers (file_list, ou déposée avec file_upload_url). Elle est copiée dans le cours et remplace la précédente.'],
         ];
     }

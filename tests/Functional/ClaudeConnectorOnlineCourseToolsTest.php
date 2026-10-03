@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Functional;
 
 use App\Entity\OnlineCourse;
+use App\Entity\QuizAnswer;
+use App\Entity\QuizQuestion;
+use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\OnlineCourseStatus;
+use App\Enum\QuestionType;
 use App\Service\OnlineCourse\OnlineCoursePageHandles;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -167,11 +171,65 @@ class ClaudeConnectorOnlineCourseToolsTest extends FunctionalTestCase
         self::assertTrue($refused['isError']);
     }
 
+    public function testATestQuizIsLinkedAndUnlinkedByName(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
+        $token = $this->accessTokenFor($teacher);
+        $quiz = $this->quizOf($teacher, withQuestion: true);
+
+        $created = $this->callTool($token, 'course_create', ['title' => 'Les clés', 'quizId' => $quiz->getId()]);
+        self::assertFalse($created['isError'], $created['text']);
+        self::assertIsArray($created['data']['quiz']);
+        self::assertSame($quiz->getId(), $created['data']['quiz']['quizId']);
+        self::assertArrayHasKey('testUrl', $created['data']['quiz']);
+        $courseId = $created['data']['courseId'];
+
+        // A field not named leaves the test alone; null takes it off.
+        $renamed = $this->callTool($token, 'course_update', ['courseId' => $courseId, 'title' => 'Les clés SQL'])['data']['quiz'];
+        self::assertIsArray($renamed);
+        self::assertSame($quiz->getId(), $renamed['quizId']);
+        self::assertNull($this->callTool($token, 'course_update', ['courseId' => $courseId, 'quizId' => null])['data']['quiz']);
+
+        // Somebody else's quiz, and an empty one, are refused - and a refused create leaves nothing.
+        $colleagueQuiz = $this->quizOf($this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.colleague'), withQuestion: true);
+        self::assertTrue($this->callTool($token, 'course_update', ['courseId' => $courseId, 'quizId' => $colleagueQuiz->getId()])['isError']);
+        self::assertTrue($this->callTool($token, 'course_update', ['courseId' => $courseId, 'quizId' => 'abc'])['isError']);
+        $empty = $this->callTool($token, 'course_create', ['title' => 'Vide', 'quizId' => $this->quizOf($teacher, withQuestion: false)->getId()]);
+        self::assertTrue($empty['isError']);
+        self::assertStringContainsString('aucune question', $empty['text']);
+        self::assertCount(1, $this->em()->getRepository(OnlineCourse::class)->findAll());
+    }
+
     public function testTheGuideOfAnInteractiveCourseIsServed(): void
     {
         $token = $this->accessTokenFor($this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude'));
 
         self::assertStringContainsString('page HTML entière et autonome', $this->callTool($token, 'format_guide', ['format' => 'cours_interactif'])['text']);
+    }
+
+    private function quizOf(User $teacher, bool $withQuestion): QuizTemplate
+    {
+        // A call to the connector goes through the kernel, which leaves the test's entities detached.
+        $teacher = $this->em()->find(User::class, $teacher->getId()) ?? $teacher;
+        $quiz = new QuizTemplate($teacher);
+        $quiz->setName('Tables et clés');
+        $quiz->setCreatedBy($teacher);
+
+        if ($withQuestion) {
+            $question = new QuizQuestion($quiz);
+            $question->setType(QuestionType::Qcm);
+            $question->setLabel('Une clé primaire est-elle unique ?');
+            $answer = new QuizAnswer($question);
+            $answer->setLabel('Oui');
+            $answer->setIsCorrect(true);
+            $question->addAnswer($answer);
+            $quiz->addQuestion($question);
+        }
+
+        $this->em()->persist($quiz);
+        $this->em()->flush();
+
+        return $quiz;
     }
 
     private function em(): EntityManagerInterface
