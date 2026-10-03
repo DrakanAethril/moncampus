@@ -10,7 +10,7 @@
 measured_at: '2026-10-03'
 
 # git rev-list --count HEAD
-commits: 2829
+commits: 2838
 
 # bin/phpunit --list-tests
-tests: 3828
+tests: 3831
