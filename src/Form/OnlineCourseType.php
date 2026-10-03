@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Entity\OnlineCourse;
+use App\Service\OnlineCourse\OnlineCourseImageStore;
 use App\Service\OnlineCourse\OnlineCourseWriter;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -29,6 +31,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *   answering (the entity ignores a slug posted by hand all the same).
  * - "tags" is a hidden field holding the labels, one per line - the documentation's own tag field,
  *   reused: the vocabulary is created by typing, so there is nothing to choose from.
+ *
+ * "image" and "removeImage" are not mapped either: the picture is a file the controller hands to
+ * App\Service\OnlineCourse\OnlineCourseImageStore, once the course has an id to file it under.
  */
 class OnlineCourseType extends AbstractType
 {
@@ -74,6 +79,21 @@ class OnlineCourseType extends AbstractType
                 'attr' => ['min' => 1, 'max' => 6000],
             ])
             ->add('tags', HiddenType::class, [
+                'mapped' => false,
+                'required' => false,
+            ])
+            ->add('image', FilePickerType::class, [
+                'label' => 'onlineCourseImageFieldLabel',
+                'help' => 'onlineCourseImageFieldHelp',
+                'mapped' => false,
+                'required' => false,
+                'policy' => OnlineCourseImageStore::policy(),
+                // Like a material, a picture picked in the bibliothèque is copied into the course's
+                // own folder, not referenced (OnlineCourseImageStore).
+                'library' => true,
+            ])
+            ->add('removeImage', CheckboxType::class, [
+                'label' => 'onlineCourseRemoveImageFieldLabel',
                 'mapped' => false,
                 'required' => false,
             ]);

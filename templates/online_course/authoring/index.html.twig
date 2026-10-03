@@ -70,8 +70,13 @@
                         {% for course in courses %}
                             <tr>
                                 <td>
-                                    <a class="cm-oc-table__title" href="{{ path('app_online_courses_edit', {id: course.id}) }}">{{ course.title }}</a>
-                                    {% if course.summary %}<span class="cm-oc-table__summary">{{ course.summary }}</span>{% endif %}
+                                    <div class="cm-oc-table__course">
+                                        {% if course.imageKey %}<img class="cm-oc-table__image" src="{{ file_url(course.imageKey) }}" alt="" loading="lazy">{% endif %}
+                                        <div>
+                                            <a class="cm-oc-table__title" href="{{ path('app_online_courses_edit', {id: course.id}) }}">{{ course.title }}</a>
+                                            {% if course.summary %}<span class="cm-oc-table__summary">{{ course.summary }}</span>{% endif %}
+                                        </div>
+                                    </div>
                                 </td>
                                 <td><twig:Cm:Badge :of="course.status"/></td>
                                 <td>

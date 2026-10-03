@@ -1,11 +1,16 @@
 {# One course on its author's public page (design/validated/cours-en-ligne.md, §5): what it is
    about, its tags, and which materials it comes with - the interactive course named first and in
-   bold when there is one, since it is the one a reader is most likely looking for. #}
+   bold when there is one, since it is the one a reader is most likely looking for. Its picture, when
+   it has one, sits above the band. #}
 {% set kinds = [] %}
 {% for material in course.materials %}
     {% if material.kind not in kinds %}{% set kinds = kinds|merge([material.kind]) %}{% endif %}
 {% endfor %}
 <a class="cm-pub-card" href="{{ path('app_public_courses_course', {handle: page.handle, slug: course.slug}) }}">
+    {% if course.imageKey %}
+        {# Decorative: the title right below says what the course is. #}
+        <img class="cm-pub-card__image" src="{{ file_url(course.imageKey) }}" alt="" loading="lazy">
+    {% endif %}
     <span class="cm-pub-card__band cm-pub-card__band--{{ (course.id % 4) + 1 }}">
         {% for tag in course.tags|slice(0, 1) %}{{ tag.label }}{% else %}{{ 'onlineCourseNavLabel'|trans }}{% endfor %}
     </span>

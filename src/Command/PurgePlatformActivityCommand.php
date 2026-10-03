@@ -7,6 +7,7 @@ namespace App\Command;
 use App\Repository\ConsoleSessionRepository;
 use App\Repository\JobboardOfferRepository;
 use App\Repository\LearningPathEnrollmentRepository;
+use App\Repository\McpUploadSlotRepository;
 use App\Repository\MobileSessionRepository;
 use App\Repository\OAuthAuthorizationCodeRepository;
 use App\Repository\OAuthClientRepository;
@@ -49,7 +50,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * is still recognised - and answered by revoking its connection - rather than met as a stranger.
  * The clients nobody ever consented to go at the same age: registration is open to the internet by
  * specification, and each probe leaves a row. Consented clients and their grants stay, as the trace
- * of who acted through the connector.
+ * of who acted through the connector. Its upload addresses (App\Entity\McpUploadSlot) go at the
+ * same age: an address lives a quarter of an hour, and the file it produced is the library's.
  *
  * **A sixth since the mobile refresh tokens: the dead mobile sessions, 30 days after their end**
  * (App\Entity\MobileSession - run out after 30 idle days, or revoked). A dead session opens nothing,
@@ -94,6 +96,7 @@ class PurgePlatformActivityCommand extends Command
         private readonly OAuthClientRepository $oauthClients,
         private readonly MobileSessionRepository $mobileSessions,
         private readonly LearningPathEnrollmentRepository $learningPathEnrollments,
+        private readonly McpUploadSlotRepository $uploadSlots,
     ) {
         parent::__construct();
     }
@@ -143,10 +146,11 @@ class PurgePlatformActivityCommand extends Command
                 $jobboardThreshold->format('d/m/Y'),
             ));
             $io->info(\sprintf(
-                '%d jeton(s), %d code(s) et %d client(s) OAuth du connecteur Claude expirés avant le %s seraient supprimés.',
+                '%d jeton(s), %d code(s), %d client(s) OAuth et %d adresse(s) d\'envoi du connecteur Claude expirés avant le %s seraient supprimés.',
                 $this->oauthTokens->countExpiredBefore($oauthThreshold),
                 $this->oauthCodes->countExpiredBefore($oauthThreshold),
                 $this->oauthClients->countUnconsentedBefore($oauthThreshold),
+                $this->uploadSlots->countExpiredBefore($oauthThreshold),
                 $oauthThreshold->format('d/m/Y'),
             ));
             $io->info(\sprintf(
@@ -182,7 +186,8 @@ class PurgePlatformActivityCommand extends Command
         $tokens = $this->oauthTokens->deleteExpiredBefore($oauthThreshold);
         $codes = $this->oauthCodes->deleteExpiredBefore($oauthThreshold);
         $clients = $this->oauthClients->deleteUnconsentedBefore($oauthThreshold);
-        $io->success(\sprintf('%d jeton(s), %d code(s) et %d client(s) OAuth du connecteur Claude supprimé(s).', $tokens, $codes, $clients));
+        $slots = $this->uploadSlots->deleteExpiredBefore($oauthThreshold);
+        $io->success(\sprintf('%d jeton(s), %d code(s), %d client(s) OAuth et %d adresse(s) d\'envoi du connecteur Claude supprimé(s).', $tokens, $codes, $clients, $slots));
 
         // The same 30 days as the connector's secrets, read on the day the session died.
         $mobile = $this->mobileSessions->deleteDeadBefore($oauthThreshold);

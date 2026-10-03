@@ -12804,6 +12804,10 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 .cm-oc-table__title { font-weight: 600; color: var(--cm-ink); text-decoration: none; }
 .cm-oc-table__title:hover { color: var(--cm-brand); text-decoration: underline; }
 .cm-oc-table__summary { display: block; color: var(--cm-muted); font-size: 12.5px; margin-top: 2px; }
+/* The course's picture, at the public card's 16:9, small enough to leave the title the row. */
+.cm-oc-table__course { display: flex; align-items: flex-start; gap: 10px; }
+.cm-oc-table__image { flex: none; width: 64px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 4px; border: 1px solid var(--cm-border-soft); }
+.cm-oc-image-preview { display: block; width: 100%; max-width: 320px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--cm-radius-sm); border: 1px solid var(--cm-border); margin-bottom: 8px; }
 .cm-oc-table__none { color: var(--cm-faint); font-size: 12.5px; }
 .cm-oc-table__date { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--cm-muted); }
 .cm-oc-badges { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -12928,6 +12932,7 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
     background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
 }
 .cm-pub-card:hover { border-color: var(--cm-brand); text-decoration: none; color: var(--cm-text); }
+.cm-pub-card__image { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--cm-border-soft); }
 .cm-pub-card__band { padding: 12px 14px; font: 600 12px var(--cm-font-mono); letter-spacing: .3px; }
 .cm-pub-card__band--1 { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
 .cm-pub-card__band--2 { background: var(--cm-green-bg); color: var(--cm-green-tx); }

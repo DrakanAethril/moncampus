@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Mcp;
 
+use App\Entity\FileLibraryNode;
 use App\Entity\OnlineCourse;
 use App\Repository\OnlineCourseRepository;
+use App\Service\OnlineCourse\OnlineCourseImageStore;
+use App\Service\OnlineCourse\OnlineCourseMaterialRefused;
 use App\Service\OnlineCourse\OnlineCourseWriter;
 
 /**
- * The card of a course as course_create and course_update take it: every field named is written,
+ * The card of a course as course_create and course_update take it - its picture included, by
+ * `imageFileId` alone: the platform never fetches a picture from an address. Every field named is written,
  * **a field not named is left as it is** - an update that emptied what it was not told about would
  * erase a teacher's summary because Claude was asked to fix a typo in the title.
  *
@@ -21,7 +25,48 @@ final readonly class McpOnlineCourseFields
     public function __construct(
         private OnlineCourseWriter $writer,
         private OnlineCourseRepository $courses,
+        private McpLibraryAccess $library,
+        private OnlineCourseImageStore $images,
+        private McpOnlineCourses $onlineCourses,
     ) {
+    }
+
+    /**
+     * The picture named by `imageFileId`, checked before anything is written - course_create reads
+     * it ahead of creating the course, so that a wrong image refuses the call whole rather than
+     * leaving a course behind without it.
+     *
+     * @throws McpToolException
+     */
+    public function image(McpToolCall $call): ?FileLibraryNode
+    {
+        $fileId = $call->optionalId('imageFileId');
+        if (null === $fileId) {
+            return null;
+        }
+
+        $file = $this->library->file($fileId);
+        try {
+            $this->images->assertAccepted($file);
+        } catch (OnlineCourseMaterialRefused $refused) {
+            throw $this->onlineCourses->refusal($refused);
+        }
+
+        return $file;
+    }
+
+    /**
+     * Copies the picture into the course's folder. The course must have been flushed once.
+     *
+     * @throws McpToolException
+     */
+    public function applyImage(OnlineCourse $course, FileLibraryNode $image): void
+    {
+        try {
+            $this->images->set($course, $image);
+        } catch (OnlineCourseMaterialRefused $refused) {
+            throw $this->onlineCourses->refusal($refused);
+        }
     }
 
     /**
@@ -104,6 +149,7 @@ final readonly class McpOnlineCourseFields
             'description' => ['type' => 'string', 'description' => 'Présentation du cours, en Markdown (prérequis, objectifs, plan).'],
             'estimatedMinutes' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 6000, 'description' => 'Durée estimée, en minutes.'],
             'tags' => ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 100], 'maxItems' => 12, 'description' => 'Les tags du cours (remplacent les précédents). Réutilise ceux de course_tag_list.'],
+            'imageFileId' => ['type' => 'integer', 'description' => 'La vignette du cours : une image (JPEG, PNG ou WebP, 5 Mo au plus, 16/9 de préférence) de la bibliothèque de fichiers (file_list, ou déposée avec file_upload_url). Elle est copiée dans le cours et remplace la précédente.'],
         ];
     }
 }
