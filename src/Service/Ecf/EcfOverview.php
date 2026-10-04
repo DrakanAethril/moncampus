@@ -13,7 +13,8 @@ use App\Enum\EcfActivityState;
 
 /**
  * One alternance's ECF booklet as the follow-up card and the overview screen read it - built once
- * per screen by EcfBookletOverview.
+ * per screen by EcfBookletOverview. $settings holds what the ECF tab keeps (dates, organisme),
+ * $title what is read from « Dénomination » (EcfTitle).
  */
 final readonly class EcfOverview
 {
@@ -26,6 +27,7 @@ final readonly class EcfOverview
     public function __construct(
         public EcfBooklet $booklet,
         public ProgramEcfSettings $settings,
+        public EcfTitle $title,
         public array $rows,
         public array $excluded,
         public array $orphans,

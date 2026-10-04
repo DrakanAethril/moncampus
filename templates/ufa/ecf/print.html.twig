@@ -229,8 +229,8 @@
     </div>
     <div class="cover__band">Titre professionnel</div>
     <div class="cover__bandline"></div>
-    <div class="cover__name">{{ settings.titleLabel }}</div>
-    <div class="cover__level">{% if settings.level %}Niveau {{ settings.level }}{% endif %}</div>
+    <div class="cover__name">{{ title.label }}</div>
+    <div class="cover__level">{% if title.level %}Niveau {{ title.level }}{% endif %}</div>
     <div class="cover__dates">
         <div><span>Arrêté du :</span><span>{{ settings.decreeDate ? settings.decreeDate|date('d/m/Y') }}</span></div>
         <div><span>J.O. du :</span><span>{{ settings.journalDate ? settings.journalDate|date('d/m/Y') }}</span></div>

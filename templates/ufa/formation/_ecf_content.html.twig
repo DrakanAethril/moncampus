@@ -1,21 +1,32 @@
-{# « Livret ECF » - the switch, the titre as the ministry's template prints it, and the
-   activity-types the booklet will read from the « Compétences » tab (design/validated/ecf-booklet.md §4).
-   The administration reads it; the form is disabled for anyone but an administrator. #}
+{# « Livret ECF » - the switch, the dates the ministry's template prints and the organisme
+   (design/validated/ecf-booklet.md §4). The titre is read from « Dénomination » and the
+   activity-types from « Compétences », so neither is shown here - only what keeps a student from
+   getting a booklet. The administration reads it; the form is disabled for anyone but an
+   administrator. #}
 {{ form_start(form) }}
     {{ form_errors(form) }}
     <div class="d-flex flex-column gap-3">
         <div>
             {{ form_row(form.enabled, {label_attr: {class: 'checkbox-switch'}, help: 'ecfSettingsEnabledFieldHelp'|trans}) }}
         </div>
+        {% if not hasActivityTypes or optionsWithoutTitle is not empty %}
+            <div class="cm-note cm-note--gold">
+                <span class="cm-note__icon">!</span>
+                <div>
+                    {% if not hasActivityTypes %}
+                        <div>{{ 'ecfSettingsRefusalNoGroupMessage'|trans }}</div>
+                    {% endif %}
+                    {% for option in optionsWithoutTitle %}
+                        <div>{{ (option ? 'ecfSettingsOptionWithoutTitleMessage' : 'ecfSettingsProgramWithoutTitleMessage')|trans({'%option%': option ? option.name : ''}) }}</div>
+                    {% endfor %}
+                    {% if optionsWithoutTitle is not empty %}
+                        <a href="{{ path('app_ufa_formation_denomination', {id: program.id}) }}">{{ 'ecfSettingsDenominationLinkLabel'|trans }}</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
 
-        <twig:Cm:Subhead :title="'ecfSettingsTitleSectionTitle'|trans" :hint="'ecfSettingsTitleSectionHint'|trans"/>
-        <div class="row">
-            <div class="col-md-8">{{ form_row(form.titleLabel) }}</div>
-            <div class="col-md-2">{{ form_row(form.sigle) }}</div>
-            <div class="col-md-2">{{ form_row(form.level) }}</div>
-            <div class="col-md-4">{{ form_row(form.titleCode, {help: 'ecfSettingsTitleCodeFieldHelp'|trans}) }}</div>
-            <div class="col-md-2">{{ form_row(form.millesime) }}</div>
-        </div>
+        <twig:Cm:Subhead :title="'ecfSettingsDatesSectionTitle'|trans" :hint="'ecfSettingsDatesSectionHint'|trans"/>
         <div class="row">
             <div class="col-md-3">{{ form_row(form.decreeDate) }}</div>
             <div class="col-md-3">{{ form_row(form.journalDate) }}</div>
@@ -28,54 +39,6 @@
             <div class="col-md-6">{{ form_row(form.organisation) }}</div>
             <div class="col-md-6">{{ form_row(form.place) }}</div>
         </div>
-
-        <twig:Cm:Subhead :title="'ecfSettingsGroupsSectionTitle'|trans" :hint="'ecfSettingsGroupsSectionHint'|trans"/>
-        {% if groups is empty %}
-            <p class="text-secondary mb-0">{{ 'ecfSettingsNoGroupText'|trans }}</p>
-        {% else %}
-            <table class="table cm-table align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th style="width: 90px">{{ 'ecfSettingsGroupCodeColumn'|trans }}</th>
-                        <th>{{ 'ecfSettingsGroupLabelColumn'|trans }}</th>
-                        <th>{{ 'ecfSettingsGroupCompetencesColumn'|trans }}</th>
-                        <th>{{ 'ecfSettingsGroupOptionsColumn'|trans }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for group in groups %}
-                        <tr>
-                            <td>
-                                {% if group.code|trim is empty %}
-                                    <twig:Cm:Badge tone="red">{{ 'ecfSettingsGroupNoCodeBadge'|trans }}</twig:Cm:Badge>
-                                {% else %}
-                                    <strong>{{ group.code }}</strong>
-                                {% endif %}
-                            </td>
-                            <td>{{ group.label }}</td>
-                            <td class="text-secondary">{{ group.skills|filter(s => s.inactiveDate is null)|length }}</td>
-                            <td class="text-secondary">
-                                {% if group.options is empty %}
-                                    {{ 'ecfSettingsGroupAllOptionsLabel'|trans }}
-                                {% else %}
-                                    {{ group.options|map(o => o.name)|join(', ') }}
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% endif %}
-        {% if refusals is not empty %}
-            <div class="cm-note cm-note--gold">
-                <span class="cm-note__icon">!</span>
-                <div>
-                    {% for refusal in refusals %}
-                        <div>{{ refusal.key|trans(refusal.params) }}</div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endif %}
     </div>
 
     {% if canEdit %}

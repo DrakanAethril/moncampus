@@ -36,7 +36,7 @@
                 <div class="cm-note">
                     <span class="cm-note__icon">i</span>
                     <div>
-                        {{ 'ecfCoverTitleNote'|trans({'%title%': ecf.settings.titleLabel, '%level%': ecf.settings.level ?? '—', '%organisation%': ecf.settings.organisation ?? '—'}) }}
+                        {{ 'ecfCoverTitleNote'|trans({'%title%': ecf.title.label, '%level%': ecf.title.level ?? '—', '%organisation%': ecf.settings.organisation ?? '—'}) }}
                         {% if is_granted('ROLE_ADMIN') %}
                             <a href="{{ path('app_ufa_formation_ecf', {id: tutorLink.program.id}) }}">{{ 'ecfCoverSettingsLink'|trans }}</a>
                         {% endif %}

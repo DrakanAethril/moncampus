@@ -460,8 +460,10 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   read by the administration, written and signed by administrators only (`EcfBookletVoter`). Its
   activity-types are the Livret de l'alternant's groups, options included
   (`BookletSkillGroups::forTutorLink()`), found again from one year to the next by
-  `SkillGroup::$code`; the booklet follows the student and the titre (code + millésime), not the
-  Program. A visa is the connected person's click, dated by the server, and freezes what it signed.
+  `SkillGroup::$code` - a group with no code stays out; the booklet follows the student and the
+  titre (code + millésime), not the Program. **The titre is never typed in the ECF tab**: it is read
+  per student from « Dénomination » (`EcfTitle`) - the denomination, the level, code titre and
+  millésime of their option's `ProgramCertification`, the option's short name as sigle. A visa is the connected person's click, dated by the server, and freezes what it signed.
   Once closed, the administration offers it to the student, who reads it and signs it « pour
   information » from « Mon alternance » (`EcfCandidateSignature`); reopening the booklet withdraws both.
   The PDF (`templates/ufa/ecf/print.html.twig`, also the online reader's frame) reproduces the
