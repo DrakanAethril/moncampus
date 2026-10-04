@@ -28,6 +28,10 @@ enum UfaActivityType: string
     case ReminderSent = 'reminder_sent';
     case AlternanceTerminated = 'alternance_terminated';
     case AlternanceResumed = 'alternance_resumed';
+    // The ECF booklet (design/validated/ecf-booklet.md): a visa given, visas taken back to edit a
+    // signed part. %part% names the part (« Activité-type 2 », « Synthèse »).
+    case EcfSigned = 'ecf_signed';
+    case EcfUnsigned = 'ecf_unsigned';
 
     /**
      * The placeholders available are those the recorder puts in the payload: %student%, %tutor%,
@@ -46,6 +50,8 @@ enum UfaActivityType: string
             self::ReminderSent => 'ufaActivityReminderSentText',
             self::AlternanceTerminated => 'ufaActivityAlternanceTerminatedText',
             self::AlternanceResumed => 'ufaActivityAlternanceResumedText',
+            self::EcfSigned => 'ufaActivityEcfSignedText',
+            self::EcfUnsigned => 'ufaActivityEcfUnsignedText',
         };
     }
 }

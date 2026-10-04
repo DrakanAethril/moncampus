@@ -163,6 +163,10 @@
         </div>
     </div>
 
+    {% if ecf %}
+        {% include 'ufa/ecf/_follow_up_card.html.twig' with {ecf: ecf, tutorLink: tutorLink} only %}
+    {% endif %}
+
     <div class="modal modal-blur fade" tabindex="-1" data-reminder-modal-target="modal">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content" data-reminder-modal-target="content"></div>

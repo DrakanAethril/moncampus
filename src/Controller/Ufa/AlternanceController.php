@@ -20,10 +20,14 @@ use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
 use App\Repository\UserRepository;
+use App\Security\FeatureAccess;
+use App\Security\Voter\EcfBookletVoter;
 use App\Service\AlternanceEngagementService;
 use App\Service\AlternanceModalityAssigner;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceTerminationService;
+use App\Service\Ecf\EcfBookletOverview;
+use App\Service\Ecf\EcfOverview;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -140,7 +144,7 @@ class AlternanceController extends AbstractController
     // engagement summary, and one row per period whose 3-role chain links into each role's wizard.
     #[Route(path: '/ufa/alternances/{id}', name: 'app_ufa_alternance_show', requirements: ['id' => '\d+'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function show(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceEngagementService $engagementService, InternshipReminderRepository $reminderRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository): Response
+    public function show(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceEngagementService $engagementService, InternshipReminderRepository $reminderRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository, EcfBookletOverview $ecfOverview, FeatureAccess $featureAccess): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $student = $tutorLink->getStudent();
@@ -171,6 +175,7 @@ class AlternanceController extends AbstractController
             'periodRows' => $periodRows,
             'lastReminder' => $reminders[0] ?? null,
             'canRemind' => $currentStatus->isLate && null !== $this->reminderStepFor($currentStatus->step),
+            'ecf' => $this->ecfOverview($tutorLink, $ecfOverview, $featureAccess),
         ]);
     }
 
@@ -287,6 +292,19 @@ class AlternanceController extends AbstractController
 
     // Program-scoped variant for the edit form (the picked student must stay within the
     // alternance's own Program) - same shape as Program\ProgramInternshipTrait::resolveProgramStudent().
+    // The « Livret ECF » card (design/validated/ecf-booklet.md §4): only when the feature is lit,
+    // the formation keeps the booklet and the reader may see it.
+    private function ecfOverview(InternshipTutorLink $tutorLink, EcfBookletOverview $ecfOverview, FeatureAccess $featureAccess): ?EcfOverview
+    {
+        if (!$featureAccess->isEnabled(Feature::UfaEcf)) {
+            return null;
+        }
+
+        $overview = $ecfOverview->build($tutorLink);
+
+        return null !== $overview && $this->isGranted(EcfBookletVoter::VIEW, $overview->booklet) ? $overview : null;
+    }
+
     private function resolveProgramStudent(Program $program, mixed $studentId): ?User
     {
         if (!is_numeric($studentId)) {

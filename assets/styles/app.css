@@ -13195,3 +13195,18 @@ a.cm-pub-tag:hover { color: var(--cm-ink); text-decoration: none; }
 .cm-lp-detail td { background: var(--cm-surface-alt); }
 .cm-lp-detail ol { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; font-size: 13px; }
 .cm-lp-retention { margin: 12px 0 0; }
+
+/* ECF booklet (design/validated/ecf-booklet.md): the follow-up card's chips, one per activity-type. */
+.cm-ecf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cm-ecf-chip { display: grid; gap: 1px; min-width: 160px; padding: 7px 11px; border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); }
+.cm-ecf-chip__key { font: 700 11px var(--cm-font-ui); letter-spacing: .05em; text-transform: uppercase; color: var(--cm-muted); }
+.cm-ecf-chip__state { font-size: 13px; color: var(--cm-text); }
+.cm-ecf-chip--satisfied { background: var(--cm-green-bg); border-color: transparent; }
+.cm-ecf-chip--satisfied .cm-ecf-chip__state { color: var(--cm-green-tx); }
+.cm-ecf-chip--not_satisfied { background: var(--cm-gold-bg); border-color: transparent; }
+.cm-ecf-chip--not_satisfied .cm-ecf-chip__state { color: var(--cm-gold-tx); }
+.cm-ecf-chip--in_progress { border-color: var(--cm-blue-tx); }
+.cm-ecf-chip--in_progress .cm-ecf-chip__state { color: var(--cm-blue-tx); }
+.cm-ecf-chip--excluded { border-style: dashed; }
+.cm-ecf-chip--excluded .cm-ecf-chip__key,
+.cm-ecf-chip--excluded .cm-ecf-chip__state { color: var(--cm-faint); text-decoration: line-through; }
