@@ -85,6 +85,7 @@ enum Feature: string
     // --- Alternance et insertion -------------------------------------------------------------
 
     case UfaBooklet = 'ufa_booklet';
+    case UfaEcf = 'ufa_ecf';
     case MyAlternance = 'my_alternance';
     case TutorEvaluations = 'tutor_evaluations';
     case LaptopLoans = 'laptop_loans';
@@ -149,7 +150,7 @@ enum Feature: string
             self::SchoolMailSupervision, self::SignupLists, self::Support,
             self::Help => FeatureFamily::Communication,
 
-            self::UfaBooklet, self::MyAlternance, self::TutorEvaluations, self::LaptopLoans,
+            self::UfaBooklet, self::UfaEcf, self::MyAlternance, self::TutorEvaluations, self::LaptopLoans,
             self::TrainingOffers, self::JobSearch, self::Jobboard, self::CompanySearch,
             self::EnterprisePool => FeatureFamily::Alternance,
 
@@ -237,6 +238,7 @@ enum Feature: string
             self::Support => 'featureSupportLabel',
             self::Help => 'featureHelpLabel',
             self::UfaBooklet => 'featureUfaBookletLabel',
+            self::UfaEcf => 'featureUfaEcfLabel',
             self::MyAlternance => 'featureMyAlternanceLabel',
             self::TutorEvaluations => 'featureTutorEvaluationsLabel',
             self::LaptopLoans => 'featureLaptopLoansLabel',
@@ -384,6 +386,12 @@ enum Feature: string
             // and a file of names, addresses and options. The routes are staff/admin either way -
             // this line only says which of those two the establishment delivers it to by default.
             self::ClassListExports => ['ROLE_STAFF', 'ROLE_STAFF-LEAD'],
+
+            // The ECF booklet (design/validated/ecf-booklet.md) is read by the administration on the
+            // alternance follow-up and written by administrators alone - App\Security\Voter\EcfBookletVoter
+            // holds that split. The real switch is per formation (ProgramEcfSettings::$enabled), off
+            // by default, so lighting the feature shows nothing until a formation turns it on.
+            self::UfaEcf => ['ROLE_STAFF', 'ROLE_STAFF-LEAD'],
 
             default => null,
         };

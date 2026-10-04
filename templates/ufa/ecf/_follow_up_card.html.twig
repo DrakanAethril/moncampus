@@ -1,0 +1,56 @@
+{# « Livret d'évaluations en cours de formation » on the alternance follow-up
+   (design/validated/ecf-booklet.md §4, screen 1): one chip per activity-type with its state, the
+   groups the student does not get struck through, the synthesis last. #}
+<div class="card mt-3">
+    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+        <h3 class="card-title mb-0">{{ 'ecfFollowUpCardTitle'|trans }}</h3>
+        {% if ecf.booklet.closed %}
+            <twig:Cm:Badge tone="green">{{ 'ecfBookletClosedBadge'|trans }}</twig:Cm:Badge>
+        {% elseif ecf.started %}
+            <twig:Cm:Badge tone="blue">{{ 'ecfBookletInProgressBadge'|trans }}</twig:Cm:Badge>
+        {% else %}
+            <twig:Cm:Badge tone="gray">{{ 'ecfBookletNotStartedBadge'|trans }}</twig:Cm:Badge>
+        {% endif %}
+    </div>
+    <div class="card-body d-flex flex-column gap-2">
+        <div class="text-secondary small">
+            {{ 'ecfFollowUpCardTitleLine'|trans({'%sigle%': ecf.settings.sigle ?: ecf.settings.titleLabel, '%code%': ecf.booklet.titleCode, '%millesime%': ecf.booklet.millesime}) }}
+            {%- if ecf.started %} · {{ 'ecfFollowUpCardOpenedOnLabel'|trans({'%date%': ecf.booklet.createdAt|date('d/m/Y')}) }}{% endif %}
+        </div>
+        <div class="cm-ecf-chips">
+            {% for row in ecf.rows %}
+                <div class="cm-ecf-chip cm-ecf-chip--{{ row.state.value }}">
+                    <span class="cm-ecf-chip__key">{{ 'ecfActivityTypeNumberLabel'|trans({'%number%': row.type.number}) }}</span>
+                    <span class="cm-ecf-chip__state">
+                        {{ row.state.labelKey|trans }}
+                        {%- if row.lastVisa %} · {{ 'ecfSignedOnShortLabel'|trans({'%date%': row.lastVisa.signedAt|date('d/m/Y')}) }}{% endif %}
+                    </span>
+                </div>
+            {% endfor %}
+            {% for group in ecf.excluded %}
+                <div class="cm-ecf-chip cm-ecf-chip--excluded" title="{{ 'ecfExcludedGroupTitle'|trans }}">
+                    <span class="cm-ecf-chip__key">{{ group.label }}</span>
+                    <span class="cm-ecf-chip__state">{{ 'ecfExcludedGroupLabel'|trans({'%options%': group.options|map(o => o.name)|join(', ')}) }}</span>
+                </div>
+            {% endfor %}
+            <div class="cm-ecf-chip cm-ecf-chip--{{ ecf.booklet.closed ? 'satisfied' : (ecf.synthesisOpen ? 'in_progress' : 'to_fill') }}">
+                <span class="cm-ecf-chip__key">{{ 'ecfSynthesisLabel'|trans }}</span>
+                <span class="cm-ecf-chip__state">
+                    {% if ecf.booklet.closed %}
+                        {{ 'ecfSynthesisClosedLabel'|trans({'%date%': ecf.booklet.closedAt|date('d/m/Y')}) }}
+                    {% elseif ecf.synthesisOpen %}
+                        {{ 'ecfSynthesisOpenLabel'|trans }}
+                    {% else %}
+                        {{ 'ecfSynthesisWaitingLabel'|trans({'%count%': ecf.rows|length}) }}
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        {% if ecf.orphans is not empty %}
+            <div class="cm-note cm-note--gold">
+                <span class="cm-note__icon">!</span>
+                <div>{{ 'ecfOrphanActivitiesNote'|trans({'%codes%': ecf.orphans|map(a => a.groupCode)|join(', ')}) }}</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
