@@ -78,6 +78,9 @@ class SequenceFolderManager
         }
 
         $oldPrefix = $folder->childPath();
+        // Read before the node's own path changes: the query matches the descendants' paths as the
+        // database still holds them, which is under the old prefix.
+        $subtree = $this->folders->findSubtree($folder);
         $folder->setParent($newParent);
         $folder->setName($this->tree->uniqueName($folder->getName(), $this->folders->siblingNames($folder->getOwner(), $newParent, $folder->getId())));
         $folder->setPath($this->tree->pathFor($newParent));
@@ -87,7 +90,7 @@ class SequenceFolderManager
         // The one operation here that touches more than one row. Done in PHP over the subtree rather
         // than as a raw UPDATE so the in-memory entities stay true - the screen is redrawn from them
         // in the same request.
-        foreach ($this->folders->findSubtree($folder) as $descendant) {
+        foreach ($subtree as $descendant) {
             if ($descendant->getId() === $folder->getId()) {
                 continue;
             }

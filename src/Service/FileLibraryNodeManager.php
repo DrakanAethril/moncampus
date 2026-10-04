@@ -100,6 +100,9 @@ class FileLibraryNodeManager
         }
 
         $oldPrefix = $this->tree->childPath($node->getPath(), (int) $node->getId());
+        // Read before the node's own path changes: the query matches the descendants' paths as the
+        // database still holds them, which is under the old prefix.
+        $subtree = $this->nodes->findSubtree($node);
         $node->setParent($newParent);
         $node->setName($this->tree->uniqueName($node->getName(), $this->nodes->siblingNames($node->getOwner(), $newParent, $node->getId())));
         $node->setPath($this->tree->pathFor($newParent));
@@ -109,7 +112,7 @@ class FileLibraryNodeManager
         // The one operation in this feature that touches more than one row. Done in PHP over the
         // subtree rather than as a raw UPDATE so the in-memory entities stay true - the screen is
         // redrawn from them in the same request.
-        foreach ($this->nodes->findSubtree($node) as $descendant) {
+        foreach ($subtree as $descendant) {
             if ($descendant->getId() === $node->getId()) {
                 continue;
             }

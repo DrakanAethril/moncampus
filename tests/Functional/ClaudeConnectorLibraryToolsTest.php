@@ -27,7 +27,7 @@ class ClaudeConnectorLibraryToolsTest extends FunctionalTestCase
 
         $names = $this->toolNames($token);
 
-        foreach (['library_list', 'format_guide', 'quiz_get', 'quiz_validate', 'quiz_create', 'quiz_add_questions', 'sequence_get', 'sequence_validate', 'sequence_create', 'sequence_add_seances', 'folder_create', 'quiz_link'] as $tool) {
+        foreach (['library_list', 'format_guide', 'quiz_get', 'quiz_validate', 'quiz_create', 'quiz_add_questions', 'sequence_get', 'sequence_validate', 'sequence_create', 'sequence_add_seances', 'folder_create', 'library_move', 'quiz_link'] as $tool) {
             self::assertContains($tool, $names);
         }
     }
