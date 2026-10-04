@@ -13,7 +13,7 @@
 {% block title %}{{ board.name }}{% endblock %}
 
 {% block body %}
-{# « Nature » is the photograph of the day (App\Service\ClassBoard\ClassBoardPhotoOfTheDay), stored
+{# « Photo » is the photograph of the day (App\Service\ClassBoard\ClassBoardPhotoOfTheDay), stored
    with the uploads; without one yet, app.css falls back to the photograph shipped with the app. #}
 <div class="cm-cb" data-background="{{ board.background.value }}"
      {% if photo and photo.storageKey %}style="--cb-nature-photo: url('{{ file_url(photo.storageKey)|e('css') }}')"{% endif %}
@@ -39,7 +39,7 @@
                 {% include 'class_board/_widget.html.twig' %}
             {% endfor %}
 
-            {# The credit the licence asks for, under every widget. Shown on « Nature » only. #}
+            {# The credit the licence asks for, under every widget. Shown on « Photo » only. #}
             {% if photo and photo.storageKey %}
                 <p class="cm-cb__credit">
                     {{ 'classBoardPhotoCreditLabel'|trans }}

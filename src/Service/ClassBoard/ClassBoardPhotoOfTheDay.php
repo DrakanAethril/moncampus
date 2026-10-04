@@ -12,7 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 
 /**
- * The photograph behind the « Nature » boards, a new one each day (design/validated/tableau-virtuel.md §3).
+ * The photograph behind the « Photo » boards, a new one each day (design/validated/tableau-virtuel.md §3).
  *
  * fetch() and clean() are `app:class-board:photo`'s two halves; shown() is what a board reads. The
  * photograph is drawn at random from CommonsNaturePhotos' pool, never one shown in the last two

@@ -12415,7 +12415,7 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
     position: relative; aspect-ratio: 16 / 9; width: min(100vw, calc(100vh * 16 / 9)); max-height: 100vh;
     container-type: inline-size; overflow: hidden; user-select: none;
 }
-/* « Nature »: the photograph of the day, which the page hands over in --cb-nature-photo (a copy of
+/* « Photo »: the photograph of the day, which the page hands over in --cb-nature-photo (a copy of
    a Commons file in the uploads bucket, App\Service\ClassBoard\ClassBoardPhotoOfTheDay). Until the
    first one is fetched, the photograph shipped with the application: Ciucaș Peak, Romania, by David
    Marcu - CC0, credited in NOTICE. Neither is ever hotlinked from a third party. */
