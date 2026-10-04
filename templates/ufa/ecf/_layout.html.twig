@@ -1,0 +1,29 @@
+{# Shared frame of the ECF screens: the trail Accueil › UFA › {étudiant} › Livret ECF › {écran}.
+   A screen sets `ecfScreenLabel` (null on the overview itself) and fills `ecf_main`. #}
+{% extends 'layout/app.html.twig' %}
+
+{% set studentName = tutorLink.student.displayName ?? tutorLink.student.username %}
+
+{% block title %}{{ 'ecfBookletPageHeading'|trans }} — {{ studentName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% set segments = [
+        {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
+        {label: studentName, url: path('app_ufa_alternance_show', {id: tutorLink.id})},
+        {label: 'ecfBookletPageHeading'|trans, url: path('app_ufa_ecf', {id: tutorLink.id})},
+    ] %}
+    {% if ecfScreenLabel is defined and ecfScreenLabel %}
+        {% set segments = segments|merge([{label: ecfScreenLabel, url: app.request.requestUri}]) %}
+    {% endif %}
+    {{ component('Cm:Breadcrumb', {segments: segments}) }}
+{% endblock %}
+
+{% block page_title %}{{ (ecfScreenLabel is defined and ecfScreenLabel) ? ecfScreenLabel : 'ecfBookletPageHeading'|trans ~ ' — ' ~ studentName }}{% endblock %}
+
+{% block main %}
+    <div class="text-secondary mb-3" style="margin-top: -8px;">
+        {{ ecf.settings.titleLabel }} · {{ ecf.booklet.titleCode }} · {{ 'ecfMillesimeLabel'|trans({'%millesime%': ecf.booklet.millesime}) }}
+        {%- if ecf.booklet.closed %} · <twig:Cm:Badge tone="green">{{ 'ecfBookletClosedOnBadge'|trans({'%date%': ecf.booklet.closedAt|date('d/m/Y')}) }}</twig:Cm:Badge>{% endif %}
+    </div>
+    {% block ecf_main %}{% endblock %}
+{% endblock %}

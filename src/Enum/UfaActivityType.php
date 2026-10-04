@@ -35,7 +35,7 @@ enum UfaActivityType: string
 
     /**
      * The placeholders available are those the recorder puts in the payload: %student%, %tutor%,
-     * %actor%, %period%, %role%.
+     * %actor%, %period%, %role% - and %part% for the ECF visas, which the controller passes.
      */
     public function messageKey(): string
     {

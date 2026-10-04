@@ -1,0 +1,10 @@
+{# One editable evaluation line. `index` may be the template placeholder. #}
+<div class="cm-ecf-row" data-ecf-sheet-target="row">
+    <span class="cm-ecf-row__n" data-ecf-sheet-target="number">{{ number }}</span>
+    <textarea class="form-control" rows="3" name="rows[{{ index }}][description]" data-ecf-sheet-target="description" placeholder="{{ 'ecfRowDescriptionPlaceholder'|trans }}" aria-label="{{ 'ecfRowDescriptionPlaceholder'|trans }}">{{ description }}</textarea>
+    <div class="cm-ecf-row__side">
+        <input class="form-control" type="date" name="rows[{{ index }}][date]" value="{{ date }}" aria-label="{{ 'ecfRowDateLabel'|trans }}">
+        {% include 'ufa/ecf/_competence_boxes.html.twig' with {name: 'rows[' ~ index ~ '][competences][]', checked: checked, labels: labels} only %}
+        <button type="button" class="btn btn-link btn-sm text-danger p-0 align-self-start" data-action="ecf-sheet#removeRow">{{ 'ecfRemoveRowAction'|trans }}</button>
+    </div>
+</div>

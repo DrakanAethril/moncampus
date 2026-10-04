@@ -1,0 +1,73 @@
+{# The visa lines of one part: who signed, the evaluation date, « Signé numériquement le … », and
+   the in-page confirmation that gives the next visa. `view` comes from EcfBookletController::visaView(). #}
+{% set formerSigned = view.bySlot is not empty %}
+<div class="d-flex flex-column gap-2">
+    <div class="fw-bold">{{ (view.part.value == 'synthesis' ? 'ecfEvaluatorsSynthesisTitle' : 'ecfEvaluatorsTitle')|trans }}</div>
+    <div class="cm-ecf-visas">
+        {% for slot in view.slots %}
+            {% set visa = view.bySlot[slot.value] ?? null %}
+            <div class="cm-ecf-visa">
+                <div><span class="cm-ecf-visa__label">{{ slot.labelKey|trans }}</span>{{ visa ? visa.signerName : '—' }}</div>
+                <div><span class="cm-ecf-visa__label">{{ 'ecfVisaDateLabel'|trans }}</span>{{ visa ? visa.evaluatedOn|date('d/m/Y') : '—' }}</div>
+                <div class="cm-ecf-visa__stamp">{% if visa %}{{ 'ecfSignedDigitallyOn'|trans({'%date%': visa.signedAt|date('d/m/Y')}) }}{% endif %}</div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if view.offers is not empty %}
+        {% if view.missing is not empty %}
+            <div class="cm-note cm-note--gold">
+                <span class="cm-note__icon">!</span>
+                <div>{% for key in view.missing %}<div>{{ key|trans }}</div>{% endfor %}</div>
+            </div>
+        {% else %}
+            <div class="d-flex flex-wrap gap-2 align-items-start">
+                {% for slot in view.offers %}
+                    {% set isRepresentative = slot.value == 'representative' %}
+                    <details class="cm-ecf-sign">
+                        <summary class="btn {{ isRepresentative ? 'btn-outline-primary' : 'btn-primary' }} btn-sm">
+                            {%- if isRepresentative -%}
+                                {{ 'ecfSignAsRepresentativeAction'|trans }}
+                            {%- elseif slot.value == 'evaluator_2' -%}
+                                {{ 'ecfCosignAction'|trans }}
+                            {%- else -%}
+                                {{ (view.part.value == 'synthesis' ? 'ecfSignSynthesisAction' : 'ecfSignAction')|trans }}
+                            {%- endif -%}
+                        </summary>
+                        <form method="post" action="{{ path('app_ufa_ecf_sign', {id: tutorLink.id}) }}" class="cm-ecf-sign__panel">
+                            <input type="hidden" name="_token" value="{{ csrf_token('ufa_ecf') }}">
+                            <input type="hidden" name="part" value="{{ view.part.value }}">
+                            <input type="hidden" name="code" value="{{ code|default('') }}">
+                            <input type="hidden" name="slot" value="{{ slot.value }}">
+                            <div style="max-width: 220px">
+                                <label class="form-label" for="ecf-sign-date-{{ view.part.value }}-{{ slot.value }}">{{ 'ecfVisaEvaluationDateLabel'|trans }}</label>
+                                <input class="form-control" type="date" id="ecf-sign-date-{{ view.part.value }}-{{ slot.value }}" name="evaluatedOn" value="{{ view.defaultDate|date('Y-m-d') }}" max="{{ 'now'|date('Y-m-d') }}" required>
+                            </div>
+                            <div class="text-secondary small">{{ 'ecfSignPreviewLabel'|trans }}</div>
+                            <div class="cm-ecf-stamp">
+                                <span><i>{{ 'ecfStampNameLabel'|trans }}</i> ▸ {{ view.printedName }}</span>
+                                <span><i>{{ 'ecfVisaDateLabel'|trans }}</i> ▸ {{ 'ecfStampDateHint'|trans }}</span>
+                                <span>{{ 'ecfSignedDigitallyOn'|trans({'%date%': 'now'|date('d/m/Y')}) }}</span>
+                            </div>
+                            <p class="text-secondary small mb-0">{{ (isRepresentative ? 'ecfSignRepresentativeWarning' : 'ecfSignFreezeWarning')|trans }}</p>
+                            <div><twig:Cm:Button variant="primary" type="submit">{{ 'ecfConfirmSignAction'|trans }}</twig:Cm:Button></div>
+                        </form>
+                    </details>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endif %}
+
+    {% if view.canUnsign %}
+        <details class="cm-ecf-sign">
+            <summary class="btn btn-link btn-sm text-danger p-0">{{ 'ecfUnsignAction'|trans }}</summary>
+            <form method="post" action="{{ path('app_ufa_ecf_unsign', {id: tutorLink.id}) }}" class="cm-ecf-sign__panel">
+                <input type="hidden" name="_token" value="{{ csrf_token('ufa_ecf') }}">
+                <input type="hidden" name="part" value="{{ view.part.value }}">
+                <input type="hidden" name="code" value="{{ code|default('') }}">
+                <p class="small mb-0">{{ (view.part.value == 'synthesis' ? 'ecfUnsignSynthesisWarning' : 'ecfUnsignWarning')|trans }}</p>
+                <div><twig:Cm:Button variant="danger" type="submit">{{ 'ecfConfirmUnsignAction'|trans }}</twig:Cm:Button></div>
+            </form>
+        </details>
+    {% endif %}
+</div>

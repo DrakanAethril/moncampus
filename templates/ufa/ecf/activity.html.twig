@@ -1,0 +1,54 @@
+{% extends 'ufa/ecf/_layout.html.twig' %}
+
+{% set ecfScreenLabel = type ? 'ecfActivityTypeNumberLabel'|trans({'%number%': type.number}) : code %}
+
+{% block ecf_main %}
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h2 class="cm-ecf-heading mb-0">{{ label }}</h2>
+        <twig:Cm:Badge :of="state"/>
+        {% if not type %}<twig:Cm:Badge tone="gold">{{ 'ecfOrphanBadge'|trans }}</twig:Cm:Badge>{% endif %}
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <twig:Cm:Subhead :title="'ecfCompetencesTitle'|trans" :hint="activity and activity.frozen ? 'ecfFrozenHint'|trans : null"/>
+            <ol class="mb-0">
+                {% for competence in competences %}<li>{{ competence }}</li>{% endfor %}
+            </ol>
+        </div>
+    </div>
+
+    <div class="card mb-3" id="main">
+        <div class="card-header d-flex align-items-center gap-2">
+            <h3 class="card-title mb-0">{{ 'ecfMainSheetTitle'|trans }}</h3>
+            {% if main.signed %}<twig:Cm:Badge tone="green">{{ 'ecfPartSignedBadge'|trans }}</twig:Cm:Badge>{% endif %}
+        </div>
+        <div class="card-body d-flex flex-column gap-3">
+            {% if main.editable %}
+                {% include 'ufa/ecf/_sheet_form.html.twig' with {part: 'main', rows: main.rows} %}
+            {% else %}
+                {% include 'ufa/ecf/_sheet_readonly.html.twig' with {part: 'main', rows: main.rows} %}
+            {% endif %}
+            {% include 'ufa/ecf/_visas.html.twig' with {view: main.visas} %}
+        </div>
+    </div>
+
+    {% if complementaryOpen %}
+        <div class="card mb-3" id="complementary">
+            <div class="card-header d-flex align-items-center gap-2">
+                <h3 class="card-title mb-0">{{ 'ecfComplementaryTitle'|trans }}</h3>
+                {% if complementary.signed %}<twig:Cm:Badge tone="green">{{ 'ecfPartSignedBadge'|trans }}</twig:Cm:Badge>{% endif %}
+            </div>
+            <div class="card-body d-flex flex-column gap-3">
+                {% if complementary.editable %}
+                    {% include 'ufa/ecf/_sheet_form.html.twig' with {part: 'complementary', rows: complementary.rows} %}
+                {% else %}
+                    {% include 'ufa/ecf/_sheet_readonly.html.twig' with {part: 'complementary', rows: complementary.rows} %}
+                {% endif %}
+                {% include 'ufa/ecf/_visas.html.twig' with {view: complementary.visas} %}
+            </div>
+        </div>
+    {% else %}
+        <p class="text-secondary">{{ 'ecfComplementaryClosedText'|trans }}</p>
+    {% endif %}
+{% endblock %}
