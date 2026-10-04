@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
+use App\Entity\EcfBooklet;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\Program;
@@ -13,7 +14,9 @@ use App\Enum\Feature;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipTutorLinkRepository;
+use App\Security\Voter\EcfBookletVoter;
 use App\Service\AlternancePeriodWizardService;
+use App\Service\Ecf\EcfBookletLocator;
 use App\Service\StudentAlternanceProgramResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,6 +40,7 @@ class MyAlternanceController extends AbstractController
         InternshipLivretEngagementRepository $engagementRepository,
         AlternancePeriodWizardService $wizardService,
         StudentAlternanceProgramResolver $alternanceProgramResolver,
+        EcfBookletLocator $ecfLocator,
     ): Response {
         /** @var User $student */
         $student = $this->getUser();
@@ -62,6 +66,7 @@ class MyAlternanceController extends AbstractController
                 'engagement' => null,
                 'banner' => null,
                 'tutorFeedback' => null,
+                'ecfBooklet' => null,
             ]);
         }
 
@@ -102,13 +107,20 @@ class MyAlternanceController extends AbstractController
             }
         }
 
+        // The ECF booklet shows here only once the administration handed it over for signature.
+        $ecfBooklet = $ecfLocator->find($tutorLink);
+        if (null !== $ecfBooklet && !$this->isGranted(EcfBookletVoter::CANDIDATE_READ, $ecfBooklet)) {
+            $ecfBooklet = null;
+        }
+
         return $this->render('my_alternance/index.html.twig', [
             'program' => $program,
             'tutorLink' => $tutorLink,
             'periods' => $periods,
             'engagement' => $engagement,
-            'banner' => $this->buildBanner($program, $yourTurnPeriod, $engagement),
+            'banner' => $this->buildBanner($program, $yourTurnPeriod, $engagement, $ecfBooklet),
             'tutorFeedback' => $tutorFeedback,
+            'ecfBooklet' => $ecfBooklet,
         ]);
     }
 
@@ -118,7 +130,7 @@ class MyAlternanceController extends AbstractController
      *
      * @param array{period: InternshipEvaluationPeriod, tutorEvaluation: ?InternshipTutorEvaluation}|null $yourTurnPeriod
      */
-    private function buildBanner(Program $program, ?array $yourTurnPeriod, ?object $engagement): ?array
+    private function buildBanner(Program $program, ?array $yourTurnPeriod, ?object $engagement, ?EcfBooklet $ecfBooklet = null): ?array
     {
         if (null !== $yourTurnPeriod) {
             return [
@@ -130,6 +142,10 @@ class MyAlternanceController extends AbstractController
 
         if (null !== $engagement && null === $engagement->getSignedStudentAt()) {
             return ['type' => 'engagement'];
+        }
+
+        if (null !== $ecfBooklet && !$ecfBooklet->isCandidateSigned()) {
+            return ['type' => 'ecf'];
         }
 
         return null;

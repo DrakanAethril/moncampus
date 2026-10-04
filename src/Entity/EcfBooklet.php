@@ -61,6 +61,22 @@ class EcfBooklet
     #[ORM\Column(name: 'closed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $closedAt = null;
 
+    // The administration hands the closed booklet to the student for their signature « pour
+    // information » (App\Service\Ecf\EcfCandidateSignature): from then on the student reads it.
+    #[ORM\Column(name: 'offered_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $offeredAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'offered_by_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $offeredBy = null;
+
+    // The student's own click; printed « Signé le … par {Nom Prénom} », the name copied then.
+    #[ORM\Column(name: 'candidate_signed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $candidateSignedAt = null;
+
+    #[ORM\Column(name: 'candidate_signer_name', length: 160, nullable: true)]
+    private ?string $candidateSignerName = null;
+
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
@@ -165,6 +181,63 @@ class EcfBooklet
     public function isClosed(): bool
     {
         return null !== $this->closedAt;
+    }
+
+    public function getOfferedAt(): ?\DateTimeImmutable
+    {
+        return $this->offeredAt;
+    }
+
+    public function getOfferedBy(): ?User
+    {
+        return $this->offeredBy;
+    }
+
+    public function isOffered(): bool
+    {
+        return null !== $this->offeredAt;
+    }
+
+    public function offer(User $by, \DateTimeImmutable $at): static
+    {
+        $this->offeredBy = $by;
+        $this->offeredAt = $at;
+
+        return $this;
+    }
+
+    public function getCandidateSignedAt(): ?\DateTimeImmutable
+    {
+        return $this->candidateSignedAt;
+    }
+
+    public function getCandidateSignerName(): ?string
+    {
+        return $this->candidateSignerName;
+    }
+
+    public function isCandidateSigned(): bool
+    {
+        return null !== $this->candidateSignedAt;
+    }
+
+    public function signAsCandidate(string $name, \DateTimeImmutable $at): static
+    {
+        $this->candidateSignerName = $name;
+        $this->candidateSignedAt = $at;
+
+        return $this;
+    }
+
+    /** Back to « not handed to the student »: the offer and the student's signature go together. */
+    public function withdrawOffer(): static
+    {
+        $this->offeredAt = null;
+        $this->offeredBy = null;
+        $this->candidateSignedAt = null;
+        $this->candidateSignerName = null;
+
+        return $this;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

@@ -1,0 +1,57 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ecfBookletPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'myAlternanceNavLabel'|trans, url: path('app_my_alternance')},
+        {label: 'ecfBookletPageHeading'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'myAlternanceEcfCardTitle'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_my_alternance_ecf_pdf') }}" class="btn btn-primary"
+       data-controller="pdf-download"
+       data-action="pdf-download#download"
+       data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
+       data-pdf-download-fallback-filename-value="livret-ecf.pdf">
+        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
+        <span data-pdf-download-target="label">{{ 'ecfDownloadPdfAction'|trans }}</span>
+    </a>
+{% endblock %}
+
+{% block main %}
+    <div class="card mb-3">
+        <div class="card-body d-flex flex-column gap-2">
+            {% if booklet.candidateSigned %}
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <twig:Cm:Badge tone="green">{{ 'myAlternanceEcfSignedBadge'|trans }}</twig:Cm:Badge>
+                    <span>{{ 'ecfCandidateSignedLine'|trans({'%date%': booklet.candidateSignedAt|date('d/m/Y'), '%name%': booklet.candidateSignerName}) }}</span>
+                </div>
+            {% elseif canSign %}
+                <div class="fw-bold">{{ 'myAlternanceEcfSignTitle'|trans }}</div>
+                <div class="text-secondary">{{ 'myAlternanceEcfSignText'|trans }}</div>
+                <details class="cm-ecf-sign">
+                    <summary class="btn btn-primary btn-sm">{{ 'myAlternanceEcfSignAction'|trans }}</summary>
+                    <form method="post" action="{{ path('app_my_alternance_ecf_sign') }}" class="cm-ecf-sign__panel">
+                        <input type="hidden" name="_token" value="{{ csrf_token('my_ecf_sign') }}">
+                        <div class="text-secondary small">{{ 'ecfSignPreviewLabel'|trans }}</div>
+                        <div class="cm-ecf-stamp" style="grid-template-columns: 1fr">
+                            <span>{{ 'ecfCandidateSignedLine'|trans({'%date%': 'now'|date('d/m/Y'), '%name%': (booklet.student.lastname ~ ' ' ~ booklet.student.firstname)|trim}) }}</span>
+                        </div>
+                        <p class="text-secondary small mb-0">{{ 'myAlternanceEcfSignWarning'|trans }}</p>
+                        <div><twig:Cm:Button variant="primary" type="submit">{{ 'myAlternanceEcfConfirmSignAction'|trans }}</twig:Cm:Button></div>
+                    </form>
+                </details>
+            {% else %}
+                <div class="text-secondary">{{ 'myAlternanceEcfNotSignableText'|trans }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% include 'internship/_livret_reader.html.twig' with {
+        frameUrl: path('app_my_alternance_ecf_frame'),
+        outline: outline,
+    } only %}
+{% endblock %}

@@ -462,6 +462,8 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   (`BookletSkillGroups::forTutorLink()`), found again from one year to the next by
   `SkillGroup::$code`; the booklet follows the student and the titre (code + millésime), not the
   Program. A visa is the connected person's click, dated by the server, and freezes what it signed.
+  Once closed, the administration offers it to the student, who reads it and signs it « pour
+  information » from « Mon alternance » (`EcfCandidateSignature`); reopening the booklet withdraws both.
   The PDF (`templates/ufa/ecf/print.html.twig`, also the online reader's frame) reproduces the
   ministry's template page for page - lengths in points measured on it; an element wider than the
   page makes Chromium scale the whole document down, so nothing may overflow.
