@@ -39,6 +39,8 @@ releases:
             title: "Cours en ligne, en essai : les types de supports d'un cours signalés par des pictogrammes, leur nom au survol"
           - type: modification
             title: "Tableau virtuel : le fond photographique du jour s'appelle désormais « Photo »"
+          - type: interne
+            title: "Serveur d'application maintenu sur sa version actuelle, la suivante changeant le protocole des mises à jour en direct"
     - version: '2026.10.03.4'
       date: '2026-10-03'
       summary: "Les balises d'un parcours e-CO se renomment, et une course s'annonce par une affiche dont le QR code ouvre directement l'application avec son code. Les cours en ligne, toujours en essai, gagnent une présentation en grandes vignettes."

@@ -1,7 +1,13 @@
 #syntax=docker/dockerfile:1
 
 # Versions
-FROM dunglas/frankenphp:1-php8.5 AS frankenphp_upstream
+# Pinned to the 1.12 line. FrankenPHP 1.13.0 (2026-10-04) bundles the Mercure 1.0 hub, whose protocol
+# breaks 0.x clients - new token format, `match=` instead of `topic=` - and which refuses to start on
+# the `publisher_jwt`/`subscriber_jwt` directives of frankenphp/Caddyfile unless compatibility mode is
+# opted into. symfony/mercure and Turbo Streams still speak 0.x. On the floating `1-php8.5` tag the
+# container died at boot with no other message than the Caddyfile being loaded; CI read it as
+# « php-1 is unhealthy ». Moving to 1.13 is a Mercure migration of its own, not a version bump.
+FROM dunglas/frankenphp:1.12-php8.5 AS frankenphp_upstream
 
 # The different stages of this Dockerfile are meant to be built into separate images
 # https://docs.docker.com/build/building/multi-stage/#stop-at-a-specific-build-stage
