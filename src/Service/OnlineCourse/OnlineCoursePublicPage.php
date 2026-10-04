@@ -59,6 +59,21 @@ class OnlineCoursePublicPage
     }
 
     /**
+     * The courses by title, whatever the case and the accents - the order of a tag's own page,
+     * where the reader looks a course up rather than watches what moved.
+     *
+     * @param list<OnlineCourse> $courses
+     *
+     * @return list<OnlineCourse>
+     */
+    public static function byTitle(array $courses): array
+    {
+        usort($courses, static fn (OnlineCourse $a, OnlineCourse $b): int => [OnlineCourseTag::normalize($a->getTitle()), $a->getId()] <=> [OnlineCourseTag::normalize($b->getTitle()), $b->getId()]);
+
+        return $courses;
+    }
+
+    /**
      * The courses that carry **every** tag asked for and match the search. A tag the author does
      * not have filters on nothing rather than on everything: a link to a tag that has since been
      * renamed must not silently show the whole page as if it were the answer.
