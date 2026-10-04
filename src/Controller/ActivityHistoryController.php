@@ -129,7 +129,7 @@ class ActivityHistoryController extends AbstractController
         $choices = [];
         foreach ($cases as $case) {
             $choices[$case->value] = trim(preg_replace('/\s+/', ' ', str_replace(
-                ['%student%', '%tutor%', '%actor%', '%period%', '%role%', '%user%'],
+                ['%student%', '%tutor%', '%actor%', '%period%', '%role%', '%user%', '%part%'],
                 '…',
                 $translator->trans($case->messageKey()),
             )));

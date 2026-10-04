@@ -1,0 +1,45 @@
+{# A part as it will print: rows, result, and the zones that go with the result. #}
+{% set isMain = part == 'main' %}
+{% set result = isMain ? activity.result|default(null) : activity.complementaryResult|default(null) %}
+{% if rows is empty and not result %}
+    <p class="text-secondary mb-0">{{ 'ecfPartEmptyText'|trans }}</p>
+{% else %}
+    <table class="table cm-table align-top mb-0">
+        <thead>
+            <tr>
+                <th style="width: 40px">#</th>
+                <th>{{ 'ecfRowsTitle'|trans }}</th>
+                <th style="width: 110px">{{ 'ecfRowDateLabel'|trans }}</th>
+                <th style="width: 140px">{{ 'ecfCompetencesEvaluatedLabel'|trans }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td class="fw-bold">{{ row.position }}</td>
+                    <td>{% for paragraph in row.paragraphs %}<div>{{ paragraph }}</div>{% endfor %}</td>
+                    <td>{{ row.evaluatedOn ? row.evaluatedOn|date('d/m/Y') : '—' }}</td>
+                    <td>{{ row.competences|join(', ') }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="fw-bold">{{ 'ecfResultShortLabel'|trans }}</span>
+        {% if result %}<twig:Cm:Badge :of="result"/>{% else %}<span class="text-secondary">—</span>{% endif %}
+    </div>
+    {% if isMain and result and result.value == 'not_satisfied' %}
+        <div class="d-flex flex-column gap-1">
+            {% if activity.attentionPoints %}<div><span class="fw-bold">{{ 'ecfAttentionPointsLabel'|trans }}</span><div class="text-secondary" style="white-space: pre-line">{{ activity.attentionPoints }}</div></div>{% endif %}
+            {% if activity.reassessCompetences is not empty or activity.reassessNote %}
+                <div>
+                    <span class="fw-bold">{{ 'ecfReassessLabel'|trans }}</span>
+                    {% for n in activity.reassessCompetences %}<div class="text-secondary">{{ n }}. {{ competences[n - 1] ?? '' }}</div>{% endfor %}
+                    {% if activity.reassessNote %}<div class="text-secondary" style="white-space: pre-line">{{ activity.reassessNote }}</div>{% endif %}
+                </div>
+            {% endif %}
+        </div>
+    {% elseif not isMain and activity.complementaryObservations %}
+        <div><span class="fw-bold">{{ 'ecfObservationsLabel'|trans }}</span><div class="text-secondary" style="white-space: pre-line">{{ activity.complementaryObservations }}</div></div>
+    {% endif %}
+{% endif %}

@@ -1,0 +1,57 @@
+{% extends 'ufa/ecf/_layout.html.twig' %}
+
+{% set ecfScreenLabel = 'ecfSynthesisLabel'|trans %}
+
+{% block ecf_main %}
+    <div class="card mb-3">
+        <div class="card-body d-flex flex-column gap-3">
+            <twig:Cm:Subhead :title="'ecfMasteryTitle'|trans" :hint="'ecfMasteryHint'|trans"/>
+            <table class="table cm-table align-middle mb-0">
+                <tbody>
+                    {% for row in ecf.rows %}
+                        {% set mastered = mastery[loop.index0] %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ 'ecfActivityMasteredQuestion'|trans({'%number%': row.type.number}) }}</div>
+                                <div class="text-secondary small">{{ row.activity and row.activity.frozenLabel ? row.activity.frozenLabel : row.type.label }}</div>
+                            </td>
+                            <td class="text-end">
+                                {% if mastered is same as(true) %}
+                                    <twig:Cm:Badge tone="green">{{ 'ecfYesLabel'|trans }}</twig:Cm:Badge>
+                                {% elseif mastered is same as(false) %}
+                                    <twig:Cm:Badge tone="gold">{{ 'ecfNoLabel'|trans }}</twig:Cm:Badge>
+                                {% else %}
+                                    <twig:Cm:Badge tone="gray">{{ 'ecfUndecidedLabel'|trans }}</twig:Cm:Badge>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <form method="post" action="{{ path('app_ufa_ecf_synthesis', {id: tutorLink.id}) }}" class="d-flex flex-column gap-3">
+                <input type="hidden" name="_token" value="{{ csrf_token('ufa_ecf') }}">
+                <div>
+                    <label class="form-label" for="ecf-synthesis-observations">{{ 'ecfObservationsLabel'|trans }}</label>
+                    <textarea class="form-control" rows="4" id="ecf-synthesis-observations" name="observations" {{ not canEdit or signed ? 'disabled' }}>{{ ecf.booklet.synthesisObservations }}</textarea>
+                </div>
+                <div style="max-width: 260px">
+                    <label class="form-label" for="ecf-remitted-on">{{ 'ecfRemittedOnLabel'|trans }}</label>
+                    <input class="form-control" type="date" id="ecf-remitted-on" name="remittedOn" value="{{ ecf.booklet.remittedOn ? ecf.booklet.remittedOn|date('Y-m-d') }}" {{ not canEdit ? 'disabled' }}>
+                    <div class="form-text">{{ 'ecfRemittedOnHelp'|trans }}</div>
+                </div>
+                {% if canEdit %}
+                    <twig:Cm:ActionBar>
+                        <twig:Cm:Button variant="primary" type="submit">{{ 'submitSaveAction'|trans }}</twig:Cm:Button>
+                    </twig:Cm:ActionBar>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% include 'ufa/ecf/_visas.html.twig' with {view: visas, code: ''} %}
+        </div>
+    </div>
+{% endblock %}

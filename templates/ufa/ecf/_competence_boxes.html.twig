@@ -1,0 +1,11 @@
+{# The nine square boxes of the paper, always 1 to 9 whatever the activity counts (decided
+   2026-10-04). `name` is the field, `checked` the numbers ticked, `labels` the competences' labels
+   for the tooltip. #}
+<div class="cm-ecf-boxes" role="group" aria-label="{{ 'ecfCompetencesEvaluatedLabel'|trans }}">
+    {% for n in 1..9 %}
+        <label class="cm-ecf-box" title="{{ labels[n - 1] ?? '' }}">
+            <input type="checkbox" name="{{ name }}" value="{{ n }}" {{ n in checked ? 'checked' }} {{ disabled|default(false) ? 'disabled' }}>
+            <span>{{ n }}</span>
+        </label>
+    {% endfor %}
+</div>
