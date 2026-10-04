@@ -11,7 +11,7 @@ namespace App\Enum;
  * for the room it is projected in, not for the laptop it was prepared on. The value is what the
  * page writes into `data-background`, and app.css draws each one.
  *
- * « Nature » is the default and the only photograph - a new one each day, drawn from Wikimedia
+ * « Photo » is the default and the only photograph - a new one each day, drawn from Wikimedia
  * Commons by `app:class-board:photo` and served from the uploads bucket
  * (App\Service\ClassBoard\ClassBoardPhotoOfTheDay), never fetched from a third party at display: the
  * projector must not send every classroom's address to an image service. Without one yet, the CC0
