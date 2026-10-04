@@ -18,7 +18,7 @@
     </div>
     <div class="card-body d-flex flex-column gap-2">
         <div class="text-secondary small">
-            {{ 'ecfFollowUpCardTitleLine'|trans({'%sigle%': ecf.settings.sigle ?: ecf.settings.titleLabel, '%code%': ecf.booklet.titleCode, '%millesime%': ecf.booklet.millesime}) }}
+            {{ 'ecfFollowUpCardTitleLine'|trans({'%sigle%': ecf.title.sigle, '%code%': ecf.booklet.titleCode, '%millesime%': ecf.booklet.millesime}) }}
             {%- if ecf.started %} · {{ 'ecfFollowUpCardOpenedOnLabel'|trans({'%date%': ecf.booklet.createdAt|date('d/m/Y')}) }}{% endif %}
         </div>
         <div class="cm-ecf-chips">

@@ -11,11 +11,10 @@ use App\Entity\User;
 use App\Enum\Feature;
 use App\Form\EcfSettingsType;
 use App\Repository\InternshipFormationCenterRepository;
-use App\Repository\InternshipProgramInfoRepository;
-use App\Repository\ProgramCertificationRepository;
 use App\Repository\ProgramEcfSettingsRepository;
 use App\Repository\ProgramRepository;
 use App\Service\Ecf\EcfActivityTypes;
+use App\Service\Ecf\EcfBookletLocator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -27,8 +26,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * UFA > Formations > {formation} > « Livret ECF » (design/validated/ecf-booklet.md §4): the switch
- * and what the ministry's template prints about the titre. The administration reads it; only an
+ * UFA > Formations > {formation} > « Livret ECF » (design/validated/ecf-booklet.md §4): the switch,
+ * the dates the ministry's template prints and the organisme. The titre is read from
+ * « Dénomination », the activity-types from « Compétences ». The administration reads it; only an
  * administrator saves it.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
@@ -42,32 +42,30 @@ class EcfSettingsController extends AbstractController
         EntityManagerInterface $entityManager,
         ProgramRepository $programRepository,
         ProgramEcfSettingsRepository $settingsRepository,
-        ProgramCertificationRepository $certificationRepository,
-        InternshipProgramInfoRepository $programInfoRepository,
         InternshipFormationCenterRepository $formationCenterRepository,
         EcfActivityTypes $activityTypes,
+        EcfBookletLocator $locator,
         TranslatorInterface $translator,
     ): Response {
         $program = $programRepository->find($id) ?? throw $this->createNotFoundException();
         $settings = $settingsRepository->findOneByProgram($program);
         $isNew = null === $settings;
-        $settings ??= $this->proposed($program, $certificationRepository, $programInfoRepository, $formationCenterRepository);
+        $settings ??= $this->proposed($program, $formationCenterRepository);
 
         $canEdit = $this->isGranted('ROLE_ADMIN');
         $form = $this->createForm(EcfSettingsType::class, $settings, ['disabled' => !$canEdit]);
         $form->handleRequest($request);
 
+        $hasActivityTypes = $activityTypes->hasActivityTypes($program);
+        $optionsWithoutTitle = $locator->optionsWithoutTitle($program);
+        $hasTitle = \count($optionsWithoutTitle) < max(1, $program->getOptions()->count());
+
         if ($canEdit && $form->isSubmitted()) {
-            if ($settings->isEnabled()) {
-                foreach ($activityTypes->refusalsForEnabling($program) as $refusal) {
-                    $form->get('enabled')->addError(new FormError($translator->trans($refusal['key'], $refusal['params'])));
-                }
-                foreach (['titleLabel', 'titleCode', 'millesime'] as $required) {
-                    $value = $form->get($required)->getData();
-                    if (!\is_string($value) || '' === trim($value)) {
-                        $form->get($required)->addError(new FormError($translator->trans('ecfSettingsRequiredWhenEnabledMessage')));
-                    }
-                }
+            if ($settings->isEnabled() && !$hasActivityTypes) {
+                $form->get('enabled')->addError(new FormError($translator->trans('ecfSettingsRefusalNoGroupMessage')));
+            }
+            if ($settings->isEnabled() && !$hasTitle) {
+                $form->get('enabled')->addError(new FormError($translator->trans('ecfSettingsRefusalNoTitleMessage')));
             }
 
             if ($form->isValid()) {
@@ -93,24 +91,15 @@ class EcfSettingsController extends AbstractController
             'form' => $form,
             'settings' => $settings,
             'canEdit' => $canEdit,
-            'groups' => $activityTypes->groupsOf($program),
-            'refusals' => $activityTypes->refusalsForEnabling($program),
+            'hasActivityTypes' => $hasActivityTypes,
+            'optionsWithoutTitle' => $optionsWithoutTitle,
         ]);
     }
 
-    /**
-     * A first visit proposes what the platform already knows - the certification and the legal name
-     * of « Dénomination », the training centre - and saves nothing.
-     */
-    private function proposed(Program $program, ProgramCertificationRepository $certificationRepository, InternshipProgramInfoRepository $programInfoRepository, InternshipFormationCenterRepository $formationCenterRepository): ProgramEcfSettings
+    /** A first visit proposes the training centre as organisme and lieu, and saves nothing. */
+    private function proposed(Program $program, InternshipFormationCenterRepository $formationCenterRepository): ProgramEcfSettings
     {
         $settings = new ProgramEcfSettings($program);
-        $certification = $certificationRepository->findOneForProgramAndOption($program, null);
-        $legalName = $programInfoRepository->findOneByProgram($program)?->getLegalName();
-        $settings->setTitleLabel($certification?->getLabel() ?? $legalName ?? $program->getName());
-        $level = $certification?->getLevel();
-        $settings->setLevel(null !== $level ? (string) $level : null);
-
         $center = $formationCenterRepository->findSingleton();
         if (null !== $center) {
             $settings->setOrganisation($center->getCfaName() ?? $center->getCompanyName());

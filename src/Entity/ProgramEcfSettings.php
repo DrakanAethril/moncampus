@@ -10,12 +10,12 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * A formation's « Livret ECF » tab (UFA > Formations > {formation}): whether the formation keeps
- * the livret d'évaluations passées en cours de formation, and what the ministry's template prints
- * about the titre on its cover and in every page footer. A singleton row per Program, created on
- * first save, like InternshipProgramInfo.
+ * the livret d'évaluations passées en cours de formation, the dates the ministry's template prints
+ * on its cover and footer, and the organisme. A singleton row per Program, created on first save,
+ * like InternshipProgramInfo.
  *
- * titleCode + millesime is also the key a booklet is found by (App\Service\Ecf\EcfBookletLocator):
- * two formations naming the same titre - CDA 1 and CDA 2 - keep one booklet per candidate.
+ * The titre itself - label, sigle, level, code titre, millésime - is not kept here: it is read
+ * from « Dénomination » for each student's option (App\Service\Ecf\EcfTitle).
  */
 #[ORM\Entity(repositoryClass: ProgramEcfSettingsRepository::class)]
 #[ORM\Table(name: 'program_ecf_settings')]
@@ -34,21 +34,6 @@ class ProgramEcfSettings
 
     #[ORM\Column(options: ['default' => false])]
     private bool $enabled = false;
-
-    #[ORM\Column(name: 'title_label', length: 255, nullable: true)]
-    private ?string $titleLabel = null;
-
-    #[ORM\Column(length: 20, nullable: true)]
-    private ?string $sigle = null;
-
-    #[ORM\Column(length: 10, nullable: true)]
-    private ?string $level = null;
-
-    #[ORM\Column(name: 'title_code', length: 30, nullable: true)]
-    private ?string $titleCode = null;
-
-    #[ORM\Column(length: 10, nullable: true)]
-    private ?string $millesime = null;
 
     #[ORM\Column(name: 'decree_date', type: Types::DATE_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $decreeDate = null;
@@ -92,66 +77,6 @@ class ProgramEcfSettings
     public function setEnabled(bool $enabled): static
     {
         $this->enabled = $enabled;
-
-        return $this;
-    }
-
-    public function getTitleLabel(): ?string
-    {
-        return $this->titleLabel;
-    }
-
-    public function setTitleLabel(?string $titleLabel): static
-    {
-        $this->titleLabel = $titleLabel;
-
-        return $this;
-    }
-
-    public function getSigle(): ?string
-    {
-        return $this->sigle;
-    }
-
-    public function setSigle(?string $sigle): static
-    {
-        $this->sigle = $sigle;
-
-        return $this;
-    }
-
-    public function getLevel(): ?string
-    {
-        return $this->level;
-    }
-
-    public function setLevel(?string $level): static
-    {
-        $this->level = $level;
-
-        return $this;
-    }
-
-    public function getTitleCode(): ?string
-    {
-        return $this->titleCode;
-    }
-
-    public function setTitleCode(?string $titleCode): static
-    {
-        $this->titleCode = $titleCode;
-
-        return $this;
-    }
-
-    public function getMillesime(): ?string
-    {
-        return $this->millesime;
-    }
-
-    public function setMillesime(?string $millesime): static
-    {
-        $this->millesime = $millesime;
 
         return $this;
     }

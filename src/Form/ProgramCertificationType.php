@@ -54,6 +54,18 @@ class ProgramCertificationType extends AbstractType
                 'help' => 'programCertificationCertifierFieldHelp',
                 'required' => false,
             ])
+            ->add('titleCode', TextType::class, [
+                'label' => 'programCertificationTitleCodeFieldLabel',
+                'help' => 'programCertificationTitleCodeFieldHelp',
+                'required' => false,
+                'attr' => ['maxlength' => 30],
+            ])
+            ->add('millesime', TextType::class, [
+                'label' => 'programCertificationMillesimeFieldLabel',
+                'help' => 'programCertificationMillesimeFieldHelp',
+                'required' => false,
+                'attr' => ['maxlength' => 10],
+            ])
         ;
     }
 

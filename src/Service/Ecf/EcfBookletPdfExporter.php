@@ -56,6 +56,6 @@ class EcfBookletPdfExporter
      */
     private function context(EcfOverview $overview, array $data, bool $screen): array
     {
-        return [...$data, 'settings' => $overview->settings, 'booklet' => $overview->booklet, 'student' => $overview->booklet->getStudent(), 'screen' => $screen];
+        return [...$data, 'settings' => $overview->settings, 'title' => $overview->title, 'booklet' => $overview->booklet, 'student' => $overview->booklet->getStudent(), 'screen' => $screen];
     }
 }

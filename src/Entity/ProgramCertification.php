@@ -72,6 +72,19 @@ class ProgramCertification
     #[Assert\Length(max: 255)]
     private ?string $certifier = null;
 
+    /**
+     * The ministry's code of a titre professionnel, "TP-01281" - not the RNCP code. With the
+     * millésime, it is what the ECF booklet prints in its footer and finds a candidate's booklet by.
+     */
+    #[ORM\Column(name: 'title_code', length: 30, nullable: true)]
+    #[Assert\Length(max: 30)]
+    private ?string $titleCode = null;
+
+    /** The version of the titre's referential, "04". */
+    #[ORM\Column(length: 10, nullable: true)]
+    #[Assert\Length(max: 10)]
+    private ?string $millesime = null;
+
     public function __construct(Program $program, ?Option $option, string $label)
     {
         $this->program = $program;
@@ -150,6 +163,30 @@ class ProgramCertification
     public function setCertifier(?string $certifier): static
     {
         $this->certifier = $certifier;
+
+        return $this;
+    }
+
+    public function getTitleCode(): ?string
+    {
+        return $this->titleCode;
+    }
+
+    public function setTitleCode(?string $titleCode): static
+    {
+        $this->titleCode = $titleCode;
+
+        return $this;
+    }
+
+    public function getMillesime(): ?string
+    {
+        return $this->millesime;
+    }
+
+    public function setMillesime(?string $millesime): static
+    {
+        $this->millesime = $millesime;
 
         return $this;
     }

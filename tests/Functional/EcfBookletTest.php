@@ -6,9 +6,11 @@ namespace App\Tests\Functional;
 
 use App\Entity\EcfBooklet;
 use App\Entity\Enterprise;
+use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Modality;
 use App\Entity\Program;
+use App\Entity\ProgramCertification;
 use App\Entity\ProgramEcfSettings;
 use App\Entity\ProgramStudentModality;
 use App\Entity\Skill;
@@ -71,9 +73,10 @@ class EcfBookletTest extends FunctionalTestCase
 
     private function enable(): void
     {
-        $settings = (new ProgramEcfSettings($this->program))->setEnabled(true)->setTitleLabel('Concepteur développeur d’applications')->setTitleCode('TP-01281')->setMillesime('04');
+        $settings = (new ProgramEcfSettings($this->program))->setEnabled(true);
         $settings->setCreatedBy($this->admin);
         $this->entityManager->persist($settings);
+        $this->entityManager->persist((new ProgramCertification($this->program, null, 'Concepteur développeur d’applications'))->setTitleCode('TP-01281')->setMillesime('04'));
         $this->entityManager->flush();
     }
 
@@ -99,6 +102,43 @@ class EcfBookletTest extends FunctionalTestCase
         $this->client->request('GET', sprintf('/ufa/alternances/%d', $this->tutorLink->getId()));
         self::assertResponseIsSuccessful();
         self::assertSelectorNotExists('.cm-ecf-chips');
+    }
+
+    public function testWithoutCodeTitreAndMillesimeInDenominationTheStudentHasNoBooklet(): void
+    {
+        $settings = (new ProgramEcfSettings($this->program))->setEnabled(true);
+        $settings->setCreatedBy($this->admin);
+        $this->entityManager->persist($settings);
+        $this->entityManager->persist(new ProgramCertification($this->program, null, 'Concepteur développeur d’applications'));
+        $this->entityManager->flush();
+
+        $this->assertScreens($this->admin, array_fill_keys($this->screens(), 404));
+
+        $this->client->request('GET', sprintf('/ufa/programs/%d/ecf', $this->program->getId()));
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.cm-note--gold', 'n’a pas de code titre ou de millésime');
+    }
+
+    public function testTheEcfTabKeepsNeitherTheTitreNorTheActivityTypes(): void
+    {
+        $this->enable();
+        $info = (new InternshipProgramInfo($this->program))->setLegalName('Titre professionnel Concepteur développeur d’applications');
+        $info->setCreatedBy($this->admin);
+        $this->entityManager->persist($info);
+        $this->entityManager->flush();
+
+        $this->client->loginUser($this->admin);
+        $this->client->request('GET', sprintf('/ufa/programs/%d/ecf', $this->program->getId()));
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('input[name="ecf_settings[journalDate]"]');
+        foreach (['titleLabel', 'sigle', 'level', 'titleCode', 'millesime'] as $field) {
+            self::assertSelectorNotExists(sprintf('input[name="ecf_settings[%s]"]', $field));
+        }
+        self::assertSelectorTextNotContains('body', 'Activités-types');
+        self::assertSelectorNotExists('.cm-note--gold');
+
+        $this->client->request('GET', sprintf('/ufa/alternances/%d/ecf/frame', $this->tutorLink->getId()));
+        self::assertSelectorTextContains('.cover__name', 'Titre professionnel Concepteur développeur d’applications');
     }
 
     public function testTheAdministrationReadsAndNobodyElseReaches(): void

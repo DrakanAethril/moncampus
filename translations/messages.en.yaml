@@ -1148,6 +1148,10 @@ programCertificationLevelFieldLabel: 'Level'
 programCertificationLevelFieldHelp: '5 for Bac+2, 6 for Bac+3/4, 7 for Bac+5.'
 programCertificationCertifierFieldLabel: 'Certifier'
 programCertificationCertifierFieldHelp: 'The body awarding the title, e.g. "Ministère du Travail".'
+programCertificationTitleCodeFieldLabel: 'Title code'
+programCertificationTitleCodeFieldHelp: 'The ministry''s code of a titre professionnel, e.g. "TP-01281". The ECF booklet prints it in its footer.'
+programCertificationMillesimeFieldLabel: 'Version'
+programCertificationMillesimeFieldHelp: 'E.g. "04". With the title code, it links the programs of one title: they keep the same ECF booklet.'
 certificationKindTitreProLabel: 'Professional title'
 certificationKindBtsLabel: 'BTS'
 certificationKindBachelorLabel: 'Bachelor'
@@ -9700,12 +9704,6 @@ ecfActivityStateSatisfiedLabel: "Met"
 ecfActivityStateNotSatisfiedLabel: "Not met"
 ecfSettingsEnabledFieldLabel: "Keep the ECF booklet for this programme"
 ecfSettingsEnabledFieldHelp: "The booklet then appears on the follow-up of every apprenticeship of the programme."
-ecfSettingsTitleLabelFieldLabel: "Title"
-ecfSettingsSigleFieldLabel: "Acronym"
-ecfSettingsLevelFieldLabel: "Level"
-ecfSettingsTitleCodeFieldLabel: "Title code"
-ecfSettingsTitleCodeFieldHelp: "With the vintage, it links the programmes of one title: two programmes with the same code keep the same booklet."
-ecfSettingsMillesimeFieldLabel: "Vintage"
 ecfSettingsOrganisationFieldLabel: "Training organisation"
 ecfSettingsPlaceFieldLabel: "Place of training"
 ecfSettingsDecreeDateFieldLabel: "Decree of"
@@ -9713,22 +9711,14 @@ ecfSettingsJournalDateFieldLabel: "Official Journal of"
 ecfSettingsEffectiveDateFieldLabel: "Effective from"
 ecfSettingsModelUpdatedDateFieldLabel: "Template update date"
 ecfSettingsModelUpdatedDateFieldHelp: "The one printed in the official template's footer."
-ecfSettingsTitleSectionTitle: "The professional title"
-ecfSettingsTitleSectionHint: "What the official template's cover and footer print."
 ecfSettingsOrganisationSectionTitle: "The organisation"
-ecfSettingsGroupsSectionTitle: "Activity types"
-ecfSettingsGroupsSectionHint: "Read from the « Skills » tab. A group reserved to an option only shows for the students who have it."
-ecfSettingsNoGroupText: "No skill group is visible in the booklet."
-ecfSettingsGroupCodeColumn: "Code"
-ecfSettingsGroupLabelColumn: "Activity type"
-ecfSettingsGroupCompetencesColumn: "Skills"
-ecfSettingsGroupOptionsColumn: "Options"
-ecfSettingsGroupNoCodeBadge: "No code"
-ecfSettingsGroupAllOptionsLabel: "All options"
-ecfSettingsRefusalNoGroupMessage: "The programme has no skill group visible in the booklet: the ECF booklet would have no activity type."
-ecfSettingsRefusalNoCodeMessage: "The group « %group% » has no code. Give it one in the « Skills » tab to turn the booklet on."
-ecfSettingsRefusalDuplicateCodeMessage: "The groups « %other% » and « %group% » share the code %code%. Each group needs a code of its own."
-ecfSettingsRequiredWhenEnabledMessage: "This field is needed to keep the booklet."
+ecfSettingsDatesSectionTitle: "The official template"
+ecfSettingsDatesSectionHint: "The dates printed on the cover and in the footer. The title, acronym, level, title code and version are read from « Dénomination »."
+ecfSettingsRefusalNoGroupMessage: "No competency group of the booklet has a code: the ECF booklet would have no activity-type. A group without a code is left out of the ECF booklet."
+ecfSettingsRefusalNoTitleMessage: "No certification of this program has a title code and a version: fill them in « Dénomination »."
+ecfSettingsOptionWithoutTitleMessage: "The certification of option %option% has no title code or version: its students have no ECF booklet."
+ecfSettingsProgramWithoutTitleMessage: "The program's certification has no title code or version: the ECF booklet cannot be kept."
+ecfSettingsDenominationLinkLabel: "Open « Dénomination »"
 ecfSettingsSavedFlashMessage: "The ECF booklet settings are saved."
 ecfFollowUpCardTitle: "In-training assessment booklet"
 ecfBookletClosedBadge: "Closed"

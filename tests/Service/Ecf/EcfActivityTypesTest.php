@@ -21,8 +21,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * The ECF reads the Livret de l'alternant's groups (options included, decided by
  * BookletSkillGroups) and only orders, numbers and keys them by code. What is pinned: the order
- * and numbering, the competences in their own order without the inactive ones, the refusals that
- * keep a booklet from losing its sheets next year, and the orphans.
+ * and numbering, the competences in their own order without the inactive ones, a group without a
+ * code left out, and the orphans.
  */
 class EcfActivityTypesTest extends TestCase
 {
@@ -93,20 +93,18 @@ class EcfActivityTypesTest extends TestCase
         $common = $this->group(1, 'AT1', 'Commun', 1);
         $option = $this->group(2, 'OPT', 'Option Data', 2);
         $hidden = $this->group(3, 'HID', 'Hors livret', 3, [], false);
+        $uncoded = $this->group(4, null, 'Sans code', 4);
 
-        $excluded = $this->types([$common], [$common, $option, $hidden])->excludedForOptions($this->tutorLink());
+        $excluded = $this->types([$common], [$common, $option, $hidden, $uncoded])->excludedForOptions($this->tutorLink());
 
         self::assertSame([$option], $excluded);
     }
 
-    public function testRefusesEnablingWithoutGroupWithoutCodeOrWithASharedCode(): void
+    public function testHasActivityTypesOnlyWithABookletGroupThatHasACode(): void
     {
-        self::assertSame('ecfSettingsRefusalNoGroupMessage', $this->types([])->refusalsForEnabling($this->program)[0]['key']);
-
-        $refusals = $this->types([], [$this->group(1, 'AT1', 'A', 1), $this->group(2, '', 'B', 2), $this->group(3, 'at1', 'C', 3)])->refusalsForEnabling($this->program);
-        self::assertSame(['ecfSettingsRefusalNoCodeMessage', 'ecfSettingsRefusalDuplicateCodeMessage'], array_column($refusals, 'key'));
-
-        self::assertSame([], $this->types([], [$this->group(1, 'AT1', 'A', 1), $this->group(2, 'AT2', 'B', 2)])->refusalsForEnabling($this->program));
+        self::assertFalse($this->types([])->hasActivityTypes($this->program));
+        self::assertFalse($this->types([], [$this->group(1, '', 'A', 1), $this->group(2, 'AT2', 'B', 2, [], false)])->hasActivityTypes($this->program));
+        self::assertTrue($this->types([], [$this->group(1, null, 'A', 1), $this->group(2, 'AT2', 'B', 2)])->hasActivityTypes($this->program));
     }
 
     public function testOrphansAreTheActivitiesWhoseCodeIsNoLongerOffered(): void

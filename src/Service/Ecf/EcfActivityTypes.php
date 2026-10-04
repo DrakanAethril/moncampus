@@ -17,8 +17,9 @@ use App\Service\BookletSkillGroups;
  * Which activity-types an ECF booklet carries (design/validated/ecf-booklet.md, R1 and R3).
  *
  * The list is the Livret de l'alternant's own: App\Service\BookletSkillGroups decides which groups
- * a student gets, options included, and this class only orders them, numbers them and refuses the
- * ones it cannot find again next year - a group with no code, or one sharing its code.
+ * a student gets, options included, and this class only orders them, numbers them and leaves out a
+ * group with no code - a sheet is found again next year by its group's code. Codes are not checked
+ * for duplicates: options keep them apart.
  */
 class EcfActivityTypes
 {
@@ -45,8 +46,9 @@ class EcfActivityTypes
     }
 
     /**
-     * The booklet-visible groups of the alternance's formation the student does not get, for lack
-     * of the option they are reserved to - shown struck through so nobody wonders where they went.
+     * The booklet-visible groups with a code of the alternance's formation the student does not get,
+     * for lack of the option they are reserved to - shown struck through so nobody wonders where
+     * they went.
      *
      * @return list<SkillGroup>
      */
@@ -61,58 +63,23 @@ class EcfActivityTypes
 
         return array_values(array_filter(
             $this->sorted($this->skillGroupRepository->findAllActiveForProgram($program)),
-            static fn (SkillGroup $group): bool => $group->isVisibleInBooklet() && !\in_array($group->getId(), $kept, true),
+            static fn (SkillGroup $group): bool => $group->isVisibleInBooklet() && '' !== self::codeOf($group) && !\in_array($group->getId(), $kept, true),
         ));
     }
 
     /**
-     * What the formation's « Livret ECF » tab previews: every booklet-visible group, whoever holds
-     * its option.
-     *
-     * @return list<SkillGroup>
+     * Whether the formation has at least one booklet-visible group with a code, whoever holds its
+     * option - without one the ECF booklet would carry no activity-type.
      */
-    public function groupsOf(Program $program): array
+    public function hasActivityTypes(Program $program): bool
     {
-        return array_values(array_filter(
-            $this->sorted($this->skillGroupRepository->findAllActiveForProgram($program)),
-            static fn (SkillGroup $group): bool => $group->isVisibleInBooklet(),
-        ));
-    }
-
-    /**
-     * Why the formation cannot turn the booklet on, as translation keys with their parameters -
-     * empty when it can.
-     *
-     * @return list<array{key: string, params: array<string, string>}>
-     */
-    public function refusalsForEnabling(Program $program): array
-    {
-        $groups = $this->groupsOf($program);
-        if ([] === $groups) {
-            return [['key' => 'ecfSettingsRefusalNoGroupMessage', 'params' => []]];
+        foreach ($this->skillGroupRepository->findAllActiveForProgram($program) as $group) {
+            if ($group->isVisibleInBooklet() && '' !== self::codeOf($group)) {
+                return true;
+            }
         }
 
-        $refusals = [];
-        $seen = [];
-        foreach ($groups as $group) {
-            $code = self::codeOf($group);
-            if ('' === $code) {
-                $refusals[] = ['key' => 'ecfSettingsRefusalNoCodeMessage', 'params' => ['%group%' => $group->getLabel()]];
-
-                continue;
-            }
-
-            $key = mb_strtoupper($code);
-            if (isset($seen[$key])) {
-                $refusals[] = ['key' => 'ecfSettingsRefusalDuplicateCodeMessage', 'params' => ['%code%' => $code, '%group%' => $group->getLabel(), '%other%' => $seen[$key]]];
-
-                continue;
-            }
-
-            $seen[$key] = $group->getLabel();
-        }
-
-        return $refusals;
+        return false;
     }
 
     /**
