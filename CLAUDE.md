@@ -292,6 +292,10 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `calendar` shape), and the body - streamed to disk, never a string - goes through
   `FileLibraryWriter::writeFile()`: type, quota, antivirus like any upload. Every answer is JSON,
   refusals included: curl's output is all the model reads.
+  `library_move` files quizzes, files and whole folders elsewhere in the quiz or file library -
+  a move through each library's own manager, never a copy, so ids and links survive; the call is
+  checked whole before anything moves, then each move is flushed in turn inside one transaction
+  (a folder's subtree and its siblings' names are read from the database).
   `progression_get` is **read-only**: Claude suggests a progression, the teacher builds it on the
   progression screens (`McpTimetable` holds the shared doors). `format_guide` is assembled from the import assistants' own catalogues,
   so the screen's prompt and the connector's guide cannot drift. `Feature::ClaudeConnector` is off
