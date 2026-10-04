@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.04'
+      date: '2026-10-04'
+      summary: "Le livret d'évaluations passées en cours de formation des titres professionnels se tient désormais sur la plateforme, depuis le suivi de l'alternance, jusqu'au PDF conforme au modèle du ministère et à la signature de l'étudiant."
+      entries:
+          - type: nouveaute
+            title: "UFA : le livret ECF des titres professionnels, activé formation par formation"
+            detail: "Saisie des résultats et des évaluations complémentaires par activité-type, visas datés, synthèse, puis lecture en ligne et PDF reproduisant le modèle du ministère."
+          - type: nouveaute
+            title: "Mon alternance : l'étudiant lit son livret ECF une fois clos et le signe pour information"
+          - type: modification
+            title: "Cours en ligne, en essai : les types de supports d'un cours signalés par des pictogrammes, leur nom au survol"
+          - type: modification
+            title: "Tableau virtuel : le fond photographique du jour s'appelle désormais « Photo »"
     - version: '2026.10.03.4'
       date: '2026-10-03'
       summary: "Les balises d'un parcours e-CO se renomment, et une course s'annonce par une affiche dont le QR code ouvre directement l'application avec son code. Les cours en ligne, toujours en essai, gagnent une présentation en grandes vignettes."
