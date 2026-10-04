@@ -1,0 +1,369 @@
+{#
+    The ECF booklet as the ministry's template prints it (design/validated/ecf-booklet.md, R10):
+    the PDF Gotenberg makes of it, and the page the online reader frames - one rendering, so the two
+    cannot drift.
+
+    Measured on design/sources/fradet_ecf.docx (CDA, millésime 04): every length below is in points
+    of an A4 page, read off the reference rendering, and every fixed wording is the ministry's own,
+    typos included (« Evaluations », « SYNTHESE »). It is not translated: it is the form's text.
+
+    The page margins are Gotenberg's (App\Service\Ecf\EcfBookletPdfExporter): 17.75 / 19 / 27 / 15 mm,
+    the bottom one holding the footer table (_print_footer.html.twig). Carlito and Liberation Sans
+    Narrow stand for Calibri and Arial Narrow - same metrics, so the same line breaks; both ship in
+    the Gotenberg image.
+#}
+{% macro box(checked) %}<span class="sym">{{ checked ? '☒' : '☐' }}</span>{% endmacro %}
+
+{% macro result(result, compact) %}
+    <div class="result{{ compact ? ' result--complementary' }}">
+        <p class="result__q">Lors de l’évaluation ou des évaluations passée(s) en cours de formation, le/la candidat(e) est considéré(e) :</p>
+        <p class="result__o">{{ _self.box(result and result.value == 'satisfied') }}<span>Avoir satisfait aux critères issus des référentiels du titre professionnel attendus pour la réalisation de cette activité-type.</span></p>
+        <p class="result__o">{{ _self.box(result and result.value == 'not_satisfied') }}<span>Ne pas avoir satisfait aux critères issus des référentiels du titre professionnel.</span></p>
+    </div>
+{% endmacro %}
+
+{% macro visaRows(visas, count) %}
+    <table class="sig">
+        {% for i in 0..(count - 1) %}
+            {% set visa = visas[i] ?? null %}
+            <tr>
+                <td class="sig__name"><i>Nom</i><span class="arrow">►</span><span class="sig__value">{{ visa ? visa.name }}</span></td>
+                <td class="sig__date"><i>Date</i><span class="arrow">►</span><span class="sig__value">{{ visa ? visa.date|date('d/m/Y') }}</span></td>
+                <td class="sig__visa">{% if visa %}Signé numériquement le {{ visa.signedAt|date('d/m/Y') }}{% endif %}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endmacro %}
+
+{% macro zone(title, note, lines, height, arrow) %}
+    <div class="zone">
+        <div class="zone__head">{{ title }}{% if note %}<i>{{ note }}</i>{% endif %}</div>
+        <div class="zone__body{{ arrow ? '' : ' zone__body--plain' }}" style="min-height: {{ height }}pt">
+            {% if arrow %}
+                <div class="zone__line"><span class="arrow arrow--mag">►</span><span>{{ lines|first|default('') }}</span></div>
+                {% for line in lines|slice(1) %}<div class="zone__line"><span></span><span>{{ line }}</span></div>{% endfor %}
+            {% else %}
+                {% for line in lines %}<div>{{ line }}</div>{% endfor %}
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Livret d’évaluations passées en cours de formation — {{ student.lastname }} {{ student.firstname }}</title>
+{% if screen %}
+    {# The reader's browsers have no Carlito installed; Gotenberg has it locally and fetches nothing. #}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400;1,700&family=Arimo&display=swap">
+{% endif %}
+<style>
+    @page { size: A4; margin: 17.75mm 19mm 27mm 15mm; }
+    * { box-sizing: border-box; }
+    html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { margin: 0; font-family: Carlito, Calibri, sans-serif; font-size: 10pt; line-height: 1.22; color: #404040; }
+    p { margin: 0; }
+    table { border-collapse: collapse; }
+    .sym { font-family: "DejaVu Sans", "Segoe UI Symbol", "Arial Unicode MS", sans-serif; font-size: .9em; }
+    .arrow { font-family: "DejaVu Sans", "Lucida Grande", sans-serif; font-size: 6pt; }
+    .arrow--mag { color: #d60093; }
+
+    /* One sheet = one block that starts a page. Cover and presentation fill theirs exactly. */
+    .sheet { position: relative; break-before: page; }
+    .sheet:first-of-type { break-before: auto; }
+    .sheet--fixed { height: 251.5mm; overflow: hidden; }
+    /* The page's top margin is 7.8pt below Word's (17.75mm, so that a row continued on a new page
+       starts where Word starts it); the absolutely placed pages are pulled back up by as much. */
+    .sheet--fixed > .inner { margin-top: -7.8pt; }
+    #ecf-cover > .inner { margin-top: -6pt; }
+    .keep { break-inside: avoid; }
+
+    /* Cover - page 1 */
+    .cover__logo { position: absolute; left: -8.5pt; top: 14pt; width: 98.4pt; height: 81.6pt; object-fit: contain; }
+    .cover__title { position: absolute; left: 108.2pt; top: 1.3pt; width: 386.3pt; height: 123.2pt; }
+    .cover__strip { position: absolute; left: 0; top: 0; width: 100%; height: 14.2pt; background: #f7f7f7; }
+    .cover__words { position: absolute; left: 0; top: 12pt; width: 100%; text-align: center; font-weight: 700; color: #595959; font-size: 25.6pt; line-height: 21.6pt; }
+    .cover__words b { font-size: 28pt; }
+    .cover__rule { position: absolute; left: 0; top: 64.5pt; width: 100%; height: 1pt; background: #a6a6a6; }
+    .cover__box { position: absolute; left: 0; top: 71pt; width: 100%; height: 49.2pt; background: #f2f2f2; }
+    .corner { position: absolute; color: #ffffff; font-family: "DejaVu Sans", sans-serif; line-height: 1; }
+    .cover__box .corner { right: 5.2pt; bottom: 6pt; font-size: 24pt; }
+    .cover__mag { position: absolute; left: 0; top: 121.7pt; width: 100%; height: 1.5pt; background: #d60093; }
+    .cover__band { position: absolute; left: 4.95pt; top: 201.5pt; width: 489pt; height: 24.4pt; background: #d60093; color: #fff; font-weight: 700; font-size: 20pt; line-height: 24.4pt; text-align: center; }
+    .cover__bandline { position: absolute; left: 4.95pt; top: 229pt; width: 489pt; height: 1.5pt; background: #d60093; }
+    .cover__name { position: absolute; left: 0; top: 244.6pt; width: 498.9pt; text-align: center; font-size: 16pt; color: #000; }
+    .cover__level { position: absolute; left: 0; top: 264.9pt; width: 498.9pt; text-align: center; font-size: 12pt; font-weight: 700; }
+    .cover__dates { position: absolute; left: 4.75pt; top: 282.5pt; width: 489.3pt; height: 82pt; border: .75pt solid #d9d9d9; padding-top: 7pt; }
+    .cover__dates div { height: 19.5pt; line-height: 19.5pt; white-space: nowrap; }
+    .cover__dates span { display: inline-block; }
+    .cover__dates span:first-child { width: 231pt; margin-right: 10.7pt; text-align: right; font-size: 12pt; }
+    .cover__dates span:last-child { font-size: 16pt; }
+    .idrow { position: absolute; left: 0; width: 498.9pt; height: 14.7pt; font-size: 11pt; line-height: 14.7pt; }
+    .idrow i { position: absolute; left: 13.65pt; font-size: 12pt; }
+    .idrow .arrow { position: absolute; left: 160.35pt; top: 1pt; }
+    .idrow span.v { position: absolute; left: 174.25pt; }
+    .idbar { position: absolute; left: 7.85pt; top: 415.5pt; width: 1pt; height: 26pt; background: #404040; }
+    .idrow--mag i { left: 12.55pt; color: #d60093; }
+    .idrow--mag .arrow { left: 159.35pt; color: #d60093; }
+    .idrow--mag span.v { left: 173.25pt; }
+    .idbar--mag { left: 5.5pt; top: 489.5pt; width: 2pt; height: 40pt; background: #d60093; }
+    .cand { position: absolute; left: 12.55pt; top: 467.4pt; color: #d60093; font-size: 12pt; font-weight: 700; font-style: italic; }
+    .civ { position: absolute; top: 473pt; font-size: 11pt; }
+
+    /* Presentation - page 2 */
+    .band { margin-left: 7.15pt; width: 489.1pt; height: 24.4pt; background: #d60093; color: #fff; font-weight: 700; font-size: 20pt; line-height: 24.4pt; padding-left: 5.4pt; }
+    .band--center { text-align: center; padding-left: 0; }
+    .pres__band { position: absolute; top: 21.9pt; left: 0; }
+    .pres__box { position: absolute; left: 6.75pt; top: 63.4pt; width: 489.3pt; min-height: 77.1pt; border: .75pt solid #d9d9d9; padding: 8.5pt 12pt 8pt 23.9pt; }
+    .pres__line { position: absolute; left: 7.15pt; top: 47.8pt; width: 489.1pt; height: 1pt; background: #d60093; }
+    .pres__guide { position: absolute; left: 0; top: 647pt; width: 498.9pt; color: #000; }
+    .pres__guide a { color: #000; }
+
+    /* Activity sheet */
+    .sheet--at { padding-top: 7.8pt; }
+    .atline { display: grid; grid-template-columns: 109.7pt 1fr; margin-left: 16.35pt; padding-top: 1pt; min-height: 19.5pt; align-items: baseline; }
+    .atline__k { color: #d60093; font-size: 16pt; font-weight: 700; }
+    .atline__v { font-size: 14pt; font-weight: 700; line-height: 1.2; }
+    .magrule { margin: 2pt 0 0 5.45pt; width: 489pt; height: 2pt; background: #d60093; }
+    .comps { margin: 11pt 0 0 7.45pt; width: 489pt; min-height: 193pt; border: .75pt solid #bfbfbf; padding: 0 5pt 6pt 5pt; }
+    .comps h2 { margin: 0; font-size: 14pt; font-weight: 700; line-height: 1.22; }
+    .comps ol { margin: 0; padding-left: 18.1pt; list-style-position: outside; }
+    .comps li { padding-left: 2pt; }
+    table.ev { margin: 14pt 0 0 6.75pt; width: 488.3pt; table-layout: fixed; }
+    table.ev th, table.ev td { border: .5pt solid #595959; }
+    table.ev th { font-weight: 700; text-align: left; vertical-align: middle; height: 26pt; padding: 0 6pt; }
+    table.ev th small { font-weight: 400; font-style: italic; font-size: 8pt; }
+    table.ev td { vertical-align: middle; }
+    table.ev td.desc { vertical-align: top; padding: 2pt 6pt 5pt 6pt; }
+    .desc__grid { position: relative; padding-left: 14.3pt; }
+    .desc__n { position: absolute; left: 0; top: 0; font-weight: 700; font-size: 10pt; line-height: 13.4pt; }
+    .desc__p { color: #808080; font-size: 11pt; line-height: 13.4pt; margin-bottom: 6pt; orphans: 1; widows: 1; }
+    .desc__p:last-child { margin-bottom: 0; }
+    table.ev td.date { text-align: center; }
+    table.ev td.comp { padding: 0 0 0 6.3pt; }
+    table.ev tr { break-inside: auto; }
+    .result { margin: 17pt 0 0 5.45pt; }
+    /* Word lets this line run 7pt into the right margin; any overflow here makes Chromium scale the
+       whole document down, so the line is tightened instead to keep it on one line. */
+    .result__o span { letter-spacing: -.07pt; }
+    .result__q { font-weight: 700; }
+    .result__o { display: grid; grid-template-columns: 14.2pt 1fr; margin-top: 6pt; }
+    .result__o:first-of-type { margin-top: 6.3pt; }
+        .zone { margin-top: 20pt; break-inside: avoid; }
+    .zone__head { border-left: 2.5pt solid #d60093; border-bottom: .75pt solid #d60093; padding: 0 0 2pt 3.05pt; font-weight: 700; font-size: 11pt; line-height: 13.4pt; }
+    .zone__head i { display: block; font-weight: 400; color: #7f7f7f; }
+    .zone__body { border-left: .75pt solid #bfbfbf; border-right: .75pt solid #bfbfbf; padding: 10pt 12pt 6pt 23.5pt; font-size: 11pt; line-height: 13.4pt; }
+    .zone__body--plain { padding-left: 6pt; }
+    .zone__body--boxed { border: .75pt solid #bfbfbf; border-top: 0; padding-left: 6pt; }
+    .zone__line { display: grid; grid-template-columns: 11pt 1fr; }
+    .zone__line .arrow { padding-top: 2pt; }
+    .evaluators { margin-top: 13pt; break-inside: avoid; }
+    .evaluators__head { display: flex; justify-content: space-between; padding: 0 64.4pt 4pt 5.45pt; font-size: 12pt; font-weight: 700; font-style: italic; }
+    table.sig { width: 498.9pt; table-layout: fixed; }
+    table.sig td { border: .75pt solid #bfbfbf; height: 30.7pt; vertical-align: middle; font-size: 12pt; }
+    table.sig td i { font-style: italic; }
+    table.sig .sig__name { width: 210.8pt; border-left: 2.5pt solid #d60093; padding-left: 5.5pt; }
+    table.sig .sig__date { width: 127pt; padding-left: 5.6pt; }
+    table.sig .arrow { display: inline-block; margin-left: 11pt; width: 16pt; }
+    table.sig .sig__date .arrow { margin-left: 10pt; width: 28pt; }
+    .sig__value { font-size: 11pt; }
+    table.sig .sig__visa { text-align: center; font-size: 9pt; }
+
+    /* Complementary page */
+    .sheet--comp { padding-top: 0; }
+    .comp__title { font-size: 16pt; font-weight: 700; }
+    .comp__title i { font-size: 10pt; font-weight: 400; }
+    table.ev--comp { margin-top: 10.9pt; }
+    table.ev--comp td.tick { height: 22pt; padding: 0 0 0 5.5pt; white-space: nowrap; }
+    table.ev--comp td.desc { padding-top: 1pt; }
+
+    /* Synthesis */
+    .sheet--syn { padding-top: 23.8pt; }
+    .syn__title { border-top: 1.5pt solid #a6a6a6; border-bottom: 1.5pt solid #a6a6a6; text-align: center; font-size: 22pt; font-weight: 700; line-height: 26.8pt; padding: 0 0 .5pt; margin-left: -.5pt; width: 499.4pt; }
+    .syn__box { position: relative; margin: 11pt 0 0 -.5pt; width: 499.4pt; height: 28pt; background: #f2f2f2; }
+    .syn__box .corner { right: 4pt; bottom: 4pt; font-size: 16pt; }
+    .syn__mag { margin: 2pt 0 0 -.5pt; width: 499.4pt; height: 1.5pt; background: #d60093; }
+    table.syn { margin: 26pt 0 0 -.5pt; width: 499.4pt; table-layout: fixed; }
+    table.syn th { background: #f2f2f2; border: .75pt solid #d9d9d9; font-size: 12pt; font-weight: 700; text-align: left; padding: 0 6.5pt; height: 16pt; }
+    table.syn td { border: .75pt solid #d9d9d9; padding: 3pt 6pt 12pt 7pt; vertical-align: top; }
+    table.syn td.syn__at { width: 148pt; font-weight: 700; text-align: center; vertical-align: middle; padding: 3pt 8pt; }
+    table.syn td.syn__comp p { line-height: 12pt; }
+    table.syn tr.syn__m td { border: 0; padding: 4pt 0 4.4pt 4pt; font-size: 11pt; }
+    .syn__m .arrow { color: #d60093; display: inline-block; width: 18pt; }
+    .syn__m .lbl { display: inline-block; width: 128pt; }
+    .syn__m .opt { display: inline-block; width: 38pt; }
+    .sheet--syn2 { padding-top: 3.5pt; }
+    .syn2__evals { margin-top: 58.5pt; padding-left: 6.5pt; }
+    .syn2__evals .evaluators__head { padding-left: 6pt; }
+    .syn2__evals table.sig { width: 492.4pt; }
+    .syn2__evals table.sig .sig__name { width: 203pt; }
+    .syn2__repr { margin-top: 13.4pt; }
+    .remise { margin-top: 18pt; font-size: 11pt; line-height: 13.4pt; }
+    .remise b { display: block; margin-top: 7pt; }
+
+    @media screen {
+        body { background: #e8eef3; padding: 18px 0; }
+        .sheet { width: 210mm; margin: 0 auto 18px; padding: 17.75mm 19mm 27mm 15mm; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+        .sheet--fixed { height: 297mm; }
+        .sheet--at { padding-top: calc(17.75mm + 7.8pt); }
+        .sheet--comp { padding-top: 17.75mm; }
+        .sheet--syn2 { padding-top: 17.75mm; }
+        .sheet--syn { padding-top: calc(17.75mm + 23.8pt); }
+        .sheet--fixed > .inner { position: relative; height: 100%; }
+    }
+</style>
+</head>
+<body>
+
+{# ---------------------------------------------------------------- 1. Cover #}
+<section class="sheet sheet--fixed" id="ecf-cover"><div class="inner" style="position: relative; height: 100%">
+    {% if logo %}<img class="cover__logo" src="{{ logo }}" alt="">{% endif %}
+    <div class="cover__title">
+        <div class="cover__strip"></div>
+        <div class="cover__words"><b>L</b>IVRET D’<b>E</b>VALUATIONS PASS<b>E</b>ES<br>EN COURS DE FORMATION</div>
+        <div class="cover__rule"></div>
+        <div class="cover__box"><span class="corner">◢</span></div>
+        <div class="cover__mag"></div>
+    </div>
+    <div class="cover__band">Titre professionnel</div>
+    <div class="cover__bandline"></div>
+    <div class="cover__name">{{ settings.titleLabel }}</div>
+    <div class="cover__level">{% if settings.level %}Niveau {{ settings.level }}{% endif %}</div>
+    <div class="cover__dates">
+        <div><span>Arrêté du :</span><span>{{ settings.decreeDate ? settings.decreeDate|date('d/m/Y') }}</span></div>
+        <div><span>J.O. du :</span><span>{{ settings.journalDate ? settings.journalDate|date('d/m/Y') }}</span></div>
+        <div><span>Date d’effet au :</span><span>{{ settings.effectiveDate ? settings.effectiveDate|date('d/m/Y') }}</span></div>
+    </div>
+    <div class="idbar"></div>
+    <div class="idrow" style="top: 415.1pt"><i>Organisme de formation</i><span class="arrow">►</span><span class="v">{{ settings.organisation }}</span></div>
+    <div class="idrow" style="top: 429.8pt"><i>Lieu de formation</i><span class="arrow">►</span><span class="v">{{ settings.place }}</span></div>
+    <div class="cand">Candidat(e) :</div>
+    <div class="civ" style="left: 173.25pt">Mme {{ _self.box(booklet.civility and booklet.civility.value == 'mme') }}</div>
+    <div class="civ" style="left: 249.65pt">M. {{ _self.box(booklet.civility and booklet.civility.value == 'm') }}</div>
+    <div class="idbar idbar--mag"></div>
+    <div class="idrow idrow--mag" style="top: 487.5pt"><i>Nom</i><span class="arrow">►</span><span class="v">{{ student.lastname }}</span></div>
+    <div class="idrow idrow--mag" style="top: 502.2pt"><i>Prénom</i><span class="arrow">►</span><span class="v">{{ student.firstname }}</span></div>
+    <div class="idrow idrow--mag" style="top: 516.8pt"><i>Date de naissance</i><span class="arrow">►</span><span class="v">{{ booklet.birthDate ? booklet.birthDate|date('d/m/Y') }}</span></div>
+</div></section>
+
+{# ---------------------------------------------------------------- 2. Presentation #}
+<section class="sheet sheet--fixed" id="ecf-presentation"><div class="inner" style="position: relative; height: 100%">
+    <div class="band band--center pres__band">Présentation du dossier</div>
+    <div class="pres__line"></div>
+    <div class="pres__box">Les évaluations passées en cours de formation décrites dans les fiches qui suivent ont été mises en œuvre en référence aux critères issus des référentiels du titre professionnel, pour les sessions d’examen « Titre », « CCP » et « CCS » telles que prévues par l’arrêté du 22 décembre 2015 relatif aux conditions de délivrance du titre professionnel du ministère chargé de l’emploi.</div>
+    <div class="pres__guide">Le <b><i>Guide de mise en œuvre</i></b> des Evaluations passées en cours de formation est à télécharger sur le site du ministère de l’emploi : <u>http://travail-emploi.gouv.fr/</u> (rubrique <i>Documents techniques</i>).<br>Il comporte un mode d’emploi du présent Livret d’évaluations passées en cours de formation.</div>
+</div></section>
+
+{# ---------------------------------------------------------------- 3. One sheet + complementary page per activity-type #}
+{% for at in activities %}
+    <section class="sheet sheet--at" id="{{ at.anchor }}">
+        <div class="band">Fiche de résultats des évaluations</div>
+        <div class="atline"><span class="atline__k">Activité-type {{ at.number }}</span><span class="atline__v">{{ at.label }}</span></div>
+        <div class="magrule"></div>
+        <div class="comps">
+            <h2>Compétences :</h2>
+            <ol>{% for competence in at.competences %}<li>{{ competence }}</li>{% endfor %}</ol>
+        </div>
+        <table class="ev">
+            <colgroup><col style="width: 338.3pt"><col style="width: 65.7pt"><col style="width: 29.9pt"><col style="width: 27.8pt"><col style="width: 26.6pt"></colgroup>
+            <tbody>
+                <tr><th>Description des évaluations mises en œuvre</th><th style="text-align: center">Dates</th><th colspan="3">Compétences évaluées</th></tr>
+                {% for row in at.rows %}
+                    <tr>
+                        <td class="desc"><div class="desc__grid"><span class="desc__n">{{ row.number }}</span><div>{% for p in row.paragraphs %}<p class="desc__p">{{ p }}</p>{% endfor %}</div></div></td>
+                        <td class="date">{{ row.date ? row.date|date('d/m/Y') }}</td>
+                        <td class="comp">{{ row.columns[0] }}</td>
+                        <td class="comp">{{ row.columns[1] }}</td>
+                        <td class="comp">{{ row.columns[2] }}</td>
+                    </tr>
+                {% else %}
+                    {% for n in 1..max(1, at.competences|length) %}
+                        <tr><td class="desc" style="height: 40pt"><div class="desc__grid"><span class="desc__n">{{ n }}</span>&nbsp;</div></td><td class="date"></td><td class="comp"></td><td class="comp"></td><td class="comp"></td></tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {{ _self.result(at.result, false) }}
+        {{ _self.zone('Si le candidat n’a pas satisfait aux critères issus des référentiels, notez ci-dessous les points d’attention et précisions éventuelles.', null, at.attention, 140, true) }}
+        {{ _self.zone('Compétences à réévaluer :', '(Voir évaluations complémentaires ci-après.)', at.reassess, 228, true) }}
+        <div class="evaluators">
+            <div class="evaluators__head"><span>Formateur(s) évaluateur(s)</span><span>Visa</span></div>
+            {{ _self.visaRows(at.visas, 2) }}
+        </div>
+    </section>
+
+    <section class="sheet sheet--comp" id="{{ at.anchor }}-complementary">
+        <div class="comp__title">Evaluations complémentaires <i>(si nécessaire)</i></div>
+        <table class="ev ev--comp">
+            <colgroup><col style="width: 357.7pt"><col style="width: 47.4pt"><col style="width: 28.8pt"><col style="width: 27.8pt"><col style="width: 26.6pt"></colgroup>
+            <tbody>
+                <tr><th style="height: 22pt">Description des évaluations mises en œuvre</th><th style="height: 22pt; text-align: center">Dates</th><th colspan="3" style="height: 22pt; line-height: 1.1">Compétences évaluées <small>(cochez)</small></th></tr>
+                {% for i in 0..3 %}
+                    {% set row = at.complementaryRows[i] ?? null %}
+                    {% for line in 0..2 %}
+                        <tr>
+                            {% if line == 0 %}
+                                <td class="desc" rowspan="3"><div class="desc__grid"><span class="desc__n">{{ i + 1 }}</span><div>{% if row %}{% for p in row.paragraphs %}<p class="desc__p">{{ p }}</p>{% endfor %}{% endif %}</div></div></td>
+                                <td class="date" rowspan="3">{{ row and row.date ? row.date|date('d/m/Y') }}</td>
+                            {% endif %}
+                            {% for col in 0..2 %}
+                                {% set n = col * 3 + line + 1 %}
+                                <td class="tick">{{ n }} {{ _self.box(row and n in row.ticked) }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="margin-top: 26.9pt">{{ _self.result(at.complementaryResult, true) }}</div>
+        <div style="margin-top: -.5pt">{{ _self.zone('Observations', null, at.observations, 135, false) }}</div>
+        <div class="evaluators" style="margin-top: 19pt">
+            <div class="evaluators__head"><span>Formateur(s) évaluateur(s)</span><span>Visa</span></div>
+            {{ _self.visaRows(at.complementaryVisas, 2) }}
+        </div>
+    </section>
+{% endfor %}
+
+{# ---------------------------------------------------------------- 4. Synthesis #}
+<section class="sheet sheet--syn" id="ecf-synthesis">
+    <div class="syn__title">SYNTHESE DES RESULTATS OBTENUS PAR LE CANDIDAT<br>A L’ISSUE DU PARCOURS DE FORMATION</div>
+    <div class="syn__box"><span class="corner">◢</span></div>
+    <div class="syn__mag"></div>
+    <table class="syn">
+        <tbody>
+            <tr><th style="width: 148pt">Intitulé de l’activité type</th><th>Compétences professionnelles</th></tr>
+            {% for row in synthesis.rows %}
+                <tr class="keep">
+                    <td class="syn__at">{{ row.label }}</td>
+                    <td class="syn__comp">{% for competence in row.competences %}<p>{{ loop.index }}. {{ competence }}</p>{% endfor %}</td>
+                </tr>
+                <tr class="syn__m">
+                    <td colspan="2"><span class="arrow">►</span><span class="lbl">L’activité {{ row.number }} est maîtrisée :</span><span class="opt">OUI {{ _self.box(row.mastered is same as(true)) }}</span><span class="opt">NON {{ _self.box(row.mastered is same as(false)) }}</span></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="sheet sheet--syn2">
+    <div class="zone" style="margin-top: 6.2pt">
+        <div class="zone__head">Observations</div>
+        <div class="zone__body zone__body--boxed" style="min-height: 141pt">{% for line in synthesis.observations %}<div>{{ line }}</div>{% endfor %}</div>
+    </div>
+    <div class="syn2__evals keep">
+        <div class="evaluators__head"><span>Formateur(s) / Évaluateur(s)</span><span>Visa</span></div>
+        {{ _self.visaRows(synthesis.evaluators, 2) }}
+        <div class="syn2__repr">
+            <div class="evaluators__head"><span>Représentant de l’organisme de formation</span><span></span></div>
+            {{ _self.visaRows([synthesis.representative], 1) }}
+        </div>
+    </div>
+    <div class="remise">
+        Un exemplaire du livret a été remis au candidat pour information par l’organisme de formation contre signature le {{ synthesis.remittedOn ? synthesis.remittedOn|date('d/m/Y') }}
+        <b>Signature du candidat pour information :</b>
+    </div>
+</section>
+
+</body>
+</html>

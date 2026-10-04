@@ -273,6 +273,23 @@ class InternshipFormationCenter
         return $this;
     }
 
+    // The ministry's bloc-marque printed on the ECF booklet's cover (design/validated/ecf-booklet.md):
+    // uploaded by an administrator, never shipped in the repository - the image is not ours.
+    #[ORM\Column(name: 'ecf_ministry_logo_key', length: 255, nullable: true)]
+    private ?string $ecfMinistryLogoKey = null;
+
+    public function getEcfMinistryLogoKey(): ?string
+    {
+        return $this->ecfMinistryLogoKey;
+    }
+
+    public function setEcfMinistryLogoKey(?string $ecfMinistryLogoKey): static
+    {
+        $this->ecfMinistryLogoKey = $ecfMinistryLogoKey;
+
+        return $this;
+    }
+
     public function getCfaName(): ?string
     {
         return $this->cfaName;

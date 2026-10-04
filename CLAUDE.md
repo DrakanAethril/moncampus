@@ -454,6 +454,17 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   « Confirmer » or saving a changed number in « Modifier l'entreprise » stamps
   `Enterprise::$siretConfirmedAt`; imports and « nouvelle entreprise » leave it « à confirmer », and
   `EnterpriseRepository::queryPendingSiret()` is the one definition the queue and its counter read.
+  The **livret ECF** (livret d'évaluations passées en cours de formation, `App\Controller\Ufa\Ecf*`,
+  `src/Service/Ecf/`, spec `design/validated/ecf-booklet.md`) is switched on per formation
+  (`ProgramEcfSettings`, UFA › Formations › « Livret ECF ») and lives on the alternance follow-up:
+  read by the administration, written and signed by administrators only (`EcfBookletVoter`). Its
+  activity-types are the Livret de l'alternant's groups, options included
+  (`BookletSkillGroups::forTutorLink()`), found again from one year to the next by
+  `SkillGroup::$code`; the booklet follows the student and the titre (code + millésime), not the
+  Program. A visa is the connected person's click, dated by the server, and freezes what it signed.
+  The PDF (`templates/ufa/ecf/print.html.twig`, also the online reader's frame) reproduces the
+  ministry's template page for page - lengths in points measured on it; an element wider than the
+  page makes Chromium scale the whole document down, so nothing may overflow.
 - **Stage / recherche d'emploi** — `JobSearch`, `JobApplication`, `TrainingOffer`,
   `TrainingApplication` (postulation with free-form attachments). The job search names its own
   démarches: a démarche is never *made* an `Enterprise`, it may only *point at* one of the vivier
@@ -632,8 +643,8 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 30 of them: Assignment, AudienceTargetable,
-DocumentationArticle, Dossier, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 31 of them: Assignment, AudienceTargetable,
+DocumentationArticle, Dossier, EcfBooklet, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
 GuestConsole, InternshipTutorLink, LearningPath, LessonLog, MessageThread, OnlineCourse, Portfolio, Progression, ProxmoxHost, QuizFolder,
 QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket,
 Wiki, WordCloud).

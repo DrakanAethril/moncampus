@@ -85,6 +85,8 @@ class EcfBookletTest extends FunctionalTestCase
             sprintf('/ufa/alternances/%d/ecf/cover', $id),
             sprintf('/ufa/alternances/%d/ecf/activities/AT1', $id),
             sprintf('/ufa/alternances/%d/ecf/synthesis', $id),
+            sprintf('/ufa/alternances/%d/ecf/read', $id),
+            sprintf('/ufa/alternances/%d/ecf/frame', $id),
         ];
     }
 
@@ -142,6 +144,12 @@ class EcfBookletTest extends FunctionalTestCase
 
         $this->client->request('GET', $path);
         self::assertSelectorTextContains('.cm-ecf-visa__stamp', 'Signé numériquement le '.(new \DateTimeImmutable())->format('d/m/Y'));
+
+        // The printed document says the same, in the ministry's words.
+        $this->client->request('GET', sprintf('/ufa/alternances/%d/ecf/frame', $id));
+        self::assertSelectorTextContains('#ecf-at-1 .atline', 'Activité-type 1');
+        self::assertSelectorTextContains('#ecf-at-1 .sig__visa', 'Signé numériquement le '.(new \DateTimeImmutable())->format('d/m/Y'));
+        self::assertSelectorTextContains('#ecf-at-1 .result', '☒');
     }
 
     private function booklet(): ?EcfBooklet
