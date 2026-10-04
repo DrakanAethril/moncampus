@@ -32,6 +32,11 @@ enum UfaActivityType: string
     // signed part. %part% names the part (« Activité-type 2 », « Synthèse »).
     case EcfSigned = 'ecf_signed';
     case EcfUnsigned = 'ecf_unsigned';
+    // The closed booklet handed to the student for their signature, the offer withdrawn, and the
+    // student's own signature « pour information ».
+    case EcfOffered = 'ecf_offered';
+    case EcfOfferWithdrawn = 'ecf_offer_withdrawn';
+    case EcfCandidateSigned = 'ecf_candidate_signed';
 
     /**
      * The placeholders available are those the recorder puts in the payload: %student%, %tutor%,
@@ -52,6 +57,9 @@ enum UfaActivityType: string
             self::AlternanceResumed => 'ufaActivityAlternanceResumedText',
             self::EcfSigned => 'ufaActivityEcfSignedText',
             self::EcfUnsigned => 'ufaActivityEcfUnsignedText',
+            self::EcfOffered => 'ufaActivityEcfOfferedText',
+            self::EcfOfferWithdrawn => 'ufaActivityEcfOfferWithdrawnText',
+            self::EcfCandidateSigned => 'ufaActivityEcfCandidateSignedText',
         };
     }
 }

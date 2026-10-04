@@ -49,6 +49,12 @@
                     {% endif %}
                 </span>
             </div>
+            {% if ecf.booklet.offered %}
+                <div class="cm-ecf-chip cm-ecf-chip--{{ ecf.booklet.candidateSigned ? 'satisfied' : 'not_satisfied' }}">
+                    <span class="cm-ecf-chip__key">{{ 'ecfCandidateChipLabel'|trans }}</span>
+                    <span class="cm-ecf-chip__state">{{ ecf.booklet.candidateSigned ? 'ecfSignedOnShortLabel'|trans({'%date%': ecf.booklet.candidateSignedAt|date('d/m/Y')}) : 'ecfCandidateToSignBadge'|trans }}</span>
+                </div>
+            {% endif %}
         </div>
         {% if ecf.orphans is not empty %}
             <div class="cm-note cm-note--gold">

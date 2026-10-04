@@ -201,6 +201,7 @@
     .syn2__repr { margin-top: 13.4pt; }
     .remise { margin-top: 18pt; font-size: 11pt; line-height: 13.4pt; }
     .remise b { display: block; margin-top: 7pt; }
+    .remise__sig { font-weight: 400; margin-left: 6pt; }
 
     @media screen {
         body { background: #e8eef3; padding: 18px 0; }
@@ -361,7 +362,7 @@
     </div>
     <div class="remise">
         Un exemplaire du livret a été remis au candidat pour information par l’organisme de formation contre signature le {{ synthesis.remittedOn ? synthesis.remittedOn|date('d/m/Y') }}
-        <b>Signature du candidat pour information :</b>
+        <b>Signature du candidat pour information :{% if booklet.candidateSigned %} <span class="remise__sig">Signé le {{ booklet.candidateSignedAt|date('d/m/Y') }} par {{ booklet.candidateSignerName }}</span>{% endif %}</b>
     </div>
 </section>
 

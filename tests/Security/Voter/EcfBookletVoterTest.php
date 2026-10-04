@@ -52,4 +52,31 @@ class EcfBookletVoterTest extends VoterTestCase
         $this->assertAbstains(new EcfBookletVoter(), $this->user(['ROLE_ADMIN']), new \stdClass(), EcfBookletVoter::VIEW);
         $this->assertAbstains(new EcfBookletVoter(), $this->user(['ROLE_ADMIN']), $this->booklet(), 'SOMETHING_ELSE');
     }
+
+    public function testTheAdministrationOffersTheBookletToTheStudent(): void
+    {
+        foreach (['ROLE_ADMIN', 'ROLE_STAFF', 'ROLE_STAFF-LEAD'] as $role) {
+            $this->assertGranted(new EcfBookletVoter(), $this->user([$role]), $this->booklet(), EcfBookletVoter::OFFER, $role);
+        }
+        foreach (['ROLE_TEACHER', 'ROLE_STUDENT', 'ROLE_TUTOR'] as $role) {
+            $this->assertDenied(new EcfBookletVoter(), $this->user([$role]), $this->booklet(), EcfBookletVoter::OFFER, $role);
+        }
+    }
+
+    public function testTheStudentReadsTheirOwnOfferedBookletAndSignsItOnceWhileClosed(): void
+    {
+        $student = $this->user(['ROLE_STUDENT'], 'candidate');
+        $booklet = new EcfBooklet($student, 'TP-01281', '04');
+        $this->assertDenied(new EcfBookletVoter(), $student, $booklet, EcfBookletVoter::CANDIDATE_READ, 'not offered yet');
+
+        $booklet->setClosedAt(new \DateTimeImmutable())->offer($this->user(['ROLE_STAFF']), new \DateTimeImmutable());
+        $this->assertGranted(new EcfBookletVoter(), $student, $booklet, EcfBookletVoter::CANDIDATE_READ);
+        $this->assertGranted(new EcfBookletVoter(), $student, $booklet, EcfBookletVoter::CANDIDATE_SIGN);
+        $this->assertDenied(new EcfBookletVoter(), $this->user(['ROLE_STUDENT'], 'classmate'), $booklet, EcfBookletVoter::CANDIDATE_READ, 'another student');
+        $this->assertDenied(new EcfBookletVoter(), $this->user(['ROLE_ADMIN']), $booklet, EcfBookletVoter::CANDIDATE_SIGN, 'nobody signs for the student');
+
+        $booklet->signAsCandidate('Lefèvre Hugo', new \DateTimeImmutable());
+        $this->assertGranted(new EcfBookletVoter(), $student, $booklet, EcfBookletVoter::CANDIDATE_READ);
+        $this->assertDenied(new EcfBookletVoter(), $student, $booklet, EcfBookletVoter::CANDIDATE_SIGN, 'signed once');
+    }
 }

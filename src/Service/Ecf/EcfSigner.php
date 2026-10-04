@@ -24,7 +24,7 @@ use Doctrine\ORM\EntityManagerInterface;
  *  - The synthesis is signed once every activity is decided (R9); the representative's visa closes
  *    the booklet.
  *  - Taking visas back removes all of a part's visas at once, and is refused while something signed
- *    later depends on them.
+ *    later depends on them. Taking back the synthesis' also withdraws the student's copy and signature.
  */
 class EcfSigner
 {
@@ -118,7 +118,8 @@ class EcfSigner
         }
 
         if (EcfPart::Synthesis === $part) {
-            $booklet->setClosedAt(null);
+            // A reopened booklet is no longer the copy the student was handed or signed.
+            $booklet->setClosedAt(null)->withdrawOffer();
         } elseif (!$this->mastery->isSigned($booklet, $activity, EcfPart::Main) && !$this->mastery->isSigned($booklet, $activity, EcfPart::Complementary)) {
             $activity->unfreeze();
         }

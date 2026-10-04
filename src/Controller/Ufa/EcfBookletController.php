@@ -22,6 +22,7 @@ use App\Service\Ecf\EcfActivityTypes;
 use App\Service\Ecf\EcfBookletOverview;
 use App\Service\Ecf\EcfBookletPdfExporter;
 use App\Service\Ecf\EcfBookletWriter;
+use App\Service\Ecf\EcfCandidateSignature;
 use App\Service\Ecf\EcfCriteriaProposer;
 use App\Service\Ecf\EcfMastery;
 use App\Service\Ecf\EcfOverview;
@@ -183,6 +184,7 @@ class EcfBookletController extends AbstractController
             'tutorLink' => $tutorLink,
             'ecf' => $overview,
             'canEdit' => $this->isGranted(EcfBookletVoter::EDIT, $booklet),
+            'canOffer' => $this->isGranted(EcfBookletVoter::OFFER, $booklet),
             'signed' => [] !== $visas,
             'mastery' => array_map(fn (array $row): ?bool => $this->mastery->isMastered($booklet, $row['activity']), $overview->rows),
             'visas' => $this->visaView($booklet, $visas, EcfPart::Synthesis, $canSign, $this->signer->synthesisMissing($booklet, $types), new \DateTimeImmutable('today')),
@@ -229,6 +231,40 @@ class EcfBookletController extends AbstractController
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $name.'.pdf'),
         ]);
+    }
+
+    #[Route(path: '/ufa/alternances/{id}/ecf/offer', name: 'app_ufa_ecf_offer', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function offer(int $id, Request $request, EcfCandidateSignature $candidateSignature, UfaActivityRecorder $recorder): Response
+    {
+        [$tutorLink, $overview] = $this->load($id, EcfBookletVoter::VIEW);
+        $booklet = $overview->booklet;
+        if (!$this->isGranted(EcfBookletVoter::OFFER, $booklet)) {
+            throw $this->createNotFoundException();
+        }
+        $this->guardToken($request);
+
+        if ($this->attempt(fn () => $candidateSignature->offer($booklet, $this->user(), new \DateTimeImmutable()), 'ecfOfferedFlashMessage')) {
+            $recorder->record(UfaActivityType::EcfOffered, $tutorLink, $this->user());
+        }
+
+        return $this->redirectToRoute('app_ufa_ecf_synthesis', ['id' => $id]);
+    }
+
+    #[Route(path: '/ufa/alternances/{id}/ecf/offer/withdraw', name: 'app_ufa_ecf_offer_withdraw', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function withdrawOffer(int $id, Request $request, EcfCandidateSignature $candidateSignature, UfaActivityRecorder $recorder): Response
+    {
+        [$tutorLink, $overview] = $this->load($id, EcfBookletVoter::VIEW);
+        $booklet = $overview->booklet;
+        if (!$this->isGranted(EcfBookletVoter::OFFER, $booklet)) {
+            throw $this->createNotFoundException();
+        }
+        $this->guardToken($request);
+
+        if ($this->attempt(fn () => $candidateSignature->withdraw($booklet), 'ecfOfferWithdrawnFlashMessage')) {
+            $recorder->record(UfaActivityType::EcfOfferWithdrawn, $tutorLink, $this->user());
+        }
+
+        return $this->redirectToRoute('app_ufa_ecf_synthesis', ['id' => $id]);
     }
 
     #[Route(path: '/ufa/alternances/{id}/ecf/sign', name: 'app_ufa_ecf_sign', requirements: ['id' => '\d+'], methods: ['POST'])]

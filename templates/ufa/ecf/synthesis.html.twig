@@ -54,4 +54,35 @@
             {% include 'ufa/ecf/_visas.html.twig' with {view: visas, code: ''} %}
         </div>
     </div>
+
+    {# The booklet's last line: handed to the student for their signature « pour information ». #}
+    <div class="card mt-3" id="candidate">
+        <div class="card-body d-flex flex-column gap-2">
+            <twig:Cm:Subhead :title="'ecfCandidateTitle'|trans" :hint="'ecfCandidateHint'|trans"/>
+            {% if ecf.booklet.candidateSigned %}
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <twig:Cm:Badge tone="green">{{ 'ecfCandidateSignedBadge'|trans }}</twig:Cm:Badge>
+                    <span>{{ 'ecfCandidateSignedLine'|trans({'%date%': ecf.booklet.candidateSignedAt|date('d/m/Y'), '%name%': ecf.booklet.candidateSignerName}) }}</span>
+                </div>
+            {% elseif ecf.booklet.offered %}
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <twig:Cm:Badge tone="gold">{{ 'ecfCandidateToSignBadge'|trans }}</twig:Cm:Badge>
+                    <span>{{ 'ecfOfferedLine'|trans({'%date%': ecf.booklet.offeredAt|date('d/m/Y'), '%name%': ecf.booklet.offeredBy ? (ecf.booklet.offeredBy.displayName ?? ecf.booklet.offeredBy.username) : '—'}) }}</span>
+                </div>
+                {% if canOffer %}
+                    <form method="post" action="{{ path('app_ufa_ecf_offer_withdraw', {id: tutorLink.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('ufa_ecf') }}">
+                        <button type="submit" class="btn btn-link text-danger p-0">{{ 'ecfWithdrawOfferAction'|trans }}</button>
+                    </form>
+                {% endif %}
+            {% elseif not ecf.booklet.closed %}
+                <div class="text-secondary">{{ 'ecfOfferWaitsClosingText'|trans }}</div>
+            {% elseif canOffer %}
+                <form method="post" action="{{ path('app_ufa_ecf_offer', {id: tutorLink.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('ufa_ecf') }}">
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'ecfOfferAction'|trans }}</twig:Cm:Button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}

@@ -7,8 +7,10 @@ namespace App\Tests\Functional;
 use App\Entity\EcfBooklet;
 use App\Entity\Enterprise;
 use App\Entity\InternshipTutorLink;
+use App\Entity\Modality;
 use App\Entity\Program;
 use App\Entity\ProgramEcfSettings;
+use App\Entity\ProgramStudentModality;
 use App\Entity\Skill;
 use App\Entity\SkillGroup;
 use App\Entity\User;
@@ -157,5 +159,47 @@ class EcfBookletTest extends FunctionalTestCase
         $this->entityManager->clear();
 
         return static::getContainer()->get(EcfBookletRepository::class)->findOneBy(['titleCode' => 'TP-01281']);
+    }
+
+    public function testTheStaffOffersTheClosedBookletAndTheStudentSignsItFromMonAlternance(): void
+    {
+        $this->enable();
+        $modality = (new Modality('Alternance', '#445566'))->setIsAlternance(true);
+        $modality->addProgram($this->program);
+        $modality->setCreatedBy($this->admin);
+        $this->entityManager->persist($modality);
+        $this->entityManager->persist(new ProgramStudentModality($this->program, $this->student, $modality));
+        $booklet = new EcfBooklet($this->student, 'TP-01281', '04');
+        $booklet->setCreatedBy($this->admin);
+        $booklet->setClosedAt(new \DateTimeImmutable());
+        $this->entityManager->persist($booklet);
+        $this->entityManager->flush();
+        $id = $this->tutorLink->getId();
+
+        // Nothing for the student before the offer.
+        $this->assertScreens($this->student, ['/my/alternance/ecf' => 404]);
+
+        $this->client->loginUser($this->staff);
+        $this->client->request('GET', sprintf('/ufa/alternances/%d/ecf/synthesis', $id));
+        self::assertSelectorTextContains('#candidate', 'Proposer la signature à l’étudiant');
+        $this->client->request('POST', sprintf('/ufa/alternances/%d/ecf/offer', $id), ['_token' => $this->csrfToken('ufa_ecf')]);
+        self::assertResponseRedirects();
+
+        $this->client->loginUser($this->student);
+        $this->client->request('GET', '/my/alternance');
+        self::assertSelectorTextContains('body', 'Votre livret d’évaluations est à signer');
+        $this->client->request('GET', '/my/alternance/ecf');
+        self::assertResponseIsSuccessful();
+        $this->client->request('POST', '/my/alternance/ecf/sign', ['_token' => $this->csrfToken('my_ecf_sign')]);
+        self::assertResponseRedirects('/my/alternance/ecf');
+
+        $signedOn = (new \DateTimeImmutable())->format('d/m/Y');
+        $this->client->request('GET', '/my/alternance/ecf/frame');
+        self::assertSelectorTextContains('.remise', 'Signé le '.$signedOn.' par');
+        self::assertSelectorTextContains('.remise', 'contre signature le '.$signedOn);
+
+        $this->client->loginUser($this->staff);
+        $this->client->request('GET', sprintf('/ufa/alternances/%d/ecf/synthesis', $id));
+        self::assertSelectorTextContains('#candidate', 'Signé le '.$signedOn);
     }
 }
