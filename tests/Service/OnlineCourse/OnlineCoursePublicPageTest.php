@@ -64,6 +64,16 @@ class OnlineCoursePublicPageTest extends TestCase
         self::assertSame([$created, $edited, $old], OnlineCoursePublicPage::newestFirst([$old, $created, $edited]));
     }
 
+    public function testByTitleIgnoresCaseAndAccents(): void
+    {
+        $model = $this->course('le modèle relationnel', []);
+        $joins = $this->course('Les jointures SQL', []);
+        $acl = $this->course('Écrire une ACL', []);
+        $docker = $this->course('Docker', []);
+
+        self::assertSame([$docker, $acl, $model, $joins], OnlineCoursePublicPage::byTitle([$joins, $model, $acl, $docker]));
+    }
+
     public function testOneRowPerTagInAlphabeticalOrderKeepingTheCoursesOrder(): void
     {
         $joins = $this->course('Les jointures SQL', ['SQL', 'SLAM']);

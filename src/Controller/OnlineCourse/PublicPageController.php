@@ -23,7 +23,8 @@ use Symfony\Component\Routing\Attribute\Route;
  *
  * Each row's « Voir tout » is the same address with a query: `?tag=sql` for a tag's courses,
  * `?view=recent` for all of them; a search is `?q=`. Those three show a full list instead of the
- * rows, so every state of the page still has an address that can be handed out.
+ * rows, so every state of the page still has an address that can be handed out. A tag's list is
+ * sorted by title, or by last change with `&sort=modified`.
  *
  * **There is deliberately nothing above it.** No route lists the teachers and `/courses` alone
  * matches nothing: a common catalogue was proposed and refused, and a page is reached by the link
@@ -58,6 +59,14 @@ class PublicPageController extends AbstractController
         $rows = $publicPage->groups($all);
         $showRecent = 'recent' === QueryValue::trimmed($request, 'view');
         $listed = '' !== $search || [] !== $tagKeys || $showRecent;
+        // A tag's own page, and it alone, is sorted by title unless « Dernier modifié » is chosen:
+        // the rows and « Récemment mis à jour » keep the newest first, which is what they are about.
+        $sortable = '' === $search && [] !== $tagKeys;
+        $sort = $sortable && 'modified' === QueryValue::trimmed($request, 'sort') ? 'modified' : 'name';
+        $courses = $listed ? $publicPage->filter($all, $search, $tagKeys) : [];
+        if ($sortable && 'name' === $sort) {
+            $courses = OnlineCoursePublicPage::byTitle($courses);
+        }
 
         // The teacher's learning paths, for a signed-in visitor the establishment lets follow them -
         // and nothing about them for anybody else: not a tab, not a count.
@@ -71,7 +80,9 @@ class PublicPageController extends AbstractController
             'all' => $all,
             'rows' => $rows,
             'listed' => $listed,
-            'courses' => $listed ? $publicPage->filter($all, $search, $tagKeys) : [],
+            'courses' => $courses,
+            'sortable' => $sortable,
+            'sort' => $sort,
             // What the list is named after: the tags asked for, by the labels the rows show.
             'listedTags' => array_values(array_filter($rows, static fn (array $row): bool => \in_array($row['key'], $tagKeys, true))),
             'search' => $search,

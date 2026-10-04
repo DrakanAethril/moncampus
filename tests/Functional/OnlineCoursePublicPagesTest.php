@@ -125,6 +125,37 @@ class OnlineCoursePublicPagesTest extends FunctionalTestCase
         self::assertStringNotContainsString('Les jointures SQL', $content);
     }
 
+    public function testATagPageIsSortedByNameUnlessTheLastModifiedIsAsked(): void
+    {
+        $this->page($this->teacher, 'tharaud');
+        $tags = static::getContainer()->get(OnlineCourseTagResolver::class);
+        $model = $this->course($this->teacher, 'Le modèle relationnel', publish: true);
+        $tags->apply($model, ['SQL']);
+        $joins = $this->course($this->teacher, 'Les jointures SQL', publish: true);
+        $tags->apply($joins, ['SQL']);
+        $acl = $this->course($this->teacher, 'Des droits SQL', publish: true);
+        $tags->apply($acl, ['SQL']);
+        foreach ([[$joins, '2026-09-01'], [$acl, '2026-09-10'], [$model, '2026-09-20']] as [$course, $date]) {
+            (new \ReflectionProperty(OnlineCourse::class, 'updatedAt'))->setValue($course, new \DateTimeImmutable($date));
+        }
+        $this->em->flush();
+
+        $titles = fn (): array => $this->client->getCrawler()->filter('.cm-pub-card__title')->each(static fn ($title): string => trim($title->text()));
+
+        $this->assertAnonymous('/courses/tharaud?tag=sql', 200);
+        self::assertSame(['Des droits SQL', 'Le modèle relationnel', 'Les jointures SQL'], $titles());
+        self::assertSame('name', $this->client->getCrawler()->filter('#public-course-sort option[selected]')->attr('value'));
+
+        $this->assertAnonymous('/courses/tharaud?tag=sql&sort=modified', 200);
+        self::assertSame(['Le modèle relationnel', 'Des droits SQL', 'Les jointures SQL'], $titles());
+
+        // Neither the rows nor « Récemment mis à jour » nor a search offer it.
+        foreach (['', '?view=recent', '?q=sql', '?q=sql&tag=sql&sort=name'] as $query) {
+            $this->assertAnonymous('/courses/tharaud'.$query, 200);
+            self::assertCount(0, $this->client->getCrawler()->filter('#public-course-sort'), $query);
+        }
+    }
+
     public function testASignedInVisitorFindsTheirMenuAndTheWayBack(): void
     {
         $this->page($this->teacher, 'tharaud');
