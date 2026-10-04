@@ -1,5 +1,10 @@
 {% extends 'ufa/ecf/_layout.html.twig' %}
 
+{% block page_actions %}
+    <a href="{{ path('app_ufa_ecf_read', {id: tutorLink.id}) }}" class="btn btn-outline-primary">{{ 'ecfReadAction'|trans }}</a>
+    {% include 'ufa/ecf/_pdf_button.html.twig' %}
+{% endblock %}
+
 {% block ecf_main %}
     <div class="card">
         <div class="list-group list-group-flush">

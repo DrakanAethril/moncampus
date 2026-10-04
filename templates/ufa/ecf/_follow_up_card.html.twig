@@ -12,6 +12,7 @@
             <twig:Cm:Badge tone="gray">{{ 'ecfBookletNotStartedBadge'|trans }}</twig:Cm:Badge>
         {% endif %}
         <div class="ms-auto d-flex flex-wrap gap-2">
+            <twig:Cm:Button :href="path('app_ufa_ecf_pdf', {id: tutorLink.id})" variant="outline" size="sm">{{ 'ecfDownloadPdfAction'|trans }}</twig:Cm:Button>
             <twig:Cm:Button :href="path('app_ufa_ecf', {id: tutorLink.id})" variant="primary" size="sm">{{ 'ecfOpenBookletAction'|trans }}</twig:Cm:Button>
         </div>
     </div>

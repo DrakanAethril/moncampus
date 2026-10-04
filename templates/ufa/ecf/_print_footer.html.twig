@@ -1,0 +1,31 @@
+{# The ministry template's footer table, printed by Gotenberg into every page's bottom margin
+   (27 mm, App\Service\Ecf\EcfBookletPdfExporter). A footer document inherits nothing from the page
+   and spans the whole sheet's width: the table is placed in points from the paper's left edge
+   and bottom - absolutely, since a footer whose content overflows its band makes Chromium scale the
+   whole page down (measured 2026-10-04, ~5 %),
+   with the column widths measured on the template, and drawn as a table because Chromium ignores
+   flexbox here (see templates/progression/_qualiopi_footer.html.twig). `pageNumber` and
+   `totalPages` are Chromium's own classes. #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+    html, body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    table { position: absolute; left: 32.6pt; bottom: 35.7pt; width: 518.8pt; border-collapse: collapse; table-layout: fixed;
+            font-family: 'Liberation Sans Narrow', 'Arial Narrow', Arial, sans-serif; font-size: 9pt; color: #595959; }
+    td { border: .5pt solid #595959; text-align: center; vertical-align: middle; padding: 0 1pt; line-height: 1.1; white-space: nowrap; overflow: hidden; }
+    tr.h td { height: 10.8pt; }
+    tr.v td { height: 14.1pt; }
+    .page { font-family: Carlito, Calibri, sans-serif; font-size: 11pt; color: #000; }
+    .page .slash { font-family: 'Liberation Sans Narrow', 'Arial Narrow', sans-serif; font-size: 9pt; color: #595959; }
+</style>
+</head>
+<body>
+<table>
+    <colgroup><col style="width: 53.7pt"><col style="width: 179.4pt"><col style="width: 47.7pt"><col style="width: 41.8pt"><col style="width: 85.1pt"><col style="width: 78pt"><col style="width: 33.1pt"></colgroup>
+    <tr class="h"><td>SIGLE</td><td>Type de document</td><td>Code titre</td><td>Millésime</td><td>Date JO</td><td>Date de mise à jour</td><td>Page</td></tr>
+    <tr class="v"><td>{{ footer.sigle }}</td><td>Livret d’évaluations passées en cours de formation</td><td>{{ footer.code }}</td><td>{{ footer.millesime }}</td><td>{{ footer.journal }}</td><td>{{ footer.updated }}</td><td class="page"><span class="pageNumber"></span><span class="slash">/</span><span class="totalPages"></span></td></tr>
+</table>
+</body>
+</html>

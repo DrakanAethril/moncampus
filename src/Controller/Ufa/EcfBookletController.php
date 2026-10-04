@@ -20,22 +20,27 @@ use App\Security\Voter\EcfBookletVoter;
 use App\Service\Ecf\EcfActivityType;
 use App\Service\Ecf\EcfActivityTypes;
 use App\Service\Ecf\EcfBookletOverview;
+use App\Service\Ecf\EcfBookletPdfExporter;
 use App\Service\Ecf\EcfBookletWriter;
 use App\Service\Ecf\EcfCriteriaProposer;
 use App\Service\Ecf\EcfMastery;
 use App\Service\Ecf\EcfOverview;
+use App\Service\Ecf\EcfPrintBuilder;
 use App\Service\Ecf\EcfRefusal;
 use App\Service\Ecf\EcfRowInput;
 use App\Service\Ecf\EcfSheetInput;
 use App\Service\Ecf\EcfSigner;
 use App\Service\PostValue;
 use App\Service\UfaActivityRecorder;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -59,6 +64,7 @@ class EcfBookletController extends AbstractController
         private readonly EcfSigner $signer,
         private readonly EcfBookletWriter $writer,
         private readonly TranslatorInterface $translator,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -180,6 +186,48 @@ class EcfBookletController extends AbstractController
             'signed' => [] !== $visas,
             'mastery' => array_map(fn (array $row): ?bool => $this->mastery->isMastered($booklet, $row['activity']), $overview->rows),
             'visas' => $this->visaView($booklet, $visas, EcfPart::Synthesis, $canSign, $this->signer->synthesisMissing($booklet, $types), new \DateTimeImmutable('today')),
+        ]);
+    }
+
+    #[Route(path: '/ufa/alternances/{id}/ecf/read', name: 'app_ufa_ecf_read', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function read(int $id, EcfPrintBuilder $printBuilder): Response
+    {
+        [$tutorLink, $overview] = $this->load($id, EcfBookletVoter::VIEW);
+
+        return $this->render('ufa/ecf/read.html.twig', [
+            'tutorLink' => $tutorLink,
+            'ecf' => $overview,
+            'outline' => EcfPrintBuilder::outline($printBuilder->build($overview)['activities']),
+        ]);
+    }
+
+    #[Route(path: '/ufa/alternances/{id}/ecf/frame', name: 'app_ufa_ecf_frame', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function frame(int $id, EcfBookletPdfExporter $exporter): Response
+    {
+        [, $overview] = $this->load($id, EcfBookletVoter::VIEW);
+
+        return new Response($exporter->screen($overview));
+    }
+
+    #[Route(path: '/ufa/alternances/{id}/ecf/pdf', name: 'app_ufa_ecf_pdf', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function pdf(int $id, EcfBookletPdfExporter $exporter, SluggerInterface $slugger): Response
+    {
+        [$tutorLink, $overview] = $this->load($id, EcfBookletVoter::VIEW);
+        $student = $tutorLink->getStudent();
+        $name = strtolower($slugger->slug(sprintf('livret-ecf-%s-%s', $student?->getLastname() ?? '', $student?->getFirstname() ?? ''))->toString());
+
+        try {
+            $pdf = $exporter->export($overview);
+        } catch (\Throwable $exception) {
+            $this->logger->error('ECF booklet PDF export failed', ['exception' => $exception, 'tutorLink' => $id]);
+            $this->addFlash('danger', 'ecfPdfFailedFlashMessage');
+
+            return $this->redirectToRoute('app_ufa_ecf', ['id' => $id]);
+        }
+
+        return new Response($pdf, Response::HTTP_OK, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $name.'.pdf'),
         ]);
     }
 

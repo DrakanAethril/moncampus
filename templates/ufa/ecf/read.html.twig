@@ -1,0 +1,14 @@
+{% extends 'ufa/ecf/_layout.html.twig' %}
+
+{% set ecfScreenLabel = 'ecfReadTitle'|trans %}
+
+{% block page_actions %}
+    {% include 'ufa/ecf/_pdf_button.html.twig' %}
+{% endblock %}
+
+{% block ecf_main %}
+    {% include 'internship/_livret_reader.html.twig' with {
+        frameUrl: path('app_ufa_ecf_frame', {id: tutorLink.id}),
+        outline: outline,
+    } only %}
+{% endblock %}
