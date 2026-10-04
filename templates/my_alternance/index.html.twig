@@ -48,6 +48,14 @@
                     <span class="cm-dash-banner__action">
                         <a href="{{ path('app_program_internship_my_evaluation_step', {id: program.id, periodId: banner.period.id, step: 'comportement'}) }}" class="cm-btn cm-btn--gold">{{ 'myAlternanceAnswerEvaluationAction'|trans }}</a>
                     </span>
+                {% elseif banner.type == 'ecf' %}
+                    <span class="cm-dash-banner__body">
+                        <span class="cm-dash-banner__title">{{ 'myAlternanceBannerEcfTitle'|trans }}</span>
+                        <span class="cm-dash-banner__text">{{ 'myAlternanceBannerEcfText'|trans }}</span>
+                    </span>
+                    <span class="cm-dash-banner__action">
+                        <a href="{{ path('app_my_alternance_ecf') }}" class="cm-btn cm-btn--gold">{{ 'myAlternanceEcfReadAndSignAction'|trans }}</a>
+                    </span>
                 {% else %}
                     <span class="cm-dash-banner__body">
                         <span class="cm-dash-banner__title">{{ 'myAlternanceBannerEngagementTitle'|trans }}</span>
@@ -180,6 +188,30 @@
                         {% endif %}
                     </div>
                 </div>
+
+                {% if ecfBooklet %}
+                    {# The ECF booklet, once the administration handed it over for signature « pour information ». #}
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title">{{ 'myAlternanceEcfCardTitle'|trans }}</h3>
+                            <div class="card-actions">
+                                {% if ecfBooklet.candidateSigned %}
+                                    <twig:Cm:Badge tone="green">{{ 'myAlternanceEcfSignedBadge'|trans }}</twig:Cm:Badge>
+                                {% else %}
+                                    <twig:Cm:Badge tone="gold">{{ 'myAlternanceEcfToSignBadge'|trans }}</twig:Cm:Badge>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body d-flex flex-column gap-2">
+                            {% if ecfBooklet.candidateSigned %}
+                                <div>{{ 'ecfCandidateSignedLine'|trans({'%date%': ecfBooklet.candidateSignedAt|date('d/m/Y'), '%name%': ecfBooklet.candidateSignerName}) }}</div>
+                            {% else %}
+                                <div class="text-secondary">{{ 'myAlternanceEcfToSignText'|trans }}</div>
+                            {% endif %}
+                            <div><a href="{{ path('app_my_alternance_ecf') }}" class="cm-btn {{ ecfBooklet.candidateSigned ? 'cm-btn--outline' : 'cm-btn--gold' }}">{{ (ecfBooklet.candidateSigned ? 'myAlternanceEcfReadAction' : 'myAlternanceEcfReadAndSignAction')|trans }}</a></div>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
     {% endif %}

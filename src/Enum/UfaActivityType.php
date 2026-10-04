@@ -28,10 +28,19 @@ enum UfaActivityType: string
     case ReminderSent = 'reminder_sent';
     case AlternanceTerminated = 'alternance_terminated';
     case AlternanceResumed = 'alternance_resumed';
+    // The ECF booklet (design/validated/ecf-booklet.md): a visa given, visas taken back to edit a
+    // signed part. %part% names the part (« Activité-type 2 », « Synthèse »).
+    case EcfSigned = 'ecf_signed';
+    case EcfUnsigned = 'ecf_unsigned';
+    // The closed booklet handed to the student for their signature, the offer withdrawn, and the
+    // student's own signature « pour information ».
+    case EcfOffered = 'ecf_offered';
+    case EcfOfferWithdrawn = 'ecf_offer_withdrawn';
+    case EcfCandidateSigned = 'ecf_candidate_signed';
 
     /**
      * The placeholders available are those the recorder puts in the payload: %student%, %tutor%,
-     * %actor%, %period%, %role%.
+     * %actor%, %period%, %role% - and %part% for the ECF visas, which the controller passes.
      */
     public function messageKey(): string
     {
@@ -46,6 +55,11 @@ enum UfaActivityType: string
             self::ReminderSent => 'ufaActivityReminderSentText',
             self::AlternanceTerminated => 'ufaActivityAlternanceTerminatedText',
             self::AlternanceResumed => 'ufaActivityAlternanceResumedText',
+            self::EcfSigned => 'ufaActivityEcfSignedText',
+            self::EcfUnsigned => 'ufaActivityEcfUnsignedText',
+            self::EcfOffered => 'ufaActivityEcfOfferedText',
+            self::EcfOfferWithdrawn => 'ufaActivityEcfOfferWithdrawnText',
+            self::EcfCandidateSigned => 'ufaActivityEcfCandidateSignedText',
         };
     }
 }

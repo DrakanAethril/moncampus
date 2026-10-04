@@ -57,7 +57,7 @@ class BoardController extends AbstractController
             'dock' => $view->dock($board, $this->currentUser()),
             'classState' => $widgetData->classState($board),
             'backgrounds' => ClassBoardBackground::cases(),
-            // Read whatever the board's background: « Nature » can be picked without a reload.
+            // Read whatever the board's background: « Photo » can be picked without a reload.
             'photo' => $photoOfTheDay->shown(),
         ]);
     }

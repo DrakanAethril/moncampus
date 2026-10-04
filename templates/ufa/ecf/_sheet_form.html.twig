@@ -1,0 +1,80 @@
+{# The editable form of one part of an activity sheet: the main sheet or its complementary page.
+   Rows are posted whole; the server drops blank ones and renumbers. #}
+{% set isMain = part == 'main' %}
+{% set result = isMain ? activity.result|default(null) : activity.complementaryResult|default(null) %}
+<form method="post" action="{{ path('app_ufa_ecf_activity_save', {id: tutorLink.id, code: code}) }}"
+      class="d-flex flex-column gap-3"
+      data-controller="ecf-sheet"
+      data-ecf-sheet-max-rows-value="{{ isMain ? 0 : 4 }}"
+      data-ecf-sheet-proposals-value="{{ (isMain ? proposals : [])|json_encode|e('html_attr') }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('ufa_ecf') }}">
+    <input type="hidden" name="part" value="{{ part }}">
+
+    <twig:Cm:Subhead :title="'ecfRowsTitle'|trans" :hint="(isMain ? 'ecfRowsHint' : 'ecfComplementaryRowsHint')|trans">
+        <twig:block name="action">
+            {% if isMain and proposals is not empty %}
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-action="ecf-sheet#propose">{{ 'ecfProposeAction'|trans }}</button>
+            {% endif %}
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-action="ecf-sheet#addRow" data-ecf-sheet-target="addButton">{{ 'ecfAddRowAction'|trans }}</button>
+        </twig:block>
+    </twig:Cm:Subhead>
+
+    <div class="cm-ecf-rows" data-ecf-sheet-target="rows">
+        {% if rows is not empty %}
+            {% for row in rows %}
+                {% include 'ufa/ecf/_sheet_row.html.twig' with {index: loop.index0, number: loop.index, description: row.description, date: row.evaluatedOn ? row.evaluatedOn|date('Y-m-d') : '', checked: row.competences, labels: competences} only %}
+            {% endfor %}
+        {% else %}
+            {% set starters = isMain ? max(1, competences|length) : 1 %}
+            {% for i in 1..starters %}
+                {% include 'ufa/ecf/_sheet_row.html.twig' with {index: i - 1, number: i, description: '', date: '', checked: isMain and competences is not empty ? [i] : [], labels: competences} only %}
+            {% endfor %}
+        {% endif %}
+    </div>
+    <template data-ecf-sheet-target="template">
+        {% include 'ufa/ecf/_sheet_row.html.twig' with {index: '__ROW__', number: '', description: '', date: '', checked: [], labels: competences} only %}
+    </template>
+
+    <div class="d-flex flex-column gap-2">
+        <div class="fw-bold">{{ 'ecfResultQuestion'|trans }}</div>
+        {% for value in ['satisfied', 'not_satisfied'] %}
+            <label class="form-check">
+                <input class="form-check-input" type="radio" name="result" value="{{ value }}" {{ result and result.value == value ? 'checked' }} data-action="ecf-sheet#toggle">
+                <span class="form-check-label">{{ (value == 'satisfied' ? 'ecfResultSatisfiedText' : 'ecfResultNotSatisfiedText')|trans }}</span>
+            </label>
+        {% endfor %}
+    </div>
+
+    {% if isMain %}
+        {# The `hidden` sits on a plain wrapper: Bootstrap's .d-flex would override it. #}
+        <div data-ecf-sheet-target="notSatisfied" {{ not result or result.value != 'not_satisfied' ? 'hidden' }}>
+        <div class="d-flex flex-column gap-3">
+            <div>
+                <label class="form-label" for="ecf-attention-{{ code }}">{{ 'ecfAttentionPointsLabel'|trans }}</label>
+                <textarea class="form-control" rows="3" id="ecf-attention-{{ code }}" name="attentionPoints">{{ activity.attentionPoints|default('') }}</textarea>
+            </div>
+            <div>
+                <div class="form-label">{{ 'ecfReassessLabel'|trans }}</div>
+                <div class="d-flex flex-column gap-1 mb-2">
+                    {% for label in competences %}
+                        <label class="form-check">
+                            <input class="form-check-input" type="checkbox" name="reassessCompetences[]" value="{{ loop.index }}" {{ loop.index in (activity.reassessCompetences|default([])) ? 'checked' }}>
+                            <span class="form-check-label">{{ loop.index }}. {{ label }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                <textarea class="form-control" rows="2" name="reassessNote" aria-label="{{ 'ecfReassessNoteLabel'|trans }}" placeholder="{{ 'ecfReassessNoteLabel'|trans }}">{{ activity.reassessNote|default('') }}</textarea>
+            </div>
+        </div>
+        </div>
+    {% else %}
+        <div>
+            <label class="form-label" for="ecf-observations-{{ code }}">{{ 'ecfObservationsLabel'|trans }}</label>
+            <textarea class="form-control" rows="3" id="ecf-observations-{{ code }}" name="observations">{{ activity.complementaryObservations|default('') }}</textarea>
+        </div>
+    {% endif %}
+
+    <twig:Cm:ActionBar>
+        <twig:Cm:Button variant="primary" type="submit">{{ 'submitSaveAction'|trans }}</twig:Cm:Button>
+    </twig:Cm:ActionBar>
+</form>

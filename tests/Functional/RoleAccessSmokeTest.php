@@ -750,6 +750,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->teacher, array_fill_keys($screens, 403));
         $this->assertScreens($this->student, array_fill_keys($screens, 403));
 
+        // The « Livret ECF » tab (`ufa_ecf`): this base lights every feature, so what answers a
+        // teacher or a student here is the class guard - the administration only.
+        $ecfTab = sprintf('/ufa/programs/%d/ecf', $programId);
+        $this->assertScreens($this->admin, [$ecfTab => 200]);
+        $this->assertScreens($this->teacher, [$ecfTab => 403]);
+        $this->assertScreens($this->student, [$ecfTab => 403]);
+
         // The Documents tab's own doors onto its two files: a screen that frames one, and the two
         // routes that serve them. They are readable by exactly whoever may open the tab - the
         // alternance calendar has a published route elsewhere that reads a VisibilityLevel, but

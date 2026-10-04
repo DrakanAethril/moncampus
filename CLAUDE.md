@@ -92,7 +92,7 @@ asked — made the second run throw « A lock is already in place ».
 | `app:eco:read-terrain` | **Scheduled every minute.** Asks the IGN's Géoplateforme what e-CO's statistics read: the terrain analysis of the oldest parcours waiting for one (button « Analyser le terrain », last flag located, or a race on a parcours never analysed), then the terrain altitude / path / wood of every GPS fix of the oldest closed race not yet read. A Géoplateforme that does not answer is a *warning* and a retry next minute, never a non-zero exit. See `docs/production.md`, « e-CO and the IGN's Géoplateforme » |
 | `app:rncp:fetch` | **Scheduled every minute.** Serves the « Récupérer chez France compétences » requests of the portfolio's Référentiels tab: finds the day's `export-fiches-rncp-v4-1-*.zip` through the data.gouv.fr API (no URL written down), downloads it once into `var/rncp/`, streams through it (`XMLReader` over `zip://`) and writes the fiche into the `RncpImport`. Nothing requested, nothing downloaded. A network failure is « En échec » on screen, never a non-zero exit. `--file=` reads a local export |
 | `app:rncp:check` | **Scheduled Mondays 05:30.** Rereads each référentiel's RNCP fiche - still active, end of registration, a fiche that now replaces it - into `Referential::$rncpWatch`; the Référentiels screen turns a change into a banner, logged at *warning*. Never rewrites a référentiel: a new fiche is a new version |
-| `app:class-board:photo` | **Scheduled every hour at :07.** The virtual board's photograph of the day (« Nature », the default background): the first pass of the day draws a photograph from Wikimedia Commons' featured nature categories (`App\Service\ClassBoard\CommonsNaturePhotos`; `CommonsPhoto::fromImageInfo()` is the whole rule - camera EXIF, 4:3 to 2:1, CC0/PD/BY/BY-SA), copies it into the uploads bucket and records it (`ClassBoardPhoto`), the others only clean: bytes deleted two days after their day, rows kept so nothing repeats within two years. A Commons that does not answer is a *warning*, never a non-zero exit. `--replace` draws another one for today |
+| `app:class-board:photo` | **Scheduled every hour at :07.** The virtual board's photograph of the day (« Photo », the default background): the first pass of the day draws a photograph from Wikimedia Commons' featured nature categories (`App\Service\ClassBoard\CommonsNaturePhotos`; `CommonsPhoto::fromImageInfo()` is the whole rule - camera EXIF, 4:3 to 2:1, CC0/PD/BY/BY-SA), copies it into the uploads bucket and records it (`ClassBoardPhoto`), the others only clean: bytes deleted two days after their day, rows kept so nothing repeats within two years. A Commons that does not answer is a *warning*, never a non-zero exit. `--replace` draws another one for today |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
 ## Runtime architecture (Docker layer)
@@ -454,6 +454,19 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   « Confirmer » or saving a changed number in « Modifier l'entreprise » stamps
   `Enterprise::$siretConfirmedAt`; imports and « nouvelle entreprise » leave it « à confirmer », and
   `EnterpriseRepository::queryPendingSiret()` is the one definition the queue and its counter read.
+  The **livret ECF** (livret d'évaluations passées en cours de formation, `App\Controller\Ufa\Ecf*`,
+  `src/Service/Ecf/`, spec `design/validated/ecf-booklet.md`) is switched on per formation
+  (`ProgramEcfSettings`, UFA › Formations › « Livret ECF ») and lives on the alternance follow-up:
+  read by the administration, written and signed by administrators only (`EcfBookletVoter`). Its
+  activity-types are the Livret de l'alternant's groups, options included
+  (`BookletSkillGroups::forTutorLink()`), found again from one year to the next by
+  `SkillGroup::$code`; the booklet follows the student and the titre (code + millésime), not the
+  Program. A visa is the connected person's click, dated by the server, and freezes what it signed.
+  Once closed, the administration offers it to the student, who reads it and signs it « pour
+  information » from « Mon alternance » (`EcfCandidateSignature`); reopening the booklet withdraws both.
+  The PDF (`templates/ufa/ecf/print.html.twig`, also the online reader's frame) reproduces the
+  ministry's template page for page - lengths in points measured on it; an element wider than the
+  page makes Chromium scale the whole document down, so nothing may overflow.
 - **Stage / recherche d'emploi** — `JobSearch`, `JobApplication`, `TrainingOffer`,
   `TrainingApplication` (postulation with free-form attachments). The job search names its own
   démarches: a démarche is never *made* an `Enterprise`, it may only *point at* one of the vivier
@@ -632,8 +645,8 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 30 of them: Assignment, AudienceTargetable,
-DocumentationArticle, Dossier, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 31 of them: Assignment, AudienceTargetable,
+DocumentationArticle, Dossier, EcfBooklet, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
 GuestConsole, InternshipTutorLink, LearningPath, LessonLog, MessageThread, OnlineCourse, Portfolio, Progression, ProxmoxHost, QuizFolder,
 QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket,
 Wiki, WordCloud).

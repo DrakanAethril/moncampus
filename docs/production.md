@@ -484,7 +484,7 @@ session without a template in service.
 
 ## The virtual board's photograph of the day (scheduled)
 
-A virtual board on « Nature » (the default) shows a new photograph every day, drawn from Wikimedia
+A virtual board on « Photo » (the default) shows a new photograph every day, drawn from Wikimedia
 Commons' « Featured pictures » of landscapes, mountains, forests, lakes, waterfalls, coasts and trees
 (`App\Service\ClassBoard\CommonsNaturePhotos`). Only **photographs** are taken - a JPEG carrying
 its camera's EXIF, so no painting, drawing or render - landscape between 4:3 and 2:1, at least

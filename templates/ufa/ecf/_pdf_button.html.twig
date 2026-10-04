@@ -1,0 +1,9 @@
+{# Downloads the booklet as the ministry's PDF - same pdf-download controller as the Livret de l'alternant. #}
+<a href="{{ path('app_ufa_ecf_pdf', {id: tutorLink.id}) }}" class="btn btn-primary ms-2"
+   data-controller="pdf-download"
+   data-action="pdf-download#download"
+   data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
+   data-pdf-download-fallback-filename-value="livret-ecf.pdf">
+    <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
+    <span data-pdf-download-target="label">{{ 'ecfDownloadPdfAction'|trans }}</span>
+</a>

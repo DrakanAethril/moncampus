@@ -9,7 +9,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * The photograph of the day behind every virtual board on « Nature » (design/validated/tableau-virtuel.md §3).
+ * The photograph of the day behind every virtual board on « Photo » (design/validated/tableau-virtuel.md §3).
  *
  * One row per day, written by `app:class-board:photo` - never during a request: the photograph is
  * picked on Wikimedia Commons, downloaded once and stored with the other uploads, so a board opening

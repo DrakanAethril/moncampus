@@ -1,0 +1,76 @@
+{% extends 'ufa/ecf/_layout.html.twig' %}
+
+{% block page_actions %}
+    <a href="{{ path('app_ufa_ecf_read', {id: tutorLink.id}) }}" class="btn btn-outline-primary">{{ 'ecfReadAction'|trans }}</a>
+    {% include 'ufa/ecf/_pdf_button.html.twig' %}
+{% endblock %}
+
+{% block ecf_main %}
+    <div class="card">
+        <div class="list-group list-group-flush">
+            <div class="list-group-item d-flex flex-wrap align-items-center gap-3">
+                <div class="flex-grow-1">
+                    <div class="fw-bold">{{ 'ecfCoverTitle'|trans }}</div>
+                    <div class="text-secondary small">
+                        {% if ecf.booklet.civility or ecf.booklet.birthDate %}
+                            {{ ecf.booklet.civility ? ecf.booklet.civility.labelKey|trans }}
+                            {%- if ecf.booklet.birthDate %} · {{ 'ecfBornOnLabel'|trans({'%date%': ecf.booklet.birthDate|date('d/m/Y')}) }}{% endif %}
+                        {% else %}
+                            {{ 'ecfCoverIncompleteText'|trans }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% if ecf.booklet.civility and ecf.booklet.birthDate %}
+                    <twig:Cm:Badge tone="green">{{ 'ecfCoverCompleteBadge'|trans }}</twig:Cm:Badge>
+                {% else %}
+                    <twig:Cm:Badge tone="gray">{{ 'ecfActivityStateToFillLabel'|trans }}</twig:Cm:Badge>
+                {% endif %}
+                <twig:Cm:Button :href="path('app_ufa_ecf_cover', {id: tutorLink.id})" variant="outline">{{ (canEdit and not ecf.booklet.closed ? 'ecfEditAction' : 'ecfOpenAction')|trans }}</twig:Cm:Button>
+            </div>
+            {% for row in ecf.rows %}
+                <div class="list-group-item d-flex flex-wrap align-items-center gap-3">
+                    <div class="flex-grow-1" style="min-width: 0">
+                        <div class="fw-bold">{{ 'ecfActivityTypeNumberLabel'|trans({'%number%': row.type.number}) }} · {{ row.activity and row.activity.frozenLabel ? row.activity.frozenLabel : row.type.label }}</div>
+                        <div class="text-secondary small">
+                            {{ 'ecfCompetenceCountLabel'|trans({'%count%': row.type.competences|length}) }}
+                            {%- if row.lastVisa %} · {{ 'ecfSignedByOnLabel'|trans({'%name%': row.lastVisa.signerName, '%date%': row.lastVisa.signedAt|date('d/m/Y')}) }}{% endif %}
+                        </div>
+                    </div>
+                    <twig:Cm:Badge :of="row.state"/>
+                    <twig:Cm:Button :href="path('app_ufa_ecf_activity', {id: tutorLink.id, code: row.type.code})" variant="outline">{{ 'ecfOpenAction'|trans }}</twig:Cm:Button>
+                </div>
+            {% endfor %}
+            {% for activity in ecf.orphans %}
+                <div class="list-group-item d-flex flex-wrap align-items-center gap-3">
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">{{ activity.frozenLabel ?? activity.groupCode }}</div>
+                        <div class="text-secondary small">{{ 'ecfOrphanActivityText'|trans }}</div>
+                    </div>
+                    <twig:Cm:Button :href="path('app_ufa_ecf_activity', {id: tutorLink.id, code: activity.groupCode})" variant="outline">{{ 'ecfOpenAction'|trans }}</twig:Cm:Button>
+                </div>
+            {% endfor %}
+            <div class="list-group-item d-flex flex-wrap align-items-center gap-3">
+                <div class="flex-grow-1">
+                    <div class="fw-bold">{{ 'ecfSynthesisLabel'|trans }}</div>
+                    <div class="text-secondary small">
+                        {% if ecf.booklet.closed %}
+                            {{ 'ecfSynthesisClosedLabel'|trans({'%date%': ecf.booklet.closedAt|date('d/m/Y')}) }}
+                        {% elseif ecf.synthesisOpen %}
+                            {{ 'ecfSynthesisReadyText'|trans }}
+                        {% else %}
+                            {{ 'ecfSynthesisWaitingText'|trans }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% if ecf.booklet.closed %}
+                    <twig:Cm:Badge tone="green">{{ 'ecfBookletClosedBadge'|trans }}</twig:Cm:Badge>
+                {% elseif ecf.synthesisVisas is not empty %}
+                    <twig:Cm:Badge tone="blue">{{ 'ecfActivityStateInProgressLabel'|trans }}</twig:Cm:Badge>
+                {% else %}
+                    <twig:Cm:Badge tone="gray">{{ (ecf.synthesisOpen ? 'ecfActivityStateToFillLabel' : 'ecfWaitingBadge')|trans }}</twig:Cm:Badge>
+                {% endif %}
+                <twig:Cm:Button :href="path('app_ufa_ecf_synthesis', {id: tutorLink.id})" variant="outline">{{ 'ecfOpenAction'|trans }}</twig:Cm:Button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
