@@ -9,7 +9,10 @@
 
    Two shapes, each with its own address: the rows (« récemment mis à jour », then one per tag in
    alphabetical order, each cut to what one line holds - online_course_row_controller.js), and a
-   full list, for a row's « Voir tout » (`?tag=…`, `?view=recent`) or a search (`?q=`). #}
+   full list, for a row's « Voir tout » (`?tag=…`, `?view=recent`) or a search (`?q=`).
+
+   The support filter (`?support=`) narrows both shapes and travels with every link and form of
+   the page, so that « Voir tout » or a search does not quietly drop it. #}
 
 {% block public_title %}{{ page.title }}{% endblock %}
 
@@ -34,6 +37,7 @@
 
 {% block public_main %}
     {% set page_url = path('app_public_courses_page', {handle: page.handle}) %}
+    {% set support_query = support != '' ? {support: support} : {} %}
 
     {% if isOwner and total == 0 %}
         <div class="cm-pub__notice">{{ 'onlineCoursePublicPageEmptyOwnerNotice'|trans }}</div>
@@ -56,6 +60,7 @@
                 {% for key in tagKeys %}
                     <input type="hidden" name="tag[]" value="{{ key }}">
                 {% endfor %}
+                {% if support != '' %}<input type="hidden" name="support" value="{{ support }}">{% endif %}
                 <label class="visually-hidden" for="public-course-sort">{{ 'onlineCoursePublicSortLabel'|trans }}</label>
                 <select id="public-course-sort" name="sort" class="cm-filterbar__select" data-action="change->auto-submit#submit">
                     <option value="name" {{ sort == 'name' ? 'selected' }}>{{ 'onlineCoursePublicSortByName'|trans }}</option>
@@ -64,7 +69,9 @@
             </form>
         {% endif %}
         {% if not showPaths and total > 0 %}
+            {{ include('online_course/public/_support_filter.html.twig') }}
             <form class="cm-pub-search" method="get" action="{{ page_url }}" role="search">
+                {% if support != '' %}<input type="hidden" name="support" value="{{ support }}">{% endif %}
                 <label class="visually-hidden" for="public-course-search">{{ 'onlineCoursePublicSearchLabel'|trans }}</label>
                 <input type="search" id="public-course-search" name="q" value="{{ search }}" placeholder="{{ 'onlineCoursePublicSearchPlaceholder'|trans }}" autocomplete="off">
                 <twig:Cm:Button variant="outline" size="sm" type="submit">{{ 'onlineCoursePublicSearchAction'|trans }}</twig:Cm:Button>
@@ -99,7 +106,7 @@
                 {% endif %}
                 <span class="cm-pub-row__count">{{ courses|length }}</span>
             </h2>
-            <a class="cm-pub-section-head__back" href="{{ page_url }}">
+            <a class="cm-pub-section-head__back" href="{{ path('app_public_courses_page', {handle: page.handle}|merge(support_query)) }}">
                 <twig:ux:icon name="arrow-left" width="14" height="14"/>{{ 'onlineCoursePublicBackToRowsAction'|trans }}
             </a>
         </div>
@@ -112,17 +119,19 @@
                 {% endfor %}
             </div>
         {% endif %}
+    {% elseif shown is empty %}
+        <p class="cm-pub-empty">{{ 'onlineCoursePublicNoMatchLabel'|trans }}</p>
     {% else %}
         {{ include('online_course/public/_row.html.twig', {
             title: 'onlineCoursePublicRecentRowTitle'|trans,
-            row_courses: all,
-            more_url: path('app_public_courses_page', {handle: page.handle, view: 'recent'}),
+            row_courses: shown,
+            more_url: path('app_public_courses_page', {handle: page.handle, view: 'recent'}|merge(support_query)),
         }) }}
         {% for row in rows %}
             {{ include('online_course/public/_row.html.twig', {
                 title: row.label,
                 row_courses: row.courses,
-                more_url: path('app_public_courses_page', {handle: page.handle, tag: row.key}),
+                more_url: path('app_public_courses_page', {handle: page.handle, tag: row.key}|merge(support_query)),
             }) }}
         {% endfor %}
     {% endif %}

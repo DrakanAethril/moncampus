@@ -1,0 +1,41 @@
+{# The support filter of a teacher's public page, left of the search: « Tous les supports », then each
+   nature of material the page's courses carry - its pictogram and its name, as on the cards - and
+   « Cours avec test ». A menu of links rather than a <select>: an <option> draws no pictogram, and
+   each choice is then an address of its own, like every other state of the page.
+
+   A choice keeps the rest of the query (the tag, the search, the sort) and replaces the support.
+
+   Variables: page, support, supportKind, supportKinds, supportTest. #}
+{% set query = app.request.query.all|filter((value, key) => key != 'support')|merge({handle: page.handle}) %}
+{% set options = [{value: '', label: 'onlineCoursePublicSupportAll'|trans, icon: null}] %}
+{% for kind in supportKinds %}
+    {% set options = options|merge([{value: kind.value, label: kind.labelKey|trans, icon: kind.icon}]) %}
+{% endfor %}
+{% if supportTest %}
+    {% set options = options|merge([{value: 'test', label: 'onlineCoursePublicSupportTest'|trans, icon: 'clipboard-check'}]) %}
+{% endif %}
+{% if supportKind %}
+    {% set current = {label: supportKind.labelKey|trans, icon: supportKind.icon} %}
+{% elseif support == 'test' %}
+    {% set current = {label: 'onlineCoursePublicSupportTest'|trans, icon: 'clipboard-check'} %}
+{% else %}
+    {% set current = {label: 'onlineCoursePublicSupportAll'|trans, icon: null} %}
+{% endif %}
+<div class="dropdown cm-pub-support">
+    <button type="button" class="cm-filterbar__select cm-pub-support__toggle {{ support == '' ? 'cm-filterbar__select--any' }}"
+            data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ 'onlineCoursePublicSupportLabel'|trans }} : {{ current.label }}">
+        {% if current.icon %}<twig:ux:icon name="{{ current.icon }}" width="15" height="15"/>{% endif %}
+        {{ current.label }}
+    </button>
+    <div class="dropdown-menu cm-pub-support__menu">
+        {% for option in options %}
+            {% if option.value == 'test' %}<div class="dropdown-divider"></div>{% endif %}
+            <a class="dropdown-item cm-pub-support__item {{ option.value == support ? 'active' }}"
+               href="{{ path('app_public_courses_page', query|merge(option.value != '' ? {support: option.value} : {})) }}"
+               {% if option.value == support %}aria-current="true"{% endif %}>
+                <span class="cm-pub-support__icon">{% if option.icon %}<twig:ux:icon name="{{ option.icon }}" width="15" height="15"/>{% endif %}</span>
+                {{ option.label }}
+            </a>
+        {% endfor %}
+    </div>
+</div>

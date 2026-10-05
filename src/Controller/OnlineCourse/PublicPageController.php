@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\OnlineCourse;
 
 use App\Enum\Feature;
+use App\Enum\OnlineCourseMaterialKind;
 use App\Repository\LearningPathRepository;
 use App\Security\FeatureAccess;
 use App\Service\OnlineCourse\OnlineCoursePageHandles;
@@ -19,12 +20,13 @@ use Symfony\Component\Routing\Attribute\Route;
 /**
  * A teacher's public page, `/courses/{handle}` (design/validated/cours-en-ligne.md, §5): under the
  * teacher's banner, their published courses in rows - the most recently updated first, then one
- * row per tag in alphabetical order. Read without an account.
+ * row per tag in alphabetical order, its courses by title. Read without an account.
  *
  * Each row's « Voir tout » is the same address with a query: `?tag=sql` for a tag's courses,
  * `?view=recent` for all of them; a search is `?q=`. Those three show a full list instead of the
  * rows, so every state of the page still has an address that can be handed out. A tag's list is
- * sorted by title, or by last change with `&sort=modified`.
+ * sorted by title, or by last change with `&sort=modified`. `?support=video` (a material kind, or
+ * `test`) narrows the rows and every list alike, and travels with all of them.
  *
  * **There is deliberately nothing above it.** No route lists the teachers and `/courses` alone
  * matches nothing: a common catalogue was proposed and refused, and a page is reached by the link
@@ -56,14 +58,16 @@ class PublicPageController extends AbstractController
 
         $search = QueryValue::trimmed($request, 'q');
         $tagKeys = self::tagKeys($request);
-        $rows = $publicPage->groups($all);
+        $support = self::support($request);
+        $shown = OnlineCoursePublicPage::withSupport($all, $support);
+        $rows = $publicPage->groups($shown);
         $showRecent = 'recent' === QueryValue::trimmed($request, 'view');
         $listed = '' !== $search || [] !== $tagKeys || $showRecent;
-        // A tag's own page, and it alone, is sorted by title unless « Dernier modifié » is chosen:
-        // the rows and « Récemment mis à jour » keep the newest first, which is what they are about.
+        // A tag's own page, and it alone, may be sorted by last change instead of title: the tag
+        // rows hold their courses by title, « Récemment mis à jour » keeps the newest first.
         $sortable = '' === $search && [] !== $tagKeys;
         $sort = $sortable && 'modified' === QueryValue::trimmed($request, 'sort') ? 'modified' : 'name';
-        $courses = $listed ? $publicPage->filter($all, $search, $tagKeys) : [];
+        $courses = $listed ? $publicPage->filter($shown, $search, $tagKeys) : [];
         if ($sortable && 'name' === $sort) {
             $courses = OnlineCoursePublicPage::byTitle($courses);
         }
@@ -77,19 +81,36 @@ class PublicPageController extends AbstractController
             'page' => $page,
             'isOwner' => $isOwner,
             'total' => \count($all),
-            'all' => $all,
+            'shown' => $shown,
             'rows' => $rows,
+            'support' => $support,
+            'supportKind' => OnlineCourseMaterialKind::tryFrom($support),
+            // The filter offers what the page holds - a choice that answers nothing is not offered.
+            'supportKinds' => OnlineCoursePublicPage::kindsOf($all),
+            'supportTest' => [] !== OnlineCoursePublicPage::withSupport($all, OnlineCoursePublicPage::SUPPORT_TEST),
             'listed' => $listed,
             'courses' => $courses,
             'sortable' => $sortable,
             'sort' => $sort,
-            // What the list is named after: the tags asked for, by the labels the rows show.
-            'listedTags' => array_values(array_filter($rows, static fn (array $row): bool => \in_array($row['key'], $tagKeys, true))),
+            // What the list is named after: the tags asked for, by the labels the rows show - read
+            // on every course, so that a support filter leaving a tag empty does not lose its name.
+            'listedTags' => array_values(array_filter($publicPage->groups($all), static fn (array $row): bool => \in_array($row['key'], $tagKeys, true))),
             'search' => $search,
             'tagKeys' => $tagKeys,
             'learningPaths' => $learningPaths,
             'showPaths' => $showPaths,
         ]);
+    }
+
+    /**
+     * The support asked for: a material kind's value or `test`. Anything else - a kind since
+     * removed, a link typed by hand - is « Tous » rather than an empty page.
+     */
+    private static function support(Request $request): string
+    {
+        $support = QueryValue::trimmed($request, 'support');
+
+        return OnlineCoursePublicPage::SUPPORT_TEST === $support || null !== OnlineCourseMaterialKind::tryFrom($support) ? $support : '';
     }
 
     /**

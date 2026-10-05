@@ -12938,10 +12938,18 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
     background: var(--cm-surface); color: var(--cm-ink); padding: 7px 12px; font: 400 14px var(--cm-font-ui);
 }
 .cm-pub-search input:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 1px; }
-/* A tag's page sorts its list: the select takes the search's place on the right, at the field's height. */
-.cm-pub-sort { margin-left: auto; }
-.cm-pub-sort + .cm-pub-search { margin-left: 0; }
+/* A tag's page sorts its list, and every list filters by support: both sit right, left of the
+   search, at the field's height - the first of them takes the push. */
+.cm-pub-sort, .cm-pub-support { margin-left: auto; }
+.cm-pub-sort + .cm-pub-support, .cm-pub-sort + .cm-pub-search, .cm-pub-support + .cm-pub-search { margin-left: 0; }
 .cm-pub-sort .cm-filterbar__select { padding-block: 7px; font-size: 14px; }
+/* The support filter is a menu, since an <option> draws no pictogram: a button dressed as the select. */
+.cm-pub-support__toggle { display: inline-flex; align-items: center; gap: 7px; padding-block: 7px; font-size: 14px; text-align: left; }
+.cm-pub-support__toggle .ux-icon, .cm-pub-support__toggle svg { flex: none; color: var(--cm-muted); }
+.cm-pub-support__menu { min-width: 100%; }
+.cm-pub-support__item { display: flex; align-items: center; gap: 9px; }
+.cm-pub-support__icon { display: inline-flex; flex: none; width: 15px; color: var(--cm-muted); }
+.cm-pub-support__item.active .cm-pub-support__icon { color: inherit; }
 .cm-pub-card:focus-visible, .cm-pub-tabs__tab:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
 .cm-pub-empty { color: var(--cm-muted); border: 1px dashed var(--cm-border); border-radius: var(--cm-radius-sm); padding: 22px; text-align: center; }
 
@@ -13000,6 +13008,7 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
     .cm-pub-banner { min-height: calc(var(--cm-pub-banner-height, 230px) * .75); padding: 56px 16px 20px; }
     .cm-pub-banner__bar { top: 12px; right: 12px; }
     .cm-pub-search { flex-basis: 100%; }
+    .cm-pub-support { margin-left: 0; }
 }
 
 /* The banner's preview on « Ma page »: the same markup, at its real height. */
