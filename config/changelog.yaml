@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.05'
+      date: '2026-10-05'
+      summary: "Le livret ECF reprend désormais le titre préparé tel que la formation le décrit déjà, sans rien ressaisir. Un dossier déplacé dans une bibliothèque emmène correctement tous ses sous-dossiers."
+      entries:
+          - type: modification
+            title: "Livret ECF : l'intitulé, le niveau, le code et le millésime du titre viennent de la dénomination de la formation, plus de saisie en double"
+            detail: "Les activités-types sont celles du livret de l'alternant, options comprises."
+          - type: fix
+            title: "Bibliothèques de quiz, de séquences et de fichiers : un dossier déplacé emmène bien tous ses sous-dossiers"
+          - type: modification
+            title: "Cours en ligne, en essai : la liste d'un tag se trie par nom ou par dernière modification"
+          - type: modification
+            title: "Connecteur Claude : ranger quiz, fichiers et dossiers entiers dans un autre dossier de la bibliothèque, sans les dupliquer"
     - version: '2026.10.04'
       date: '2026-10-04'
       summary: "Le livret d'évaluations passées en cours de formation des titres professionnels se tient désormais sur la plateforme, depuis le suivi de l'alternance, jusqu'au PDF conforme au modèle du ministère et à la signature de l'étudiant."

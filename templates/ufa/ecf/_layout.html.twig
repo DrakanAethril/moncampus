@@ -22,7 +22,7 @@
 
 {% block main %}
     <div class="text-secondary mb-3" style="margin-top: -8px;">
-        {{ ecf.settings.titleLabel }} · {{ ecf.booklet.titleCode }} · {{ 'ecfMillesimeLabel'|trans({'%millesime%': ecf.booklet.millesime}) }}
+        {{ ecf.title.label }} · {{ ecf.booklet.titleCode }} · {{ 'ecfMillesimeLabel'|trans({'%millesime%': ecf.booklet.millesime}) }}
         {%- if ecf.booklet.closed %} · <twig:Cm:Badge tone="green">{{ 'ecfBookletClosedOnBadge'|trans({'%date%': ecf.booklet.closedAt|date('d/m/Y')}) }}</twig:Cm:Badge>{% endif %}
     </div>
     {% block ecf_main %}{% endblock %}

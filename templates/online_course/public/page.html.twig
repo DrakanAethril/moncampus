@@ -50,6 +50,19 @@
                 <a class="cm-filterbar__seg {{ showPaths ? 'is-active' }}" href="{{ path('app_public_courses_page', {handle: page.handle, tab: 'paths'}) }}">{{ 'onlineCoursePublicPathsTab'|trans({'%count%': learningPaths|length}) }}</a>
             </span>
         {% endif %}
+        {% if sortable %}
+            {# A tag's page alone is sorted: the rows and « Récemment mis à jour » are about what moved. #}
+            <form class="cm-pub-sort" method="get" action="{{ page_url }}" data-controller="auto-submit">
+                {% for key in tagKeys %}
+                    <input type="hidden" name="tag[]" value="{{ key }}">
+                {% endfor %}
+                <label class="visually-hidden" for="public-course-sort">{{ 'onlineCoursePublicSortLabel'|trans }}</label>
+                <select id="public-course-sort" name="sort" class="cm-filterbar__select" data-action="change->auto-submit#submit">
+                    <option value="name" {{ sort == 'name' ? 'selected' }}>{{ 'onlineCoursePublicSortByName'|trans }}</option>
+                    <option value="modified" {{ sort == 'modified' ? 'selected' }}>{{ 'onlineCoursePublicSortByModified'|trans }}</option>
+                </select>
+            </form>
+        {% endif %}
         {% if not showPaths and total > 0 %}
             <form class="cm-pub-search" method="get" action="{{ page_url }}" role="search">
                 <label class="visually-hidden" for="public-course-search">{{ 'onlineCoursePublicSearchLabel'|trans }}</label>

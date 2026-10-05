@@ -76,9 +76,9 @@ class EcfPrintBuilder
             ],
             'logo' => $this->logo(),
             'footer' => [
-                'sigle' => (string) $settings->getSigle(),
-                'code' => (string) $settings->getTitleCode(),
-                'millesime' => (string) $settings->getMillesime(),
+                'sigle' => $overview->title->sigle,
+                'code' => $booklet->getTitleCode(),
+                'millesime' => $booklet->getMillesime(),
                 'journal' => $settings->getJournalDate()?->format('d/m/Y') ?? '',
                 'updated' => $settings->getModelUpdatedDate()?->format('d/m/Y') ?? '',
             ],

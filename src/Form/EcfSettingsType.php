@@ -14,9 +14,9 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
- * UFA > Formations > {formation} > « Livret ECF ». What the ministry's template prints about the
- * titre, and the switch. Whether the switch may be on is App\Service\Ecf\EcfActivityTypes'
- * decision, checked by the controller.
+ * UFA > Formations > {formation} > « Livret ECF ». The switch, the dates the ministry's template
+ * prints and the organisme - the titre itself is read from « Dénomination » (App\Service\Ecf\EcfTitle).
+ * Whether the switch may be on is checked by the controller.
  */
 class EcfSettingsType extends AbstractType
 {
@@ -27,7 +27,7 @@ class EcfSettingsType extends AbstractType
             'required' => false,
         ]);
 
-        foreach (['titleLabel' => 255, 'sigle' => 20, 'level' => 10, 'titleCode' => 30, 'millesime' => 10, 'organisation' => 255, 'place' => 255] as $field => $max) {
+        foreach (['organisation' => 255, 'place' => 255] as $field => $max) {
             $builder->add($field, TextType::class, [
                 'label' => 'ecfSettings'.ucfirst($field).'FieldLabel',
                 'required' => false,

@@ -19,6 +19,7 @@ use App\Service\Ecf\EcfActivityType;
 use App\Service\Ecf\EcfMastery;
 use App\Service\Ecf\EcfOverview;
 use App\Service\Ecf\EcfPrintBuilder;
+use App\Service\Ecf\EcfTitle;
 use App\Service\FileUploadService;
 use PHPUnit\Framework\TestCase;
 
@@ -37,7 +38,7 @@ class EcfPrintBuilderTest extends TestCase
         (new EcfEvaluationRow($activity, EcfPart::Main, 1))->setDescription("Docker\n\nGithub")->setCompetences([4, 1, 2, 9]);
         new EcfActivity($booklet, 'AT9');
         $type = new EcfActivityType(1, 'AT1', 'Développer', ['Environnement'], new SkillGroup('Développer', $program));
-        $overview = new EcfOverview($booklet, (new ProgramEcfSettings($program))->setSigle('CDA'), [['type' => $type, 'activity' => $activity, 'state' => \App\Enum\EcfActivityState::InProgress, 'lastVisa' => null]], [], [$booklet->activityFor('AT9')], false, []);
+        $overview = new EcfOverview($booklet, new ProgramEcfSettings($program), new EcfTitle('Concepteur développeur d’applications', 'CDA', '6', 'TP-01281', '04'), [['type' => $type, 'activity' => $activity, 'state' => \App\Enum\EcfActivityState::InProgress, 'lastVisa' => null]], [], [$booklet->activityFor('AT9')], false, []);
 
         $builder = new EcfPrintBuilder(new EcfMastery(), $this->createStub(InternshipFormationCenterRepository::class), $this->createStub(FileUploadService::class));
         $data = $builder->build($overview);
@@ -46,7 +47,7 @@ class EcfPrintBuilderTest extends TestCase
         $row = $data['activities'][0]['rows'][0];
         self::assertSame(['1', '2', '4, 9'], $row['columns']);
         self::assertSame(['Docker', 'Github'], $row['paragraphs']);
-        self::assertSame('CDA', $data['footer']['sigle']);
+        self::assertSame(['CDA', 'TP-01281', '04'], [$data['footer']['sigle'], $data['footer']['code'], $data['footer']['millesime']]);
         self::assertSame(['ecf-cover', 'ecf-presentation', 'ecf-at-1', 'ecf-at-1-complementary', 'ecf-synthesis'], array_column(EcfPrintBuilder::outline($data['activities']), 'anchor'));
     }
 }

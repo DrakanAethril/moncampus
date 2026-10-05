@@ -24,8 +24,9 @@ class EcfBookletOverview
     public function build(InternshipTutorLink $tutorLink): ?EcfOverview
     {
         $settings = $this->locator->enabledSettings($tutorLink->getProgram());
+        $title = $this->locator->title($tutorLink);
         $booklet = $this->locator->findOrNew($tutorLink);
-        if (null === $settings || null === $booklet) {
+        if (null === $settings || null === $title || null === $booklet) {
             return null;
         }
 
@@ -48,6 +49,7 @@ class EcfBookletOverview
         return new EcfOverview(
             $booklet,
             $settings,
+            $title,
             $rows,
             $this->activityTypes->excludedForOptions($tutorLink),
             $this->activityTypes->orphans($booklet, $types),
