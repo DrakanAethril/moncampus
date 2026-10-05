@@ -42,7 +42,7 @@
                     <span class="cm-pub-card__duration">{{ include('online_course/_duration.html.twig', {minutes: course.estimatedMinutes}) }}</span>
                 {% endif %}
                 {% if course.hasTest %}
-                    <a class="cm-pub-card__test" href="{{ path('app_public_courses_test', {handle: page.handle, slug: course.slug}) }}"
+                    <a class="cm-pub-card__test" href="{{ path('app_public_courses_test_new', {handle: page.handle, slug: course.slug}) }}" data-turbo-prefetch="false"
                        title="{{ 'onlineCourseTestCardTitle'|trans }}">
                         <twig:ux:icon name="clipboard-check" width="13" height="13"/>{{ 'onlineCourseTestLabel'|trans }}
                     </a>

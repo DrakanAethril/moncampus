@@ -78,7 +78,7 @@
                 {% endfor %}
                 {# Not a material: the quiz the author linked, on its own screens (§18). #}
                 {% if course.hasTest %}
-                    <a class="cm-pub-tabs__tab cm-pub-tabs__tab--test" href="{{ path('app_public_courses_test', {handle: page.handle, slug: course.slug}) }}"
+                    <a class="cm-pub-tabs__tab cm-pub-tabs__tab--test" href="{{ path('app_public_courses_test_new', {handle: page.handle, slug: course.slug}) }}" data-turbo-prefetch="false"
                        title="{{ 'onlineCourseTestCardTitle'|trans }}">
                         <twig:ux:icon name="clipboard-check" width="15" height="15"/>{{ 'onlineCourseTestLabel'|trans }}
                     </a>

@@ -13,7 +13,7 @@
     {{ include('online_course/public/_test_head.html.twig') }}
 
     {% set course_url = path('app_public_courses_course', {handle: page.handle, slug: course.slug}) %}
-    {% set again_url = path('app_public_courses_test', {handle: page.handle, slug: course.slug}) %}
+    {% set again_url = path('app_public_courses_test_new', {handle: page.handle, slug: course.slug}) %}
 
     <div class="cm-lp-question">
         <div class="cm-lp-question__body">
@@ -26,7 +26,7 @@
             </div>
 
             <div class="cm-lp-stepnav">
-                <twig:Cm:Button variant="outline" href="{{ again_url }}">{{ 'onlineCourseTestAgainAction'|trans }}</twig:Cm:Button>
+                <twig:Cm:Button variant="outline" href="{{ again_url }}" data-turbo-prefetch="false">{{ 'onlineCourseTestAgainAction'|trans }}</twig:Cm:Button>
                 <twig:Cm:Button variant="primary" href="{{ course_url }}">{{ (passed ? 'onlineCourseTestBackToCourseAction' : 'onlineCourseTestReviewCourseAction')|trans }}</twig:Cm:Button>
             </div>
         </div>

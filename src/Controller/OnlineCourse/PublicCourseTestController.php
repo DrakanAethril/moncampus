@@ -53,8 +53,28 @@ class PublicCourseTestController extends AbstractController
     }
 
     /**
-     * The question to answer next. A run already finished - or none at all - starts a new one: this
-     * is the address « Test » and « Recommencer » both point at.
+     * A new go, whatever the run under way: the questions drawn again in a new order. This is the
+     * address « Test » and « Recommencer » point at - a reader who left a run halfway and comes back
+     * through « Test » launches the test again, they do not find the questions where they left them.
+     * The links carry data-turbo-prefetch="false": a hover must not throw away a run.
+     */
+    #[Route(path: '/courses/{handle}/{slug}/test/new', name: 'app_public_courses_test_new', requirements: ['handle' => self::SEGMENT, 'slug' => self::SEGMENT], methods: ['GET'], priority: 1)]
+    public function launch(string $handle, string $slug, Request $request): Response
+    {
+        $found = $this->find($handle, $slug, $request);
+        if ($found instanceof RedirectResponse) {
+            return $found;
+        }
+
+        [$page, $course] = $found;
+        $this->runner->start($course);
+
+        return $this->redirectToRoute('app_public_courses_test', ['handle' => $page->getHandle(), 'slug' => $course->getSlug()]);
+    }
+
+    /**
+     * The question to answer next, in the run under way - a reload or the step after an answer. A
+     * run already finished, or none at all, starts a new one.
      */
     #[Route(path: '/courses/{handle}/{slug}/test', name: 'app_public_courses_test', requirements: ['handle' => self::SEGMENT, 'slug' => self::SEGMENT], methods: ['GET'], priority: 1)]
     public function show(string $handle, string $slug, Request $request): Response
