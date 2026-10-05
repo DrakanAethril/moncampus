@@ -92,7 +92,7 @@ class OnlineCoursePublicPagesTest extends FunctionalTestCase
         $this->page($this->teacher, 'tharaud');
         $this->course($this->teacher, 'Les jointures SQL', publish: true);
 
-        foreach (['?q=', '?tag=', '?tag=sql', '?tag[]=sql&tag[]=slam', '?view=themes', '?view=', '?tag[x][y]=1'] as $query) {
+        foreach (['?q=', '?tag=', '?tag=sql', '?tag[]=sql&tag[]=slam', '?view=themes', '?view=', '?tag[x][y]=1', '?support=', '?support[]=pdf', '?support=test'] as $query) {
             $this->assertAnonymous('/courses/tharaud'.$query, 200);
         }
     }
@@ -154,6 +154,45 @@ class OnlineCoursePublicPagesTest extends FunctionalTestCase
             $this->assertAnonymous('/courses/tharaud'.$query, 200);
             self::assertCount(0, $this->client->getCrawler()->filter('#public-course-sort'), $query);
         }
+    }
+
+    public function testTheSupportFilterNarrowsTheRowsAndTravelsWithEveryLink(): void
+    {
+        $this->page($this->teacher, 'tharaud');
+        $tags = static::getContainer()->get(OnlineCourseTagResolver::class);
+        $joins = $this->course($this->teacher, 'Les jointures SQL', publish: true);
+        $tags->apply($joins, ['SQL']);
+        $model = $this->course($this->teacher, 'Le modèle relationnel', publish: true);
+        $tags->apply($model, ['SQL']);
+        static::getContainer()->get(OnlineCourseMaterialStore::class)->add($model, OnlineCourseMaterialKind::Summary, $this->pdf('fiche.pdf'));
+        $this->em->flush();
+
+        $this->assertAnonymous('/courses/tharaud', 200);
+        $crawler = $this->client->getCrawler();
+        // « Tous » first, then the kinds the page holds, each with its pictogram; no course has a test.
+        self::assertSame(['Tous les supports', 'Version PDF', 'Fiche de synthèse'], $crawler->filter('.cm-pub-support__item')->each(static fn ($item): string => trim($item->text())));
+        self::assertCount(2, $crawler->filter('.cm-pub-support__item svg'));
+        self::assertSame('/courses/tharaud?support=summary', $crawler->filter('.cm-pub-support__item')->eq(2)->attr('href'));
+
+        $this->assertAnonymous('/courses/tharaud?support=summary', 200);
+        $crawler = $this->client->getCrawler();
+        self::assertSame(['Récemment mis à jour 1', 'SQL 1'], $crawler->filter('.cm-pub-row__title')->each(static fn ($title): string => preg_replace('/\s+/', ' ', trim($title->text())) ?? ''));
+        self::assertSame('/courses/tharaud?tag=sql&support=summary', $crawler->filter('.cm-pub-row')->eq(1)->filter('.cm-pub-row__all')->attr('href'));
+        self::assertSame('summary', $crawler->filter('.cm-pub-search input[name=support]')->attr('value'));
+        self::assertStringContainsString('Fiche de synthèse', $crawler->filter('.cm-pub-support__toggle')->text());
+
+        // A tag's page keeps its tag when the support changes, and drops the support for « Tous ».
+        $this->assertAnonymous('/courses/tharaud?tag=sql&support=summary', 200);
+        $crawler = $this->client->getCrawler();
+        self::assertSame(['Le modèle relationnel'], $crawler->filter('.cm-pub-card__title')->each(static fn ($title): string => trim($title->text())));
+        self::assertSame('/courses/tharaud?tag=sql', $crawler->filter('.cm-pub-support__item')->eq(0)->attr('href'));
+
+        // An unknown support is « Tous », never an empty page; a kind nobody carries says so.
+        $this->assertAnonymous('/courses/tharaud?support=nonsense', 200);
+        self::assertCount(2, $this->client->getCrawler()->filter('.cm-pub-row')->eq(0)->filter('.cm-pub-card'));
+        $this->assertAnonymous('/courses/tharaud?support=video', 200);
+        self::assertCount(0, $this->client->getCrawler()->filter('.cm-pub-row'));
+        self::assertCount(1, $this->client->getCrawler()->filter('.cm-pub-empty'));
     }
 
     public function testASignedInVisitorFindsTheirMenuAndTheWayBack(): void
