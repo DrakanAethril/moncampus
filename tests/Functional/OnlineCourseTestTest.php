@@ -47,13 +47,6 @@ class OnlineCourseTestTest extends FunctionalTestCase
         $this->em->flush();
         $url = '/courses/cours-sql/'.$course->getSlug().'/test';
 
-        $this->client->request('GET', '/courses/cours-sql');
-        self::assertResponseIsSuccessful();
-        self::assertSelectorExists('a.cm-pub-card__test[href="'.$url.'"]');
-        // And next to the materials on the course's own page.
-        $this->client->request('GET', '/courses/cours-sql/'.$course->getSlug());
-        self::assertSelectorExists('.cm-pub-tabs a.cm-pub-tabs__tab--test[href="'.$url.'"]');
-
         // Above the default 80 %: « Bravo », and the score alone - no question, no answer.
         $this->takeTheTest($url, [true, true]);
         $content = (string) $this->client->getResponse()->getContent();
@@ -71,6 +64,53 @@ class OnlineCourseTestTest extends FunctionalTestCase
         self::assertStringContainsString('50 %', $content);
         self::assertStringContainsString('Revoyez le cours', $content);
         self::assertStringNotContainsString('Bravo', $content);
+    }
+
+    public function testEveryLaunchDrawsTheQuestionsAgain(): void
+    {
+        $course = $this->course('Les clés', publish: true);
+        $this->writer->linkQuiz($course, $this->quiz($this->teacher));
+        $this->em->flush();
+        $url = '/courses/cours-sql/'.$course->getSlug().'/test';
+        $launch = $url.'/new';
+
+        // Every door that starts the test - the card, the tab beside the materials - is the launch,
+        // not the run under way.
+        $this->client->request('GET', '/courses/cours-sql');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('a.cm-pub-card__test[href="'.$launch.'"]');
+        $this->client->request('GET', '/courses/cours-sql/'.$course->getSlug());
+        self::assertSelectorExists('.cm-pub-tabs a.cm-pub-tabs__tab--test[href="'.$launch.'"]');
+
+        // A run left after its first answer: reloading the test resumes it, launching starts over.
+        $crawler = $this->client->request('GET', $launch);
+        self::assertResponseRedirects($url);
+        $crawler = $this->client->followRedirect();
+        $form = $crawler->filter('form.cm-lp-question__body');
+        $this->client->request('POST', $url, [
+            '_token' => (string) $form->filter('input[name="_token"]')->attr('value'),
+            'index' => '0',
+            'answers' => [$this->answerId($form, 'Oui')],
+        ]);
+        $this->client->request('GET', $url);
+        self::assertSame('1', $this->client->getCrawler()->filter('input[name="index"]')->attr('value'));
+        $this->client->request('GET', $launch);
+        $this->client->followRedirect();
+        self::assertSame('0', $this->client->getCrawler()->filter('input[name="index"]')->attr('value'));
+
+        // And the draw is a new order: over thirty launches, each question comes first at least once.
+        $first = ['primaire' => 0, 'étrangère' => 0];
+        for ($i = 0; $i < 30; ++$i) {
+            $this->client->request('GET', $launch);
+            $asked = $this->client->followRedirect()->filter('.cm-lp-question__body')->text();
+            ++$first[str_contains($asked, 'primaire') ? 'primaire' : 'étrangère'];
+        }
+        self::assertGreaterThan(0, $first['primaire']);
+        self::assertGreaterThan(0, $first['étrangère']);
+
+        // The result's « Recommencer » is a launch too.
+        $this->takeTheTest($url, [true, true]);
+        self::assertSelectorExists('.cm-lp-stepnav a[href="'.$launch.'"]');
     }
 
     public function testTheThresholdIsTheAuthors(): void
