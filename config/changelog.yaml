@@ -26,6 +26,21 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.06'
+      date: '2026-10-06'
+      summary: "Les enseignants d'une formation en alternance lisent désormais les livrets d'alternance de leur classe. Quelques corrections accompagnent cette version, sur le wiki, l'engagement d'alternance et les cours en ligne."
+      entries:
+          - type: nouveaute
+            title: "Formations en alternance : les enseignants de la classe consultent les livrets d'alternance de leurs étudiants"
+            detail: "En lecture seule : ni export, ni saisie."
+          - type: fix
+            title: "Wiki : dans la boîte d'un bloc de code, la touche Tabulation indente au lieu de quitter le champ"
+          - type: fix
+            title: "UFA : sur l'engagement, la case du centre de formation nomme bien la personne qui signe"
+          - type: modification
+            title: "Cours en ligne, en essai : les cours d'une étiquette rangés par titre, et un filtre par type de support"
+          - type: fix
+            title: "Cours en ligne, en essai : le test d'un cours tire un nouvel ordre de questions à chaque lancement"
     - version: '2026.10.05'
       date: '2026-10-05'
       summary: "Le livret ECF reprend désormais le titre préparé tel que la formation le décrit déjà, sans rien ressaisir. Un dossier déplacé dans une bibliothèque emmène correctement tous ses sous-dossiers."
