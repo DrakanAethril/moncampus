@@ -304,6 +304,14 @@ export default class extends Controller {
 
             event.preventDefault();
 
+            // A code sample, a diagram or a formula is one object in the content area: selected, its
+            // range is the whole block, and writing the indent over that range deleted it. Measured
+            // on a code sample - one Tab and the block was gone. Tab stays swallowed, so the focus
+            // does not leave either; the block's text is edited in its dialog, see below.
+            if (editor.dom.getParent(node, '[contenteditable="false"]')) {
+                return;
+            }
+
             const spaces = editor.dom.getParent(node, 'pre,code') ? '    ' : '\u00a0\u00a0\u00a0\u00a0';
 
             editor.undoManager.transact(() => {
@@ -318,6 +326,45 @@ export default class extends Controller {
             });
 
             editor.nodeChanged();
+        });
+
+        editor.on('OpenWindow', (event) => this.indentCodeSampleField(event.dialog));
+    }
+
+    /**
+     * Tab types four spaces in the code sample dialog's field instead of moving to « Annuler ».
+     *
+     * A code sample is not typed in the content area - there it is one non-editable object - but in
+     * the plugin's dialog, which is a plain <textarea> outside the editor's iframe: the keydown
+     * handler above never hears it. The dialog is recognised by its data (the plugin names its
+     * field `code`), the plugin offering no hook of its own.
+     *
+     * stopPropagation() is what keeps the focus: the dialog cycles its controls on a Tab it hears
+     * while bubbling, so the field has to answer first and let nothing through. The spaces go in
+     * with insertText so that Ctrl+Z takes them back like any typed character; setRangeText() is
+     * the fallback and needs its own `input` event.
+     *
+     * Shift+Tab is left alone here too: it is the way back to the language list.
+     */
+    indentCodeSampleField(dialog) {
+        if (!Object.hasOwn(dialog?.getData?.() ?? {}, 'code')) {
+            return;
+        }
+
+        const field = [...document.querySelectorAll('.tox-dialog textarea')].pop();
+
+        field?.addEventListener('keydown', (event) => {
+            if ('Tab' !== event.key || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (!document.execCommand('insertText', false, '    ')) {
+                field.setRangeText('    ', field.selectionStart, field.selectionEnd, 'end');
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+            }
         });
     }
 
