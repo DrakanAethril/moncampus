@@ -1250,6 +1250,9 @@ internshipEvaluationSkillsSectionHeading: 'Skills'
 internshipEvaluationLevelColumnLabel: 'Level'
 internshipMyEvaluationsPageHeading: 'Internship Handbook - My evaluations'
 programInternshipMyEvaluationsNavLabel: 'Internship Handbook'
+programInternshipBookletsNavLabel: "Apprenticeship booklets"
+programInternshipBookletsReadAction: "Read the booklet"
+programInternshipBookletsEmptyLabel: "No apprentice in this class yet."
 internshipTutorEvaluationStrengthsFieldLabel: 'Strengths'
 internshipTutorEvaluationWeaknessesFieldLabel: 'Weaknesses'
 internshipTutorEvaluationGoalsFieldLabel: 'Goals for the next visit'

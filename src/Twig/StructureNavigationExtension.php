@@ -13,6 +13,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Repository\SectionRepository;
 use App\Security\FeatureAccess;
+use App\Security\ProgramInternshipBookletAccess;
 use App\Security\ProgramTimetableAccess;
 use App\Security\StructureAccessChecker;
 use App\Service\StudentAlternanceProgramResolver;
@@ -65,6 +66,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         private readonly FeatureAccess $featureAccess,
         private readonly VisibilityExtension $visibility,
         private readonly ProgramTimetableAccess $timetableAccess,
+        private readonly ProgramInternshipBookletAccess $bookletAccess,
     ) {
     }
 
@@ -82,6 +84,8 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             // this person carry the class-wide referent remit », which is a fact rather than a
             // permission level. The class council's nav entry asks it (the campus game, screen 6).
             new TwigFunction('is_program_referent_teacher', $this->accessChecker->isProgramReferentTeacher(...)),
+            // « Livrets d'alternance » in a class's submenu - the very rule the screen behind it asks.
+            new TwigFunction('internship_booklets_readable', $this->bookletAccess->isReadable(...)),
             new TwigFunction('program_has_quiz_instances', $this->hasQuizInstances(...)),
             new TwigFunction('program_nav_has_entries', $this->hasNavEntries(...)),
             new TwigFunction('student_nav_programs', $this->getStudentPrograms(...)),
@@ -172,6 +176,10 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
 
         if ($this->featureAccess->isEnabled(Feature::MyAlternance)
             && $this->visibility->allows($program->getAlternanceCalendarVisibility())) {
+            return true;
+        }
+
+        if ($this->bookletAccess->isReadable($program)) {
             return true;
         }
 
