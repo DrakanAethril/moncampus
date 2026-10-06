@@ -57,7 +57,9 @@
                                (AlternanceEngagementService refuses it too). #}
                             <div class="text-secondary small">{{ 'ufaAlternanceTerminatedNothingToDoLabel'|trans }}</div>
                         {% elseif engagement.signedTutorAt and engagement.signedStudentAt %}
-                            <div class="text-secondary small mb-2">{{ tutorLink.supervisor.displayName ?? tutorLink.supervisor.username ?? app.user.displayName }}</div>
+                            {# The connected person, never the alternance's suiveur: the click signs
+                               as whoever is signed in (EngagementController::engagementSign()). #}
+                            <div class="text-secondary small mb-2">{{ app.user.displayName ?? app.user.username }}</div>
                             <form method="post" action="{{ path('app_ufa_alternance_engagement_sign', {id: tutorLink.id}) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token('ufa_alternance_engagement_sign') }}">
                                 <button type="submit" class="btn btn-primary btn-sm">{{ 'ufaAlternanceEngagementSignButtonLabel'|trans }}</button>
