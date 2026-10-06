@@ -7,11 +7,13 @@ namespace App\Service\OnlineCourse;
 use App\Entity\OnlineCourse;
 use App\Entity\OnlineCoursePage;
 use App\Entity\OnlineCourseTag;
+use App\Enum\OnlineCourseMaterialKind;
 use App\Repository\OnlineCourseRepository;
 
 /**
  * What a teacher's public page shows (design/validated/cours-en-ligne.md, §5): their public
- * courses, the most recently updated first, in a row per tag, searched and filtered.
+ * courses, the most recently updated first, in a row per tag sorted by title, searched and
+ * filtered by the nature of their materials.
  *
  * One place answers « which courses are on this page », so the rows, their counts and the page of
  * one row cannot disagree - and so the page exists exactly when all() has something to show, which
@@ -24,6 +26,9 @@ use App\Repository\OnlineCourseRepository;
  */
 class OnlineCoursePublicPage
 {
+    /** The support filter's value for « the courses that carry a test », beside the material kinds. */
+    public const SUPPORT_TEST = 'test';
+
     public function __construct(
         private readonly OnlineCourseRepository $courses,
     ) {
@@ -36,8 +41,8 @@ class OnlineCoursePublicPage
 
     /**
      * The page's courses, the most recently updated first - a course never edited since it was
-     * created counts from its creation, which is what `updatedAt` holds until then. Every row and
-     * every list of the page keeps this order.
+     * created counts from its creation, which is what `updatedAt` holds until then. The « récemment
+     * mis à jour » row and its own list keep this order; the tag rows read their courses by title.
      *
      * @return list<OnlineCourse>
      */
@@ -108,9 +113,60 @@ class OnlineCoursePublicPage
     }
 
     /**
-     * The rows of the page: one per tag, in alphabetical order, each keeping the order of the
-     * courses it is given. A course with two tags sits in two rows. A course with none sits in no
-     * row - the « récemment mis à jour » row above them all holds every course of the page.
+     * The courses that carry the support asked for: a material of that kind, or a test for
+     * SUPPORT_TEST. An empty support is « Tous » and keeps every course.
+     *
+     * @param list<OnlineCourse> $courses
+     *
+     * @return list<OnlineCourse>
+     */
+    public static function withSupport(array $courses, string $support): array
+    {
+        if ('' === $support) {
+            return $courses;
+        }
+
+        return array_values(array_filter($courses, static function (OnlineCourse $course) use ($support): bool {
+            if (self::SUPPORT_TEST === $support) {
+                return $course->hasTest();
+            }
+
+            foreach ($course->getMaterials() as $material) {
+                if ($material->getKind()->value === $support) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
+    }
+
+    /**
+     * The material kinds the courses carry, in the catalogue's order - the support filter offers
+     * these and no other, so that no choice of it answers an empty page.
+     *
+     * @param list<OnlineCourse> $courses
+     *
+     * @return list<OnlineCourseMaterialKind>
+     */
+    public static function kindsOf(array $courses): array
+    {
+        $present = [];
+        foreach ($courses as $course) {
+            foreach ($course->getMaterials() as $material) {
+                $present[$material->getKind()->value] = true;
+            }
+        }
+
+        return array_values(array_filter(OnlineCourseMaterialKind::cases(), static fn (OnlineCourseMaterialKind $kind): bool => isset($present[$kind->value])));
+    }
+
+    /**
+     * The rows of the page: one per tag, in alphabetical order, each holding its courses by title -
+     * a row is where a reader looks a course of that subject up, like the tag's own page; what
+     * moved is the « récemment mis à jour » row's business. A course with two tags sits in two
+     * rows. A course with none sits in no row - the « récemment mis à jour » row above them all
+     * holds every course of the page.
      *
      * @param list<OnlineCourse> $courses
      *
@@ -129,6 +185,9 @@ class OnlineCoursePublicPage
         }
 
         uasort($groups, static fn (array $a, array $b): int => strcoll($a['key'], $b['key']));
+        foreach ($groups as $key => $group) {
+            $groups[$key]['courses'] = self::byTitle($group['courses']);
+        }
 
         return array_values($groups);
     }

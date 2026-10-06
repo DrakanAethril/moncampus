@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace App\Tests\Service\OnlineCourse;
 
 use App\Entity\OnlineCourse;
+use App\Entity\OnlineCourseMaterial;
 use App\Entity\OnlineCourseTag;
+use App\Entity\QuizQuestion;
+use App\Entity\QuizTemplate;
 use App\Entity\User;
+use App\Enum\OnlineCourseMaterialKind;
 use App\Repository\OnlineCourseRepository;
 use App\Service\OnlineCourse\OnlineCoursePublicPage;
 use PHPUnit\Framework\TestCase;
 
 /**
  * What a teacher's public page shows of a list of courses: the newest first, one row per tag in
- * alphabetical order, and filters that narrow.
+ * alphabetical order holding its courses by title, and filters that narrow.
  */
 class OnlineCoursePublicPageTest extends TestCase
 {
@@ -74,19 +78,54 @@ class OnlineCoursePublicPageTest extends TestCase
         self::assertSame([$docker, $acl, $model, $joins], OnlineCoursePublicPage::byTitle([$joins, $model, $acl, $docker]));
     }
 
-    public function testOneRowPerTagInAlphabeticalOrderKeepingTheCoursesOrder(): void
+    public function testOneRowPerTagInAlphabeticalOrderEachByTitle(): void
     {
         $joins = $this->course('Les jointures SQL', ['SQL', 'SLAM']);
         $model = $this->course('Le modèle relationnel', ['SQL']);
+        $acl = $this->course('Des droits SQL', ['SQL']);
         $osi = $this->course('Le modèle OSI', ['Réseau']);
         $untagged = $this->course('Divers', []);
 
-        $rows = $this->page->groups([$model, $joins, $osi, $untagged]);
+        // Handed newest first, as the page loads them: the rows read them by title all the same.
+        $rows = $this->page->groups([$joins, $model, $osi, $acl, $untagged]);
 
         self::assertSame(['Réseau', 'SLAM', 'SQL'], array_column($rows, 'label'));
         self::assertSame([$osi], $rows[0]['courses']);
         self::assertSame([$joins], $rows[1]['courses']);
-        self::assertSame([$model, $joins], $rows[2]['courses']);
+        self::assertSame([$acl, $model, $joins], $rows[2]['courses']);
+    }
+
+    public function testTheSupportFilterKeepsTheCoursesCarryingThatKindOrATest(): void
+    {
+        $video = $this->course('Vidéo seule', [], kinds: [OnlineCourseMaterialKind::Video]);
+        $both = $this->course('PDF et vidéo', [], kinds: [OnlineCourseMaterialKind::Pdf, OnlineCourseMaterialKind::Video]);
+        $tested = $this->course('PDF testé', [], kinds: [OnlineCourseMaterialKind::Pdf], withTest: true);
+        $all = [$video, $both, $tested];
+
+        self::assertSame($all, OnlineCoursePublicPage::withSupport($all, ''));
+        self::assertSame([$video, $both], OnlineCoursePublicPage::withSupport($all, 'video'));
+        self::assertSame([$both, $tested], OnlineCoursePublicPage::withSupport($all, 'pdf'));
+        self::assertSame([], OnlineCoursePublicPage::withSupport($all, 'interactive'));
+        self::assertSame([$tested], OnlineCoursePublicPage::withSupport($all, OnlineCoursePublicPage::SUPPORT_TEST));
+    }
+
+    public function testAQuizWithNoQuestionIsNoTest(): void
+    {
+        $empty = $this->course('Quiz vide', [], kinds: [OnlineCourseMaterialKind::Pdf]);
+        $empty->setQuizTemplate(new QuizTemplate($this->owner));
+
+        self::assertSame([], OnlineCoursePublicPage::withSupport([$empty], OnlineCoursePublicPage::SUPPORT_TEST));
+    }
+
+    public function testTheFilterOffersTheKindsThePageHoldsInTheCataloguesOrder(): void
+    {
+        $courses = [
+            $this->course('A', [], kinds: [OnlineCourseMaterialKind::Video, OnlineCourseMaterialKind::Pdf]),
+            $this->course('B', [], kinds: [OnlineCourseMaterialKind::Interactive, OnlineCourseMaterialKind::Pdf]),
+        ];
+
+        self::assertSame([OnlineCourseMaterialKind::Interactive, OnlineCourseMaterialKind::Pdf, OnlineCourseMaterialKind::Video], OnlineCoursePublicPage::kindsOf($courses));
+        self::assertSame([], OnlineCoursePublicPage::kindsOf([]));
     }
 
     public function testTwoSpellingsOfATagAreOneTag(): void
@@ -96,9 +135,10 @@ class OnlineCoursePublicPageTest extends TestCase
     }
 
     /**
-     * @param list<string> $tags
+     * @param list<string>                   $tags
+     * @param list<OnlineCourseMaterialKind> $kinds
      */
-    private function course(string $title, array $tags, string $summary = '', ?string $updatedAt = null): OnlineCourse
+    private function course(string $title, array $tags, string $summary = '', ?string $updatedAt = null, array $kinds = [], bool $withTest = false): OnlineCourse
     {
         $course = new OnlineCourse($this->owner, $title, 'slug');
         $course->setSummary($summary);
@@ -107,6 +147,14 @@ class OnlineCoursePublicPageTest extends TestCase
         }
         foreach ($tags as $tag) {
             $course->addTag(new OnlineCourseTag($this->owner, $tag));
+        }
+        foreach ($kinds as $kind) {
+            $course->addMaterial(new OnlineCourseMaterial($course, $kind, $kind->value));
+        }
+        if ($withTest) {
+            $quiz = new QuizTemplate($this->owner);
+            $quiz->addQuestion(new QuizQuestion($quiz));
+            $course->setQuizTemplate($quiz);
         }
 
         return $course;

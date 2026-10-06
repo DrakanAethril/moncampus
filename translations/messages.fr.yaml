@@ -1714,6 +1714,9 @@ internshipEvaluationSkillsSectionHeading: 'Compétences'
 internshipEvaluationLevelColumnLabel: 'Niveau'
 internshipMyEvaluationsPageHeading: 'Livret Alternant - Mes évaluations'
 programInternshipMyEvaluationsNavLabel: 'Livret Alternant'
+programInternshipBookletsNavLabel: "Livrets d'alternance"
+programInternshipBookletsReadAction: "Consulter le livret"
+programInternshipBookletsEmptyLabel: "Aucun alternant dans cette formation pour le moment."
 internshipTutorEvaluationStrengthsFieldLabel: 'Points forts'
 internshipTutorEvaluationWeaknessesFieldLabel: 'Points faibles'
 internshipTutorEvaluationGoalsFieldLabel: 'Objectifs à atteindre à la prochaine visite'
@@ -10742,6 +10745,9 @@ onlineCoursePublicSearchAction: "Rechercher"
 onlineCoursePublicSortLabel: "Trier les cours"
 onlineCoursePublicSortByName: "Par nom"
 onlineCoursePublicSortByModified: "Dernier modifié"
+onlineCoursePublicSupportLabel: "Filtrer par support"
+onlineCoursePublicSupportAll: "Tous les supports"
+onlineCoursePublicSupportTest: "Cours avec test"
 onlineCoursePublicNoCourseYetLabel: "Aucun cours n’est encore publié sur cette page."
 onlineCoursePublicNoMatchLabel: "Aucun cours ne correspond à cette recherche."
 onlineCoursePublicDraftNotice: "Ce cours est un brouillon : vous seul le voyez."

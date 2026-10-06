@@ -280,6 +280,27 @@ class ProgramRepository extends ServiceEntityRepository
     }
 
     /**
+     * The ids of every Program carrying the alternance modality, whatever its school year.
+     *
+     * The same definition of « a formation in alternance » as findAlternanceForSchoolYear() one
+     * method up, reduced to what a membership test needs: App\Security\ProgramInternshipBookletAccess
+     * asks it once per request for the whole navbar.
+     *
+     * @return list<int>
+     */
+    public function findAlternanceProgramIds(): array
+    {
+        $rows = $this->createQueryBuilder('p')
+            ->select('DISTINCT p.id AS programId')
+            ->innerJoin('p.modalities', 'm')
+            ->where('m.isAlternance = true')
+            ->getQuery()
+            ->getScalarResult();
+
+        return array_map(intval(...), array_column($rows, 'programId'));
+    }
+
+    /**
      * Every active Program of one school year, students and modalities already hydrated.
      *
      * Written for the UFA contract import (App\Service\AlternanceImport\ImportAnalyzer), which has

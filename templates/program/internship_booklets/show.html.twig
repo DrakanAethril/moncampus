@@ -1,0 +1,23 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The teachers' way into a booklet. Same reader partial as the administration's, the tutor's and
+   the alternant's, and deliberately no page_actions: this door reads, the PDF exports stay on the
+   three others. #}
+{% set studentName = tutorLink.student.displayName ?? tutorLink.student.username %}
+{% block title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ studentName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'programInternshipBookletsNavLabel'|trans, url: path('app_program_internship_booklets', {id: program.id})},
+        {label: studentName, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ studentName }}{% endblock %}
+
+{% block main %}
+    {% include 'internship/_livret_reader.html.twig' with {
+        frameUrl: path('app_program_internship_booklets_frame', {id: program.id, tutorLinkId: tutorLink.id}),
+        outline: booklet_outline(tutorLink),
+    } only %}
+{% endblock %}

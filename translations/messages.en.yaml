@@ -1250,6 +1250,9 @@ internshipEvaluationSkillsSectionHeading: 'Skills'
 internshipEvaluationLevelColumnLabel: 'Level'
 internshipMyEvaluationsPageHeading: 'Internship Handbook - My evaluations'
 programInternshipMyEvaluationsNavLabel: 'Internship Handbook'
+programInternshipBookletsNavLabel: "Apprenticeship booklets"
+programInternshipBookletsReadAction: "Read the booklet"
+programInternshipBookletsEmptyLabel: "No apprentice in this class yet."
 internshipTutorEvaluationStrengthsFieldLabel: 'Strengths'
 internshipTutorEvaluationWeaknessesFieldLabel: 'Weaknesses'
 internshipTutorEvaluationGoalsFieldLabel: 'Goals for the next visit'
@@ -9507,6 +9510,9 @@ onlineCoursePublicSearchAction: "Search"
 onlineCoursePublicSortLabel: "Sort the courses"
 onlineCoursePublicSortByName: "By name"
 onlineCoursePublicSortByModified: "Last modified"
+onlineCoursePublicSupportLabel: "Filter by material"
+onlineCoursePublicSupportAll: "All materials"
+onlineCoursePublicSupportTest: "Courses with a test"
 onlineCoursePublicNoCourseYetLabel: "No course is published on this page yet."
 onlineCoursePublicNoMatchLabel: "No course matches this search."
 onlineCoursePublicDraftNotice: "This course is a draft: only you can see it."

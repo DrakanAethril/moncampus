@@ -365,9 +365,9 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     its test screens too (`online_course/public/_course_layout.html.twig`), where the banner's title
     leads back to the teacher's page (`_page_header.html.twig`, one copy for all). With no footer
     left on these screens, the source-code link (AGPL §13) is in « À propos ». The courses come in rows -
-    « Récemment mis à jour », then one per tag in alphabetical order - each cut to one line by
-    `online_course_row_controller.js`; « Voir tout » is `?tag=` / `?view=recent` on the same
-    address. A signed-in visitor gets the app's own user menu (`layout/_user_menu.html.twig`,
+    « Récemment mis à jour », then one per tag in alphabetical order, its courses by title - each
+    cut to one line by `online_course_row_controller.js`; « Voir tout » is `?tag=` / `?view=recent`
+    on the same address, and `?support=` (a material kind or `test`) narrows rows and lists alike. A signed-in visitor gets the app's own user menu (`layout/_user_menu.html.twig`,
     shared with the app shell, which is why it takes `compact` and `impersonation`).
   - **The page's address changes at any time**, during diffusion included: every address a page
     carried keeps its row (`OnlineCoursePageHandle`, UNIQUE), so the old one answers a 301 and is
@@ -458,6 +458,12 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   « Confirmer » or saving a changed number in « Modifier l'entreprise » stamps
   `Enterprise::$siretConfirmedAt`; imports and « nouvelle entreprise » leave it « à confirmer », and
   `EnterpriseRepository::queryPendingSiret()` is the one definition the queue and its counter read.
+  **The teachers of a formation in alternance read its booklets, and only read them**: Section >
+  Formation > « Livrets d'alternance » (`App\Controller\Program\TeacherBookletController`) lists
+  the class's live alternances and opens the shared reader, with no export and no way into the
+  wizard. `App\Security\ProgramInternshipBookletAccess` is the one rule the menu entry and the
+  screens ask: the `ufa_booklet` feature, `Program::$internshipManagementEnabled`, a formation
+  carrying the alternance modality, and a teacher of that very formation (staff bypassed).
   The **livret ECF** (livret d'évaluations passées en cours de formation, `App\Controller\Ufa\Ecf*`,
   `src/Service/Ecf/`, spec `design/validated/ecf-booklet.md`) is switched on per formation
   (`ProgramEcfSettings`, UFA › Formations › « Livret ECF ») and lives on the alternance follow-up:
