@@ -10,6 +10,7 @@ use App\Entity\EvaluationPeriodGroup;
 use App\Entity\FeatureRoleSetting;
 use App\Entity\GuestAccount;
 use App\Entity\IpRange;
+use App\Entity\Modality;
 use App\Entity\OnlineCourse;
 use App\Entity\Program;
 use App\Entity\Progression;
@@ -1295,6 +1296,40 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.export.staff.off'),
             array_map(static fn (): int => 404, $csv),
         );
+    }
+
+    /**
+     * Section > Formation > « Livrets d'alternance »: read by the teachers of a formation in
+     * alternance (staff bypassed, as for every « teacher of this class » question), refused to its
+     * students and to a tutor - and absent, 404, from a formation that carries no alternance
+     * modality, which is what the fixture is until the second half of this method.
+     * tests/Functional/ProgramInternshipBookletsTest.php pins the rest: the menu entry, a teacher
+     * of another class, and that the screen only reads.
+     */
+    public function testTheClassBookletsAreReadByTheTeachersOfAFormationInAlternance(): void
+    {
+        $list = sprintf('/programs/%d/internship-booklets', $this->program->getId());
+
+        foreach ([$this->admin, $this->teacher, $this->student, $this->tutor] as $user) {
+            $this->assertScreens($user, [$list => 404]);
+        }
+
+        // Read again rather than reused: the requests above rebooted the kernel, and the fixture's
+        // own objects are no longer managed by this entity manager.
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $program = $entityManager->find(Program::class, $this->program->getId());
+        self::assertInstanceOf(Program::class, $program);
+        $modality = new Modality('Alternance', '#1b6ec2');
+        $modality->setIsAlternance(true);
+        $modality->setCreatedBy($entityManager->find(User::class, $this->admin->getId()));
+        $entityManager->persist($modality);
+        $program->addModality($modality);
+        $entityManager->flush();
+
+        $this->assertScreens($this->admin, [$list => 200]);
+        $this->assertScreens($this->teacher, [$list => 200]);
+        $this->assertScreens($this->student, [$list => 403]);
+        $this->assertScreens($this->tutor, [$list => 403]);
     }
 
     /**

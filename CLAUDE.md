@@ -458,6 +458,12 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   « Confirmer » or saving a changed number in « Modifier l'entreprise » stamps
   `Enterprise::$siretConfirmedAt`; imports and « nouvelle entreprise » leave it « à confirmer », and
   `EnterpriseRepository::queryPendingSiret()` is the one definition the queue and its counter read.
+  **The teachers of a formation in alternance read its booklets, and only read them**: Section >
+  Formation > « Livrets d'alternance » (`App\Controller\Program\TeacherBookletController`) lists
+  the class's live alternances and opens the shared reader, with no export and no way into the
+  wizard. `App\Security\ProgramInternshipBookletAccess` is the one rule the menu entry and the
+  screens ask: the `ufa_booklet` feature, `Program::$internshipManagementEnabled`, a formation
+  carrying the alternance modality, and a teacher of that very formation (staff bypassed).
   The **livret ECF** (livret d'évaluations passées en cours de formation, `App\Controller\Ufa\Ecf*`,
   `src/Service/Ecf/`, spec `design/validated/ecf-booklet.md`) is switched on per formation
   (`ProgramEcfSettings`, UFA › Formations › « Livret ECF ») and lives on the alternance follow-up:

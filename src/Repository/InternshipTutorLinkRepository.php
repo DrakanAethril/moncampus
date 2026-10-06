@@ -95,6 +95,37 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
     }
 
     /**
+     * The live alternances of one Program, in the order a class list is read: by the alternant's
+     * name. Student, tutor and employer come hydrated - the teachers' « Livrets d'alternance »
+     * list prints all three on every row.
+     *
+     * $includeTestAlternances is the caller's reading of the test fence: a fake alternance
+     * (InternshipTutorLink::$testAlternance) has no place in a real class's list.
+     *
+     * @return list<InternshipTutorLink>
+     */
+    public function findActiveForProgramByStudentName(Program $program, bool $includeTestAlternances): array
+    {
+        $qb = $this->createQueryBuilder('l')
+            ->addSelect('st', 'tu', 'e')
+            ->innerJoin('l.student', 'st')
+            ->leftJoin('l.tutor', 'tu')
+            ->leftJoin('l.enterprise', 'e')
+            ->where('l.program = :program')
+            ->andWhere('l.inactiveDate IS NULL')
+            ->setParameter('program', $program)
+            ->orderBy('st.lastname', 'ASC')
+            ->addOrderBy('st.firstname', 'ASC')
+            ->addOrderBy('l.id', 'ASC');
+
+        if (!$includeTestAlternances) {
+            $qb->andWhere('l.testAlternance = false');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * The students of one Program whose alternance is over and who have no live one left - the
      * people an evaluation relance must no longer reach (see
      * Program\InternshipReminderController::findPendingEvaluations(), which lists pending students

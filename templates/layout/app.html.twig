@@ -251,6 +251,13 @@
                                                                CloudFront URL, not an in-app page. #}
                                                             <a class="dropdown-item" href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}"{% if program.alternanceCalendarMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programAlternanceCalendarNavLabel'|trans }}</a>
                                                         {% endif %}
+                                                        {# The teachers' reading of the class's Livrets de l'alternant: drawn on the
+                                                           one rule its screen asks (App\Security\ProgramInternshipBookletAccess) -
+                                                           the feature, a formation in alternance that runs its livret here, and a
+                                                           teacher of this very formation. #}
+                                                        {% if internship_booklets_readable(program) %}
+                                                            <a class="dropdown-item {{ current_route starts with 'app_program_internship_booklets' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_internship_booklets', {id: program.id}) }}">{{ 'programInternshipBookletsNavLabel'|trans }}</a>
+                                                        {% endif %}
                                                         {# Administrators only since 2026-08-25 - but on the same three conditions
                                                            the screen behind it applies (App\Controller\ProgramSyllabusController):
                                                            the feature, the formation's timetable being managed here since the

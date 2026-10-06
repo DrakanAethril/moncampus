@@ -1,0 +1,52 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Section > Formation > « Livrets d'alternance »: what a teacher of a formation in alternance reads
+   of its alternants. One gesture per row, reading the booklet - nothing on this screen writes, and
+   nothing links to a screen that does (App\Controller\Program\TeacherBookletController). #}
+{% block title %}{{ 'programInternshipBookletsNavLabel'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'programInternshipBookletsNavLabel'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'programInternshipBookletsNavLabel'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        {% if tutorLinks|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-striped">
+                    <thead>
+                        <tr>
+                            <th>{{ 'ufaAlternanceColumnStudentLabel'|trans }}</th>
+                            <th>{{ 'ufaAlternanceColumnEnterpriseLabel'|trans }}</th>
+                            <th>{{ 'ufaAlternanceColumnTutorLabel'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tutorLink in tutorLinks %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ tutorLink.student.displayName ?? tutorLink.student.username }}</div>
+                                    <div class="text-secondary small">{{ tutorLink.contractType.labelKey|trans }} · {{ tutorLink.contractStartDate|date('d/m/Y') }} - {{ tutorLink.contractEndDate|date('d/m/Y') }}</div>
+                                </td>
+                                <td>{{ tutorLink.enterprise.name ?? '—' }}</td>
+                                <td>{{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}</td>
+                                <td class="text-end">
+                                    <twig:Cm:Button :href="path('app_program_internship_booklets_show', {id: program.id, tutorLinkId: tutorLink.id})" variant="outline" size="sm">{{ 'programInternshipBookletsReadAction'|trans }}</twig:Cm:Button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="card-body">
+                <p class="text-secondary mb-0">{{ 'programInternshipBookletsEmptyLabel'|trans }}</p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
