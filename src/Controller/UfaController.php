@@ -25,18 +25,22 @@ use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\ProgramContractModalityRepository;
 use App\Repository\ProgramRepository;
+use App\Security\FeatureAccess;
+use App\Service\Ecf\EcfSettingsEditor;
 use App\Service\PostValue;
 use App\Service\ProgramCertificationEditor;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // The UFA top-level nav's own controller: the "Contrats" placeholder (not yet designed - see
 // design_handoff_ufa/README.md) and the 4 Formation tabs (24a-24d), which reuse the exact same
@@ -122,7 +126,7 @@ class UfaController extends AbstractController
     }
 
     #[Route(path: '/ufa/programs/{id}/denomination', name: 'app_ufa_formation_denomination')]
-    public function formationDenomination(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, InternshipOptionLegalNameRepository $legalNameRepository, ProgramCertificationEditor $certificationEditor): Response
+    public function formationDenomination(int $id, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipProgramInfoRepository $infoRepository, InternshipOptionLegalNameRepository $legalNameRepository, ProgramCertificationEditor $certificationEditor, EcfSettingsEditor $ecfEditor, FeatureAccess $featureAccess, TranslatorInterface $translator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $info = $infoRepository->findOneByProgram($program);
@@ -133,19 +137,36 @@ class UfaController extends AbstractController
         }
 
         $form = $this->createForm(InternshipLegalNameType::class, $info);
-        // The certification zone of the shared partial - this screen and
-        // Program\InternshipDenominationController render the very same
-        // program/internship/_denomination_content.html.twig, so both have to feed it its rows.
+        // The certification zone of the tab's single form.
         $certificationRows = $certificationEditor->rows($program);
         $certificationEditor->addToForm($form, $certificationRows);
 
+        // The ECF zone of the same form (design/validated/ecf-booklet.md §14): there only when the
+        // feature is lit, and written by an administrator only.
+        $ecfSettings = $featureAccess->isEnabled(Feature::UfaEcf) ? $ecfEditor->settings($program) : null;
+        $canEditEcf = $this->isGranted('ROLE_ADMIN');
+        if (null !== $ecfSettings) {
+            $ecfEditor->addToForm($form, $ecfSettings, $canEditEcf);
+        }
+
         $form->handleRequest($request);
+
+        if (null !== $ecfSettings && $canEditEcf && $form->isSubmitted()) {
+            foreach ($ecfEditor->refusals($ecfSettings, $certificationRows) as $refusal) {
+                $form->get(EcfSettingsEditor::FIELD)->get('enabled')->addError(new FormError($translator->trans($refusal)));
+            }
+        }
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->stampAuditFields($info, !$isNew);
             $entityManager->persist($info);
             $this->syncOptionLegalNames($program, $request, $entityManager, $legalNameRepository);
             $certificationEditor->save($certificationRows);
+            if (null !== $ecfSettings && $canEditEcf) {
+                /** @var User $user */
+                $user = $this->getUser();
+                $ecfEditor->save($ecfSettings, $user);
+            }
             $entityManager->flush();
 
             $this->addFlash('success', 'internshipProgramInfoUpdatedFlashMessage');
@@ -160,6 +181,8 @@ class UfaController extends AbstractController
             'info' => $info,
             'legalNamesByOptionId' => $legalNameRepository->findMapForProgram($program),
             'certificationRows' => $certificationRows,
+            'ecfHasActivityTypes' => null === $ecfSettings || $ecfEditor->hasActivityTypes($program),
+            'ecfOptionsWithoutTitle' => null === $ecfSettings ? [] : $ecfEditor->optionsWithoutTitle($program, $certificationRows),
         ]);
     }
 

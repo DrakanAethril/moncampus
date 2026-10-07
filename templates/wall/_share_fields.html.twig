@@ -1,0 +1,37 @@
+{# « Partager avec », the same fields in « Nouveau mur » and in « Partager »: the classes as chips
+   (checkboxes, per the form rule), the people through the tomselect picker.
+
+   A student is told, where they decide who is on their wall, who reads it besides: the teachers
+   of their class (App\Service\Wall\WallSupervisors). Said once, in words, rather than left to be
+   discovered.
+
+   Parameters: classes (the ones offered), wall (null on creation), id (a prefix for the field ids). #}
+{% if classes is not empty %}
+    <div class="cm-wall-field">
+        <span class="cm-wall-label">{{ 'wallShareClassesLabel'|trans }}</span>
+        <div class="cm-wall-chips">
+            {% for program in classes %}
+                <label class="cm-wall-chip">
+                    <input type="checkbox" name="programs[]" value="{{ program.id }}" {{ wall and wall.programs.contains(program) ? 'checked' }}>
+                    <span>{{ program.displayShortName }}</span>
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+<div class="cm-wall-field">
+    <label class="cm-wall-label" for="{{ id }}-members">{{ 'wallSharePeopleLabel'|trans }}</label>
+    <select class="form-select" id="{{ id }}-members" name="members[]" multiple
+            data-controller="tom-select"
+            data-tom-select-url-value="{{ path('app_wall_people') }}"
+            data-tom-select-placeholder-value="{{ 'wallSharePeoplePlaceholder'|trans }}">
+        {% if wall %}
+            {% for member in wall.members %}
+                <option value="{{ member.id }}" selected>{{ member.displayName ?? member.username }}</option>
+            {% endfor %}
+        {% endif %}
+    </select>
+</div>
+{% if is_granted('ROLE_STUDENT') and not is_granted('ROLE_TEACHER') and not is_staff() %}
+    <p class="cm-wall-notice">{{ 'wallSupervisedNoticeText'|trans }}</p>
+{% endif %}

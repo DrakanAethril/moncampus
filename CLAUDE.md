@@ -184,6 +184,63 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   absentees or the pairs. Every widget's head carries three sizes (whole surface, half, quarter):
   they only write `x`/`y`/`w`/`h`, and the widget in hand (`.is-front`) is drawn over the two bars
   so that a head taken to the top edge stays in reach.
+- **Murs collaboratifs** (Outils › Animer la classe; « Ressources » for a student) — `Wall` →
+  `WallList` → `WallCard` → `WallComment`, `App\Controller\Wall\*`, `src/Service/Wall/`, handoff
+  `design/design_handoff_murs_collaboratifs/` (no spec in `design/validated/`: the handoff is the
+  design, and the rules it leaves open are the ones below). A Trello and a Padlet in one: lists
+  holding cards (label, text, picture, link, file, checklist, comments), read as « Colonnes » or
+  « Grille », copied or moved from one wall to another, shown full screen or one card at a time.
+  **`Feature::Walls` is off for every role: administrators only, until Gestion › Fonctionnalités
+  opens it** - one line for both sides of the room, like the word cloud. There are **no template
+  walls**: the handoff's third tab was dropped. Rules the code holds:
+  - **`App\Service\Wall\WallAccess` is the whole « qui fait quoi »**, read by `WallVoter` and by
+    nothing else. Its owner; a **Manager** - a colleague a teacher shared with, who runs the wall
+    (settings, lists, validation, copies) but neither shares nor deletes it; a **Participant** - a
+    student of a class the wall is shared with, or anybody a *student* invited, teachers included.
+    Tutors and outside accounts have no walls at all.
+  - **A student's wall is read by the teachers of the class** - `WallSupervisors`, a fourth role
+    (**Supervisor**) that reads everything, the cards awaiting validation included, and writes
+    nothing: no card, no tick, no comment. It follows the *student* (a wall a student owns, read by
+    whoever teaches an active class of its owner or of a classmate named on it) and the *class*:
+    a teacher's own wall is supervised by nobody, and the administration and the establishment's
+    other teachers read no student's wall on the strength of their role. **Nobody else outside a
+    wall opens it, administrators included** (404). The student is told so where they share
+    (`wall/_share_fields.html.twig`).
+  - **« Murs étudiants »** (Ressources, for `ROLE_TEACHER`; `StudentWallController`,
+    `StudentWallDirectory`): the class - one taught goes straight to it - then two sections, each
+    student's own walls and the walls of groups of students (a student's wall with another student
+    on it; a teacher they invited does not make a group). It lists the classes one teaches
+    (`ProgramRepository::findAllForTeacher()`) and no other. The wall opens through its own route,
+    told by `?class=` which trail to draw and by the `wall_supervised` request attribute which
+    menu to light - the parameter opens nothing.
+  - **`WallAudience` bounds what is *added***: a teacher adds the classes they teach
+    (`ClassBoardPrograms`, the virtual board's own list) and colleagues, never students one by one;
+    a student adds classmates and the teachers of their active classes, never a class. Somebody
+    already on a wall stays until the owner takes them off.
+  - **The page draws nothing of its own.** Every action answers the same document - the wall as
+    *this* person reads it (`WallResponder::state()`: revision, canvas in their view, the card they
+    have open) - and `wall_controller.js` swaps it in. `WallLiveNotifier` only announces a revision
+    over Mercure; each browser then asks for its own reading, because a card awaiting validation is
+    not everybody's to read. A redraw waits for a field to be left and for one's own request to
+    come back (the hub is told before the answer leaves).
+  - **A card awaiting validation** (`WallCardStatus::Pending`, only on a moderated wall, only for a
+    participant's card) is left out of `WallBoardView` for everybody but its author and the
+    managers - never hidden by a stylesheet - and is **never projected**. A card that arrives from
+    another wall is moderated by the wall it lands on, and is never published by being copied.
+  - **`WallWriter` and `WallCopier` hold every write** and never flush; `WallResponder::commit()`
+    does, moving `Wall::$revision`. An update names its fields and writes no other. A card is moved
+    by naming the card it lands *before*, never a rank: a participant does not see the pending
+    cards, so the rank they count is not the list's. `WallBoardView` sorts cards by rank itself -
+    the collection in memory keeps the order it was loaded in, in the very request that moved one.
+  - **Files** (`WallFiles`, prefix `walls/`): the browser stages on `/uploads/stage`, the wall is
+    sent the token. A picture is `UploadPolicy::images()`, a file the platform rule. A copied card
+    owns **copies** of its objects, so forgetting one card never takes another's file.
+  - A list's colour is `null` for the default grey (it then follows the theme); a chosen colour is
+    drawn as chosen whatever the theme, with the light theme's ink on it. A link without a scheme
+    is https, and anything that is not http(s) is refused (`WallWriter::url()`).
+  - Two things the handoff does not draw and a wall cannot do without: the title and « Supprimer
+    le mur » are in « Paramètres », and « Étiquette » joins the open card's « Ajouter ». Deleting is
+    a two-click button (the label becomes « Confirmer la suppression »), never a `confirm()`.
 - **Quiz** — `QuizTemplate`/`QuizQuestion` (library, filed in `QuizFolder`s) → `QuizInstance`
   (launched snapshot) → `QuizAttempt` (passation). Live multiplayer (`QuizLiveSession`) runs over
   Mercure/SSE. The « mode contrôle » times each question **server-side**
@@ -442,7 +499,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     (`app:purge-platform-activity`). Connector tools `path_list`, `path_get`, `path_create`,
     `path_set_steps` (a whole list, kept steps kept, refused if it would drop a step people worked
     on) and `path_publish`.
-- **Accès aux fonctionnalités** — `App\Enum\Feature` (59 cases) + `#[RequiresFeature]` +
+- **Accès aux fonctionnalités** — `App\Enum\Feature` (60 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
   exceptions named in `Feature::defaultRoles()` (`student_work`, `shared_documents`, `wiki` for
@@ -466,14 +523,16 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   carrying the alternance modality, and a teacher of that very formation (staff bypassed).
   The **livret ECF** (livret d'évaluations passées en cours de formation, `App\Controller\Ufa\Ecf*`,
   `src/Service/Ecf/`, spec `design/validated/ecf-booklet.md`) is switched on per formation
-  (`ProgramEcfSettings`, UFA › Formations › « Livret ECF ») and lives on the alternance follow-up:
+  (`ProgramEcfSettings`: the switch, the organisme and the lieu, kept in UFA › Formations ›
+  « Dénomination » - there is no ECF tab; `App\Service\Ecf\EcfSettingsEditor`) and lives on the alternance follow-up:
   read by the administration, written and signed by administrators only (`EcfBookletVoter`). Its
   activity-types are the Livret de l'alternant's groups, options included
   (`BookletSkillGroups::forTutorLink()`), found again from one year to the next by
   `SkillGroup::$code` - a group with no code stays out; the booklet follows the student and the
   titre (code + millésime), not the Program. **The titre is never typed in the ECF tab**: it is read
-  per student from « Dénomination » (`EcfTitle`) - the denomination, the level, code titre and
-  millésime of their option's `ProgramCertification`, the option's short name as sigle. A visa is the connected person's click, dated by the server, and freezes what it signed.
+  per student from « Dénomination » (`EcfTitle`) - the denomination, the level, code titre,
+  millésime **and the dates** (arrêté, J.O., date d'effet, template update) of their option's
+  `ProgramCertification`, the option's short name as sigle: two options prepare two titres. A visa is the connected person's click, dated by the server, and freezes what it signed.
   Once closed, the administration offers it to the student, who reads it and signs it « pour
   information » from « Mon alternance » (`EcfCandidateSignature`); reopening the booklet withdraws both.
   The PDF (`templates/ufa/ecf/print.html.twig`, also the online reader's frame) reproduces the
@@ -657,11 +716,11 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 31 of them: Assignment, AudienceTargetable,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 32 of them: Assignment, AudienceTargetable,
 DocumentationArticle, Dossier, EcfBooklet, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
 GuestConsole, InternshipTutorLink, LearningPath, LessonLog, MessageThread, OnlineCourse, Portfolio, Progression, ProxmoxHost, QuizFolder,
 QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket,
-Wiki, WordCloud).
+Wall, Wiki, WordCloud).
 New per-object rules belong in a Voter, not inline in a controller.
 
 `src/Security/Ldap*Syncer.php` also **writes** provisioning requests (`LdapManageUser`,

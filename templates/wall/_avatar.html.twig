@@ -1,0 +1,15 @@
+{# Somebody's mark on a wall: their photo when the platform has one, their initials otherwise, in
+   one of five grounds picked by their id so that the same person is the same colour on every card.
+   A card whose author's account is gone draws nothing.
+
+   Parameters: user, size (24 | 26 | 28 | 30 | 36, default 24). #}
+{% if user %}
+    {% set size = size|default(24) %}
+    {% set url = avatar_url(user) %}
+    {% set name = user.displayName ?? user.username %}
+    {% if url %}
+        <img class="cm-wall-avatar cm-wall-avatar--{{ size }}" src="{{ url }}" alt="" title="{{ name }}" width="{{ size }}" height="{{ size }}">
+    {% else %}
+        <span class="cm-wall-avatar cm-wall-avatar--{{ size }} cm-wall-avatar--c{{ user.id % 5 }}" title="{{ name }}" aria-hidden="true">{{ user.initials ?? (user.username|slice(0, 1)|upper) }}</span>
+    {% endif %}
+{% endif %}

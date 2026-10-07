@@ -1,0 +1,9 @@
+{# One wall of « Murs étudiants »: its title, its format, when it last moved. The link carries the
+   class it is read from, so that the wall's trail leads back here.
+
+   Parameters: wall, class, meta. #}
+<a class="cm-wall-roster__wall" href="{{ path('app_wall_show', {id: wall.id, class: class.id}) }}">
+    <span class="cm-wall-roster__title">{{ wall.title }}</span>
+    <span class="cm-wall-tile__format">{{ wall.format.labelKey|trans }}</span>
+    <span class="cm-wall-roster__meta">{{ meta }}</span>
+</a>

@@ -42,6 +42,34 @@ class ProgramRepository extends ServiceEntityRepository
     }
 
     /**
+     * Does this person teach an active class one of these students is enrolled in?
+     *
+     * The question « Murs étudiants » asks before a teacher reads a student's wall
+     * (App\Service\Wall\WallSupervisors). Active classes only: last year's teacher is no longer
+     * this student's.
+     *
+     * @param list<User> $students
+     */
+    public function teachesAnyOf(User $teacher, array $students): bool
+    {
+        if ([] === $students) {
+            return false;
+        }
+
+        return 0 < (int) $this->createQueryBuilder('p')
+            ->select('COUNT(DISTINCT p.id)')
+            ->innerJoin('p.teachers', 't')
+            ->innerJoin('p.students', 's')
+            ->andWhere('t = :teacher')
+            ->andWhere('s IN (:students)')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('students', $students)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
      * Does this person belong - as a student or as a teacher - to at least one formation whose
      * Courrier pro is open?
      *

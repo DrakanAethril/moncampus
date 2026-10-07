@@ -7,6 +7,7 @@ namespace App\Form;
 use App\Entity\ProgramCertification;
 use App\Enum\CertificationKind;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -16,8 +17,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 /**
  * One certification a Program prepares, for one Option.
  *
- * Rendered once per Option inside the tab's single form (see
- * Program\InternshipCertificationController), so it carries no submit button of its own - the
+ * Rendered once per Option inside the « Dénomination » tab's single form (see
+ * App\Service\ProgramCertificationEditor), so it carries no submit button of its own - the
  * enclosing form has the only one, per the app's one-actionbar-per-page rule.
  */
 class ProgramCertificationType extends AbstractType
@@ -67,6 +68,18 @@ class ProgramCertificationType extends AbstractType
                 'attr' => ['maxlength' => 10],
             ])
         ;
+
+        // The dates the ECF booklet prints: the titre's arrêté on the cover, the template's own
+        // update in the footer.
+        foreach (['decreeDate', 'journalDate', 'effectiveDate', 'modelUpdatedDate'] as $field) {
+            $builder->add($field, DateType::class, [
+                'label' => 'programCertification'.ucfirst($field).'FieldLabel',
+                'required' => false,
+                'widget' => 'single_text',
+                'html5' => true,
+                'input' => 'datetime_immutable',
+            ]);
+        }
     }
 
     public function configureOptions(OptionsResolver $resolver): void

@@ -25,11 +25,13 @@ use App\Entity\TopicGroup;
 use App\Entity\User;
 use App\Entity\UserFeatureAccess;
 use App\Entity\VmBatch;
+use App\Entity\Wall;
 use App\Enum\Feature;
 use App\Enum\FeatureAccessState;
 use App\Enum\GameTrack;
 use App\Enum\QuestionType;
 use App\Enum\QuizMode;
+use App\Enum\WallFormat;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -751,13 +753,6 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->teacher, array_fill_keys($screens, 403));
         $this->assertScreens($this->student, array_fill_keys($screens, 403));
 
-        // The « Livret ECF » tab (`ufa_ecf`): this base lights every feature, so what answers a
-        // teacher or a student here is the class guard - the administration only.
-        $ecfTab = sprintf('/ufa/programs/%d/ecf', $programId);
-        $this->assertScreens($this->admin, [$ecfTab => 200]);
-        $this->assertScreens($this->teacher, [$ecfTab => 403]);
-        $this->assertScreens($this->student, [$ecfTab => 403]);
-
         // The Documents tab's own doors onto its two files: a screen that frames one, and the two
         // routes that serve them. They are readable by exactly whoever may open the tab - the
         // alternance calendar has a published route elsewhere that reads a VisibilityLevel, but
@@ -1374,6 +1369,45 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->teacher, [$path => 200]);
         $this->assertScreens($this->admin, [$path => 404]);
         $this->assertScreens($this->student, [$path => 404]);
+    }
+
+    /**
+     * « Murs collaboratifs » (design/design_handoff_murs_collaboratifs): both sides of the room have
+     * walls of their own - a tutor has none, the screen does not exist for them. A wall is opened
+     * by its owner and by whoever it was shared with: an administrator asking for a teacher's wall
+     * gets the 404 of a wall that does not exist. And the feature ships off for every role: with
+     * the line unlit, the administrator is the only one left with the screen.
+     */
+    public function testWallsBelongToThoseTheyWereOpenedTo(): void
+    {
+        $this->assertScreens($this->teacher, ['/walls' => 200, '/walls?tab=shared' => 200, '/walls?tab=' => 200]);
+        $this->assertScreens($this->student, ['/walls' => 200]);
+        $this->assertScreens($this->admin, ['/walls' => 200]);
+        $this->assertScreens($this->tutor, ['/walls' => 404]);
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $wall = new Wall($entityManager->getReference(User::class, $this->teacher->getId()), 'Mur du smoke test', WallFormat::Columns);
+        $wall->addProgram($entityManager->getReference(Program::class, $this->program->getId()));
+        $entityManager->persist($wall);
+        $entityManager->flush();
+        $path = '/walls/'.$wall->getId();
+
+        $this->assertScreens($this->teacher, [$path => 200]);
+        $this->assertScreens($this->student, [$path => 200]);
+        $this->assertScreens($this->admin, [$path => 404]);
+        $this->assertScreens($this->tutor, [$path => 404]);
+
+        // « Murs étudiants » is a teacher's screen: it lists the classes one teaches, and an
+        // administrator who does not teach has none to read - for them it does not exist.
+        $this->assertScreens($this->teacher, ['/walls/students' => 200, '/walls/students?class=' => 200]);
+        $this->assertScreens($this->admin, ['/walls/students' => 404]);
+        $this->assertScreens($this->student, ['/walls/students' => 404]);
+        $this->assertScreens($this->tutor, ['/walls/students' => 404]);
+
+        $this->switchOffEveryRole(Feature::Walls);
+        $this->assertScreens($this->teacher, ['/walls' => 404, '/walls/students' => 404, $path => 404]);
+        $this->assertScreens($this->student, ['/walls' => 404, $path => 404]);
+        $this->assertScreens($this->admin, ['/walls' => 200]);
     }
 
     /**

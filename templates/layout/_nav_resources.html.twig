@@ -15,7 +15,9 @@
     or current_route starts with 'app_student_shared_document' or current_route starts with 'app_my_dossier' or current_route starts with 'app_school_mail' or current_route starts with 'app_training_'
     or current_route == 'app_my_job_applications' or current_route starts with 'app_my_courses'
     or (is_pure_student and (current_route starts with 'app_company_search' or current_route starts with 'app_enterprise_pool'))
-    or (is_pure_student and current_route starts with 'app_program_quiz_') %}
+    or (is_pure_student and current_route starts with 'app_program_quiz_')
+    or (is_pure_student and current_route starts with 'app_wall')
+    or current_route starts with 'app_wall_students' or app.request.attributes.get('wall_supervised') %}
 {# Each entry's condition is read once into a variable, and the same variables decide both whether
    the entry renders and whether the dropdown renders at all. Written the other way round - a
    summary boolean beside the conditions it summarises - the two drift the first time an entry is
@@ -32,6 +34,12 @@
 {% set resources_job_applications = resources_school_mail %}
 {% set resources_wiki = not is_granted('ROLE_TUTOR') and not is_granted('ROLE_EXTERNAL') and feature('wiki') %}
 {% set resources_course_space = is_granted('ROLE_STUDENT') and not is_staff() and feature('course_space') %}
+{# « Murs collaboratifs » for a student: teachers and the administration reach theirs from Outils ›
+   Animer la classe, a menu a pure student does not have. #}
+{% set resources_walls = is_pure_student and feature('walls') %}
+{# « Murs étudiants »: the walls of the students of a class one teaches, read and not written. For
+   whoever teaches - the screen offers the classes one teaches and no other. #}
+{% set resources_student_walls = is_granted('ROLE_TEACHER') and feature('walls') %}
 {# « Quiz », and only for somebody who has one - same posture as « Mes machines virtuelles » and the
    shared wikis above. The entry is here rather than in the class submenu because that submenu is
    hidden from a pure student since 2026-08-17: a quiz launched for a class then had no door at all,
@@ -56,7 +64,7 @@
    « aucun dossier ». #}
 {% set resources_dossiers = is_granted('ROLE_STUDENT') and not is_staff() and feature('dossiers') and has_dossiers(app.user) %}
 {% if resources_shared_documents or resources_dossiers or resources_my_vms or resources_school_mail or resources_job_applications
-    or resources_wiki or resources_course_space or resources_quiz_programs is not empty or resources_documentation or resources_apps
+    or resources_wiki or resources_walls or resources_student_walls or resources_course_space or resources_quiz_programs is not empty or resources_documentation or resources_apps
     or resources_jobboard or resources_company_search %}
 <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
     <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
@@ -112,6 +120,13 @@
                     {% endif %}
                 </div>
             </div>
+        {% endif %}
+        {# Next to the wikis: the other place a student works with others. #}
+        {% if resources_walls %}
+            <a class="dropdown-item {{ current_route starts with 'app_wall' ? 'active' }}" href="{{ path('app_walls') }}">{{ 'wallNavLabel'|trans }}</a>
+        {% endif %}
+        {% if resources_student_walls %}
+            <a class="dropdown-item {{ current_route starts with 'app_wall_students' or app.request.attributes.get('wall_supervised') ? 'active' }}" href="{{ path('app_wall_students') }}">{{ 'wallStudentsNavLabel'|trans }}</a>
         {% endif %}
         {# « Mes cours » under its real name: what the student reads there is the year's séquences,
            and the old label promised a course space that this screen is only one face of. #}

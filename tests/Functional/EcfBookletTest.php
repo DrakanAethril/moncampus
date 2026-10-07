@@ -114,12 +114,12 @@ class EcfBookletTest extends FunctionalTestCase
 
         $this->assertScreens($this->admin, array_fill_keys($this->screens(), 404));
 
-        $this->client->request('GET', sprintf('/ufa/programs/%d/ecf', $this->program->getId()));
+        $this->client->request('GET', sprintf('/ufa/programs/%d/denomination', $this->program->getId()));
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('.cm-note--gold', 'n’a pas de code titre ou de millésime');
     }
 
-    public function testTheEcfTabKeepsNeitherTheTitreNorTheActivityTypes(): void
+    public function testTheEcfSettingsRideTheDenominationTab(): void
     {
         $this->enable();
         $info = (new InternshipProgramInfo($this->program))->setLegalName('Titre professionnel Concepteur développeur d’applications');
@@ -128,17 +128,87 @@ class EcfBookletTest extends FunctionalTestCase
         $this->entityManager->flush();
 
         $this->client->loginUser($this->admin);
-        $this->client->request('GET', sprintf('/ufa/programs/%d/ecf', $this->program->getId()));
+        $this->client->request('GET', sprintf('/ufa/programs/%d/denomination', $this->program->getId()));
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('input[name="ecf_settings[journalDate]"]');
-        foreach (['titleLabel', 'sigle', 'level', 'titleCode', 'millesime'] as $field) {
-            self::assertSelectorNotExists(sprintf('input[name="ecf_settings[%s]"]', $field));
-        }
-        self::assertSelectorTextNotContains('body', 'Activités-types');
+        self::assertSelectorExists('input[name="internship_legal_name[ecf][enabled]"][checked]');
+        self::assertSelectorExists('input[name="internship_legal_name[ecf][organisation]"]');
+        // The dates are the titre's: one set per certification block, none for the formation.
+        self::assertSelectorExists('input[name="internship_legal_name[certification_0][journalDate]"]');
+        self::assertSelectorNotExists('input[name="internship_legal_name[ecf][journalDate]"]');
         self::assertSelectorNotExists('.cm-note--gold');
+        self::assertSelectorTextNotContains('.cm-tabs', 'Livret ECF');
+
+        $this->client->request('GET', sprintf('/ufa/programs/%d/ecf', $this->program->getId()));
+        self::assertResponseStatusCodeSame(404);
 
         $this->client->request('GET', sprintf('/ufa/alternances/%d/ecf/frame', $this->tutorLink->getId()));
         self::assertSelectorTextContains('.cover__name', 'Titre professionnel Concepteur développeur d’applications');
+    }
+
+    public function testOneSaveOfDenominationTypesTheTitreItsDatesAndSwitchesTheBookletOn(): void
+    {
+        $this->client->loginUser($this->admin);
+        $crawler = $this->client->request('GET', sprintf('/ufa/programs/%d/denomination', $this->program->getId()));
+        $this->client->submit($crawler->selectButton('Enregistrer')->form([
+            'internship_legal_name[ecf][enabled]' => '1',
+            'internship_legal_name[ecf][organisation]' => 'UFA Beaupeyrat',
+            'internship_legal_name[ecf][place]' => 'Limoges',
+            'internship_legal_name[certification_0][label]' => 'Concepteur développeur d’applications',
+            'internship_legal_name[certification_0][titleCode]' => 'TP-01281',
+            'internship_legal_name[certification_0][millesime]' => '04',
+            'internship_legal_name[certification_0][decreeDate]' => '2023-04-06',
+            'internship_legal_name[certification_0][journalDate]' => '2023-04-18',
+            'internship_legal_name[certification_0][effectiveDate]' => '2023-08-01',
+            'internship_legal_name[certification_0][modelUpdatedDate]' => '2024-01-15',
+        ]));
+        self::assertResponseRedirects(sprintf('/ufa/programs/%d/denomination', $this->program->getId()));
+
+        $crawler = $this->client->request('GET', sprintf('/ufa/alternances/%d/ecf/frame', $this->tutorLink->getId()));
+        self::assertResponseIsSuccessful();
+        $cover = $crawler->filter('.cover__dates')->text();
+        self::assertStringContainsString('06/04/2023', $cover);
+        self::assertStringContainsString('18/04/2023', $cover);
+        self::assertStringContainsString('01/08/2023', $cover);
+        self::assertSelectorTextContains('body', 'UFA Beaupeyrat');
+    }
+
+    public function testTheSwitchIsRefusedWhileNoCertificationNamesATitre(): void
+    {
+        $this->client->loginUser($this->admin);
+        $crawler = $this->client->request('GET', sprintf('/ufa/programs/%d/denomination', $this->program->getId()));
+        $this->client->submit($crawler->selectButton('Enregistrer')->form([
+            'internship_legal_name[ecf][enabled]' => '1',
+            'internship_legal_name[certification_0][label]' => 'Concepteur développeur d’applications',
+        ]));
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('.invalid-feedback', 'n’a de code titre et de millésime');
+        $this->entityManager->clear();
+        self::assertNull($this->entityManager->getRepository(ProgramEcfSettings::class)->findOneBy(['program' => $this->program->getId()]));
+        self::assertNull($this->entityManager->getRepository(ProgramCertification::class)->findOneBy(['program' => $this->program->getId()]));
+    }
+
+    public function testOnlyAnAdministratorWritesTheEcfSettings(): void
+    {
+        $this->enable();
+
+        $this->client->loginUser($this->staff);
+        $crawler = $this->client->request('GET', sprintf('/ufa/programs/%d/denomination', $this->program->getId()));
+        self::assertSelectorExists('input[name="internship_legal_name[ecf][enabled]"][disabled]');
+        self::assertSelectorExists('input[name="internship_legal_name[ecf][organisation]"][disabled]');
+
+        $form = $crawler->selectButton('Enregistrer')->form(['internship_legal_name[legalName]' => 'Titre professionnel CDA']);
+        $values = $form->getPhpValues();
+        $values['internship_legal_name']['ecf'] = ['organisation' => 'Ailleurs'];
+        $this->client->request('POST', $form->getUri(), $values);
+        self::assertResponseRedirects();
+
+        $this->entityManager->clear();
+        $settings = $this->entityManager->getRepository(ProgramEcfSettings::class)->findOneBy(['program' => $this->program->getId()]);
+        self::assertNotNull($settings);
+        self::assertTrue($settings->isEnabled(), 'a disabled switch that is not submitted does not switch the booklet off');
+        self::assertNull($settings->getOrganisation());
+        self::assertNull($settings->getLastUpdatedBy());
     }
 
     public function testTheAdministrationReadsAndNobodyElseReaches(): void

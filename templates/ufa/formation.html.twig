@@ -21,9 +21,7 @@
         {url: path('app_ufa_formation_exam_modalities', {id: program.id}), label: 'programInternshipExamModalitiesTabLabel'|trans, active: activeTab == 'exam_modalities'},
         {url: path('app_ufa_formation_documents', {id: program.id}), label: 'ufaFormationDocumentsTabLabel'|trans, active: activeTab == 'documents'},
         {url: path('app_ufa_formation_skills', {id: program.id}), label: 'ufaFormationSkillsTabLabel'|trans, active: activeTab == 'skills'},
-    ]|merge(feature('ufa_ecf') ? [
-        {url: path('app_ufa_formation_ecf', {id: program.id}), label: 'ufaFormationEcfTabLabel'|trans, active: activeTab == 'ecf'},
-    ] : [])">
+    ]">
         <twig:block name="action">{% if activeTab in ['evaluation_periods', 'tutors', 'skills', 'teaching_team'] %}{% include 'ufa/formation/_' ~ activeTab ~ '_button.html.twig' %}{% endif %}</twig:block>
     </twig:Cm:Tabs>
     <div class="card cm-card--tabbed">

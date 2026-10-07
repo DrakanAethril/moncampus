@@ -1,0 +1,95 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Murs collaboratifs », the list (design/design_handoff_murs_collaboratifs, screens 1 and 2).
+   Two segments of trail: the screen hangs off the Outils menu, which is a menu and not a page - the
+   handoff's « Outils » segment has nowhere to lead. Two tabs, not three: there are no template
+   walls. « Nouveau mur » is a <dialog> holding a plain form, answered by a redirect onto the wall. #}
+
+{% block title %}{{ 'wallNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'wallNavLabel'|trans, url: path('app_walls')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'wallNavLabel'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <div data-controller="wall-list">
+        <twig:Cm:Button variant="primary" data-action="wall-list#open">
+            <twig:ux:icon name="plus" width="16" height="16"/>{{ 'wallNewAction'|trans }}
+        </twig:Cm:Button>
+
+        <dialog class="cm-wall-dialog cm-wall-dialog--new" data-wall-list-target="dialog" aria-labelledby="wall-new-title">
+            <form method="post" action="{{ path('app_wall_create') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('wall') }}">
+                <header class="cm-wall-dialog__head">
+                    <h2 class="cm-wall-dialog__title" id="wall-new-title">{{ 'wallNewHeading'|trans }}</h2>
+                    <button type="button" class="cm-wall-close" data-action="wall-list#close" aria-label="{{ 'wallCloseAction'|trans }}">×</button>
+                </header>
+                <div class="cm-wall-dialog__body">
+                    <div class="cm-wall-field">
+                        <label class="cm-wall-label" for="wall-new-name">{{ 'wallTitleLabel'|trans }}</label>
+                        <input class="cm-wall-input" id="wall-new-name" type="text" name="title" maxlength="255" required
+                               placeholder="{{ 'wallTitlePlaceholder'|trans }}" data-wall-list-target="title">
+                    </div>
+                    <div class="cm-wall-field">
+                        <span class="cm-wall-label">{{ 'wallFormatLabel'|trans }}</span>
+                        <div class="cm-wall-formats" role="radiogroup" aria-label="{{ 'wallFormatLabel'|trans }}">
+                            {% for format in formats %}
+                                <label class="cm-wall-format">
+                                    <input type="radio" name="format" value="{{ format.value }}" {{ loop.first ? 'checked' }}>
+                                    <span class="cm-wall-format__sketch cm-wall-format__sketch--{{ format.value }}" aria-hidden="true">
+                                        {% for i in 1..(format.value == 'columns' ? 3 : 6) %}<i></i>{% endfor %}
+                                    </span>
+                                    <span class="cm-wall-format__name">{{ format.labelKey|trans }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {{ include('wall/_share_fields.html.twig', {classes: classes, wall: null, id: 'wall-new'}) }}
+                </div>
+                <footer class="cm-wall-dialog__foot">
+                    <twig:Cm:Button variant="outline" data-action="wall-list#close">{{ 'wallCancelAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'wallCreateAction'|trans }}</twig:Cm:Button>
+                </footer>
+            </form>
+        </dialog>
+    </div>
+{% endblock %}
+
+{% block main %}
+    {{ component('Cm:Tabs', {class: 'cm-wall-tabs', tabs: [
+        {label: 'wallMineTabLabel'|trans, url: path('app_walls'), active: not shared},
+        {label: 'wallSharedTabLabel'|trans, url: path('app_walls', {tab: 'shared'}), active: shared},
+    ]}) }}
+
+    {% if tiles is empty %}
+        <p class="cm-wall-empty">{{ (shared ? 'wallNoSharedText' : 'wallNoneText')|trans }}</p>
+    {% else %}
+        <div class="cm-wall-tiles">
+            {% for tile in tiles %}
+                {% set wall = tile.wall %}
+                <a class="cm-wall-tile" href="{{ path('app_wall_show', {id: wall.id}) }}">
+                    <span class="cm-wall-tile__thumb cm-wall-tile__thumb--p{{ wall.id % 5 }}"
+                          {% if wall.backgroundImageKey %}style="background-image: url('{{ file_url(wall.backgroundImageKey)|e('css') }}')"
+                          {% elseif wall.backgroundColor %}style="background-color: {{ wall.backgroundColor }}"{% endif %} aria-hidden="true">
+                        {% if wall.format.value == 'columns' %}
+                            <span class="cm-wall-tile__cols"><i><b></b><b></b><b></b></i><i><b></b><b></b></i><i><b></b></i></span>
+                        {% else %}
+                            <span class="cm-wall-tile__grid"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></span>
+                        {% endif %}
+                    </span>
+                    <span class="cm-wall-tile__body">
+                        <span class="cm-wall-tile__title">{{ wall.title }}</span>
+                        <span class="cm-wall-tile__meta">
+                            <span class="cm-wall-tile__format">{{ wall.format.labelKey|trans }}</span>
+                            <span>{{ tile.meta }}</span>
+                        </span>
+                    </span>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

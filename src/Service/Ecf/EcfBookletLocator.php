@@ -6,7 +6,6 @@ namespace App\Service\Ecf;
 
 use App\Entity\EcfBooklet;
 use App\Entity\InternshipTutorLink;
-use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\ProgramEcfSettings;
 use App\Repository\EcfBookletRepository;
@@ -90,27 +89,6 @@ class EcfBookletLocator
 
         return $this->bookletRepository->findOneForStudentAndTitle($student, $title->code, $title->millesime)
             ?? new EcfBooklet($student, $title->code, $title->millesime);
-    }
-
-    /**
-     * The certifying options of the formation - or the whole formation when it has none - whose
-     * certification lacks a code titre or a millésime: their students get no booklet.
-     *
-     * @return list<Option|null>
-     */
-    public function optionsWithoutTitle(Program $program): array
-    {
-        /** @var list<Option|null> $options */
-        $options = array_values($program->getOptions()->toArray());
-        if ([] === $options) {
-            $options = [null];
-        }
-
-        return array_values(array_filter($options, function (?Option $option) use ($program): bool {
-            $certification = $this->certificationRepository->findForOption($program, $option);
-
-            return !EcfTitle::of('', $certification, $option, $program)->isComplete();
-        }));
     }
 
     private function availableTitle(InternshipTutorLink $tutorLink): ?EcfTitle
