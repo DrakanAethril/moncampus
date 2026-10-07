@@ -26,6 +26,18 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.07'
+      date: '2026-10-07'
+      summary: "Le livret ECF distingue désormais les dates du titre pour chaque option d'une formation. Les murs collaboratifs, un nouvel outil pour travailler à plusieurs sur des listes de cartes, entrent en essai auprès de l'administration."
+      entries:
+          - type: modification
+            title: "Livret ECF : les dates de l'arrêté et du modèle se renseignent pour chaque option, avec la certification qu'elle prépare"
+            detail: "L'organisme, le lieu et l'activation du livret se règlent désormais avec la dénomination de la formation."
+          - type: nouveaute
+            title: "Murs collaboratifs, en essai par l'administration avant leur ouverture : des listes de cartes à remplir à plusieurs, en classe ou entre étudiants"
+            detail: "Les enseignants d'une classe lisent les murs de ses étudiants, qui en sont prévenus."
+          - type: interne
+            title: "Tests des murs collaboratifs rendus indépendants du stockage des fichiers"
     - version: '2026.10.06'
       date: '2026-10-06'
       summary: "Les enseignants d'une formation en alternance lisent désormais les livrets d'alternance de leur classe. Quelques corrections accompagnent cette version, sur le wiki, l'engagement d'alternance et les cours en ligne."
