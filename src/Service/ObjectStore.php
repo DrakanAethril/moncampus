@@ -103,6 +103,7 @@ class ObjectStore
         'staged' => 'staged',
         'diagnostics' => 'diagnostics',
         'class-board-photos' => 'class-board-photo',
+        'walls' => 'wall',
     ];
 
     public function __construct(

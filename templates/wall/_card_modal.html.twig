@@ -1,0 +1,225 @@
+{# The open card (design/design_handoff_murs_collaboratifs, screen 4): what it holds on the left,
+   « Ajouter » and « Actions » on the right. Drawn by the server for the person reading it and
+   swapped whole into the page's <dialog> after every change.
+
+   The handoff draws the five « Ajouter » buttons and no way to fill what they add; each one here
+   opens a small form in place - hidden until asked for - and « Étiquette » joins them, a label
+   having no other door. A form names the fields it writes and nothing else.
+
+   Parameters: card, wall, editable, manages, mayComment, viewer. #}
+{% set update_url = path('app_wall_card_update', {id: card.id}) %}
+{% set checklist_total = card.checklist|length %}
+<div class="cm-wall-open" data-card-id="{{ card.id }}">
+    <div class="cm-wall-open__main">
+        <div class="cm-wall-open__where">
+            {% if card.label and wall.areLabelsShown %}<span class="cm-wall-tag cm-wall-tag--{{ card.labelTone.value }}">{{ card.label }}</span>{% endif %}
+            {% if card.pending %}<span class="cm-wall-tag cm-wall-tag--pending">{{ 'wallPendingLabel'|trans }}</span>{% endif %}
+            <span>{{ 'wallCardInListText'|trans({'%list%': card.list.title}) }}</span>
+            {% if card.pending and manages %}
+                <span class="cm-wall-card__moderation">
+                    <button type="button" class="cm-wall-mini cm-wall-mini--ok" data-action="wall#post"
+                            data-wall-url-param="{{ path('app_wall_card_approve', {id: card.id}) }}">{{ 'wallApproveAction'|trans }}</button>
+                    <button type="button" class="cm-wall-mini cm-wall-mini--no" data-action="wall#post"
+                            data-wall-url-param="{{ path('app_wall_card_reject', {id: card.id}) }}">{{ 'wallRejectAction'|trans }}</button>
+                </span>
+            {% endif %}
+        </div>
+
+        {% if editable %}
+            <form class="cm-wall-editor" hidden data-wall-editor="label" action="{{ update_url }}" data-action="submit->wall#submit">
+                <input class="cm-wall-input" type="text" name="label" value="{{ card.label }}" maxlength="40"
+                       placeholder="{{ 'wallLabelPlaceholder'|trans }}" aria-label="{{ 'wallAddLabelAction'|trans }}">
+                <div class="cm-wall-tones" role="radiogroup" aria-label="{{ 'wallColorLabel'|trans }}">
+                    {% for tone in enum_cases('App\\Enum\\WallLabelTone') %}
+                        <label class="cm-wall-tone cm-wall-tag--{{ tone.value }}" title="{{ tone.labelKey|trans }}">
+                            <input type="radio" name="labelTone" value="{{ tone.value }}" aria-label="{{ tone.labelKey|trans }}"
+                                   {{ (card.labelTone ? card.labelTone == tone : loop.first) ? 'checked' }}>
+                        </label>
+                    {% endfor %}
+                </div>
+                <div class="cm-wall-editor__row">
+                    <button type="submit" class="cm-wall-mini cm-wall-mini--primary">{{ 'wallSaveAction'|trans }}</button>
+                    {% if card.label %}
+                        <button type="button" class="cm-wall-mini cm-wall-mini--plain" data-action="wall#post"
+                                data-wall-url-param="{{ update_url }}" data-wall-body-param="{{ {label: ''}|json_encode }}">{{ 'wallRemoveAction'|trans }}</button>
+                    {% endif %}
+                </div>
+            </form>
+            <form action="{{ update_url }}" data-action="submit->wall#submit">
+                <textarea class="cm-wall-open__title cm-wall-open__title--edit" name="title" rows="1" maxlength="255" required
+                          aria-label="{{ 'wallTitleLabel'|trans }}"
+                          data-action="change->wall#submitField keydown.enter->wall#enterSubmits input->wall#grow">{{ card.title }}</textarea>
+            </form>
+        {% else %}
+            <h2 class="cm-wall-open__title">{{ card.title }}</h2>
+        {% endif %}
+
+        {% if card.imageKey %}
+            <figure class="cm-wall-open__image">
+                <img src="{{ file_url(card.imageKey) }}" alt="">
+                {% if editable %}
+                    <button type="button" class="cm-wall-open__remove" data-action="wall#post" data-wall-url-param="{{ update_url }}"
+                            data-wall-body-param="{{ {image: ''}|json_encode }}">{{ 'wallRemoveAction'|trans }}</button>
+                {% endif %}
+            </figure>
+        {% endif %}
+
+        {% if card.text %}
+            <p class="cm-wall-open__text" data-wall-shown="text">{{ card.text|nl2br }}</p>
+        {% endif %}
+        {% if editable %}
+            <form class="cm-wall-editor" hidden data-wall-editor="text" action="{{ update_url }}" data-action="submit->wall#submit">
+                <textarea class="cm-wall-input" name="text" rows="5" maxlength="5000" aria-label="{{ 'wallAddTextAction'|trans }}">{{ card.text }}</textarea>
+                <div class="cm-wall-editor__row">
+                    <button type="submit" class="cm-wall-mini cm-wall-mini--primary">{{ 'wallSaveAction'|trans }}</button>
+                    <button type="button" class="cm-wall-mini cm-wall-mini--plain" data-action="wall#closeEditor">{{ 'wallCancelAction'|trans }}</button>
+                </div>
+            </form>
+        {% endif %}
+
+        {% if card.linkUrl %}
+            <div class="cm-wall-open__block" data-wall-shown="link">
+                <span class="cm-wall-open__linkicon"><twig:ux:icon name="link" width="16" height="16"/></span>
+                <div class="cm-wall-open__blockbody">
+                    <span class="cm-wall-open__blocktitle">{{ card.linkTitle }}</span>
+                    <a href="{{ card.linkUrl }}" target="_blank" rel="noopener noreferrer">{{ card.linkUrl|replace({'https://': '', 'http://': ''}) }}</a>
+                </div>
+            </div>
+        {% endif %}
+        {% if editable %}
+            <form class="cm-wall-editor" hidden data-wall-editor="link" action="{{ update_url }}" data-action="submit->wall#submit">
+                <input class="cm-wall-input" type="text" name="linkUrl" value="{{ card.linkUrl }}" maxlength="2000" required
+                       placeholder="{{ 'wallLinkUrlPlaceholder'|trans }}" aria-label="{{ 'wallLinkUrlPlaceholder'|trans }}">
+                <input class="cm-wall-input" type="text" name="linkTitle" value="{{ card.linkTitle }}" maxlength="255"
+                       placeholder="{{ 'wallLinkTitlePlaceholder'|trans }}" aria-label="{{ 'wallLinkTitlePlaceholder'|trans }}">
+                <div class="cm-wall-editor__row">
+                    <button type="submit" class="cm-wall-mini cm-wall-mini--primary">{{ 'wallSaveAction'|trans }}</button>
+                    {% if card.linkUrl %}
+                        <button type="button" class="cm-wall-mini cm-wall-mini--plain" data-action="wall#post"
+                                data-wall-url-param="{{ update_url }}" data-wall-body-param="{{ {linkUrl: ''}|json_encode }}">{{ 'wallRemoveAction'|trans }}</button>
+                    {% endif %}
+                    <button type="button" class="cm-wall-mini cm-wall-mini--plain" data-action="wall#closeEditor">{{ 'wallCancelAction'|trans }}</button>
+                </div>
+            </form>
+        {% endif %}
+
+        {% if card.fileKey %}
+            <div class="cm-wall-open__block">
+                <span class="cm-wall-ext cm-wall-ext--lg">{{ card.fileExtension }}</span>
+                <div class="cm-wall-open__blockbody">
+                    <span class="cm-wall-open__blocktitle">{{ card.fileName }}</span>
+                    <span class="cm-wall-open__blockmeta">{{ byte_size(card.fileSize) }}</span>
+                </div>
+                <a class="cm-wall-open__download" href="{{ download_url(card.fileKey, card.fileName) }}" download>{{ 'wallDownloadAction'|trans }}</a>
+                {% if editable %}
+                    <button type="button" class="cm-wall-open__remove cm-wall-open__remove--inline" data-action="wall#post" data-wall-url-param="{{ update_url }}"
+                            data-wall-body-param="{{ {file: ''}|json_encode }}">{{ 'wallRemoveAction'|trans }}</button>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% if checklist_total > 0 or editable %}
+            <div class="cm-wall-checklist" {{ checklist_total == 0 ? 'hidden' }} data-wall-editor="checklist">
+                <span class="cm-wall-label">{{ 'wallChecklistLabel'|trans }}{% if checklist_total > 0 %} · {{ card.checklistDoneCount }}/{{ checklist_total }}{% endif %}</span>
+                {% for item in card.checklist %}
+                    <div class="cm-wall-check{{ item.done ? ' is-done' }}">
+                        <button type="button" class="cm-wall-check__box" role="checkbox" aria-checked="{{ item.done ? 'true' : 'false' }}"
+                                aria-label="{{ item.text }}" {{ editable ? '' : 'disabled' }} data-action="wall#post"
+                                data-wall-url-param="{{ path('app_wall_card_checklist_toggle', {id: card.id, item: item.id}) }}">{{ item.done ? '✓' }}</button>
+                        <span class="cm-wall-check__text">{{ item.text }}</span>
+                        {% if editable %}
+                            <button type="button" class="cm-wall-check__remove" aria-label="{{ 'wallRemoveAction'|trans }}" data-action="wall#post"
+                                    data-wall-url-param="{{ path('app_wall_card_checklist_delete', {id: card.id, item: item.id}) }}">×</button>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% if editable %}
+                    <form class="cm-wall-inline" action="{{ path('app_wall_card_checklist_add', {id: card.id}) }}" data-wall-refocus="checklist"
+                          data-action="submit->wall#submit">
+                        <input class="cm-wall-input" type="text" name="text" maxlength="200" required
+                               placeholder="{{ 'wallChecklistItemPlaceholder'|trans }}" aria-label="{{ 'wallChecklistItemPlaceholder'|trans }}">
+                        <button type="submit" class="cm-wall-mini cm-wall-mini--primary">{{ 'wallAddAction'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% if card.author %}
+            <div class="cm-wall-open__author">
+                {{ include('wall/_avatar.html.twig', {user: card.author, size: 28}) }}
+                <span>{{ card.author.displayName ?? card.author.username }}</span>
+            </div>
+        {% endif %}
+
+        {% if wall.areCommentsEnabled %}
+            <div class="cm-wall-comments">
+                <span class="cm-wall-label">{{ 'wallCommentsLabel'|trans }}</span>
+                {% for comment in card.comments %}
+                    <div class="cm-wall-comment">
+                        {{ include('wall/_avatar.html.twig', {user: comment.author, size: 26}) }}
+                        <div class="cm-wall-comment__bubble">
+                            <div class="cm-wall-comment__head">
+                                <span class="cm-wall-comment__name">{{ comment.author ? (comment.author.displayName ?? comment.author.username) : 'wallFormerAccountLabel'|trans }}</span>
+                                <span class="cm-wall-comment__date">{{ comment.createdAt|localized_date('d MMM, HH:mm') }}</span>
+                                {% if mayComment and (manages or (comment.author and comment.author.id == viewer.id)) %}
+                                    <button type="button" class="cm-wall-comment__remove" aria-label="{{ 'wallRemoveAction'|trans }}" data-action="wall#post"
+                                            data-wall-url-param="{{ path('app_wall_comment_delete', {id: comment.id}) }}">×</button>
+                                {% endif %}
+                            </div>
+                            <span class="cm-wall-comment__text">{{ comment.text|nl2br }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+                {% if mayComment %}
+                    <form class="cm-wall-inline" action="{{ path('app_wall_comment_add', {id: card.id}) }}" data-wall-refocus="comment"
+                          data-action="submit->wall#submit">
+                        <input class="cm-wall-input" type="text" name="text" maxlength="2000" required
+                               placeholder="{{ 'wallCommentPlaceholder'|trans }}" aria-label="{{ 'wallCommentPlaceholder'|trans }}">
+                        <button type="submit" class="cm-wall-mini cm-wall-mini--primary">{{ 'wallSendAction'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <aside class="cm-wall-open__side">
+        <div class="cm-wall-open__closerow">
+            <button type="button" class="cm-wall-close" data-action="wall#closeCard" aria-label="{{ 'wallCloseAction'|trans }}">×</button>
+        </div>
+        {% if editable %}
+            <span class="cm-wall-label">{{ 'wallAddSectionLabel'|trans }}</span>
+            <button type="button" class="cm-wall-side" data-action="wall#openEditor" data-wall-editor-param="label">{{ 'wallAddLabelAction'|trans }}</button>
+            <button type="button" class="cm-wall-side" data-action="wall#openEditor" data-wall-editor-param="text">{{ 'wallAddTextAction'|trans }}</button>
+            <button type="button" class="cm-wall-side" data-action="wall#openEditor" data-wall-editor-param="link">{{ 'wallAddLinkAction'|trans }}</button>
+            <button type="button" class="cm-wall-side" data-action="wall#pickFile" data-wall-kind-param="file"
+                    data-wall-url-param="{{ update_url }}">{{ 'wallAddFileAction'|trans }}</button>
+            <button type="button" class="cm-wall-side" data-action="wall#pickFile" data-wall-kind-param="image"
+                    data-wall-url-param="{{ update_url }}">{{ 'wallAddImageAction'|trans }}</button>
+            <button type="button" class="cm-wall-side" data-action="wall#openEditor" data-wall-editor-param="checklist">{{ 'wallChecklistLabel'|trans }}</button>
+        {% endif %}
+        {% if manages or editable %}
+            <span class="cm-wall-label cm-wall-label--actions">{{ 'wallActionsSectionLabel'|trans }}</span>
+        {% endif %}
+        {% if manages %}
+            <button type="button" class="cm-wall-side cm-wall-side--primary" data-action="wall#openTransfer"
+                    data-wall-kind-param="card" data-wall-mode-param="copy" data-wall-title-param="{{ card.title }}"
+                    data-wall-modes-param="{{ editable ? 'copy,move' : 'copy' }}"
+                    data-wall-url-param="{{ path('app_wall_card_transfer', {id: card.id}) }}">{{ 'wallCopyToAction'|trans }}</button>
+        {% endif %}
+        {% if editable %}
+            <button type="button" class="cm-wall-side" data-action="wall#openTransfer"
+                    data-wall-kind-param="card" data-wall-mode-param="move" data-wall-title-param="{{ card.title }}"
+                    data-wall-modes-param="{{ manages ? 'copy,move' : 'move' }}"
+                    data-wall-url-param="{{ path('app_wall_card_transfer', {id: card.id}) }}">{{ 'wallMoveToAction'|trans }}</button>
+        {% endif %}
+        {% if manages %}
+            <button type="button" class="cm-wall-side" data-action="wall#post" data-wall-close-param="true"
+                    data-wall-url-param="{{ path('app_wall_card_duplicate', {id: card.id}) }}">{{ 'wallDuplicateAction'|trans }}</button>
+        {% endif %}
+        {% if editable %}
+            <button type="button" class="cm-wall-side cm-wall-side--danger" data-action="wall#post"
+                    data-wall-url-param="{{ path('app_wall_card_delete', {id: card.id}) }}"
+                    data-wall-confirm-param="{{ 'wallConfirmDeleteAction'|trans }}">{{ 'wallDeleteAction'|trans }}</button>
+        {% endif %}
+    </aside>
+</div>

@@ -1,0 +1,41 @@
+{# The body of « Copier / Déplacer » (design/design_handoff_murs_collaboratifs, screen 5): the walls
+   this person may send to, as radios, and for a card the lists of the wall picked, as chips. Every
+   wall's lists are drawn at once and only the picked wall's are shown - choosing a wall asks the
+   server nothing.
+
+   Parameters: wall (the one being left), destinations, forList. #}
+{% if destinations is empty %}
+    <p class="cm-wall-empty">{{ 'wallNoDestinationText'|trans }}</p>
+{% else %}
+    {# The first other wall is proposed; with none, the current one. #}
+    {% set picked = destinations|filter(d => d.id != wall.id)|first ?: destinations|first %}
+    <div class="cm-wall-field">
+        <span class="cm-wall-label">{{ 'wallDestinationWallLabel'|trans }}</span>
+        <div class="cm-wall-dest" role="radiogroup" aria-label="{{ 'wallDestinationWallLabel'|trans }}">
+            {% for destination in destinations %}
+                <label class="cm-wall-dest__row">
+                    <input type="radio" name="wall" value="{{ destination.id }}" {{ destination.id == picked.id ? 'checked' }}
+                           data-action="change->wall#pickDestination" data-title="{{ destination.title }}">
+                    <span class="cm-wall-dest__radio" aria-hidden="true"></span>
+                    <span class="cm-wall-dest__title">{{ destination.title }}</span>
+                    <span class="cm-wall-dest__note">{{ destination.id == wall.id ? 'wallCurrentWallLabel'|trans : destination.format.labelKey|trans }}</span>
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+    {% if not forList %}
+        <div class="cm-wall-field">
+            <span class="cm-wall-label">{{ 'wallDestinationListLabel'|trans }}</span>
+            {% for destination in destinations %}
+                <div class="cm-wall-chips" data-wall-lists-of="{{ destination.id }}" {{ destination.id != picked.id ? 'hidden' }}>
+                    {% for list in destination.lists %}
+                        <label class="cm-wall-chip cm-wall-chip--solid">
+                            <input type="radio" name="list-{{ destination.id }}" value="{{ list.id }}" {{ loop.first ? 'checked' }}>
+                            <span>{{ list.title }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endif %}
