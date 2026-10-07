@@ -1152,6 +1152,11 @@ programCertificationTitleCodeFieldLabel: 'Title code'
 programCertificationTitleCodeFieldHelp: 'The ministry''s code of a titre professionnel, e.g. "TP-01281". The ECF booklet prints it in its footer.'
 programCertificationMillesimeFieldLabel: 'Version'
 programCertificationMillesimeFieldHelp: 'E.g. "04". With the title code, it links the programs of one title: they keep the same ECF booklet.'
+programCertificationDecreeDateFieldLabel: 'Decree of'
+programCertificationJournalDateFieldLabel: 'Official Journal of'
+programCertificationEffectiveDateFieldLabel: 'Effective from'
+programCertificationModelUpdatedDateFieldLabel: 'Template update date'
+programCertificationModelUpdatedDateFieldHelp: 'The one printed in the footer of the official ECF booklet template.'
 certificationKindTitreProLabel: 'Professional title'
 certificationKindBtsLabel: 'BTS'
 certificationKindBachelorLabel: 'Bachelor'
@@ -9697,7 +9702,6 @@ learningPathStepRefusedMessage: "Step %rank% cannot be taken: %reason%"
 learningPathFollowedStepsKeptMessage: "People follow this path: a list of steps that drops one is refused, since it would erase what they did. Removing a step is done on the screen."
 # --- ECF booklet (design/validated/ecf-booklet.md) ---
 featureUfaEcfLabel: "ECF booklet"
-ufaFormationEcfTabLabel: "ECF booklet"
 ufaActivityEcfSignedText: "%actor% signed « %part% » of %student%'s ECF booklet"
 ufaActivityEcfUnsignedText: "%actor% took back the signatures of « %part% » in %student%'s ECF booklet"
 ecfCivilityMmeLabel: "Ms"
@@ -9715,20 +9719,12 @@ ecfSettingsEnabledFieldLabel: "Keep the ECF booklet for this programme"
 ecfSettingsEnabledFieldHelp: "The booklet then appears on the follow-up of every apprenticeship of the programme."
 ecfSettingsOrganisationFieldLabel: "Training organisation"
 ecfSettingsPlaceFieldLabel: "Place of training"
-ecfSettingsDecreeDateFieldLabel: "Decree of"
-ecfSettingsJournalDateFieldLabel: "Official Journal of"
-ecfSettingsEffectiveDateFieldLabel: "Effective from"
-ecfSettingsModelUpdatedDateFieldLabel: "Template update date"
-ecfSettingsModelUpdatedDateFieldHelp: "The one printed in the official template's footer."
 ecfSettingsOrganisationSectionTitle: "The organisation"
-ecfSettingsDatesSectionTitle: "The official template"
-ecfSettingsDatesSectionHint: "The dates printed on the cover and in the footer. The title, acronym, level, title code and version are read from « Dénomination »."
+ecfSettingsOrganisationSectionHint: "What the cover of the ECF booklet prints, whatever the option."
 ecfSettingsRefusalNoGroupMessage: "No competency group of the booklet has a code: the ECF booklet would have no activity-type. A group without a code is left out of the ECF booklet."
-ecfSettingsRefusalNoTitleMessage: "No certification of this program has a title code and a version: fill them in « Dénomination »."
+ecfSettingsRefusalNoTitleMessage: "No certification of this program has a title code and a version: fill them in below, under « Prepared certification »."
 ecfSettingsOptionWithoutTitleMessage: "The certification of option %option% has no title code or version: its students have no ECF booklet."
 ecfSettingsProgramWithoutTitleMessage: "The program's certification has no title code or version: the ECF booklet cannot be kept."
-ecfSettingsDenominationLinkLabel: "Open « Dénomination »"
-ecfSettingsSavedFlashMessage: "The ECF booklet settings are saved."
 ecfFollowUpCardTitle: "In-training assessment booklet"
 ecfBookletClosedBadge: "Closed"
 ecfBookletInProgressBadge: "In progress"
@@ -9765,7 +9761,7 @@ ecfBirthDateFieldLabel: "Date of birth"
 ecfBirthDateFieldHelp: "Asked by the booklet's cover; kept nowhere else."
 ecfLastnameFieldLabel: "Last name"
 ecfFirstnameFieldLabel: "First name"
-ecfCoverTitleNote: "Title, level and organisation come from the programme's « ECF booklet » tab: %title%, level %level%, %organisation%."
+ecfCoverTitleNote: "Title, level and organisation come from the programme's « Dénomination » tab: %title%, level %level%, %organisation%."
 ecfCoverSettingsLink: "Open the tab"
 ecfCompetencesEvaluatedLabel: "Skills assessed"
 ecfRowDescriptionPlaceholder: "Description of the assessment: one line per criterion"

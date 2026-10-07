@@ -13,9 +13,9 @@ use App\Service\Ecf\EcfTitle;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The titre an ECF booklet prints is read, never typed in the ECF tab: the denomination of the
- * Livret de l'alternant, the level, code titre and millésime of the certification, the sigle from
- * the student's option. What is pinned: each source, the fallbacks, and that a missing code titre
+ * The titre an ECF booklet prints is read from « Dénomination »: the denomination of the Livret de
+ * l'alternant, the level, code titre, millésime and dates of the certification, the sigle from the
+ * student's option. What is pinned: each source, the fallbacks, and that a missing code titre
  * or millésime makes the titre incomplete - it is the booklet's key.
  */
 class EcfTitleTest extends TestCase
@@ -47,6 +47,24 @@ class EcfTitleTest extends TestCase
         self::assertSame('TP-01281', $title->code);
         self::assertSame('04', $title->millesime);
         self::assertTrue($title->isComplete());
+    }
+
+    public function testTheDatesOfTheTitreAreTheCertificationsOwn(): void
+    {
+        $option = new Option('Concepteur développeur d’applications', 'CDA', '#000');
+        $certification = $this->certification($option, 'TP-01281', '04')
+            ->setDecreeDate(new \DateTimeImmutable('2023-04-06'))
+            ->setJournalDate(new \DateTimeImmutable('2023-04-18'))
+            ->setEffectiveDate(new \DateTimeImmutable('2023-08-01'))
+            ->setModelUpdatedDate(new \DateTimeImmutable('2024-01-15'));
+
+        $title = EcfTitle::of('Titre professionnel CDA', $certification, $option, $this->program);
+
+        self::assertSame(
+            ['2023-04-06', '2023-04-18', '2023-08-01', '2024-01-15'],
+            array_map(static fn (?\DateTimeImmutable $date): ?string => $date?->format('Y-m-d'), [$title->decreeDate, $title->journalDate, $title->effectiveDate, $title->modelUpdatedDate]),
+        );
+        self::assertNull(EcfTitle::of('X', null, null, $this->program)->journalDate);
     }
 
     public function testWithoutASingleOptionTheSigleIsTheFormationShortName(): void

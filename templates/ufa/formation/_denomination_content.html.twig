@@ -28,7 +28,38 @@
         {% endif %}
     </div>
 
-    {# Second zone of the same form and the same actionbar - what the formation is called, then
+    {# The ECF booklet's own zone (design/validated/ecf-booklet.md §14), there only when `ufa_ecf`
+       is lit: what holds for the whole formation - the switch, then the organisme. The titre and
+       its dates differ from one option to the next and sit in the certification blocks below.
+       The administration reads it; the fields are disabled for anyone but an administrator. #}
+    {% if form.ecf is defined %}
+        <div class="d-flex flex-column gap-3 mt-4">
+            <div>
+                {{ form_row(form.ecf.enabled, {label_attr: {class: 'checkbox-switch'}, help: 'ecfSettingsEnabledFieldHelp'|trans}) }}
+            </div>
+            {% if not ecfHasActivityTypes or ecfOptionsWithoutTitle is not empty %}
+                <div class="cm-note cm-note--gold">
+                    <span class="cm-note__icon">!</span>
+                    <div>
+                        {% if not ecfHasActivityTypes %}
+                            <div>{{ 'ecfSettingsRefusalNoGroupMessage'|trans }}</div>
+                        {% endif %}
+                        {% for option in ecfOptionsWithoutTitle %}
+                            <div>{{ (option ? 'ecfSettingsOptionWithoutTitleMessage' : 'ecfSettingsProgramWithoutTitleMessage')|trans({'%option%': option ? option.name : ''}) }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <twig:Cm:Subhead :title="'ecfSettingsOrganisationSectionTitle'|trans" :hint="'ecfSettingsOrganisationSectionHint'|trans"/>
+            <div class="row">
+                <div class="col-md-6">{{ form_row(form.ecf.organisation) }}</div>
+                <div class="col-md-6">{{ form_row(form.ecf.place) }}</div>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Last zone of the same form and the same actionbar - what the formation is called, then
        what it awards. #}
     <div class="d-flex flex-column gap-2 mt-4">
         <twig:Cm:Subhead :title="'programCertificationSectionTitle'|trans" :hint="'programCertificationSectionHint'|trans"/>
@@ -57,6 +88,13 @@
                         <div class="col-md-5">{{ form_row(subForm.certifier) }}</div>
                         <div class="col-md-4">{{ form_row(subForm.titleCode) }}</div>
                         <div class="col-md-3">{{ form_row(subForm.millesime) }}</div>
+                    </div>
+                    {# The dates the ECF booklet prints for this titre. #}
+                    <div class="row">
+                        <div class="col-md-3">{{ form_row(subForm.decreeDate) }}</div>
+                        <div class="col-md-3">{{ form_row(subForm.journalDate) }}</div>
+                        <div class="col-md-3">{{ form_row(subForm.effectiveDate) }}</div>
+                        <div class="col-md-3">{{ form_row(subForm.modelUpdatedDate, {help: 'programCertificationModelUpdatedDateFieldHelp'|trans}) }}</div>
                     </div>
                 </div>
             </div>

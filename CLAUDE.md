@@ -523,14 +523,16 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   carrying the alternance modality, and a teacher of that very formation (staff bypassed).
   The **livret ECF** (livret d'évaluations passées en cours de formation, `App\Controller\Ufa\Ecf*`,
   `src/Service/Ecf/`, spec `design/validated/ecf-booklet.md`) is switched on per formation
-  (`ProgramEcfSettings`, UFA › Formations › « Livret ECF ») and lives on the alternance follow-up:
+  (`ProgramEcfSettings`: the switch, the organisme and the lieu, kept in UFA › Formations ›
+  « Dénomination » - there is no ECF tab; `App\Service\Ecf\EcfSettingsEditor`) and lives on the alternance follow-up:
   read by the administration, written and signed by administrators only (`EcfBookletVoter`). Its
   activity-types are the Livret de l'alternant's groups, options included
   (`BookletSkillGroups::forTutorLink()`), found again from one year to the next by
   `SkillGroup::$code` - a group with no code stays out; the booklet follows the student and the
   titre (code + millésime), not the Program. **The titre is never typed in the ECF tab**: it is read
-  per student from « Dénomination » (`EcfTitle`) - the denomination, the level, code titre and
-  millésime of their option's `ProgramCertification`, the option's short name as sigle. A visa is the connected person's click, dated by the server, and freezes what it signed.
+  per student from « Dénomination » (`EcfTitle`) - the denomination, the level, code titre,
+  millésime **and the dates** (arrêté, J.O., date d'effet, template update) of their option's
+  `ProgramCertification`, the option's short name as sigle: two options prepare two titres. A visa is the connected person's click, dated by the server, and freezes what it signed.
   Once closed, the administration offers it to the student, who reads it and signs it « pour
   information » from « Mon alternance » (`EcfCandidateSignature`); reopening the booklet withdraws both.
   The PDF (`templates/ufa/ecf/print.html.twig`, also the online reader's frame) reproduces the

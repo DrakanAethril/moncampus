@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\CertificationKind;
 use App\Repository\ProgramCertificationRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -84,6 +85,21 @@ class ProgramCertification
     #[ORM\Column(length: 10, nullable: true)]
     #[Assert\Length(max: 10)]
     private ?string $millesime = null;
+
+    // The three dates the ECF booklet's cover prints under the titre. They are the titre's, so two
+    // options of one formation each carry their own.
+    #[ORM\Column(name: 'decree_date', type: Types::DATE_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $decreeDate = null;
+
+    #[ORM\Column(name: 'journal_date', type: Types::DATE_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $journalDate = null;
+
+    #[ORM\Column(name: 'effective_date', type: Types::DATE_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $effectiveDate = null;
+
+    // The « Date de mise à jour » of the ministry's template footer - the template's, not ours.
+    #[ORM\Column(name: 'model_updated_date', type: Types::DATE_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $modelUpdatedDate = null;
 
     public function __construct(Program $program, ?Option $option, string $label)
     {
@@ -187,6 +203,54 @@ class ProgramCertification
     public function setMillesime(?string $millesime): static
     {
         $this->millesime = $millesime;
+
+        return $this;
+    }
+
+    public function getDecreeDate(): ?\DateTimeImmutable
+    {
+        return $this->decreeDate;
+    }
+
+    public function setDecreeDate(?\DateTimeImmutable $decreeDate): static
+    {
+        $this->decreeDate = $decreeDate;
+
+        return $this;
+    }
+
+    public function getJournalDate(): ?\DateTimeImmutable
+    {
+        return $this->journalDate;
+    }
+
+    public function setJournalDate(?\DateTimeImmutable $journalDate): static
+    {
+        $this->journalDate = $journalDate;
+
+        return $this;
+    }
+
+    public function getEffectiveDate(): ?\DateTimeImmutable
+    {
+        return $this->effectiveDate;
+    }
+
+    public function setEffectiveDate(?\DateTimeImmutable $effectiveDate): static
+    {
+        $this->effectiveDate = $effectiveDate;
+
+        return $this;
+    }
+
+    public function getModelUpdatedDate(): ?\DateTimeImmutable
+    {
+        return $this->modelUpdatedDate;
+    }
+
+    public function setModelUpdatedDate(?\DateTimeImmutable $modelUpdatedDate): static
+    {
+        $this->modelUpdatedDate = $modelUpdatedDate;
 
         return $this;
     }

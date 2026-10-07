@@ -63,7 +63,6 @@ class EcfPrintBuilder
         ], $activities);
 
         $synthesisVisas = $this->bySlot(EcfMastery::visasOf($booklet, null, EcfPart::Synthesis));
-        $settings = $overview->settings;
 
         return [
             'activities' => $activities,
@@ -79,8 +78,8 @@ class EcfPrintBuilder
                 'sigle' => $overview->title->sigle,
                 'code' => $booklet->getTitleCode(),
                 'millesime' => $booklet->getMillesime(),
-                'journal' => $settings->getJournalDate()?->format('d/m/Y') ?? '',
-                'updated' => $settings->getModelUpdatedDate()?->format('d/m/Y') ?? '',
+                'journal' => $overview->title->journalDate?->format('d/m/Y') ?? '',
+                'updated' => $overview->title->modelUpdatedDate?->format('d/m/Y') ?? '',
             ],
         ];
     }

@@ -38,7 +38,7 @@
                     <div>
                         {{ 'ecfCoverTitleNote'|trans({'%title%': ecf.title.label, '%level%': ecf.title.level ?? '—', '%organisation%': ecf.settings.organisation ?? '—'}) }}
                         {% if is_granted('ROLE_ADMIN') %}
-                            <a href="{{ path('app_ufa_formation_ecf', {id: tutorLink.program.id}) }}">{{ 'ecfCoverSettingsLink'|trans }}</a>
+                            <a href="{{ path('app_ufa_formation_denomination', {id: tutorLink.program.id}) }}">{{ 'ecfCoverSettingsLink'|trans }}</a>
                         {% endif %}
                     </div>
                 </div>

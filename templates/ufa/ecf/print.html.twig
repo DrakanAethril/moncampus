@@ -232,9 +232,9 @@
     <div class="cover__name">{{ title.label }}</div>
     <div class="cover__level">{% if title.level %}Niveau {{ title.level }}{% endif %}</div>
     <div class="cover__dates">
-        <div><span>Arrêté du :</span><span>{{ settings.decreeDate ? settings.decreeDate|date('d/m/Y') }}</span></div>
-        <div><span>J.O. du :</span><span>{{ settings.journalDate ? settings.journalDate|date('d/m/Y') }}</span></div>
-        <div><span>Date d’effet au :</span><span>{{ settings.effectiveDate ? settings.effectiveDate|date('d/m/Y') }}</span></div>
+        <div><span>Arrêté du :</span><span>{{ title.decreeDate ? title.decreeDate|date('d/m/Y') }}</span></div>
+        <div><span>J.O. du :</span><span>{{ title.journalDate ? title.journalDate|date('d/m/Y') }}</span></div>
+        <div><span>Date d’effet au :</span><span>{{ title.effectiveDate ? title.effectiveDate|date('d/m/Y') }}</span></div>
     </div>
     <div class="idbar"></div>
     <div class="idrow" style="top: 415.1pt"><i>Organisme de formation</i><span class="arrow">►</span><span class="v">{{ settings.organisation }}</span></div>
