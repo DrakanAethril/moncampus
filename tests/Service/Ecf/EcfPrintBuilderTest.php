@@ -38,7 +38,7 @@ class EcfPrintBuilderTest extends TestCase
         (new EcfEvaluationRow($activity, EcfPart::Main, 1))->setDescription("Docker\n\nGithub")->setCompetences([4, 1, 2, 9]);
         new EcfActivity($booklet, 'AT9');
         $type = new EcfActivityType(1, 'AT1', 'Développer', ['Environnement'], new SkillGroup('Développer', $program));
-        $overview = new EcfOverview($booklet, new ProgramEcfSettings($program), new EcfTitle('Concepteur développeur d’applications', 'CDA', '6', 'TP-01281', '04'), [['type' => $type, 'activity' => $activity, 'state' => \App\Enum\EcfActivityState::InProgress, 'lastVisa' => null]], [], [$booklet->activityFor('AT9')], false, []);
+        $overview = new EcfOverview($booklet, new ProgramEcfSettings($program), new EcfTitle('Concepteur développeur d’applications', 'CDA', '6', 'TP-01281', '04', journalDate: new \DateTimeImmutable('2023-04-18'), modelUpdatedDate: new \DateTimeImmutable('2024-01-15')), [['type' => $type, 'activity' => $activity, 'state' => \App\Enum\EcfActivityState::InProgress, 'lastVisa' => null]], [], [$booklet->activityFor('AT9')], false, []);
 
         $builder = new EcfPrintBuilder(new EcfMastery(), $this->createStub(InternshipFormationCenterRepository::class), $this->createStub(FileUploadService::class));
         $data = $builder->build($overview);
@@ -48,6 +48,7 @@ class EcfPrintBuilderTest extends TestCase
         self::assertSame(['1', '2', '4, 9'], $row['columns']);
         self::assertSame(['Docker', 'Github'], $row['paragraphs']);
         self::assertSame(['CDA', 'TP-01281', '04'], [$data['footer']['sigle'], $data['footer']['code'], $data['footer']['millesime']]);
+        self::assertSame(['18/04/2023', '15/01/2024'], [$data['footer']['journal'], $data['footer']['updated']], 'the footer dates are the titre\'s, read per option');
         self::assertSame(['ecf-cover', 'ecf-presentation', 'ecf-at-1', 'ecf-at-1-complementary', 'ecf-synthesis'], array_column(EcfPrintBuilder::outline($data['activities']), 'anchor'));
     }
 }

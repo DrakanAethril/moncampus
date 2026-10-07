@@ -1220,6 +1220,11 @@ programCertificationTitleCodeFieldLabel: 'Code titre'
 programCertificationTitleCodeFieldHelp: "Celui du ministère pour un titre professionnel, par exemple « TP-01281 ». Le livret ECF l'imprime en pied de page."
 programCertificationMillesimeFieldLabel: 'Millésime'
 programCertificationMillesimeFieldHelp: 'Par exemple « 04 ». Avec le code titre, il relie les formations d’un même titre : elles tiennent le même livret ECF.'
+programCertificationDecreeDateFieldLabel: 'Arrêté du'
+programCertificationJournalDateFieldLabel: 'J.O. du'
+programCertificationEffectiveDateFieldLabel: 'Date d’effet au'
+programCertificationModelUpdatedDateFieldLabel: 'Date de mise à jour du modèle'
+programCertificationModelUpdatedDateFieldHelp: 'Celle du pied de page du modèle officiel du livret ECF.'
 certificationKindTitreProLabel: 'Titre professionnel'
 certificationKindBtsLabel: 'BTS'
 certificationKindBachelorLabel: 'Bachelor'
@@ -10932,7 +10937,6 @@ learningPathStepRefusedMessage: "L’étape %rank% ne peut pas être prise : %re
 learningPathFollowedStepsKeptMessage: "Des personnes suivent ce parcours : une liste d’étapes qui en retire une est refusée, car elle effacerait ce qu’elles ont fait. Retirer une étape se fait à l’écran."
 # --- Livret ECF (design/validated/ecf-booklet.md) ---
 featureUfaEcfLabel: "Livret ECF"
-ufaFormationEcfTabLabel: "Livret ECF"
 ufaActivityEcfSignedText: "%actor% a visé « %part% » du livret ECF de %student%"
 ufaActivityEcfUnsignedText: "%actor% a retiré les visas de « %part% » du livret ECF de %student%"
 ecfCivilityMmeLabel: "Mme"
@@ -10950,20 +10954,12 @@ ecfSettingsEnabledFieldLabel: "Tenir le livret ECF pour cette formation"
 ecfSettingsEnabledFieldHelp: "Le livret apparaît alors sur le suivi de chaque alternance de la formation."
 ecfSettingsOrganisationFieldLabel: "Organisme de formation"
 ecfSettingsPlaceFieldLabel: "Lieu de formation"
-ecfSettingsDecreeDateFieldLabel: "Arrêté du"
-ecfSettingsJournalDateFieldLabel: "J.O. du"
-ecfSettingsEffectiveDateFieldLabel: "Date d’effet au"
-ecfSettingsModelUpdatedDateFieldLabel: "Date de mise à jour du modèle"
-ecfSettingsModelUpdatedDateFieldHelp: "Celle du pied de page du modèle officiel."
 ecfSettingsOrganisationSectionTitle: "L’organisme"
-ecfSettingsDatesSectionTitle: "Le modèle officiel"
-ecfSettingsDatesSectionHint: "Les dates que la couverture et le pied de page impriment. L’intitulé, le sigle, le niveau, le code titre et le millésime sont lus dans « Dénomination »."
+ecfSettingsOrganisationSectionHint: "Ce que la couverture du livret ECF imprime, quelle que soit l’option."
 ecfSettingsRefusalNoGroupMessage: "Aucun groupe de compétences du livret n’a de code : le livret ECF n’aurait aucune activité-type. Un groupe sans code n’entre pas dans le livret ECF."
-ecfSettingsRefusalNoTitleMessage: "Aucune certification de la formation n’a de code titre et de millésime : renseignez-les dans « Dénomination »."
+ecfSettingsRefusalNoTitleMessage: "Aucune certification de la formation n’a de code titre et de millésime : renseignez-les plus bas, dans « Certification préparée »."
 ecfSettingsOptionWithoutTitleMessage: "La certification de l’option %option% n’a pas de code titre ou de millésime : ses étudiants n’ont pas de livret ECF."
 ecfSettingsProgramWithoutTitleMessage: "La certification de la formation n’a pas de code titre ou de millésime : le livret ECF ne peut pas être tenu."
-ecfSettingsDenominationLinkLabel: "Ouvrir « Dénomination »"
-ecfSettingsSavedFlashMessage: "Le paramétrage du livret ECF est enregistré."
 ecfFollowUpCardTitle: "Livret d’évaluations en cours de formation"
 ecfBookletClosedBadge: "Clos"
 ecfBookletInProgressBadge: "En cours"
@@ -11000,7 +10996,7 @@ ecfBirthDateFieldLabel: "Date de naissance"
 ecfBirthDateFieldHelp: "Demandée par la couverture du livret ; elle n’est conservée nulle part ailleurs."
 ecfLastnameFieldLabel: "Nom"
 ecfFirstnameFieldLabel: "Prénom"
-ecfCoverTitleNote: "Titre, niveau et organisme viennent de l’onglet « Livret ECF » de la formation : %title%, niveau %level%, %organisation%."
+ecfCoverTitleNote: "Titre, niveau et organisme viennent de l’onglet « Dénomination » de la formation : %title%, niveau %level%, %organisation%."
 ecfCoverSettingsLink: "Ouvrir l’onglet"
 ecfCompetencesEvaluatedLabel: "Compétences évaluées"
 ecfRowDescriptionPlaceholder: "Description de l’évaluation : une ligne par critère"

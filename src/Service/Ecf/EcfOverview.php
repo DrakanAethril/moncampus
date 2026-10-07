@@ -13,8 +13,8 @@ use App\Enum\EcfActivityState;
 
 /**
  * One alternance's ECF booklet as the follow-up card and the overview screen read it - built once
- * per screen by EcfBookletOverview. $settings holds what the ECF tab keeps (dates, organisme),
- * $title what is read from « Dénomination » (EcfTitle).
+ * per screen by EcfBookletOverview. $settings holds what the formation says whatever the option
+ * (organisme, lieu), $title what the certification of the student's option says (EcfTitle).
  */
 final readonly class EcfOverview
 {
