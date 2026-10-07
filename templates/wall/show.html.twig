@@ -12,11 +12,22 @@
 
 {% block title %}{{ wall.title }}{% endblock %}
 
+{# A teacher reading one of their students' walls came from « Murs étudiants », and goes back
+   there: the wall is not one of theirs, so « Murs collaboratifs » is not where it hangs. #}
 {% block page_breadcrumb %}
-    {{ component('Cm:Breadcrumb', {segments: [
-        {label: 'wallNavLabel'|trans, url: path('app_walls')},
-        {label: wall.title, url: path('app_wall_show', {id: wall.id})},
-    ]}) }}
+    {% if board.role.value == 'supervisor' %}
+        {% set segments = [{label: 'wallStudentsNavLabel'|trans, url: path('app_wall_students')}] %}
+        {% if supervisedClass %}
+            {% set segments = segments|merge([{label: supervisedClass.displayShortName, url: path('app_wall_students_class', {id: supervisedClass.id})}]) %}
+        {% endif %}
+        {% set segments = segments|merge([{label: wall.title, url: path('app_wall_show', {id: wall.id, class: supervisedClass ? supervisedClass.id : null})}]) %}
+    {% else %}
+        {% set segments = [
+            {label: 'wallNavLabel'|trans, url: path('app_walls')},
+            {label: wall.title, url: path('app_wall_show', {id: wall.id})},
+        ] %}
+    {% endif %}
+    {{ component('Cm:Breadcrumb', {segments: segments}) }}
 {% endblock %}
 
 {% block page_header %}

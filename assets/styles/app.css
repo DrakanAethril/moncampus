@@ -13713,3 +13713,24 @@ dialog.cm-wall-panel::backdrop { background: rgba(18, 52, 77, .2); }
 .cm-wall-toast a[hidden] { display: none; }
 .cm-wall-toast.is-error { background: #7a2a17; }
 .cm-wall-toast a { color: #c9a04e; text-decoration: none; font-weight: 700; }
+
+/* --- « Murs étudiants » (Ressources, a teacher's bar) ---------------------------------- */
+.cm-wall-classes { display: flex; flex-wrap: wrap; gap: 10px; }
+.cm-wall-class { border: 1px solid var(--cm-border); background: var(--cm-surface); border-radius: 10px; padding: 14px 18px; font: 600 14px var(--cm-font-ui); color: var(--cm-ink); text-decoration: none; }
+.cm-wall-class:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); text-decoration: none; box-shadow: 0 6px 18px rgba(16, 42, 67, .1); }
+.cm-wall-section { margin-bottom: 28px; }
+.cm-wall-roster { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); }
+.cm-wall-roster__row { display: grid; grid-template-columns: minmax(180px, 280px) minmax(0, 1fr); gap: 6px 18px; align-items: start; padding: 12px 16px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-wall-roster__row:last-child { border-bottom: 0; }
+@media (max-width: 720px) { .cm-wall-roster__row { grid-template-columns: minmax(0, 1fr); } }
+.cm-wall-roster__who { display: flex; align-items: center; gap: 10px; min-height: 34px; }
+.cm-wall-roster__who--group { align-items: flex-start; flex-direction: column; gap: 6px; }
+.cm-wall-roster__who--group .cm-wall-avatar { border-color: var(--cm-surface); }
+.cm-wall-roster__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-wall-roster__walls { display: flex; flex-direction: column; }
+.cm-wall-roster__wall { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 7px; text-decoration: none; color: inherit; }
+.cm-wall-roster__wall:hover { background: var(--cm-blue-bg-soft); text-decoration: none; }
+.cm-wall-roster__title { font: 600 14px var(--cm-font-ui); color: var(--cm-brand-strong); overflow-wrap: anywhere; }
+.cm-wall-roster__meta { margin-left: auto; font-size: 12px; color: var(--cm-faint); white-space: nowrap; }
+.cm-wall-roster__wall .cm-wall-tile__format { font-size: 12px; }
+.cm-wall-notice { margin: 0; font-size: 13px; color: var(--cm-muted); }

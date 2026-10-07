@@ -17,7 +17,9 @@ use App\Entity\WallList;
 use App\Enum\WallCardStatus;
 use App\Enum\WallFormat;
 use App\Enum\WallRole;
+use App\Repository\ProgramRepository;
 use App\Service\Wall\WallAccess;
+use App\Service\Wall\WallSupervisors;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -36,7 +38,14 @@ class WallAccessTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->access = new WallAccess();
+        // The one question the rule asks of the database - « does this person teach a class of one
+        // of these students » - answered from the class built below.
+        $programs = $this->createStub(ProgramRepository::class);
+        $programs->method('teachesAnyOf')->willReturnCallback(
+            fn (User $teacher, array $students): bool => $this->program->getTeachers()->contains($teacher)
+                && [] !== array_filter($students, fn (User $student): bool => $this->program->getStudents()->contains($student)),
+        );
+        $this->access = new WallAccess(new WallSupervisors($programs));
         $this->teacher = $this->user(['ROLE_TEACHER'], 'teacher');
         $this->colleague = $this->user(['ROLE_TEACHER'], 'colleague');
         $this->student = $this->user(['ROLE_STUDENT'], 'student');
@@ -100,6 +109,61 @@ class WallAccessTest extends TestCase
         self::assertSame(WallRole::Participant, $this->access->roleOf($wall, $this->teacher));
         self::assertTrue($this->access->mayManage($wall, $this->student));
         self::assertFalse($this->access->mayManage($wall, $this->teacher));
+    }
+
+    public function testTheTeachersOfAStudentsClassReadTheirWallAndWriteNothing(): void
+    {
+        $wall = $this->wall($this->student);
+        $wall->setCommentsEnabled(true)->setParticipantsMayEditOthers(true)->setModerated(true);
+        $pending = $this->card($wall, $this->student)->setStatus(WallCardStatus::Pending);
+
+        self::assertSame(WallRole::Supervisor, $this->access->roleOf($wall, $this->teacher));
+        self::assertTrue($this->access->mayView($wall, $this->teacher));
+        // Everything on it, the cards awaiting validation included…
+        self::assertTrue($this->access->maySeeCard($pending, $this->teacher));
+        // …and no gesture at all, whatever the wall's own switches open to its participants.
+        self::assertFalse($this->access->mayManage($wall, $this->teacher));
+        self::assertFalse($this->access->mayOwn($wall, $this->teacher));
+        self::assertFalse($this->access->mayAddCard($wall, $this->teacher));
+        self::assertFalse($this->access->mayEditCard($pending, $this->teacher));
+        self::assertFalse($this->access->mayComment($pending, $this->teacher));
+
+        // A teacher of another class, the administration and a classmate who was not invited
+        // are still nobody on it.
+        foreach ([$this->colleague, $this->user(['ROLE_ADMIN'], 'admin'), $this->user(['ROLE_STAFF'], 'staff'), $this->classmate] as $outsider) {
+            self::assertNull($this->access->roleOf($wall, $outsider));
+        }
+    }
+
+    public function testAGroupsWallIsReadByTheTeachersOfAnyStudentOnIt(): void
+    {
+        $elsewhere = $this->user(['ROLE_STUDENT'], 'elsewhere');
+        $wall = $this->wall($elsewhere)->addMember($this->student);
+
+        // The owner is of another class; the classmate named on the wall is this teacher's.
+        self::assertSame(WallRole::Supervisor, $this->access->roleOf($wall, $this->teacher));
+    }
+
+    public function testATeachersWallIsSupervisedByNobody(): void
+    {
+        $other = $this->user(['ROLE_TEACHER'], 'other');
+        $this->program->addTeacher($other);
+        $wall = $this->wall($this->teacher)->addProgram($this->program);
+
+        // Shared with the class, read by its students - not by the class's other teachers.
+        self::assertNull($this->access->roleOf($wall, $other));
+    }
+
+    public function testATeacherAStudentInvitedWritesAsAGuestAndStillReadsWhatASupervisorReads(): void
+    {
+        $wall = $this->wall($this->student)->addMember($this->teacher)->addMember($this->classmate);
+        $wall->setModerated(true);
+        $pending = $this->card($wall, $this->classmate)->setStatus(WallCardStatus::Pending);
+
+        self::assertSame(WallRole::Participant, $this->access->roleOf($wall, $this->teacher));
+        self::assertTrue($this->access->mayAddCard($wall, $this->teacher));
+        self::assertTrue($this->access->maySeeCard($pending, $this->teacher));
+        self::assertFalse($this->access->mayEditCard($pending, $this->teacher));
     }
 
     public function testATutorHasNoWallEvenWhenNamedOnOne(): void

@@ -1,6 +1,10 @@
 {# « Partager avec », the same fields in « Nouveau mur » and in « Partager »: the classes as chips
    (checkboxes, per the form rule), the people through the tomselect picker.
 
+   A student is told, where they decide who is on their wall, who reads it besides: the teachers
+   of their class (App\Service\Wall\WallSupervisors). Said once, in words, rather than left to be
+   discovered.
+
    Parameters: classes (the ones offered), wall (null on creation), id (a prefix for the field ids). #}
 {% if classes is not empty %}
     <div class="cm-wall-field">
@@ -28,3 +32,6 @@
         {% endif %}
     </select>
 </div>
+{% if is_granted('ROLE_STUDENT') and not is_granted('ROLE_TEACHER') and not is_staff() %}
+    <p class="cm-wall-notice">{{ 'wallSupervisedNoticeText'|trans }}</p>
+{% endif %}

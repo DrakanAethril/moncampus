@@ -1,0 +1,27 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Murs étudiants », the choice of a class (Ressources, on a teacher's bar). Only reached by a
+   teacher of several classes, or of none: with exactly one, the controller goes straight to it. #}
+
+{% block title %}{{ 'wallStudentsNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'wallStudentsNavLabel'|trans, url: path('app_wall_students')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'wallStudentsNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {% if classes is empty %}
+        <p class="cm-wall-empty">{{ 'wallStudentsNoClassText'|trans }}</p>
+    {% else %}
+        <twig:Cm:Subhead :title="'wallStudentsChooseClassHeading'|trans"/>
+        <div class="cm-wall-classes">
+            {% for class in classes %}
+                <a class="cm-wall-class" href="{{ path('app_wall_students_class', {id: class.id}) }}">{{ class.displayShortName }}</a>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
