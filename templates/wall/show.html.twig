@@ -1,0 +1,214 @@
+{% extends 'layout/app.html.twig' %}
+
+{# A collaborative wall (design/design_handoff_murs_collaboratifs, screens 3 to 7).
+
+   The shell's header is redrawn to hold the trail alone: the title row belongs to the wall itself,
+   because « Plein écran » puts the wall - and nothing above it - on the whole screen, and the
+   title, the view switch and the buttons have to come along. The body takes the window's width
+   rather than the reading column: a wall is as wide as its lists.
+
+   Everything that moves is assets/controllers/wall_controller.js; everything it draws comes from
+   the server (wall/_board.html.twig, wall/_card_modal.html.twig), asked again after every change. #}
+
+{% block title %}{{ wall.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'wallNavLabel'|trans, url: path('app_walls')},
+        {label: wall.title, url: path('app_wall_show', {id: wall.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_header %}
+    <div class="page-header d-print-none">
+        <div class="cm-wall-bleed">
+            {{ block('page_breadcrumb') }}
+        </div>
+    </div>
+{% endblock %}
+
+{% block page_body_container %}cm-wall-bleed{% endblock %}
+
+{% block main %}
+<div class="cm-wall" data-controller="wall"
+     data-wall-state-url-value="{{ path('app_wall_state', {id: wall.id}) }}"
+     data-wall-settings-url-value="{{ path('app_wall_settings', {id: wall.id}) }}"
+     data-wall-destinations-url-value="{{ path('app_wall_destinations', {id: wall.id}) }}"
+     data-wall-projection-url-value="{{ path('app_wall_projection', {id: wall.id}) }}"
+     data-wall-index-url-value="{{ path('app_walls') }}"
+     data-wall-stage-url-value="{{ path('app_upload_stage') }}"
+     data-wall-stage-csrf-value="{{ csrf_token('staged-upload') }}"
+     data-wall-csrf-value="{{ csrf_token('wall') }}"
+     data-wall-revision-value="{{ wall.revision }}"
+     data-wall-view-value="{{ view.value }}"
+     data-wall-manages-value="{{ board.manages ? 'true' : 'false' }}"
+     data-wall-mercure-url-value="{{ mercurePublicUrl }}"
+     data-wall-topic-value="{{ topic }}"
+     data-wall-labels-value="{{ {
+         copyCard: 'wallCopyCardHeading'|trans({'%title%': '__TITLE__'}),
+         moveCard: 'wallMoveCardHeading'|trans({'%title%': '__TITLE__'}),
+         copyList: 'wallCopyListHeading'|trans({'%title%': '__TITLE__'}),
+         moveList: 'wallMoveListHeading'|trans({'%title%': '__TITLE__'}),
+         copy: 'wallCopyAction'|trans,
+         move: 'wallMoveAction'|trans,
+         fullscreen: 'wallFullscreenAction'|trans,
+         exitFullscreen: 'wallExitFullscreenAction'|trans,
+         uploading: 'wallUploadingToast'|trans,
+         error: 'wallErrorToast'|trans,
+         count: 'wallSlideCountLabel'|trans({'%current%': '__CURRENT__', '%total%': '__TOTAL__'}),
+     }|json_encode }}"
+     data-wall-settings-value="{{ settings|json_encode }}">
+
+    <div class="cm-wall__head">
+        <h1 class="cm-wall__title" data-wall-target="title">{{ wall.title }}</h1>
+        <div class="cm-wall-seg" role="group" aria-label="{{ 'wallFormatLabel'|trans }}">
+            {% for format in enum_cases('App\\Enum\\WallFormat') %}
+                <button type="button" class="cm-wall-seg__btn{{ format == view ? ' is-active' }}" aria-pressed="{{ format == view ? 'true' : 'false' }}"
+                        data-wall-target="viewButton" data-view="{{ format.value }}" data-action="wall#setView">{{ format.labelKey|trans }}</button>
+            {% endfor %}
+        </div>
+        <div class="cm-wall__tools">
+            <div class="cm-wall-people">
+                {% for person in people.shown %}{{ include('wall/_avatar.html.twig', {user: person, size: 30}) }}{% endfor %}
+                {% if people.more > 0 %}<span class="cm-wall-avatar cm-wall-avatar--30 cm-wall-avatar--more">+{{ people.more }}</span>{% endif %}
+            </div>
+            {% if board.owns %}
+                <twig:Cm:Button variant="outline" data-action="wall#openShare">{{ 'wallShareAction'|trans }}</twig:Cm:Button>
+            {% endif %}
+            {% if board.manages %}
+                <twig:Cm:Button variant="outline" data-action="wall#openSettings">
+                    <twig:ux:icon name="settings" width="15" height="15"/>{{ 'wallSettingsAction'|trans }}
+                </twig:Cm:Button>
+            {% endif %}
+            <div class="cm-wall-menuhost">
+                <twig:Cm:Button variant="outline" data-action="wall#toggleMenu:stop" aria-haspopup="true">
+                    <twig:ux:icon name="maximize" width="16" height="16"/>{{ 'wallPresentAction'|trans }}<span class="cm-wall__caret" aria-hidden="true">▾</span>
+                </twig:Cm:Button>
+                <div class="cm-wall-menu cm-wall-menu--present" hidden>
+                    <button type="button" class="cm-wall-menu__item cm-wall-menu__item--icon" data-action="wall#toggleFullscreen">
+                        <twig:ux:icon name="maximize" width="16" height="16"/><span data-wall-target="fullscreenLabel">{{ 'wallFullscreenAction'|trans }}</span>
+                    </button>
+                    <button type="button" class="cm-wall-menu__item cm-wall-menu__item--icon" data-action="wall#enterProjection">
+                        <twig:ux:icon name="device-desktop" width="16" height="16"/>{{ 'wallProjectionAction'|trans }}
+                    </button>
+                </div>
+            </div>
+            <button type="button" class="cm-wall__exit" hidden data-wall-target="exitFullscreen" data-action="wall#toggleFullscreen">{{ 'wallExitFullscreenAction'|trans }}</button>
+            <twig:Cm:Button variant="primary" data-wall-target="addButton" data-action="wall#addToFirst" :hidden="not board.mayAdd">+ {{ 'wallCardAction'|trans }}</twig:Cm:Button>
+        </div>
+    </div>
+
+    <div class="cm-wall__board" data-wall-target="board">
+        {{ include('wall/_board.html.twig', {board: board, view: view}) }}
+    </div>
+
+    {# The open card: an empty shell, filled by the server when a card is clicked. #}
+    <dialog class="cm-wall-dialog cm-wall-dialog--card" data-wall-target="cardDialog" data-action="close->wall#cardClosed click->wall#backdropClose"></dialog>
+
+    {# « Copier / Déplacer ». #}
+    <dialog class="cm-wall-dialog cm-wall-dialog--transfer" data-wall-target="transferDialog" aria-labelledby="wall-transfer-title" data-action="click->wall#backdropClose">
+        <form data-action="submit->wall#confirmTransfer">
+            <header class="cm-wall-dialog__head">
+                <h2 class="cm-wall-dialog__title" id="wall-transfer-title" data-wall-target="transferTitle"></h2>
+                <button type="button" class="cm-wall-close" data-action="wall#closeTransfer" aria-label="{{ 'wallCloseAction'|trans }}">×</button>
+            </header>
+            <div class="cm-wall-dialog__body">
+                <div class="cm-wall-seg cm-wall-seg--soft" role="group" data-wall-target="transferModes">
+                    <button type="button" class="cm-wall-seg__btn" data-mode="copy" data-action="wall#setTransferMode">{{ 'wallCopyAction'|trans }}</button>
+                    <button type="button" class="cm-wall-seg__btn" data-mode="move" data-action="wall#setTransferMode">{{ 'wallMoveAction'|trans }}</button>
+                </div>
+                <div class="cm-wall-dialog__fields" data-wall-target="transferBody"></div>
+            </div>
+            <footer class="cm-wall-dialog__foot">
+                <twig:Cm:Button variant="outline" data-action="wall#closeTransfer">{{ 'wallCancelAction'|trans }}</twig:Cm:Button>
+                <twig:Cm:Button variant="primary" type="submit" data-wall-target="transferSubmit"></twig:Cm:Button>
+            </footer>
+        </form>
+    </dialog>
+
+    {% if board.owns %}
+        <dialog class="cm-wall-dialog cm-wall-dialog--share" data-wall-target="shareDialog" aria-labelledby="wall-share-title" data-action="click->wall#backdropClose">
+            <form method="post" action="{{ path('app_wall_sharing', {id: wall.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('wall') }}">
+                <header class="cm-wall-dialog__head">
+                    <h2 class="cm-wall-dialog__title" id="wall-share-title">{{ 'wallShareHeading'|trans }}</h2>
+                    <button type="button" class="cm-wall-close" data-action="wall#closeShare" aria-label="{{ 'wallCloseAction'|trans }}">×</button>
+                </header>
+                <div class="cm-wall-dialog__body">
+                    {{ include('wall/_share_fields.html.twig', {classes: classes, wall: wall, id: 'wall-share'}) }}
+                </div>
+                <footer class="cm-wall-dialog__foot">
+                    <twig:Cm:Button variant="outline" data-action="wall#closeShare">{{ 'wallCancelAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'wallSaveAction'|trans }}</twig:Cm:Button>
+                </footer>
+            </form>
+        </dialog>
+    {% endif %}
+
+    {% if board.manages %}
+        {# « Paramètres du mur », the side panel. Each control writes as it is touched; the title
+           and the deletion are the two things the handoff's panel does not draw and a wall cannot
+           do without. #}
+        <dialog class="cm-wall-panel" data-wall-target="settingsDialog" aria-labelledby="wall-settings-title" data-action="click->wall#backdropClose">
+            <header class="cm-wall-dialog__head">
+                <h2 class="cm-wall-dialog__title" id="wall-settings-title">{{ 'wallSettingsHeading'|trans }}</h2>
+                <button type="button" class="cm-wall-close" data-action="wall#closeSettings" aria-label="{{ 'wallCloseAction'|trans }}">×</button>
+            </header>
+            <div class="cm-wall-panel__body">
+                <div class="cm-wall-field">
+                    <label class="cm-wall-label" for="wall-settings-name">{{ 'wallTitleLabel'|trans }}</label>
+                    <input class="cm-wall-input" id="wall-settings-name" type="text" maxlength="255" value="{{ wall.title }}"
+                           data-wall-target="settingTitle" data-action="change->wall#renameWall">
+                </div>
+                <div class="cm-wall-field">
+                    <span class="cm-wall-label">{{ 'wallGroundLabel'|trans }}</span>
+                    <div class="cm-wall-grounds">
+                        <button type="button" class="cm-wall-ground cm-wall-ground--none" data-wall-target="ground" data-ground=""
+                                data-action="wall#setGround">{{ 'wallGroundNoneLabel'|trans }}</button>
+                        {% for color in backgroundColors %}
+                            <button type="button" class="cm-wall-ground" style="background: {{ color }}" data-wall-target="ground" data-ground="{{ color }}"
+                                    aria-label="{{ color }}" data-action="wall#setGround"></button>
+                        {% endfor %}
+                        <button type="button" class="cm-wall-ground cm-wall-ground--image" data-wall-target="groundImage"
+                                data-action="wall#pickFile" data-wall-kind-param="background"
+                                data-wall-url-param="{{ path('app_wall_settings', {id: wall.id}) }}"><span>+ {{ 'wallGroundImageLabel'|trans }}</span></button>
+                    </div>
+                </div>
+                {% for group, switches in {
+                    wallDisplayLabel: {authorsShown: 'wallSettingAuthorsLabel', labelsShown: 'wallSettingLabelsLabel', countsShown: 'wallSettingCountsLabel'},
+                    wallParticipationLabel: {commentsEnabled: 'wallSettingCommentsLabel', participantsMayAdd: 'wallSettingAddLabel', participantsMayEditOthers: 'wallSettingEditOthersLabel', moderated: 'wallSettingModeratedLabel'},
+                } %}
+                    <div class="cm-wall-switches">
+                        <span class="cm-wall-label">{{ group|trans }}</span>
+                        {% for key, label in switches %}
+                            <label class="cm-wall-switch">
+                                <span class="cm-wall-switch__label">{{ label|trans }}</span>
+                                <input type="checkbox" role="switch" data-wall-target="switch" data-setting="{{ key }}" {{ settings[key] ? 'checked' }}
+                                       data-action="change->wall#setSwitch">
+                                <span class="cm-wall-switch__track" aria-hidden="true"></span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                {% if board.owns %}
+                    <form class="cm-wall-panel__danger" method="post" action="{{ path('app_wall_delete', {id: wall.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('wall') }}">
+                        <button type="button" class="cm-wall-side cm-wall-side--danger" data-action="wall#armSubmit"
+                                data-wall-confirm-param="{{ 'wallConfirmDeleteAction'|trans }}">{{ 'wallDeleteWallAction'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        </dialog>
+    {% endif %}
+
+    <div class="cm-wall-proj" hidden tabindex="-1" data-wall-target="projection"
+         data-action="keydown->wall#projectionKey"></div>
+
+    <input type="file" hidden data-wall-target="fileInput" data-action="change->wall#fileChosen">
+
+    <div class="cm-wall-toast" popover="manual" role="status" data-wall-target="toast">
+        <span data-wall-target="toastMessage"></span>
+        <a href="#" hidden data-wall-target="toastLink">{{ 'wallOpenAction'|trans }}</a>
+    </div>
+</div>
+{% endblock %}

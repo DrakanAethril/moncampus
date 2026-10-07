@@ -1,0 +1,65 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repository;
+
+use App\Entity\User;
+use App\Entity\Wall;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
+
+/**
+ * @extends ServiceEntityRepository<Wall>
+ */
+class WallRepository extends ServiceEntityRepository
+{
+    public function __construct(ManagerRegistry $registry, private readonly ProgramRepository $programs)
+    {
+        parent::__construct($registry, Wall::class);
+    }
+
+    /**
+     * « Mes murs », the last one worked on first.
+     *
+     * @return list<Wall>
+     */
+    public function findOwnedBy(User $owner): array
+    {
+        return $this->createQueryBuilder('w')
+            ->andWhere('w.owner = :owner')
+            ->setParameter('owner', $owner)
+            ->orderBy('w.updatedAt', 'DESC')
+            ->addOrderBy('w.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * « Partagés avec moi »: the walls somebody else owns and opened to this person, by name or
+     * through one of their classes. The same two doors App\Service\Wall\WallAccess::roleOf() reads -
+     * this is the listing, that is the rule, and every wall is asked again when it is opened.
+     *
+     * @return list<Wall>
+     */
+    public function findSharedWith(User $user): array
+    {
+        $qb = $this->createQueryBuilder('w')
+            ->addSelect('o')
+            ->innerJoin('w.owner', 'o')
+            ->andWhere('w.owner != :user')
+            ->setParameter('user', $user)
+            ->orderBy('w.updatedAt', 'DESC')
+            ->addOrderBy('w.id', 'DESC');
+
+        $programIds = $this->programs->findIdsWithUserAsStudent($user);
+        if ([] === $programIds) {
+            $qb->andWhere(':user MEMBER OF w.members');
+        } else {
+            $qb->andWhere(':user MEMBER OF w.members OR EXISTS (SELECT 1 FROM App\Entity\Program p WHERE p MEMBER OF w.programs AND p.id IN (:programIds))')
+                ->setParameter('programIds', $programIds);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+}

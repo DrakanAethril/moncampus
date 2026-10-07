@@ -395,7 +395,7 @@
                            the three: a header with nothing under it and a menu that opens on
                            nothing are the same defect, and both become reachable as soon as an
                            establishment switches a few of these off. #}
-                        {% set tools_run = feature('class_tools') or feature('word_cloud') or feature('quiz_live') %}
+                        {% set tools_run = feature('class_tools') or feature('word_cloud') or feature('quiz_live') or feature('walls') %}
                         {# École Directe is tried by administrators only for now, so the entry asks for
                            the role its controllers do (App\Controller\EcoleDirecte\EcoleDirecteControllerTrait). #}
                         {% set tools_ecole_directe = feature('ecole_directe') and is_granted('ROLE_ADMIN') %}
@@ -421,6 +421,7 @@
                         {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow or tools_beyond) %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_program_word_cloud'
+                                or current_route starts with 'app_wall'
                                 or current_route starts with 'app_audio_recording'
                                 or current_route starts with 'app_progression'
                                 or current_route starts with 'app_library_'
@@ -476,6 +477,13 @@
                                            or to none - so it goes straight to the list, never
                                            through the class picker. #}
                                         <a class="dropdown-item {{ current_route starts with 'app_class_board' ? 'active' }}" href="{{ path('app_class_board_index') }}">{{ 'classBoardNavLabel'|trans }}</a>
+                                    {% endif %}
+                                    {# Right after the virtual board, by request, and on a feature
+                                       of its own: a wall is shared with a class and students
+                                       open walls too, so it is not one of class_tools' teacher-only
+                                       tools. Their entry is in « Ressources ». #}
+                                    {% if feature('walls') %}
+                                        <a class="dropdown-item {{ current_route starts with 'app_wall' ? 'active' }}" href="{{ path('app_walls') }}">{{ 'wallNavLabel'|trans }}</a>
                                     {% endif %}
                                     {# Right after « Création de groupes », and gated on its own
                                        feature rather than on class_tools: the word cloud is the one

@@ -1,0 +1,108 @@
+{# The wall's canvas as one person reads it (design/design_handoff_murs_collaboratifs, « Zone du
+   mur »). Redrawn whole after every change and swapped in by wall_controller.js - there is no
+   state in this markup the page would have to carry over, except which inline form was open, and
+   the controller reopens that one itself.
+
+   Parameters: board (App\Service\Wall\WallBoardView::build()), view (App\Enum\WallFormat). #}
+{% set wall = board.wall %}
+{% set has_ground = wall.backgroundColor or wall.backgroundImageKey %}
+<div class="cm-wall-canvas{{ has_ground ? ' has-ground' }}{{ wall.backgroundColor in ['#12344d', '#3d4a55'] ? ' is-dark-ground' }}" data-view="{{ view.value }}"
+     {% if wall.backgroundImageKey %}style="background-image: url('{{ file_url(wall.backgroundImageKey)|e('css') }}')"
+     {% elseif wall.backgroundColor %}style="background-color: {{ wall.backgroundColor }}"{% endif %}>
+    {% if view.value == 'columns' %}
+        <div class="cm-wall-cols">
+            {% for entry in board.lists %}
+                {% set list = entry.list %}
+                <section class="cm-wall-list{{ list.color ? ' has-color' }}" data-list-id="{{ list.id }}"
+                         {% if list.color %}style="--cm-wall-list-bg: {{ list.color }}"{% endif %}>
+                    <header class="cm-wall-list__head">
+                        {% if board.manages %}
+                            <form class="cm-wall-list__rename" hidden action="{{ path('app_wall_list_rename', {id: list.id}) }}"
+                                  data-action="submit->wall#submit">
+                                <input type="text" name="title" value="{{ list.title }}" maxlength="120" aria-label="{{ 'wallRenameAction'|trans }}"
+                                       data-action="blur->wall#commitRename keydown.esc->wall#cancelRename:stop">
+                            </form>
+                        {% endif %}
+                        <span class="cm-wall-list__title" {% if board.manages %}data-action="dblclick->wall#startRename"{% endif %}>{{ list.title }}</span>
+                        {% if wall.areCountsShown %}<span class="cm-wall-list__count">{{ entry.cards|length }}</span>{% endif %}
+                        {% if board.manages %}
+                            <button type="button" class="cm-wall-list__more" data-action="wall#toggleMenu:stop"
+                                    aria-label="{{ 'wallListMenuLabel'|trans }}" aria-haspopup="true">⋯</button>
+                            <div class="cm-wall-menu cm-wall-menu--list" hidden>
+                                <button type="button" class="cm-wall-menu__item" data-action="wall#startRename">{{ 'wallRenameAction'|trans }}</button>
+                                <button type="button" class="cm-wall-menu__item" data-action="wall#openTransfer"
+                                        data-wall-kind-param="list" data-wall-mode-param="copy" data-wall-title-param="{{ list.title }}"
+                                        data-wall-url-param="{{ path('app_wall_list_transfer', {id: list.id}) }}">{{ 'wallCopyListAction'|trans }}</button>
+                                <button type="button" class="cm-wall-menu__item" data-action="wall#post"
+                                        data-wall-url-param="{{ path('app_wall_list_duplicate', {id: list.id}) }}">{{ 'wallDuplicateListAction'|trans }}</button>
+                                <button type="button" class="cm-wall-menu__item" data-action="wall#startAdd">{{ 'wallAddCardMenuAction'|trans }}</button>
+                                <div class="cm-wall-menu__rule"></div>
+                                <div class="cm-wall-menu__group">
+                                    <span class="cm-wall-label">{{ 'wallColorLabel'|trans }}</span>
+                                    <div class="cm-wall-swatches">
+                                        {% set current = list.color ?? constant('App\\Service\\Wall\\WallWriter::DEFAULT_LIST_COLOR') %}
+                                        {% for name, color in constant('App\\Service\\Wall\\WallWriter::LIST_COLORS') %}
+                                            <button type="button" class="cm-wall-swatch{{ current == color ? ' is-current' }}" style="background: {{ color }}"
+                                                    title="{{ name|trans }}" aria-label="{{ name|trans }}" data-action="wall#post"
+                                                    data-wall-url-param="{{ path('app_wall_list_color', {id: list.id}) }}"
+                                                    data-wall-body-param="{{ {color: color}|json_encode }}"></button>
+                                        {% endfor %}
+                                        {% set free = current not in constant('App\\Service\\Wall\\WallWriter::LIST_COLORS') %}
+                                        <label class="cm-wall-swatch cm-wall-swatch--free{{ free ? ' is-current' }}" title="{{ 'wallColorOtherLabel'|trans }}"
+                                               {% if free %}style="background: {{ current }}"{% endif %}>
+                                            <input type="color" value="{{ current }}" aria-label="{{ 'wallColorOtherLabel'|trans }}"
+                                                   data-action="change->wall#pickColor click->wall#keepMenu:stop"
+                                                   data-wall-url-param="{{ path('app_wall_list_color', {id: list.id}) }}">
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="cm-wall-menu__rule"></div>
+                                <button type="button" class="cm-wall-menu__item cm-wall-menu__item--danger" data-action="wall#post:stop"
+                                        data-wall-url-param="{{ path('app_wall_list_delete', {id: list.id}) }}"
+                                        data-wall-confirm-param="{{ 'wallConfirmDeleteAction'|trans }}">{{ 'wallDeleteListAction'|trans }}</button>
+                            </div>
+                        {% endif %}
+                    </header>
+                    <div class="cm-wall-list__cards">
+                        {% for card_entry in entry.cards %}
+                            {{ include('wall/_card.html.twig', {entry: card_entry, wall: wall, manages: board.manages, grid: false, list: list}) }}
+                        {% endfor %}
+                    </div>
+                    {% if board.mayAdd %}
+                        <form class="cm-wall-add" hidden action="{{ path('app_wall_card_add', {id: list.id}) }}" data-action="submit->wall#submit">
+                            <textarea name="title" rows="2" maxlength="255" placeholder="{{ 'wallCardTitlePlaceholder'|trans }}" aria-label="{{ 'wallCardTitlePlaceholder'|trans }}"
+                                      data-action="keydown.enter->wall#enterSubmits keydown.esc->wall#cancelAdd:stop"></textarea>
+                            <div class="cm-wall-add__row">
+                                <button type="submit" class="cm-wall-mini cm-wall-mini--primary">{{ 'wallAddAction'|trans }}</button>
+                                <button type="button" class="cm-wall-mini cm-wall-mini--plain" data-action="wall#cancelAdd">{{ 'wallCancelAction'|trans }}</button>
+                            </div>
+                        </form>
+                        <button type="button" class="cm-wall-list__addbtn" data-action="wall#startAdd">+ {{ 'wallAddCardAction'|trans }}</button>
+                    {% endif %}
+                </section>
+            {% endfor %}
+            {% if board.manages %}
+                <form class="cm-wall-list cm-wall-list--new" hidden action="{{ path('app_wall_list_add', {id: wall.id}) }}"
+                      data-wall-new-list data-action="submit->wall#submit">
+                    <input type="text" name="title" maxlength="120" placeholder="{{ 'wallListNamePlaceholder'|trans }}" aria-label="{{ 'wallListNamePlaceholder'|trans }}"
+                           data-action="keydown.esc->wall#cancelAddList:stop">
+                    <div class="cm-wall-add__row">
+                        <button type="submit" class="cm-wall-mini cm-wall-mini--primary">{{ 'wallAddAction'|trans }}</button>
+                        <button type="button" class="cm-wall-mini cm-wall-mini--plain" data-action="wall#cancelAddList">{{ 'wallCancelAction'|trans }}</button>
+                    </div>
+                </form>
+                <button type="button" class="cm-wall-newlist" data-action="wall#startAddList">+ {{ 'wallAddListAction'|trans }}</button>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="cm-wall-gridscroll">
+            <div class="cm-wall-grid">
+                {% for entry in board.lists %}
+                    {% for card_entry in entry.cards %}
+                        {{ include('wall/_card.html.twig', {entry: card_entry, wall: wall, manages: board.manages, grid: true, list: entry.list}) }}
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>

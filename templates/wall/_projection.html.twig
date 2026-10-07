@@ -1,0 +1,55 @@
+{# « Mode projection » (design/design_handoff_murs_collaboratifs, screen 7): the cards one at a
+   time, in the order of the lists then of the cards. Everything is drawn here once; the page only
+   shows one slide and hides the others. A card awaiting validation is never among them.
+
+   Parameters: wall, slides (list of {card, list}). #}
+<div class="cm-wall-proj__bar">
+    <span class="cm-wall-proj__wall">{{ wall.title }}</span>
+    <span class="cm-wall-proj__list" data-wall-target="projectionList"></span>
+    <span class="cm-wall-proj__count" data-wall-target="projectionCount"></span>
+    <button type="button" class="cm-wall-proj__quit" data-action="wall#exitProjection">{{ 'wallQuitAction'|trans }}</button>
+</div>
+<div class="cm-wall-proj__stage">
+    <button type="button" class="cm-wall-proj__nav" data-action="wall#previousSlide" data-wall-target="projectionPrevious" aria-label="{{ 'wallPreviousSlideLabel'|trans }}">‹</button>
+    {% if slides is empty %}
+        <div class="cm-wall-slide"><span class="cm-wall-slide__title">{{ 'wallNoSlideText'|trans }}</span></div>
+    {% endif %}
+    {% for slide in slides %}
+        {% set card = slide.card %}
+        <article class="cm-wall-slide" hidden data-wall-target="slide" data-list="{{ slide.list.title }}">
+            {% if card.imageKey %}<img class="cm-wall-slide__image" src="{{ file_url(card.imageKey) }}" alt="">{% endif %}
+            {% if card.label and wall.areLabelsShown %}<span class="cm-wall-tag cm-wall-tag--{{ card.labelTone.value }}">{{ card.label }}</span>{% endif %}
+            <span class="cm-wall-slide__title">{{ card.title }}</span>
+            {% if card.text %}<p class="cm-wall-slide__text">{{ card.text|nl2br }}</p>{% endif %}
+            {% if card.linkUrl %}
+                <div class="cm-wall-slide__block cm-wall-slide__block--link">
+                    <span class="cm-wall-slide__blocktitle">{{ card.linkTitle }}</span>
+                    <span class="cm-wall-slide__url">{{ card.linkUrl|replace({'https://': '', 'http://': ''}) }}</span>
+                </div>
+            {% endif %}
+            {% if card.fileKey %}
+                <div class="cm-wall-slide__block">
+                    <span class="cm-wall-ext cm-wall-ext--xl">{{ card.fileExtension }}</span>
+                    <span class="cm-wall-slide__blocktitle">{{ card.fileName }}</span>
+                </div>
+            {% endif %}
+            {% if card.checklist is not empty %}
+                <div class="cm-wall-slide__checks">
+                    {% for item in card.checklist %}
+                        <div class="cm-wall-check cm-wall-check--xl{{ item.done ? ' is-done' }}">
+                            <span class="cm-wall-check__box">{{ item.done ? '✓' }}</span>
+                            <span class="cm-wall-check__text">{{ item.text }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if wall.areAuthorsShown and card.author %}
+                <div class="cm-wall-slide__author">
+                    {{ include('wall/_avatar.html.twig', {user: card.author, size: 36}) }}
+                    <span>{{ card.author.displayName ?? card.author.username }}</span>
+                </div>
+            {% endif %}
+        </article>
+    {% endfor %}
+    <button type="button" class="cm-wall-proj__nav" data-action="wall#nextSlide" data-wall-target="projectionNext" aria-label="{{ 'wallNextSlideLabel'|trans }}">›</button>
+</div>

@@ -1,0 +1,75 @@
+{# One card on the wall, in either view (design/design_handoff_murs_collaboratifs, « Carte »).
+   Block order is the handoff's: picture, label, title, text, link, file, then the foot.
+
+   Parameters: entry ({card, editable, comments}), wall, manages, grid (bool), list (the card's list,
+   named on a grid card). #}
+{% set card = entry.card %}
+<article class="cm-wall-card{{ card.pending ? ' is-pending' }}{{ grid ? ' cm-wall-card--grid' }}{{ entry.editable and not grid ? ' is-movable' }}"
+         data-card-id="{{ card.id }}" {% if entry.editable and not grid %}draggable="true"{% endif %}
+         data-move-url="{{ path('app_wall_card_move', {id: card.id}) }}"
+         data-action="click->wall#openCard keydown.enter->wall#openCard" tabindex="0">
+    {% if card.pending %}
+        <div class="cm-wall-card__pending">
+            <span class="cm-wall-tag cm-wall-tag--pending">{{ 'wallPendingLabel'|trans }}</span>
+            {% if manages %}
+                <span class="cm-wall-card__moderation">
+                    <button type="button" class="cm-wall-mini cm-wall-mini--ok" data-action="wall#post:stop"
+                            data-wall-url-param="{{ path('app_wall_card_approve', {id: card.id}) }}">{{ 'wallApproveAction'|trans }}</button>
+                    <button type="button" class="cm-wall-mini cm-wall-mini--no" data-action="wall#post:stop"
+                            data-wall-url-param="{{ path('app_wall_card_reject', {id: card.id}) }}">{{ 'wallRejectAction'|trans }}</button>
+                </span>
+            {% endif %}
+        </div>
+    {% endif %}
+    {% if card.imageKey %}
+        <img class="cm-wall-card__image" src="{{ file_url(card.imageKey) }}" alt="" loading="lazy" draggable="false">
+    {% endif %}
+    {% set label_shown = card.label and wall.areLabelsShown %}
+    {% if grid %}
+        <div class="cm-wall-card__top">
+            {% if label_shown %}<span class="cm-wall-tag cm-wall-tag--{{ card.labelTone.value }}">{{ card.label }}</span>{% endif %}
+            <span class="cm-wall-card__origin">{{ list.title }}</span>
+        </div>
+    {% elseif label_shown %}
+        <span class="cm-wall-tag cm-wall-tag--{{ card.labelTone.value }}">{{ card.label }}</span>
+    {% endif %}
+    <span class="cm-wall-card__title">{{ card.title }}</span>
+    {% if card.text %}
+        {# A plain slice rather than |u.truncate: twig/string-extra is not installed. #}
+        <span class="cm-wall-card__text">{% if grid %}{{ card.text|nl2br }}{% else %}{{ card.text|length > 90 ? card.text|slice(0, 88) ~ '…' : card.text }}{% endif %}</span>
+    {% endif %}
+    {% if card.linkUrl %}
+        <span class="cm-wall-card__attach">
+            <twig:ux:icon name="link" width="14" height="14" class="cm-wall-card__linkicon"/>
+            <span class="cm-wall-card__link">{{ card.linkUrl|replace({'https://': '', 'http://': ''}) }}</span>
+        </span>
+    {% endif %}
+    {% if card.fileKey %}
+        <span class="cm-wall-card__attach">
+            <span class="cm-wall-ext">{{ card.fileExtension }}</span>
+            <span class="cm-wall-card__filename">{{ card.fileName }}</span>
+            {% if not grid %}<span class="cm-wall-card__filesize">{{ byte_size(card.fileSize) }}</span>{% endif %}
+        </span>
+    {% endif %}
+    {% set checklist_total = card.checklist|length %}
+    {% set comments_shown = wall.areCommentsEnabled and entry.comments > 0 %}
+    {% if checklist_total > 0 or comments_shown or (wall.areAuthorsShown and card.author) %}
+        <div class="cm-wall-card__foot">
+            {% if checklist_total > 0 %}
+                <span class="cm-wall-progress{{ card.checklistDoneCount == checklist_total ? ' is-done' }}">☑ {{ card.checklistDoneCount }}/{{ checklist_total }}</span>
+            {% endif %}
+            {% if comments_shown %}
+                <span class="cm-wall-card__comments"><twig:ux:icon name="message-circle" width="13" height="13"/>{{ entry.comments }}</span>
+            {% endif %}
+            {% if wall.areAuthorsShown and card.author %}
+                {% if grid %}
+                    {{ include('wall/_avatar.html.twig', {user: card.author, size: 24}) }}
+                    <span class="cm-wall-card__author">{{ card.author.displayName ?? card.author.username }}</span>
+                {% else %}
+                    <span class="cm-wall-card__spacer"></span>
+                    {{ include('wall/_avatar.html.twig', {user: card.author, size: 24}) }}
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+</article>

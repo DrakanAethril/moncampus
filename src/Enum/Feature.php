@@ -50,6 +50,7 @@ enum Feature: string
     case Surveys = 'surveys';
     case ClassTools = 'class_tools';
     case WordCloud = 'word_cloud';
+    case Walls = 'walls';
     case TsfReferential = 'tsf_referential';
     case Game = 'game';
     case Portfolio = 'portfolio';
@@ -138,7 +139,7 @@ enum Feature: string
             self::Progression, self::SequenceLibrary, self::SequenceImport, self::CourseSpace,
             self::Video, self::Audio, self::FileLibrary, self::SharedDocuments,
             self::ContentSharing, self::Wiki, self::Documentation, self::Surveys,
-            self::ClassTools, self::WordCloud, self::TsfReferential, self::Game,
+            self::ClassTools, self::WordCloud, self::Walls, self::TsfReferential, self::Game,
             self::Dossiers, self::Portfolio, self::OnlineCourses, self::LearningPaths => FeatureFamily::Pedagogy,
 
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
@@ -212,6 +213,7 @@ enum Feature: string
             self::Surveys => 'featureSurveysLabel',
             self::ClassTools => 'featureClassToolsLabel',
             self::WordCloud => 'featureWordCloudLabel',
+            self::Walls => 'featureWallsLabel',
             self::TsfReferential => 'featureTsfReferentialLabel',
             self::Game => 'featureGameLabel',
             self::Portfolio => 'featurePortfolioLabel',
@@ -360,6 +362,11 @@ enum Feature: string
             // fills the pool before Gestion > Fonctionnalités opens either to anybody. They are
             // two lines because they are two decisions: the search can be opened to students long
             // before the pool's screens are opened to teachers.
+
+            // « Murs collaboratifs » is named by no role either (design/design_handoff_murs_collaboratifs):
+            // it ships visible to the administrator alone. It is one line for both sides of the
+            // room, like the word cloud: a wall is shared with a class, and students open walls of
+            // their own - lighting it for teachers alone would hand them walls nobody can join.
 
             // The machines are handed out in class, so the two roles that sit in one.
             self::MyVms => ['ROLE_STUDENT', 'ROLE_TEACHER'],
