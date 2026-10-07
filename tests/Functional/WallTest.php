@@ -12,6 +12,7 @@ use App\Entity\WallList;
 use App\Enum\VisibilityLevel;
 use App\Enum\WallCardStatus;
 use App\Enum\WallFormat;
+use App\Service\ObjectStore;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -37,6 +38,20 @@ class WallTest extends FunctionalTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The test environment keeps uploads in a directory, but removing an object goes through
+        // App\Service\ObjectStore, which talks to S3 itself - and claiming a staged upload removes
+        // the staged copy. The double sends that removal to the same directory, as
+        // App\Tests\Service\StagedUploadStoreTest does; without it the upload test would need a
+        // bucket. Swapped before anything else is asked of the container: a service already built
+        // cannot be replaced.
+        $storage = static::getContainer()->get('uploads.storage');
+        $objectStore = $this->createStub(ObjectStore::class);
+        $objectStore->method('storageKeyFor')->willReturnArgument(0);
+        $objectStore->method('remove')->willReturnCallback(static function (string $key) use ($storage): void {
+            $storage->delete($key);
+        });
+        static::getContainer()->set(ObjectStore::class, $objectStore);
 
         $this->teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'wall.teacher');
         $this->colleague = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'wall.colleague');
