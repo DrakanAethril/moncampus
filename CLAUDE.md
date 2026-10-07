@@ -197,9 +197,22 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     nothing else. Its owner; a **Manager** - a colleague a teacher shared with, who runs the wall
     (settings, lists, validation, copies) but neither shares nor deletes it; a **Participant** - a
     student of a class the wall is shared with, or anybody a *student* invited, teachers included.
-    **Nobody outside a wall opens it, administrators included** (404, the virtual board's rule);
-    whether student walls should be supervised is an open decision, not an oversight. Tutors and
-    outside accounts have no walls at all.
+    Tutors and outside accounts have no walls at all.
+  - **A student's wall is read by the teachers of the class** - `WallSupervisors`, a fourth role
+    (**Supervisor**) that reads everything, the cards awaiting validation included, and writes
+    nothing: no card, no tick, no comment. It follows the *student* (a wall a student owns, read by
+    whoever teaches an active class of its owner or of a classmate named on it) and the *class*:
+    a teacher's own wall is supervised by nobody, and the administration and the establishment's
+    other teachers read no student's wall on the strength of their role. **Nobody else outside a
+    wall opens it, administrators included** (404). The student is told so where they share
+    (`wall/_share_fields.html.twig`).
+  - **« Murs étudiants »** (Ressources, for `ROLE_TEACHER`; `StudentWallController`,
+    `StudentWallDirectory`): the class - one taught goes straight to it - then two sections, each
+    student's own walls and the walls of groups of students (a student's wall with another student
+    on it; a teacher they invited does not make a group). It lists the classes one teaches
+    (`ProgramRepository::findAllForTeacher()`) and no other. The wall opens through its own route,
+    told by `?class=` which trail to draw and by the `wall_supervised` request attribute which
+    menu to light - the parameter opens nothing.
   - **`WallAudience` bounds what is *added***: a teacher adds the classes they teach
     (`ClassBoardPrograms`, the virtual board's own list) and colleagues, never students one by one;
     a student adds classmates and the teachers of their active classes, never a class. Somebody

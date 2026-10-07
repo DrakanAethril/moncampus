@@ -1,0 +1,82 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Murs étudiants », one class: the walls its students own, in two sections
+   (App\Service\Wall\StudentWallDirectory) - each student's own walls under their name, then the
+   walls of groups of students. Every row opens the wall itself, which a teacher of the class reads
+   and does not write. #}
+
+{% block title %}{{ 'wallStudentsNavLabel'|trans }} · {{ class.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'wallStudentsNavLabel'|trans, url: path('app_wall_students')},
+        {label: class.displayShortName, url: path('app_wall_students_class', {id: class.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'wallStudentsNavLabel'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% if classes|length > 1 %}
+        {# A consultation select, so it starts on the class being read; choosing another goes
+           there through the list's own address, which hands over to the class named. #}
+        <form class="cm-filterbar" method="get" action="{{ path('app_wall_students') }}" data-controller="auto-submit">
+            <label class="cm-filterbar__field">
+                <span class="visually-hidden">{{ 'wallStudentsClassLabel'|trans }}</span>
+                <select name="class" class="cm-filterbar__select" data-action="auto-submit#submit">
+                    {% for other in classes %}
+                        <option value="{{ other.id }}" {{ other.id == class.id ? 'selected' }}>{{ other.displayShortName }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <section class="cm-wall-section">
+        <twig:Cm:Subhead :title="'wallStudentsIndividualHeading'|trans"/>
+        {% if walls.individual is empty %}
+            <p class="cm-wall-empty">{{ 'wallStudentsNoIndividualText'|trans }}</p>
+        {% else %}
+            <div class="cm-wall-roster">
+                {% for entry in walls.individual %}
+                    <div class="cm-wall-roster__row">
+                        <div class="cm-wall-roster__who">
+                            {{ include('wall/_avatar.html.twig', {user: entry.student, size: 28}) }}
+                            <span class="cm-wall-roster__name">{{ entry.student.displayName ?? entry.student.username }}</span>
+                        </div>
+                        <div class="cm-wall-roster__walls">
+                            {% for wall in entry.walls %}
+                                {{ include('wall/students/_wall_link.html.twig', {wall: wall, class: class, meta: modified[wall.id]}) }}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="cm-wall-section">
+        <twig:Cm:Subhead :title="'wallStudentsGroupsHeading'|trans"/>
+        {% if walls.groups is empty %}
+            <p class="cm-wall-empty">{{ 'wallStudentsNoGroupText'|trans }}</p>
+        {% else %}
+            <div class="cm-wall-roster">
+                {% for entry in walls.groups %}
+                    <div class="cm-wall-roster__row">
+                        <div class="cm-wall-roster__who cm-wall-roster__who--group">
+                            <span class="cm-wall-people">
+                                {% for student in entry.students|slice(0, 4) %}{{ include('wall/_avatar.html.twig', {user: student, size: 28}) }}{% endfor %}
+                            </span>
+                            <span class="cm-wall-roster__name">{{ entry.students|map(student => student.displayName ?? student.username)|join(', ') }}</span>
+                        </div>
+                        <div class="cm-wall-roster__walls">
+                            {{ include('wall/students/_wall_link.html.twig', {wall: entry.wall, class: class, meta: modified[entry.wall.id]}) }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

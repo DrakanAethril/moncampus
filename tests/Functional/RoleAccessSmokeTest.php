@@ -1404,8 +1404,15 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->admin, [$path => 404]);
         $this->assertScreens($this->tutor, [$path => 404]);
 
+        // « Murs étudiants » is a teacher's screen: it lists the classes one teaches, and an
+        // administrator who does not teach has none to read - for them it does not exist.
+        $this->assertScreens($this->teacher, ['/walls/students' => 200, '/walls/students?class=' => 200]);
+        $this->assertScreens($this->admin, ['/walls/students' => 404]);
+        $this->assertScreens($this->student, ['/walls/students' => 404]);
+        $this->assertScreens($this->tutor, ['/walls/students' => 404]);
+
         $this->switchOffEveryRole(Feature::Walls);
-        $this->assertScreens($this->teacher, ['/walls' => 404, $path => 404]);
+        $this->assertScreens($this->teacher, ['/walls' => 404, '/walls/students' => 404, $path => 404]);
         $this->assertScreens($this->student, ['/walls' => 404, $path => 404]);
         $this->assertScreens($this->admin, ['/walls' => 200]);
     }

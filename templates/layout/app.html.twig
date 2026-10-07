@@ -421,7 +421,7 @@
                         {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow or tools_beyond) %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_program_word_cloud'
-                                or current_route starts with 'app_wall'
+                                or (current_route starts with 'app_wall' and not (current_route starts with 'app_wall_students') and not app.request.attributes.get('wall_supervised'))
                                 or current_route starts with 'app_audio_recording'
                                 or current_route starts with 'app_progression'
                                 or current_route starts with 'app_library_'
@@ -483,7 +483,7 @@
                                        open walls too, so it is not one of class_tools' teacher-only
                                        tools. Their entry is in « Ressources ». #}
                                     {% if feature('walls') %}
-                                        <a class="dropdown-item {{ current_route starts with 'app_wall' ? 'active' }}" href="{{ path('app_walls') }}">{{ 'wallNavLabel'|trans }}</a>
+                                        <a class="dropdown-item {{ current_route starts with 'app_wall' and not (current_route starts with 'app_wall_students') and not app.request.attributes.get('wall_supervised') ? 'active' }}" href="{{ path('app_walls') }}">{{ 'wallNavLabel'|trans }}</a>
                                     {% endif %}
                                     {# Right after « Création de groupes », and gated on its own
                                        feature rather than on class_tools: the word cloud is the one

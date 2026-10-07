@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Controller\Wall;
 
 use App\Attribute\RequiresFeature;
+use App\Entity\Program;
 use App\Entity\User;
 use App\Entity\Wall;
 use App\Enum\Feature;
+use App\Enum\WallRole;
+use App\Repository\ProgramRepository;
 use App\Repository\WallRepository;
 use App\Security\Voter\WallVoter;
 use App\Service\JsonRequestPayload;
@@ -44,10 +47,13 @@ class WallController extends AbstractController
     use WallControllerTrait;
 
     #[Route(path: '/walls/{id}', name: 'app_wall_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(int $id, Request $request, EntityManagerInterface $entityManager, WallBoardView $view, WallAudience $audience, WallLiveNotifier $notifier, WallResponder $responder, HubInterface $hub, Authorization $mercureAuthorization): Response
+    public function show(int $id, Request $request, EntityManagerInterface $entityManager, WallBoardView $view, WallAudience $audience, WallLiveNotifier $notifier, WallResponder $responder, ProgramRepository $programs, HubInterface $hub, Authorization $mercureAuthorization): Response
     {
         $wall = $this->wall($id, $entityManager);
         $board = $view->build($wall, $this->currentUser());
+        // The same route serves one's own wall (Outils) and a student's wall read by their teacher
+        // (Ressources › Murs étudiants): the navigation bar is told which, having only the route.
+        $request->attributes->set('wall_supervised', WallRole::Supervisor === $board['role']);
 
         // The live subscription is a comfort, never a condition: without it the wall still follows
         // every gesture made in this browser, and catches up on the others' at the next one.
@@ -61,6 +67,7 @@ class WallController extends AbstractController
         return $this->render('wall/show.html.twig', [
             'wall' => $wall,
             'board' => $board,
+            'supervisedClass' => WallRole::Supervisor === $board['role'] ? $this->classReadFrom($request, $programs) : null,
             'view' => $wall->getFormat(),
             'people' => $view->people($wall),
             'classes' => $board['owns'] ? $this->offeredClasses($wall, $audience) : [],
@@ -181,10 +188,27 @@ class WallController extends AbstractController
     }
 
     /**
+     * The class a supervising teacher came from (« Murs étudiants » links with `?class=`), for the
+     * trail to lead back to it. Only ever one of the classes they teach: the parameter draws a
+     * breadcrumb, it opens nothing.
+     */
+    private function classReadFrom(Request $request, ProgramRepository $programs): ?Program
+    {
+        $id = QueryValue::nullableInt($request, 'class');
+        foreach (null === $id ? [] : $programs->findAllForTeacher($this->currentUser()) as $program) {
+            if ($program->getId() === $id) {
+                return $program;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The classes the sharing dialog lists: the ones the owner may add, plus the ones already on
      * the wall - a class one no longer teaches has to stay listed to be unticked.
      *
-     * @return list<\App\Entity\Program>
+     * @return list<Program>
      */
     private function offeredClasses(Wall $wall, WallAudience $audience): array
     {

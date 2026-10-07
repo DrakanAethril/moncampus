@@ -365,6 +365,61 @@ class WallTest extends FunctionalTestCase
         $this->post('/walls/'.$wall->getId().'/settings', ['moderated' => true], 403);
     }
 
+    public function testTheTeachersOfAClassReadItsStudentsWallsFromMursEtudiants(): void
+    {
+        $own = $this->wall($this->student, 'Révisions de l’étudiant');
+        $group = $this->wall($this->classmate, 'Projet du groupe');
+        $group->addMember($this->em()->getReference(User::class, $this->student->getId()));
+        // A teacher's wall shared with the class is not a student's: it has no place in the list.
+        $teachers = $this->wall($this->teacher, 'Mur de l’enseignant');
+        $teachers->addProgram($this->em()->getReference(Program::class, $this->program->getId()));
+        $strangers = $this->wall($this->stranger, 'Mur d’une autre classe');
+        $this->em()->flush();
+        $card = $this->card($own, $this->student);
+
+        // One class taught: the menu's address goes straight to it.
+        $this->client->loginUser($this->teacher);
+        $this->client->request('GET', '/walls/students');
+        self::assertResponseRedirects('/walls/students/'.$this->program->getId());
+        $crawler = $this->client->followRedirect();
+        self::assertResponseIsSuccessful();
+
+        $sections = $crawler->filter('.cm-wall-section');
+        self::assertCount(2, $sections);
+        self::assertSame(['Révisions de l’étudiant'], $sections->eq(0)->filter('.cm-wall-roster__title')->each(static fn ($node): string => $node->text()));
+        self::assertSame(['Projet du groupe'], $sections->eq(1)->filter('.cm-wall-roster__title')->each(static fn ($node): string => $node->text()));
+        self::assertStringContainsString('Wall.classmate Test', $sections->eq(1)->text());
+        self::assertStringContainsString('Wall.student Test', $sections->eq(1)->text());
+
+        // The wall opens, read-only: nothing to write with on the page, and nothing accepted.
+        $crawler = $this->client->request('GET', '/walls/'.$own->getId().'?class='.$this->program->getId());
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('.cm-wall-list__addbtn, .cm-wall-list__more, .cm-wall-newlist, [data-action="wall#openSettings"], [data-action="wall#openShare"]'));
+        self::assertStringContainsString('Murs étudiants', $crawler->filter('.cm-breadcrumb')->text());
+        [$list] = $this->fresh($own)->getLists()->toArray();
+        $this->post('/walls/lists/'.$list->getId().'/cards', ['title' => 'Carte de l’enseignant'], 403);
+        $this->post('/walls/cards/'.$card->getId(), ['title' => 'Corrigée'], 403);
+        $this->post('/walls/'.$own->getId().'/settings', ['moderated' => true], 403);
+        $this->assertScreens($this->teacher, ['/walls/'.$group->getId() => 200, '/walls/'.$strangers->getId() => 404]);
+
+        // A colleague who does not teach the class has no class to pick, and no wall to read.
+        $this->assertScreens($this->colleague, [
+            '/walls/students' => 200,
+            '/walls/students/'.$this->program->getId() => 404,
+            '/walls/'.$own->getId() => 404,
+        ]);
+        // Neither does an administrator who is not a teacher: the screen does not exist for them.
+        $admin = $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'wall.admin');
+        $this->assertScreens($admin, ['/walls/students' => 404, '/walls/'.$own->getId() => 404]);
+        $this->assertScreens($this->student, ['/walls/students' => 404]);
+
+        // The student is told, where they share, who else reads their walls.
+        $this->client->loginUser($this->student);
+        self::assertStringContainsString('Les enseignants de votre classe peuvent consulter vos murs.', $this->client->request('GET', '/walls')->html());
+        $this->client->loginUser($this->teacher);
+        self::assertStringNotContainsString('Les enseignants de votre classe', $this->client->request('GET', '/walls')->html());
+    }
+
     public function testAPictureAndAFileReachACardThroughTheStagingEndpoint(): void
     {
         $wall = $this->wall($this->teacher);

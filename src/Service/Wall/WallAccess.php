@@ -21,11 +21,17 @@ use App\Enum\WallRole;
  * | a named member, teaching or staff, of a teacher's wall   | Manager       |
  * | any other named member                                   | Participant   |
  * | a student of a class the wall is shared with             | Participant   |
+ * | a teacher of the class of a student on a student's wall  | Supervisor    |
  * | anybody else - administrators included                   | nobody        |
  *
  * So a colleague a teacher shares a wall with runs it alongside them, while everybody a *student*
  * invites - classmates and teachers alike - is a guest on the student's wall: the student keeps
  * their own settings and their own moderation. Only the owner shares and deletes.
+ *
+ * A **Supervisor** reads everything on the wall - the cards awaiting validation included - and
+ * writes nothing: no card, no tick, no comment (App\Service\Wall\WallSupervisors holds who they
+ * are). A teacher the student also invited is a Participant like any guest, and still reads what a
+ * supervisor reads.
  *
  * | Gesture                                          | Owner / Manager | Participant                                   |
  * |--------------------------------------------------|-----------------|-----------------------------------------------|
@@ -35,12 +41,16 @@ use App\Enum\WallRole;
  * | reading a card awaiting validation               | yes             | their own only                                |
  * | commenting                                       | if « Commentaires » is on, on any card they read                |
  *
- * There is no bypass: a wall nobody opened to you does not exist for you, whatever your role - the
- * rule of the virtual board. Nothing here reads the session; it takes the wall and the person, so
- * the whole table is testable on entities built in memory.
+ * There is no bypass by role: a wall that was not opened to you, and is not one of your students',
+ * does not exist for you - administrators included. Nothing here reads the session; it takes the
+ * wall and the person, so the whole table is testable on entities built in memory.
  */
 final class WallAccess
 {
+    public function __construct(private readonly WallSupervisors $supervisors)
+    {
+    }
+
     /** The roles that make somebody « personnel » rather than a student or an outside account. */
     public const array STAFF_ROLES = ['ROLE_ADMIN', 'ROLE_TEACHER', 'ROLE_STAFF', 'ROLE_STAFF-LEAD'];
 
@@ -80,7 +90,7 @@ final class WallAccess
             }
         }
 
-        return null;
+        return $this->supervisors->supervises($wall, $user) ? WallRole::Supervisor : null;
     }
 
     public function mayView(Wall $wall, User $user): bool
@@ -104,7 +114,7 @@ final class WallAccess
     {
         $role = $this->roleOf($wall, $user);
 
-        return null !== $role && ($role->manages() || $wall->mayParticipantsAdd());
+        return null !== $role && ($role->manages() || ($role->participates() && $wall->mayParticipantsAdd()));
     }
 
     /**
@@ -123,7 +133,8 @@ final class WallAccess
             return false;
         }
 
-        return !$card->isPending() || $role->manages() || $card->isWrittenBy($user);
+        return !$card->isPending() || $role->manages() || $card->isWrittenBy($user)
+            || $this->supervisors->supervises($card->getWall(), $user);
     }
 
     /** Moving, changing, ticking and deleting are one right: the handoff's table gives them one row. */
@@ -131,7 +142,7 @@ final class WallAccess
     {
         $wall = $card->getWall();
         $role = $this->roleOf($wall, $user);
-        if (null === $role) {
+        if (null === $role || !$role->participates()) {
             return false;
         }
 
@@ -146,7 +157,9 @@ final class WallAccess
 
     public function mayComment(WallCard $card, User $user): bool
     {
-        return $card->getWall()->areCommentsEnabled() && $this->maySeeCard($card, $user);
+        $wall = $card->getWall();
+
+        return $wall->areCommentsEnabled() && true === $this->roleOf($wall, $user)?->participates() && $this->maySeeCard($card, $user);
     }
 
     public function mayDeleteComment(WallComment $comment, User $user): bool

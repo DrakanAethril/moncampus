@@ -9,8 +9,10 @@ use App\Entity\WallCard;
 use App\Entity\WallComment;
 use App\Entity\WallList;
 use App\Enum\WallFormat;
+use App\Repository\ProgramRepository;
 use App\Security\Voter\WallVoter;
 use App\Service\Wall\WallAccess;
+use App\Service\Wall\WallSupervisors;
 
 /**
  * The voter maps three kinds of subject onto App\Service\Wall\WallAccess, whose table has its own
@@ -68,7 +70,7 @@ class WallVoterTest extends VoterTestCase
 
     private function voter(): WallVoter
     {
-        return new WallVoter(new WallAccess());
+        return new WallVoter(new WallAccess(new WallSupervisors($this->createStub(ProgramRepository::class))));
     }
 
     /** @return array{Wall, WallCard, WallComment} */
