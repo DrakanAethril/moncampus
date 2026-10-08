@@ -25,8 +25,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * screen is now a view on the deployment rather than its engine.
  *
  * Scheduled every minute (App\Scheduler\PlatformSchedule). It is safe at that rate by construction: a pass takes at most
- * one machine per batch, an item is stamped as attempted before its step so nothing can be taken
- * twice, and the creation itself is behind a lock on the VMID.
+ * one machine per batch, and a batch is held by one pass at a time (VmBatchExecutor::run()) - so a
+ * tick that lands while the screen, or the tick before it, is still at work on a machine does
+ * nothing rather than doing the same step beside it.
  *
  * **It never starts a deployment**, only continues one - see VmBatchRepository::findLive(). A batch
  * that has been planned and never launched is a plan, and a scheduler that acted on it would create

@@ -38,6 +38,7 @@ use App\Service\Proxmox\ProxmoxInventory;
 use App\Service\Proxmox\ProxmoxOperationTracker;
 use App\Service\Proxmox\ProxmoxUnavailableException;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Lock\LockFactory;
 
 /**
  * Deploys the machines of a batch, one at a time, and records each outcome separately.
@@ -138,6 +139,17 @@ class VmBatchExecutor
      */
     private const float PASS_BUDGET_SECONDS = 15.0;
 
+    /**
+     * How long a pass may hold its batch before a store that expires locks takes it back, in
+     * seconds - see run().
+     *
+     * Longer than any pass, on purpose: a lock that lapsed under a pass still at work would let the
+     * next one in on the same machine, which is the very thing it is there to prevent. The store in
+     * use (`flock`, LOCK_DSN) does not expire at all and frees a lock when its process ends; this
+     * is the bound for the day somebody changes it.
+     */
+    private const float PASS_LOCK_TTL_SECONDS = 1800.0;
+
     private const string PROGRESSED = 'progressed';
     private const string WAITING = 'waiting';
     private const string FAILED = 'failed';
@@ -158,6 +170,7 @@ class VmBatchExecutor
         private readonly UnixLogin $unixLogin,
         private readonly GuestPty $pty,
         private readonly EntityManagerInterface $entityManager,
+        private readonly LockFactory $lockFactory,
         // Injectable so a test can pin the guard without waiting for a real budget to run out.
         private readonly float $passBudgetSeconds = self::PASS_BUDGET_SECONDS,
     ) {
@@ -180,10 +193,49 @@ class VmBatchExecutor
      * sixth never started - the batch read as stuck at five. The repository now hands over the
      * items that have gone longest without a turn, never-attempted ones first.
      *
+     * **One pass at a time per batch, whoever is pressing.** The batch screen presses every few
+     * seconds, `app:vm-batch:advance` every minute, and a pass that lays down accounts and runs a
+     * post-installation script outlasts both - so nothing kept two of them from meeting on the
+     * same machine, each having read the same phase, and doing the same step twice: two `useradd`
+     * for one login (which leaves the account under a UID its home directory does not belong to -
+     * see App\Service\Guest\GuestAccountSyncer), two runs of the script. The stamp put on an
+     * item never prevented that: it orders the queue, it does not hold it.
+     *
+     * A pass that finds the batch taken does nothing and says so as a wait - the machine is being
+     * dealt with, which is exactly what the screen should go on showing. The lock is shared between
+     * the web container and the worker (LOCK_DSN), like the one on a creation.
+     *
      * @return array{attempted: int, progressed: int, waiting: int, failed: int, remaining: int, blocked: int}
      */
     public function run(VmBatch $batch, ?User $requestedBy): array
     {
+        $lock = $this->lockFactory->createLock(self::passLockName($batch), ttl: self::PASS_LOCK_TTL_SECONDS);
+
+        if (!$lock->acquire()) {
+            return $this->report($batch, attempted: 0, progressed: 0, waiting: 1, failed: 0);
+        }
+
+        try {
+            return $this->pass($batch, $requestedBy);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /** The name of the lock a pass holds on a batch - public for whoever has to tell one is running. */
+    public static function passLockName(VmBatch $batch): string
+    {
+        return \sprintf('vm-batch-pass-%d', $batch->getId() ?? 0);
+    }
+
+    /**
+     * @return array{attempted: int, progressed: int, waiting: int, failed: int, remaining: int, blocked: int}
+     */
+    private function pass(VmBatch $batch, ?User $requestedBy): array
+    {
+        // Read once the batch is held, never before: what another pass was in the middle of writing
+        // is on the items by now - findResumable() reads them again even when this process holds
+        // them already.
         $outstanding = $this->items->findResumable($batch);
         $pass = \array_slice($this->eligible($outstanding), 0, self::BATCH_SIZE);
 
@@ -213,10 +265,20 @@ class VmBatchExecutor
             };
         }
 
+        return $this->report($batch, \count($pass), $progressed, $waiting, $failed);
+    }
+
+    /**
+     * What a pass answers, with what is left read from the database rather than counted from it.
+     *
+     * @return array{attempted: int, progressed: int, waiting: int, failed: int, remaining: int, blocked: int}
+     */
+    private function report(VmBatch $batch, int $attempted, int $progressed, int $waiting, int $failed): array
+    {
         $remaining = $this->items->findResumable($batch);
 
         return [
-            'attempted' => \count($pass),
+            'attempted' => $attempted,
             'progressed' => $progressed,
             'waiting' => $waiting,
             'failed' => $failed,

@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.08'
+      date: '2026-10-08'
+      summary: "Une correction sur les machines virtuelles de travaux pratiques : pendant l'installation d'une machine, le compte d'un étudiant n'est plus créé deux fois."
+      entries:
+          - type: fix
+            title: "Machines virtuelles : un compte n'est plus créé deux fois pendant l'installation d'une machine"
+            detail: "L'étudiant concerné se retrouvait sans accès à son propre dossier personnel sur la machine."
     - version: '2026.10.07'
       date: '2026-10-07'
       summary: "Le livret ECF distingue désormais les dates du titre pour chaque option d'une formation. Les murs collaboratifs, un nouvel outil pour travailler à plusieurs sur des listes de cartes, entrent en essai auprès de l'administration."

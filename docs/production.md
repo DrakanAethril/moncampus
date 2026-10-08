@@ -339,7 +339,10 @@ What changed, and what to know:
 - **Locks are shared with `php`.** Both containers mount the `app_locks` volume and read the same
   `LOCK_DSN` (`flock:///app/var/lock`), so a command run by hand still refuses to start on top of the
   scheduled one (« Une autre exécution est déjà en cours. »), and the VMID lock of a machine
-  creation is the same for the batch screen and for `app:vm-batch:advance`.
+  creation is the same for the batch screen and for `app:vm-batch:advance`. So is the lock a
+  deployment pass holds on its batch (`VmBatchExecutor::run()`): the screen and the scheduler never
+  work on the same machine at once - two passes there created each account twice, and `useradd`
+  answers that with a UID the home directory does not belong to.
 - **Running a task by hand** is unchanged: `docker compose -f compose.yaml -f compose.prod.yaml exec
   -T php bin/console <command>` - `--dry-run` where the command has one.
 - **`MERCURE_URL` must be set in the worker's environment** (ux-turbo pings Mercure on every flush,
