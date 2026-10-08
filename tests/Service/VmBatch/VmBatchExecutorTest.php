@@ -40,9 +40,12 @@ use App\Service\Proxmox\ProxmoxGuest;
 use App\Service\Proxmox\ProxmoxInventory;
 use App\Service\Proxmox\ProxmoxOperationTracker;
 use App\Service\Proxmox\ProxmoxUnavailableException;
+use App\Service\VmBatch\VmBatchExecutor;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Lock\LockFactory;
+use Symfony\Component\Lock\Store\InMemoryStore;
 
 /**
  * The deployment chain, phase by phase: clone → configure → start → reachable → accounts →
@@ -74,6 +77,9 @@ class VmBatchExecutorTest extends TestCase
     private ?GuestTimeSync $timeSync = null;
     private ?ProxmoxClientFactory $clientFactory = null;
 
+    /** Left unset by default: a store of its own per pass, so no test meets another's lock. */
+    private ?LockFactory $lockFactory = null;
+
     // Stubs by default and mocks only where a test actually asserts an interaction: phpunit.dist.xml
     // sets failOnNotice, and a mock nobody sets an expectation on is a notice.
     protected function setUp(): void
@@ -94,6 +100,7 @@ class VmBatchExecutorTest extends TestCase
         ));
         $this->power = $this->createStub(GuestPowerRunner::class);
         $this->clientFactory = null;
+        $this->lockFactory = null;
     }
 
     public function testAPlannedMachineIsCloned(): void
@@ -629,6 +636,78 @@ class VmBatchExecutorTest extends TestCase
         self::assertSame('The provisioning account is refused.', $waits[0]['detail']);
     }
 
+    /**
+     * The screen presses every few seconds and the scheduler every minute, and a pass that lays
+     * down accounts and runs a post-installation script lasts longer than either. Two of them on
+     * one machine both read « no such account » and both created it - which `useradd` answers with
+     * two UIDs for one login, and a home directory left to the first.
+     */
+    public function testAPassThatFindsAnotherOneAtWorkOnTheBatchTouchesNothing(): void
+    {
+        [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
+        $item->setVmid(210);
+        $item->setIpAllocation($this->allocation());
+        $shells = $this->createMock(GuestShellFactory::class);
+        $shells->expects(self::never())->method('open');
+        $this->shells = $shells;
+        $accounts = $this->createMock(GuestAccountService::class);
+        $accounts->expects(self::never())->method(self::anything());
+        $this->accounts = $accounts;
+
+        $this->lockFactory = new LockFactory(new InMemoryStore());
+        $elsewhere = $this->lockFactory->createLock(VmBatchExecutor::passLockName($batch));
+        self::assertTrue($elsewhere->acquire());
+
+        $result = $this->deployOnce($batch, $item);
+
+        self::assertSame(VmBatchItemStatus::Created, $item->getStatus());
+        // Not a turn taken: the machine keeps its place in the queue, and its log says nothing.
+        self::assertNull($item->getLastAttemptAt());
+        self::assertSame([], $item->getInstallLogEntries());
+        self::assertSame(0, $result['attempted']);
+        self::assertSame(0, $result['progressed']);
+        self::assertSame(0, $result['failed']);
+        // A wait, so the screen keeps coming back rather than calling the batch finished.
+        self::assertSame(1, $result['waiting']);
+        self::assertSame(1, $result['remaining']);
+    }
+
+    public function testAPassHandsTheBatchBackWhenItIsDone(): void
+    {
+        [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
+        $item->setVmid(210);
+        $item->setIpAllocation($this->allocation());
+        $shells = $this->createStub(GuestShellFactory::class);
+        $shells->method('open')->willThrowException(new GuestUnreachableException('No route to host'));
+        $this->shells = $shells;
+        $this->lockFactory = new LockFactory(new InMemoryStore());
+
+        $this->deployOnce($batch, $item);
+
+        self::assertTrue($this->lockFactory->createLock(VmBatchExecutor::passLockName($batch))->acquire());
+    }
+
+    public function testAPassThatBreaksStillHandsTheBatchBack(): void
+    {
+        // Anything the steps do not catch themselves: the next pass must not find the batch held by
+        // one that no longer exists - with a store that does not expire, that would be for ever.
+        [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
+        $item->setVmid(210);
+        $item->setIpAllocation($this->allocation());
+        $shells = $this->createStub(GuestShellFactory::class);
+        $shells->method('open')->willThrowException(new \LogicException('Unexpected.'));
+        $this->shells = $shells;
+        $this->lockFactory = new LockFactory(new InMemoryStore());
+
+        try {
+            $this->deployOnce($batch, $item);
+            self::fail('The pass should have let the exception through.');
+        } catch (\LogicException) {
+        }
+
+        self::assertTrue($this->lockFactory->createLock(VmBatchExecutor::passLockName($batch))->acquire());
+    }
+
     public function testWhatIsLeftDistinguishesTheSlowFromTheRefused(): void
     {
         // The screen loops while machines are merely slow and stops once everything outstanding has
@@ -655,7 +734,7 @@ class VmBatchExecutorTest extends TestCase
             static fn (): array => $item->getStatus()->isResumable() ? [$item] : [],
         );
 
-        $executor = new \App\Service\VmBatch\VmBatchExecutor(
+        $executor = new VmBatchExecutor(
             $this->creator,
             $this->allocator,
             $this->accounts,
@@ -671,6 +750,7 @@ class VmBatchExecutorTest extends TestCase
             new UnixLogin(),
             new GuestPty(),
             $this->createStub(EntityManagerInterface::class),
+            $this->lockFactory ?? new LockFactory(new InMemoryStore()),
             $budgetSeconds,
         );
 
@@ -723,7 +803,7 @@ class VmBatchExecutorTest extends TestCase
             )),
         );
 
-        $executor = new \App\Service\VmBatch\VmBatchExecutor(
+        $executor = new VmBatchExecutor(
             $this->creator,
             $this->allocator,
             $this->accounts,
@@ -739,6 +819,7 @@ class VmBatchExecutorTest extends TestCase
             new UnixLogin(),
             new GuestPty(),
             $this->createStub(EntityManagerInterface::class),
+            $this->lockFactory ?? new LockFactory(new InMemoryStore()),
             60.0,
         );
 

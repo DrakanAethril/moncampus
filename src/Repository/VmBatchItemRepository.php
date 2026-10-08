@@ -9,6 +9,7 @@ use App\Entity\VmBatch;
 use App\Entity\VmBatchItem;
 use App\Enum\VmBatchItemStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -137,6 +138,11 @@ class VmBatchItemRepository extends ServiceEntityRepository
             ->orderBy('i.lastAttemptAt', 'ASC')
             ->addOrderBy('i.position', 'ASC')
             ->getQuery()
+            // The phase an item has reached is what decides its next step, and another process -
+            // the screen, the scheduler - may have moved it since this one loaded it. Without the
+            // hint a row already in the identity map comes back as it was first read, and a
+            // process that makes several passes would repeat a step somebody else has done.
+            ->setHint(Query::HINT_REFRESH, true)
             ->getResult();
     }
 
