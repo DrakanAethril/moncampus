@@ -41,6 +41,14 @@ class GuestAccountSyncer
      */
     private const int MIN_PASSWORD_LENGTH = 12;
 
+    /**
+     * The lock an account creation holds inside the machine - see createAccountCommand().
+     *
+     * Under /var/lock, which every distribution these machines are built from provides (a link to
+     * /run/lock on Debian and on RHEL alike), and emptied at boot: a lock file nobody cleans up.
+     */
+    private const string ACCOUNT_LOCK_FILE = '/var/lock/moncampus-accounts.lock';
+
     public function __construct(
         private readonly PasswordGenerator $passwordGenerator,
         private readonly UnixLogin $unixLogin,
@@ -262,8 +270,7 @@ class GuestAccountSyncer
         $login = escapeshellarg($account->login);
 
         $commands = [
-            // --create-home and a real shell: these are accounts people log into.
-            \sprintf('useradd --create-home --shell %s %s', escapeshellarg($account->shell), $login),
+            $this->createAccountCommand($account),
             $this->setPasswordCommand($account->login, $password),
         ];
 
@@ -289,6 +296,39 @@ class GuestAccountSyncer
         }
 
         return $commands;
+    }
+
+    /**
+     * Creates the account **unless it is there by the time the machine's own lock is held**.
+     *
+     * `useradd` cannot be trusted to refuse a login that exists. It tests for it first and takes
+     * its lock afterwards, so two of them started together both pass the test; the second waits for
+     * the first, then writes the same login under the next free UID - replacing the entry - and
+     * leaves the home directory alone because it already exists. Both exit 0, and the account ends
+     * up with a UID its own home does not belong to. Measured on shadow 4.13 and 4.17: every time.
+     *
+     * Two passes over one machine are what starts two of them, and the existence probe sent before
+     * (existingLogins()) cannot close that: it is another command, answered before either began.
+     * So the test is repeated here, in the same command as the creation and under `flock`, which is
+     * the one place where « still missing » and « created » cannot be separated - whoever the
+     * caller is, and whatever the platform's own locks are worth that day.
+     *
+     * The descriptor form of `flock` rather than `flock file command`: the latter would need the
+     * test and the creation quoted a second time as one argument. A lock that cannot be had in
+     * thirty seconds is a refusal with its reason, never a silent skip.
+     *
+     * --create-home and a real shell: these are accounts people log into.
+     */
+    private function createAccountCommand(DesiredAccount $account): string
+    {
+        $login = escapeshellarg($account->login);
+
+        return \sprintf(
+            '( flock -w 30 9 || { echo "account lock busy: %1$s"; exit 1; }; if ! getent passwd %2$s >/dev/null 2>&1; then useradd --create-home --shell %3$s %2$s; fi ) 9>%1$s',
+            self::ACCOUNT_LOCK_FILE,
+            $login,
+            escapeshellarg($account->shell),
+        );
     }
 
     /**

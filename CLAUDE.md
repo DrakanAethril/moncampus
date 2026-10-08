@@ -117,7 +117,7 @@ worker mode, static files) and is driven by env vars rather than edited; see `do
   needs `MERCURE_URL`. `php` and `worker` share the `app_locks` volume, which `LOCK_DSN`
   (`flock:///app/var/lock`) points at — that is what keeps a lock one lock across the two
   containers (a manual run vs. the scheduled one, the batch screen vs. `app:vm-batch:advance` on a
-  VMID). In dev the worker is opt-in: `docker compose --profile worker up -d worker`.
+  VMID and on a batch). In dev the worker is opt-in: `docker compose --profile worker up -d worker`.
   Messenger has no other use: no queue transport, and the mailer's and notifier's messages are
   handled synchronously, in the request that sends them.
 - `.devcontainer/compose.devcontainer.yaml` — extra overlay for VS Code Dev Containers.
@@ -283,7 +283,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   terminal is `ConsoleSession`/`ConsoleBroadcast`/`ConsoleSnippet` over SSH (**not** Proxmox's PTY).
   Two rules the code depends on: **one pass does exactly one step** (`app:vm-batch:advance`, scheduled
   every minute, is what makes a deployment survive a closed browser tab), and the application never
-  destroys a machine — an expired batch reminds, an administrator deletes in Proxmox.
+  destroys a machine — an expired batch reminds, an administrator deletes in Proxmox. A batch is
+  held by **one pass at a time** (`VmBatchExecutor::run()`, a lock shared by the screen and the
+  scheduler), and an account is created inside the machine under `flock`, only if still missing:
+  two concurrent `useradd` of one login both exit 0 and leave the account under a UID its home
+  directory does not belong to (`GuestAccountSyncer::createAccountCommand()`).
 - **Matériel (Gestion > Matériel)** - the small-equipment inventory, `App\Controller\Equipment\*`.
   **Not the UFA laptops**, which keep their own inventory. `EquipmentType` is followed either
   *à l'unité* (each `EquipmentItem` has a label code `CA-0142-0`: one sequence shared by every type,

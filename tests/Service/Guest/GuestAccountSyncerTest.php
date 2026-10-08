@@ -154,6 +154,36 @@ class GuestAccountSyncerTest extends TestCase
         self::assertStringContainsString('wheel', $shell->commands[2]);
     }
 
+    /**
+     * Two passes over the same machine did reach this point together, and `useradd` does not defend
+     * itself: it tests « does this login exist » before it takes its lock, so the second one waits,
+     * then writes the same login over the first under the next free UID - and leaves the home
+     * directory, which already exists, to the UID it was created for. Both exit 0.
+     *
+     * So the test and the creation are one step on the machine itself, under a lock the machine
+     * holds, and the second caller finds the account there.
+     */
+    public function testAnAccountIsCreatedOnlyIfItIsStillMissingOnceTheMachineLockIsHeld(): void
+    {
+        $shell = $this->shell();
+        $plan = $this->syncer()->plan($this->desired('marie-dupont'), []);
+
+        $this->syncer()->apply($shell, $plan);
+
+        $creation = $shell->commands[0];
+        $locked = strpos($creation, 'flock');
+        $probed = strpos($creation, "getent passwd 'marie-dupont'");
+        $created = strpos($creation, 'useradd');
+
+        self::assertIsInt($locked);
+        self::assertIsInt($probed);
+        self::assertIsInt($created);
+        // In that order, and in one command: a probe sent on its own is the race all over again.
+        self::assertLessThan($probed, $locked);
+        self::assertLessThan($created, $probed);
+        self::assertCount(1, array_filter($shell->commands, static fn (string $command): bool => str_contains($command, 'useradd')));
+    }
+
     public function testThePasswordNeverAppearsOnACommandLine(): void
     {
         // It reaches chpasswd on stdin, so it never shows up in the process list of a machine
