@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Enum\InboundMailOutcome;
 use App\Repository\EmailMessageRepository;
 use App\Service\InboundMailProcessor;
 use Aws\S3\S3Client;
@@ -32,6 +33,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * command rather than a side effect: it recovers the messages, but somebody still has to know the
  * normal path dropped them, and a safety net nobody hears catch anything is indistinguishable from
  * one that never catches.
+ *
+ * **Replayed means a row was written**, and nothing else. An object with no row under its key is
+ * not always a lost mail: the inbound path reads some and stores nothing, on purpose - a Message-ID
+ * already in the database, typically a student's own send coming back because they copied their
+ * school address. Such an object has no row to be found by, so every pass meets it again until it
+ * leaves the `--since` window; counted as replayed, it rang Discord every night for a week about a
+ * mail nobody had lost. It is counted apart (« déjà connu ») and rings nothing.
  */
 #[AsCommand(
     name: 'app:mail:reconcile',
@@ -82,6 +90,7 @@ class ReconcileInboundMailCommand extends Command
         $dryRun = (bool) $input->getOption('dry-run');
         $scanned = 0;
         $replayed = 0;
+        $known = 0;
         $failed = 0;
 
         foreach ($this->listIncoming($since) as $key) {
@@ -93,6 +102,8 @@ class ReconcileInboundMailCommand extends Command
                 continue;
             }
 
+            // A dry run stops at « no row under this key »: telling a known Message-ID apart takes
+            // the download it exists to spare, so its count is an upper bound.
             if ($dryRun) {
                 $io->writeln(sprintf('  <comment>~</comment> %s', $key));
                 ++$replayed;
@@ -101,9 +112,13 @@ class ReconcileInboundMailCommand extends Command
             }
 
             try {
-                $this->processor->process($key);
-                $io->writeln(sprintf('  <info>✓</info> %s', $key));
-                ++$replayed;
+                if (InboundMailOutcome::Stored === $this->processor->process($key)) {
+                    $io->writeln(sprintf('  <info>✓</info> %s', $key));
+                    ++$replayed;
+                } else {
+                    $io->writeln(sprintf('  <comment>=</comment> %s — déjà connu, rien à écrire', $key));
+                    ++$known;
+                }
             } catch (\Throwable $exception) {
                 ++$failed;
                 $this->logger->error('School mail: reconciliation could not replay an object.', [
@@ -116,7 +131,7 @@ class ReconcileInboundMailCommand extends Command
             $this->entityManager->clear();
         }
 
-        $io->success(sprintf('%d objet(s) examiné(s), %d rejoué(s), %d en échec.', $scanned, $replayed, $failed));
+        $io->success(sprintf('%d objet(s) examiné(s), %d rejoué(s), %d déjà connu(s), %d en échec.', $scanned, $replayed, $known, $failed));
 
         // A reconciliation that had work to do is a signal in itself: the normal path lost
         // something, and that deserves to be visible outside this console.
