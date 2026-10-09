@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.09.2'
+      date: '2026-10-09'
+      summary: "Sur le wiki, les liens vers une autre page ne se perdent plus à l'enregistrement. Le connecteur Claude, toujours en essai, sait saisir et relire les notes d'une évaluation, et modifier une évaluation."
+      entries:
+          - type: fix
+            title: "Wiki : un lien vers une autre page du wiki, ou vers un repère de la page, reste actif après l'enregistrement"
+          - type: modification
+            title: "Connecteur Claude, en essai : saisir et relire les notes d'une évaluation"
+            detail: "Rien n'est effacé, et une note déjà saisie n'est remplacée que sur demande."
+          - type: modification
+            title: "Connecteur Claude, en essai : modifier une évaluation existante"
+          - type: interne
+            title: "Carnet de notes : la règle de saisie regroupée en un seul endroit"
     - version: '2026.10.09'
       date: '2026-10-09'
       summary: "Une correction interne sur la surveillance du courrier pro, sans changement visible à l'écran."
