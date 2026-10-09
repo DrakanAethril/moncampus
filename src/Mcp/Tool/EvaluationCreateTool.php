@@ -53,7 +53,7 @@ final readonly class EvaluationCreateTool implements McpTool
 
     public function description(): string
     {
-        return 'Crée une évaluation dans le carnet de notes d\'une matière dont l\'enseignant est titulaire (topicId, voir gradebook_overview), avec éventuellement son barème (« moncampus-bareme/1 »). Elle n\'est visible des étudiants qu\'à partir de `visibleAt`, qui doit être dans le futur (par défaut : dans 24 heures). Aucune note n\'est saisie.';
+        return 'Crée une évaluation dans le carnet de notes d\'une matière dont l\'enseignant est titulaire (topicId, voir gradebook_overview), avec éventuellement son barème (« moncampus-bareme/1 »). Elle n\'est visible des étudiants qu\'à partir de `visibleAt`, qui doit être dans le futur (par défaut : dans 24 heures). Aucune note n\'est saisie : c\'est grades_set qui les saisit ensuite.';
     }
 
     public function inputSchema(): array

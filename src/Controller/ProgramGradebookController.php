@@ -8,12 +8,10 @@ use App\Attribute\RequiresFeature;
 use App\Entity\Evaluation;
 use App\Entity\EvaluationRubricSection;
 use App\Entity\Grade;
-use App\Entity\GradeRubricAnswer;
 use App\Entity\Program;
 use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\Feature;
-use App\Enum\GradeStatus;
 use App\Enum\RubricSectionKind;
 use App\Form\EvaluationFormType;
 use App\Repository\EvaluationRepository;
@@ -26,7 +24,8 @@ use App\Security\StructureAccessChecker;
 use App\Security\Voter\EvaluationVoter;
 use App\Service\EvaluationAverageCalculator;
 use App\Service\EvaluationRubricBuilder;
-use App\Service\GradeEntryParser;
+use App\Service\GradeEntryWriter;
+use App\Service\InvalidRubricPoints;
 use App\Service\JsonRequestPayload;
 use App\Service\PostValue;
 use App\Service\QueryValue;
@@ -242,7 +241,7 @@ class ProgramGradebookController extends AbstractController
         EntityManagerInterface $entityManager,
         StructureAccessChecker $accessChecker,
         EvaluationAverageCalculator $calculator,
-        GradeEntryParser $gradeParser,
+        GradeEntryWriter $writer,
     ): JsonResponse {
         $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
         $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
@@ -251,26 +250,12 @@ class ProgramGradebookController extends AbstractController
 
         $student = $this->findStudentOrNotFound($program, $studentId);
 
-        $payload = JsonRequestPayload::fromRequest($request);
-        [$status, $value] = $gradeParser->parse($payload->string('raw'), $evaluation->getScale());
-
-        $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
-        if (null === $status) {
-            if (null !== $grade) {
-                $entityManager->remove($grade);
-                $entityManager->flush();
-            }
-
-            return $this->json(['cleared' => true, ...$this->recomputeAverages($evaluation, $gradeRepository, $calculator)]);
-        }
+        $grade = $writer->writeCell($evaluation, $student, JsonRequestPayload::fromRequest($request)->string('raw'), $this->currentUser());
+        $entityManager->flush();
 
         if (null === $grade) {
-            $grade = new Grade($evaluation, $student);
-            $entityManager->persist($grade);
+            return $this->json(['cleared' => true, ...$this->recomputeAverages($evaluation, $gradeRepository, $calculator)]);
         }
-
-        $grade->setStatus($status)->setValue($value)->setGradedBy($this->currentUser())->setGradedAt(new \DateTimeImmutable());
-        $entityManager->flush();
 
         return $this->json([
             'status' => $grade->getStatus()->value,
@@ -466,12 +451,8 @@ class ProgramGradebookController extends AbstractController
         // onto it), while saveGrade()/saveRubricAnswer() stay MANAGE-only. Deliberately not
         // EvaluationVoter::VIEW to open it either - that attribute also lets an enrolled student
         // through, and this screen shows the whole class's grades.
+        $this->denyAccessUnlessGranted(EvaluationVoter::READ_GRADES, $evaluation);
         $canEdit = $this->isGranted(EvaluationVoter::MANAGE, $evaluation);
-        if (!$canEdit
-            && !$this->isTopicTitulaire($evaluation->getTopic())
-            && !$this->canReadOtherTopics($program, $accessChecker)) {
-            throw $this->createAccessDeniedException();
-        }
 
         $grades = $gradeRepository->findForEvaluation($evaluation);
         $gradeByStudentId = [];
@@ -535,10 +516,10 @@ class ProgramGradebookController extends AbstractController
         Request $request,
         ProgramRepository $programRepository,
         EvaluationRepository $evaluationRepository,
-        GradeRepository $gradeRepository,
         EntityManagerInterface $entityManager,
         StructureAccessChecker $accessChecker,
         EvaluationAverageCalculator $calculator,
+        GradeEntryWriter $writer,
     ): JsonResponse {
         $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
         $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
@@ -546,63 +527,13 @@ class ProgramGradebookController extends AbstractController
         $this->assertCsrf($request);
 
         $student = $this->findStudentOrNotFound($program, $studentId);
+        $question = $evaluation->findRubricQuestion($questionId) ?? throw $this->createNotFoundException();
 
-        $question = null;
-        foreach ($evaluation->getRubricSections() as $section) {
-            foreach ($section->getQuestions() as $candidate) {
-                if ($candidate->getId() === $questionId) {
-                    $question = $candidate;
-                }
-            }
+        try {
+            $grade = $writer->writeAnswer($evaluation, $student, $question, JsonRequestPayload::fromRequest($request)->string('raw'), $this->currentUser());
+        } catch (InvalidRubricPoints $exception) {
+            return $this->json(['error' => $exception->reason], 422);
         }
-        if (null === $question) {
-            throw $this->createNotFoundException();
-        }
-
-        $grade = $gradeRepository->findOneForEvaluationAndStudent($evaluation, $student);
-        if (null === $grade) {
-            $grade = new Grade($evaluation, $student);
-            $grade->setStatus(GradeStatus::Normal);
-            $entityManager->persist($grade);
-        }
-
-        $answer = null;
-        foreach ($grade->getRubricAnswers() as $candidate) {
-            if ($candidate->getQuestion() === $question) {
-                $answer = $candidate;
-            }
-        }
-        if (null === $answer) {
-            $answer = new GradeRubricAnswer($grade, $question);
-            $grade->addRubricAnswer($answer);
-            $entityManager->persist($answer);
-        }
-
-        $raw = trim(JsonRequestPayload::fromRequest($request)->string('raw'));
-
-        if ('' === $raw) {
-            $answer->setPointsAwarded(null)->setNotTested(false);
-        } elseif ('nt' === strtolower($raw)) {
-            $answer->setPointsAwarded(null)->setNotTested(true);
-        } else {
-            $normalized = str_replace(',', '.', $raw);
-            if (!is_numeric($normalized)) {
-                return $this->json(['error' => 'invalid'], 422);
-            }
-
-            // Unlike the simple grid's interpret()/clampNumber() (which clamps a stray
-            // over-scale value down), a barème question REJECTS a value above its own max
-            // points outright (design's qSet(): "if (n > pts) return;") rather than silently
-            // rewriting what the teacher typed - acceptance criterion 5.
-            $points = round((float) $normalized, 2);
-            if ($points < 0 || $points > $question->getMaxPoints()) {
-                return $this->json(['error' => 'exceeds_max_points'], 422);
-            }
-            $answer->setPointsAwarded($points)->setNotTested(false);
-        }
-
-        $grade->setValue($calculator->computeRubricTotal($grade));
-        $grade->setGradedBy($this->currentUser())->setGradedAt(new \DateTimeImmutable());
         $entityManager->flush();
 
         return $this->json([
@@ -752,18 +683,12 @@ class ProgramGradebookController extends AbstractController
      * voter decides evaluation by evaluation and which every write route goes through.
      *
      * A referent teacher of the class and staff alike read the other matières without writing them
-     * - see canReadOtherTopics() below, and the voter, which carries no staff bypass on MANAGE for
-     * the same reason.
+     * - EvaluationVoter::READ_GRADES is that reading, and the voter carries no staff bypass on
+     * MANAGE for the same reason.
      */
     private function isTopicTitulaire(?Topic $topic): bool
     {
         return null !== $topic && $topic->hasTeacher($this->currentUser());
-    }
-
-    /** Who reads a matière they do not teach: staff, and the referent teachers of the class. */
-    private function canReadOtherTopics(Program $program, StructureAccessChecker $accessChecker): bool
-    {
-        return $accessChecker->isStaff() || $accessChecker->isProgramReferentTeacher($program);
     }
 
     private function findVisibleProgram(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Program

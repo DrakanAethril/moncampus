@@ -329,6 +329,20 @@ class Evaluation
         return !$this->rubricSections->isEmpty();
     }
 
+    /** One question of this evaluation's own barème, bonus and malus included - null for any other id. */
+    public function findRubricQuestion(int $id): ?EvaluationRubricQuestion
+    {
+        foreach ($this->rubricSections as $section) {
+            foreach ($section->getQuestions() as $question) {
+                if ($question->getId() === $id) {
+                    return $question;
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * The named parts of the barème, bonus and malus left out. This is what "le barème" means
      * wherever a screen counts questions or sums points to check that the rubric adds up.

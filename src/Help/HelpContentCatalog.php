@@ -672,9 +672,11 @@ final class HelpContentCatalog
                             <li>lire vos bibliothèques de quiz, de séquences et de fichiers, y compris vos PDF, documents Word et présentations ;</li>
                             <li>créer des quiz, des séquences avec leurs séances, des supports de cours en PDF et des dossiers ;</li>
                             <li>rattacher un quiz ou un fichier à une séquence ou à une séance ;</li>
-                            <li>créer une évaluation dans votre carnet de notes et poser son barème.</li>
+                            <li>créer une évaluation dans votre carnet de notes, avec ou sans barème ;</li>
+                            <li>saisir les notes d'une évaluation que vous avez posée : une note par étudiant, ou les points question par question quand elle a un barème.</li>
                         </ul>
                         <p>Claude agit avec vos droits, et seulement les vôtres : il ne voit que ce que vous voyez dans MonCampus. Il ne supprime rien et ne lance aucun quiz auprès d'une classe. Une évaluation qu'il crée reste masquée aux étudiants jusqu'à sa date de visibilité, fixée par défaut au lendemain.</p>
+                        <p>Pour les notes, il n'efface rien et ne remplace une note déjà saisie que si vous le lui demandez. Une note saisie sur une évaluation déjà visible est lue aussitôt par l'étudiant : relisez ce que Claude propose avant de le laisser enregistrer.</p>
                         <h2>Le brancher</h2>
                         <ol>
                             <li>Dans MonCampus, ouvrez <strong>Profil</strong>. Dans la carte <strong>Claude</strong>, définissez le <strong>mot de passe du service</strong> : il est propre à Claude et doit être différent de votre mot de passe d'établissement.</li>
@@ -701,7 +703,7 @@ final class HelpContentCatalog
                     'slug' => 'claude-voit-il-mes-etudiants',
                     'title' => 'Claude voit-il les noms ou les notes de mes étudiants ?',
                     'audiences' => [HelpAudience::Teacher, HelpAudience::Staff],
-                    'summary' => "Non. Le connecteur donne accès à vos bibliothèques et à la liste de vos évaluations, mais à aucune note ni à aucun nom d'étudiant.",
+                    'summary' => "Seulement quand vous lui demandez de lire ou de saisir les notes d'une évaluation : il reçoit alors la liste de la classe et les notes de cette évaluation, comme vous les voyez sur l'écran de saisie. Le reste du connecteur (bibliothèques, liste de vos évaluations, barèmes) ne transmet ni nom ni note.",
                 ],
                 [
                     'kind' => HelpArticleKind::Faq,
