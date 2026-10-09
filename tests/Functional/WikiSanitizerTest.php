@@ -169,6 +169,22 @@ class WikiSanitizerTest extends KernelTestCase
         self::assertStringContainsString('id="repere"', $html);
     }
 
+    /**
+     * The links a wiki makes to itself carry no scheme: « Lien wiki » inserts the page's path, and
+     * a link to a named anchor is `#repere`. The component drops the `href` of such a link unless
+     * `allow_relative_links` says otherwise, and keeps the `<a>` - which is how a link that looked
+     * right in the editor came back, once saved, as plain text leading nowhere.
+     */
+    public function testALinkToAnotherPageOfTheWikiSurvives(): void
+    {
+        $html = $this->sanitizer()->sanitize(
+            '<p><a href="/wiki/3/p/12">Adressage IP</a> puis <a href="#repere">plus bas</a></p>',
+        );
+
+        self::assertStringContainsString('href="/wiki/3/p/12"', $html);
+        self::assertStringContainsString('href="#repere"', $html);
+    }
+
     // --- What must never survive ----------------------------------------------------------
 
     public function testScriptIsDroppedInsideAnSvgAsWellAsOutsideOne(): void
@@ -240,8 +256,15 @@ class WikiSanitizerTest extends KernelTestCase
 
     public function testJavascriptUrlsAreDropped(): void
     {
-        $html = $this->sanitizer()->sanitize('<a href="javascript:alert(1)">clic</a>');
+        // Allowing relative links opens nothing here: a link is relative for having no scheme, and
+        // these have one - however it is spelt.
+        $html = $this->sanitizer()->sanitize(
+            '<a href="javascript:alert(1)">clic</a><a href="JaVaScRiPt:alert(2)">clic</a>'
+            .'<a href=" javascript:alert(3)">clic</a><a href="data:text/html,&lt;script&gt;alert(4)&lt;/script&gt;">clic</a>',
+        );
 
-        self::assertStringNotContainsString('javascript:', $html);
+        self::assertStringNotContainsString('javascript:', strtolower($html));
+        self::assertStringNotContainsString('data:', $html);
+        self::assertStringNotContainsString('alert(', $html);
     }
 }
