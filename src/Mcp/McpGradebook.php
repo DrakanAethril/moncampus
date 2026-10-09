@@ -9,6 +9,7 @@ use App\Entity\Program;
 use App\Entity\Topic;
 use App\Entity\User;
 use App\Repository\EvaluationRepository;
+use App\Repository\GradeRepository;
 use App\Repository\GradeRubricAnswerRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\TopicRepository;
@@ -38,6 +39,7 @@ final readonly class McpGradebook
         private ProgramRepository $programs,
         private TopicRepository $topics,
         private EvaluationRepository $evaluations,
+        private GradeRepository $grades,
         private GradeRubricAnswerRepository $answers,
         private StructureAccessChecker $structure,
         private AuthorizationCheckerInterface $authorization,
@@ -158,6 +160,72 @@ final readonly class McpGradebook
         return abs($rubric['standardTotal'] - $evaluation->getScale()) < 0.001
             ? null
             : \sprintf('Attention : le total des parties (%s) diffère de la note sur laquelle l\'évaluation est comptée (%s).', $this->number($rubric['standardTotal']), $this->number($evaluation->getScale()));
+    }
+
+    /**
+     * What a teacher is told once an evaluation is marked out of something else: the barème's total
+     * no longer matching, and the marks already entered that now exceed it. Both are legal - the
+     * form on screen accepts them - so they are said, not refused.
+     *
+     * @return list<string>
+     */
+    public function scaleRemarks(Evaluation $evaluation): array
+    {
+        $remarks = [];
+        $scale = $evaluation->getScale();
+
+        if ($evaluation->hasRubric() && abs($evaluation->getRubricReferencePoints() - $scale) >= 0.001) {
+            $remarks[] = \sprintf('Attention : le total des parties du barème (%s) diffère de la note sur laquelle l\'évaluation est comptée (%s).', $this->number($evaluation->getRubricReferencePoints()), $this->number($scale));
+        }
+
+        $above = 0;
+        // Asked of the database, not of the evaluation's own collection: a mark entered earlier in
+        // the same unit of work is not in it.
+        foreach ($this->grades->findForEvaluation($evaluation) as $grade) {
+            if (null !== $grade->getValue() && $grade->getValue() > $scale + 0.001) {
+                ++$above;
+            }
+        }
+        if ($above > 0) {
+            $remarks[] = \sprintf('Attention : %d note%s déjà saisie%s dépasse%s désormais %s ; elles ne sont pas modifiées.', $above, $above > 1 ? 's' : '', $above > 1 ? 's' : '', $above > 1 ? 'nt' : '', $this->number($scale));
+        }
+
+        return $remarks;
+    }
+
+    /**
+     * The day of an evaluation, as the tools take it.
+     *
+     * @throws McpToolException
+     */
+    public function day(string $value): \DateTimeImmutable
+    {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', trim($value));
+
+        return false === $date ? throw new McpToolException('La date s\'écrit AAAA-MM-JJ.') : $date;
+    }
+
+    /**
+     * When students start seeing an evaluation - **always in the future** when it is set from
+     * Claude. The carnet's own form proposes D+1 so the teacher can finish before the class looks;
+     * the connector goes further and refuses « visible now » outright, on creation and on update
+     * alike: whatever Claude sets up, the teacher has the time to open it before a student does.
+     *
+     * @throws McpToolException
+     */
+    public function futureVisibility(string $value, \DateTimeImmutable $now): \DateTimeImmutable
+    {
+        try {
+            $visibleAt = new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            throw new McpToolException('« visibleAt » n\'est pas une date lisible (ISO 8601, par exemple 2026-10-05T08:00).');
+        }
+
+        if ($visibleAt <= $now) {
+            throw new McpToolException('« visibleAt » doit être dans le futur : une évaluation n\'est jamais rendue visible aux étudiants depuis Claude avant que l\'enseignant ait pu la vérifier. Pour la montrer tout de suite, passez par l\'écran.');
+        }
+
+        return $visibleAt;
     }
 
     public function url(Evaluation $evaluation): string

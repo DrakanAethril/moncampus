@@ -32,6 +32,7 @@ final class McpInstructions
 
         Carnet de notes :
         - `evaluation_create` crée une évaluation avec ou sans barème ; `rubric_set` pose ou remplace le barème tant qu'aucun point n'a été saisi.
+        - `evaluation_update` modifie une évaluation existante (nom, date, note sur, coefficient, type, modalité, date de visibilité) : ne nomme que les champs à changer. La date de visibilité se règle toujours dans le futur ; rendre une évaluation visible tout de suite se fait à l'écran. Reporter la visibilité d'une évaluation déjà visible la masque de nouveau aux étudiants, avec ses notes : préviens l'enseignant avant.
         - Pour saisir des notes, lis d'abord la feuille avec `grades_get` : elle donne les `studentId`, les `questionId` du barème et ce qui est déjà saisi. Avec un barème, la saisie se fait question par question (`answers`) et le total se calcule tout seul ; sans barème, une note par étudiant (`grade`).
         - Rapproche toi-même les noms que donne l'enseignant de ceux de la feuille. Au moindre doute (homonyme, prénom seul, nom absent de la classe), demande : ne devine jamais à qui va une note.
         - Avant d'appeler `grades_set`, montre à l'enseignant le tableau de ce que tu vas saisir et attends son accord. N'utilise `replace` que s'il demande de corriger une note déjà saisie. Rien ne s'efface par ce connecteur.
