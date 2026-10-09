@@ -166,4 +166,114 @@ class ClaudeConnectorGradebookToolsTest extends FunctionalTestCase
         self::assertTrue($result['isError']);
         self::assertStringContainsString('introuvable', $result['text']);
     }
+
+    /** An update names its fields and writes no other - the connector's rule for every update. */
+    public function testAnUpdateWritesTheFieldsItNamesAndNoOther(): void
+    {
+        $evaluation = $this->evaluation();
+        $visibleAt = $evaluation->getVisibleAt();
+
+        $result = $this->callTool($this->accessTokenFor($this->teacher), 'evaluation_update', [
+            'evaluationId' => $evaluation->getId(),
+            'name' => 'DS VLAN (rattrapage)',
+            'coefficient' => 2,
+        ]);
+
+        self::assertFalse($result['isError'], $result['text']);
+        $this->entityManager->clear();
+        $reloaded = $this->entityManager->find(Evaluation::class, $evaluation->getId());
+        self::assertInstanceOf(Evaluation::class, $reloaded);
+        self::assertSame('DS VLAN (rattrapage)', $reloaded->getName());
+        self::assertSame(2.0, $reloaded->getCoefficient());
+        self::assertSame(20.0, $reloaded->getScale());
+        self::assertSame('2026-10-15', $reloaded->getDate()?->format('Y-m-d'));
+        self::assertEquals($visibleAt, $reloaded->getVisibleAt());
+        self::assertSame($this->teacher->getId(), $reloaded->getLastUpdatedBy()?->getId());
+    }
+
+    public function testTheVisibilityIsMovedButNeverToNow(): void
+    {
+        $evaluation = $this->evaluation();
+        $token = $this->accessTokenFor($this->teacher);
+
+        $past = $this->callTool($token, 'evaluation_update', ['evaluationId' => $evaluation->getId(), 'name' => 'Autre nom', 'visibleAt' => '2020-01-01T08:00']);
+        self::assertTrue($past['isError']);
+        $this->entityManager->clear();
+        // Refused whole: the name that came with the wrong date was not written either.
+        self::assertSame('DS VLAN', $this->entityManager->find(Evaluation::class, $evaluation->getId())?->getName());
+
+        $moved = $this->callTool($token, 'evaluation_update', ['evaluationId' => $evaluation->getId(), 'visibleAt' => '2031-01-06T08:00']);
+        self::assertFalse($moved['isError'], $moved['text']);
+        $this->entityManager->clear();
+        self::assertSame('2031-01-06 08:00', $this->entityManager->find(Evaluation::class, $evaluation->getId())?->getVisibleAt()?->format('Y-m-d H:i'));
+    }
+
+    /** @return iterable<string, array{array<string, mixed>, string}> */
+    public static function refusedUpdateProvider(): iterable
+    {
+        yield 'no field named' => [[], 'Aucun champ'];
+        yield 'an empty name' => [['name' => '  '], 'name'];
+        yield 'a date that is not one' => [['date' => '15/10/2026'], 'AAAA-MM-JJ'];
+        yield 'a scale below one' => [['scale' => 0], 'scale'];
+        // An unknown value is refused, never read as the default: the update would change the type.
+        yield 'a type that does not exist' => [['name' => 'Autre nom', 'type' => 'qcm'], 'type'];
+    }
+
+    /** @param array<string, mixed> $fields */
+    #[\PHPUnit\Framework\Attributes\DataProvider('refusedUpdateProvider')]
+    public function testAnUpdateThatSaysNothingUsableChangesNothing(array $fields, string $expected): void
+    {
+        $evaluation = $this->evaluation();
+
+        $result = $this->callTool($this->accessTokenFor($this->teacher), 'evaluation_update', ['evaluationId' => $evaluation->getId(), ...$fields]);
+
+        self::assertTrue($result['isError'], $result['text']);
+        self::assertStringContainsString($expected, $result['text']);
+        $this->entityManager->clear();
+        $reloaded = $this->entityManager->find(Evaluation::class, $evaluation->getId());
+        self::assertInstanceOf(Evaluation::class, $reloaded);
+        self::assertSame('DS VLAN', $reloaded->getName());
+        self::assertSame('written', $reloaded->getType()->value);
+    }
+
+    /** Lowering what an evaluation is marked out of under a mark already entered is legal, and said. */
+    public function testAScaleLoweredUnderAnEnteredGradeIsSaid(): void
+    {
+        $evaluation = $this->evaluation();
+        $this->entityManager->persist((new Grade($evaluation, $this->student))->setValue(18.0));
+        $this->entityManager->flush();
+
+        $result = $this->callTool($this->accessTokenFor($this->teacher), 'evaluation_update', ['evaluationId' => $evaluation->getId(), 'scale' => 10]);
+
+        self::assertFalse($result['isError'], $result['text']);
+        $remark = $result['data']['remark'] ?? null;
+        self::assertIsString($remark);
+        self::assertStringContainsString('1 note', $remark);
+    }
+
+    /** Writing is the author's alone: a co-titulaire reads the evaluation and never rewrites it. */
+    public function testAColleaguesEvaluationIsNotUpdated(): void
+    {
+        $evaluation = $this->evaluation();
+        $colleague = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.cotitulaire');
+        $this->program->addTeacher($colleague);
+        $this->topic->addTeacher($colleague);
+        $this->entityManager->flush();
+
+        $result = $this->callTool($this->accessTokenFor($colleague), 'evaluation_update', ['evaluationId' => $evaluation->getId(), 'name' => 'Renommée']);
+
+        self::assertTrue($result['isError']);
+        self::assertStringContainsString('introuvable', $result['text']);
+    }
+
+    private function evaluation(): Evaluation
+    {
+        $evaluation = new Evaluation($this->topic, 'DS VLAN', new \DateTimeImmutable('2026-10-15'));
+        $evaluation->setCreatedBy($this->teacher);
+        $evaluation->setVisibleAt(new \DateTimeImmutable('2030-01-01 08:00:00'));
+        $this->entityManager->persist($evaluation);
+        $this->entityManager->flush();
+
+        return $evaluation;
+    }
 }

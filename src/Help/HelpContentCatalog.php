@@ -672,7 +672,7 @@ final class HelpContentCatalog
                             <li>lire vos bibliothèques de quiz, de séquences et de fichiers, y compris vos PDF, documents Word et présentations ;</li>
                             <li>créer des quiz, des séquences avec leurs séances, des supports de cours en PDF et des dossiers ;</li>
                             <li>rattacher un quiz ou un fichier à une séquence ou à une séance ;</li>
-                            <li>créer une évaluation dans votre carnet de notes, avec ou sans barème ;</li>
+                            <li>créer une évaluation dans votre carnet de notes, avec ou sans barème, et la modifier ensuite (nom, date, coefficient, date de visibilité) ;</li>
                             <li>saisir les notes d'une évaluation que vous avez posée : une note par étudiant, ou les points question par question quand elle a un barème.</li>
                         </ul>
                         <p>Claude agit avec vos droits, et seulement les vôtres : il ne voit que ce que vous voyez dans MonCampus. Il ne supprime rien et ne lance aucun quiz auprès d'une classe. Une évaluation qu'il crée reste masquée aux étudiants jusqu'à sa date de visibilité, fixée par défaut au lendemain.</p>
