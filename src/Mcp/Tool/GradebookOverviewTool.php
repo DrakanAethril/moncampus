@@ -14,8 +14,9 @@ use App\Security\Voter\EvaluationVoter;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 /**
- * The teacher's carnets de notes, down to the evaluations - never a grade, never a student's name.
- * What Claude needs to pick the matière of a new evaluation, or the evaluation a barème goes on.
+ * The teacher's carnets de notes, down to the evaluations - never a grade, never a student's name:
+ * those are App\Mcp\Tool\GradesGetTool's alone, one evaluation at a time. What Claude needs to pick
+ * the matière of a new evaluation, or the evaluation a barème or marks go on.
  */
 final readonly class GradebookOverviewTool implements McpTool
 {

@@ -66,12 +66,27 @@ final class GradeEntryParser
      */
     public function clamp(string $raw, float $max): ?float
     {
+        $number = $this->plainNumber($raw);
+
+        return null === $number ? null : round(max(0.0, min($max, $number)), 2);
+    }
+
+    /**
+     * The number a cell holds as it was typed, one pair of parentheses read through and nothing
+     * clamped - null for a status or for anything that is not a number. For a caller that refuses
+     * an out-of-scale grade rather than rewrite it.
+     */
+    public function number(string $raw): ?float
+    {
+        $trimmed = trim($raw);
+
+        return $this->plainNumber(1 === preg_match('/^\((.+)\)$/', $trimmed, $matches) ? $matches[1] : $trimmed);
+    }
+
+    private function plainNumber(string $raw): ?float
+    {
         $normalized = str_replace(',', '.', trim($raw));
 
-        if (!is_numeric($normalized)) {
-            return null;
-        }
-
-        return round(max(0.0, min($max, (float) $normalized)), 2);
+        return is_numeric($normalized) ? (float) $normalized : null;
     }
 }

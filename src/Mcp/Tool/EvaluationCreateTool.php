@@ -23,10 +23,9 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * Creates an evaluation in the carnet de notes of a matière the teacher holds, optionally with its
  * barème - the one tool of the connector whose result a class will eventually see.
  *
- * Which is why **its visibility is always in the future**: the carnet's own form proposes D+1 so the
- * teacher can finish before the class looks (App\Controller\ProgramGradebookController), and the
- * connector goes further - it refuses « visible now » outright. Whatever Claude sets up, the teacher
- * has the time to open it in MonCampus before a student does.
+ * Which is why **its visibility is always in the future** - D+1 unless a later moment is named, and
+ * never now (App\Mcp\McpGradebook::futureVisibility(), which App\Mcp\Tool\EvaluationUpdateTool asks
+ * too).
  */
 final readonly class EvaluationCreateTool implements McpTool
 {
@@ -53,7 +52,7 @@ final readonly class EvaluationCreateTool implements McpTool
 
     public function description(): string
     {
-        return 'Crée une évaluation dans le carnet de notes d\'une matière dont l\'enseignant est titulaire (topicId, voir gradebook_overview), avec éventuellement son barème (« moncampus-bareme/1 »). Elle n\'est visible des étudiants qu\'à partir de `visibleAt`, qui doit être dans le futur (par défaut : dans 24 heures). Aucune note n\'est saisie.';
+        return 'Crée une évaluation dans le carnet de notes d\'une matière dont l\'enseignant est titulaire (topicId, voir gradebook_overview), avec éventuellement son barème (« moncampus-bareme/1 »). Elle n\'est visible des étudiants qu\'à partir de `visibleAt`, qui doit être dans le futur (par défaut : dans 24 heures). Aucune note n\'est saisie : c\'est grades_set qui les saisit ensuite.';
     }
 
     public function inputSchema(): array
@@ -90,11 +89,10 @@ final readonly class EvaluationCreateTool implements McpTool
         $topic = $this->gradebook->topic($call->requiredId('topicId'), $call->user);
         $now = $this->clock->now();
 
-        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $call->requiredString('date'));
-        if (false === $date) {
-            throw new McpToolException('La date s\'écrit AAAA-MM-JJ.');
-        }
-        $visibleAt = $this->visibleAt($call->arguments->string('visibleAt'), $now);
+        $date = $this->gradebook->day($call->requiredString('date'));
+        $visibleAt = '' === trim($call->arguments->string('visibleAt'))
+            ? $now->modify(self::DEFAULT_VISIBILITY)
+            : $this->gradebook->futureVisibility($call->arguments->string('visibleAt'), $now);
 
         // Read before anything is created: a barème that is going to be refused must not leave an
         // evaluation behind without one.
@@ -151,24 +149,5 @@ final readonly class EvaluationCreateTool implements McpTool
             ],
             ['kind' => 'evaluation', 'id' => (int) $evaluation->getId()],
         );
-    }
-
-    private function visibleAt(string $value, \DateTimeImmutable $now): \DateTimeImmutable
-    {
-        if ('' === trim($value)) {
-            return $now->modify(self::DEFAULT_VISIBILITY);
-        }
-
-        try {
-            $visibleAt = new \DateTimeImmutable($value);
-        } catch (\Exception) {
-            throw new McpToolException('« visibleAt » n\'est pas une date lisible (ISO 8601, par exemple 2026-10-05T08:00).');
-        }
-
-        if ($visibleAt <= $now) {
-            throw new McpToolException('« visibleAt » doit être dans le futur : une évaluation créée depuis Claude n\'est jamais montrée aux étudiants avant que l\'enseignant ait pu la vérifier.');
-        }
-
-        return $visibleAt;
     }
 }

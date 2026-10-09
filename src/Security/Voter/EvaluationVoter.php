@@ -31,11 +31,17 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * (Evaluation::isVisibleAt()) - callers still need to scope which Grade rows a student sees to
  * their own (never another student's, never a ranking), this voter only gates the evaluation
  * itself.
+ *
+ * READ_GRADES is the other reading, the one that carries **the whole class's marks**: the entry
+ * screen opened read-only, and what the Claude connector reads back. It is VIEW without the student
+ * and with the class's referent teachers, who read every matière of their class: titulaires,
+ * referents, staff - and nobody a mark is about.
  */
 class EvaluationVoter extends Voter
 {
     public const string VIEW = 'EVALUATION_VIEW';
     public const string MANAGE = 'EVALUATION_MANAGE';
+    public const string READ_GRADES = 'EVALUATION_READ_GRADES';
 
     public function __construct(private readonly StructureAccessChecker $accessChecker)
     {
@@ -43,7 +49,7 @@ class EvaluationVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return \in_array($attribute, [self::VIEW, self::MANAGE], true) && $subject instanceof Evaluation;
+        return \in_array($attribute, [self::VIEW, self::MANAGE, self::READ_GRADES], true) && $subject instanceof Evaluation;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
@@ -74,6 +80,12 @@ class EvaluationVoter extends Voter
 
         if ($this->accessChecker->isStaff()) {
             return true;
+        }
+
+        if (self::READ_GRADES === $attribute) {
+            $program = $topic?->getProgram();
+
+            return null !== $program && $this->accessChecker->isProgramReferentTeacher($program);
         }
 
         return null !== $topic
