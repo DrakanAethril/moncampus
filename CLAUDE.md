@@ -334,8 +334,17 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   **French prompt text**, like the prompt catalogues. Rules the tools hold: nothing is deleted; a
   document is refused whole at the first invalid item (Claude corrects and resends); no image
   reference crosses (`mediaRef`/`imageKey`); an evaluation it creates is visible to students only
-  at a **future** date (D+1 by default); a barème with points entered is never rebuilt; no student
-  name or grade is exposed. The emploi du temps (`timetable_get`) hands out the `sessionId` the
+  at a **future** date (D+1 by default); a barème with points entered is never rebuilt; **students'
+  names and marks cross through two tools only**, `grades_get` and `grades_set` (the user's decision
+  of 2026-10-09 - every other tool still exposes neither). `grades_get` is the entry screen read:
+  the class in surname order, the barème's questions, what was entered, behind
+  `EvaluationVoter::READ_GRADES` (titulaires, the class's referents, staff - never a student, which
+  `VIEW` lets through). `grades_set` passes `MANAGE` and writes through `App\Service\GradeEntryWriter`,
+  the screen's own door: `answers` per question when the evaluation has a barème (the total is
+  computed), one `grade` per student when it has none. `App\Mcp\McpGradeSheet` adds what a whole
+  class sent at once needs: checked whole before anything is written, nothing erased (an empty value
+  is refused), a mark already there rewritten only with `replace`, and a grade above the scale
+  refused where the grid clamps it. The emploi du temps (`timetable_get`) hands out the `sessionId` the
   cahier de texte tools take: `lesson_log_write` passes `LessonLogVoter::EDIT` (the créneau's own
   teacher or co-animator, never staff by role), takes Markdown through the library's renderer and
   sanitizer, **never overwrites a part that says something unless `replace`**, and moves a part's

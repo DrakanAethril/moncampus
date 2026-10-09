@@ -24,10 +24,11 @@ use Doctrine\Common\Collections\ArrayCollection;
  */
 class EvaluationVoterTest extends VoterTestCase
 {
-    private function voter(bool $isStaff): EvaluationVoter
+    private function voter(bool $isStaff, bool $isReferent = false): EvaluationVoter
     {
         $checker = $this->createStub(StructureAccessChecker::class);
         $checker->method('isStaff')->willReturn($isStaff);
+        $checker->method('isProgramReferentTeacher')->willReturn($isReferent);
 
         return new EvaluationVoter($checker);
     }
@@ -149,6 +150,38 @@ class EvaluationVoterTest extends VoterTestCase
 
         $this->assertDenied($this->voter(false), $outsider, $evaluation, EvaluationVoter::VIEW);
         $this->assertDenied($this->voter(false), null, $evaluation, EvaluationVoter::VIEW);
+    }
+
+    /**
+     * READ_GRADES opens the whole class's marks, names included - the entry screen read-only, and
+     * what the Claude connector reads back. It is VIEW without the student: titulaires of the
+     * matière, the class's referent teachers, staff.
+     */
+    public function testTheClassGradesAreReadByTheMatiereTheReferentAndStaff(): void
+    {
+        $author = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'author');
+        $colleague = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'colleague');
+        $referent = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'referent');
+        $staff = $this->user(['ROLE_USER', 'ROLE_ADMIN'], 'staff');
+        $evaluation = $this->evaluation([$author, $colleague], author: $author);
+
+        $this->assertGranted($this->voter(false), $author, $evaluation, EvaluationVoter::READ_GRADES);
+        $this->assertGranted($this->voter(false), $colleague, $evaluation, EvaluationVoter::READ_GRADES);
+        $this->assertGranted($this->voter(false, isReferent: true), $referent, $evaluation, EvaluationVoter::READ_GRADES);
+        $this->assertGranted($this->voter(true), $staff, $evaluation, EvaluationVoter::READ_GRADES);
+    }
+
+    /** The clause VIEW has and READ_GRADES must never grow: a student reads their own mark, not the class's. */
+    public function testAStudentNeverReadsTheClassGrades(): void
+    {
+        $student = $this->user(['ROLE_USER', 'ROLE_STUDENT'], 'student');
+        $stranger = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'stranger');
+        $evaluation = $this->evaluation([$this->user(['ROLE_TEACHER'], 'owner')], [$student], true);
+
+        $this->assertGranted($this->voter(false), $student, $evaluation, EvaluationVoter::VIEW);
+        $this->assertDenied($this->voter(false), $student, $evaluation, EvaluationVoter::READ_GRADES);
+        $this->assertDenied($this->voter(false), $stranger, $evaluation, EvaluationVoter::READ_GRADES, 'a teacher of another matière is an outsider here');
+        $this->assertDenied($this->voter(false), null, $evaluation, EvaluationVoter::READ_GRADES);
     }
 
     public function testForeignAttributesAndSubjectsAreLeftAlone(): void

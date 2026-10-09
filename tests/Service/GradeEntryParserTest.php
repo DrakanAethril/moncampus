@@ -77,4 +77,17 @@ final class GradeEntryParserTest extends TestCase
         self::assertNull($this->parser->clamp('', 20.0));
         self::assertSame(7.5, $this->parser->clamp(' 7,5 ', 20.0));
     }
+
+    /**
+     * The number as typed, before any clamping - what a caller reads to refuse an out-of-scale grade
+     * instead of rewriting it (the Claude connector: a 25/20 is a misreading, not « full marks »).
+     */
+    public function testNumberReadsTheCellWithoutClamping(): void
+    {
+        self::assertSame(25.0, $this->parser->number('25'));
+        self::assertSame(-3.0, $this->parser->number('-3'));
+        self::assertSame(14.25, $this->parser->number(' (14,25) '));
+        self::assertNull($this->parser->number('abs'));
+        self::assertNull($this->parser->number(''));
+    }
 }

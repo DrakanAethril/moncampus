@@ -28,6 +28,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * voter decides. A barème is written only through App\Service\EvaluationRubricBuilder, after the
  * strict reading of App\Service\EvaluationRubricJsonImporter, and never onto an evaluation whose
  * points were already entered (App\Repository\GradeRubricAnswerRepository::existsForEvaluation()).
+ * The marks themselves are App\Mcp\McpGradeSheet's.
  *
  * @phpstan-import-type RubricDocument from EvaluationRubricJsonImporter
  */
@@ -88,7 +89,9 @@ final readonly class McpGradebook
 
         if (!$evaluation instanceof Evaluation || null === $program || !$program->isTimetableManagementEnabled()
             || !$this->structure->isProgramVisible($program) || !$this->authorization->isGranted($attribute, $evaluation)) {
-            throw new McpToolException(\sprintf('Évaluation %d introuvable parmi celles que vous pouvez %s.', $id, EvaluationVoter::MANAGE === $attribute ? 'modifier' : 'consulter'));
+            throw new McpToolException(\sprintf('Évaluation %d introuvable parmi celles que vous pouvez %s.', $id, match ($attribute) {
+                EvaluationVoter::MANAGE => 'modifier', EvaluationVoter::READ_GRADES => 'consulter avec les notes de la classe', default => 'consulter',
+            }));
         }
 
         return $evaluation;
@@ -163,6 +166,15 @@ final readonly class McpGradebook
 
         return $this->urls->generate('app_program_gradebook_evaluation_rubric', [
             'id' => $topic?->getProgram()?->getId(),
+            'evaluationId' => $evaluation->getId(),
+        ], UrlGeneratorInterface::ABSOLUTE_URL);
+    }
+
+    /** The entry screen: where the marks of an evaluation are read and typed. */
+    public function entryUrl(Evaluation $evaluation): string
+    {
+        return $this->urls->generate('app_program_gradebook_evaluation_entry', [
+            'id' => $evaluation->getTopic()?->getProgram()?->getId(),
             'evaluationId' => $evaluation->getId(),
         ], UrlGeneratorInterface::ABSOLUTE_URL);
     }
