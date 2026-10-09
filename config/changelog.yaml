@@ -26,6 +26,12 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.09'
+      date: '2026-10-09'
+      summary: "Une correction interne sur la surveillance du courrier pro, sans changement visible à l'écran."
+      entries:
+          - type: interne
+            title: "Courrier pro : la vérification nocturne ne signale plus comme perdu un mail déjà enregistré"
     - version: '2026.10.08'
       date: '2026-10-08'
       summary: "Une correction sur les machines virtuelles de travaux pratiques : pendant l'installation d'une machine, le compte d'un étudiant n'est plus créé deux fois."

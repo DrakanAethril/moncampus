@@ -383,6 +383,11 @@ Notes:
   level, which is this platform's only alerting threshold) - the messages are recovered either way,
   but the alert is what says the normal path above dropped them. `--since` bounds the scan, seven
   days by default; widen it after an incident, the run costs nothing on objects already stored.
+  **Only a mail it actually wrote counts as replayed.** An object the inbound path read and chose
+  not to store - its Message-ID is already in the database, typically a student's own send coming
+  back because they copied their school address - has no row under its key and is met again at
+  every pass: the run lists it as « déjà connu » and stays silent. Before 2026-10-09 it was counted
+  as replayed, and rang every night for a week about a mail nobody had lost.
 
 ## e-CO and the IGN's Géoplateforme (scheduled)
 

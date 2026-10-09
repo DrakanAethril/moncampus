@@ -8,6 +8,7 @@ use App\Entity\EmailAttachment;
 use App\Entity\EmailMessage;
 use App\Enum\EmailDirection;
 use App\Enum\EmailScanVerdict;
+use App\Enum\InboundMailOutcome;
 use App\Repository\EmailAliasRepository;
 use App\Repository\EmailMessageRepository;
 use Aws\S3\S3Client;
@@ -53,15 +54,16 @@ class InboundMailProcessor
     }
 
     /**
-     * @return bool true when the message was processed or already had been (the SQS message may be
-     *              deleted); any error bubbles up as an exception so the message stays in the queue
+     * Whatever is returned, the SQS message may be deleted: any error bubbles up as an exception so
+     * the message stays in the queue. The outcome says whether a row was written, which is what the
+     * reconciliation needs to tell a mail it recovered from an object that was never going to be one.
      */
-    public function process(string $sourceKey): bool
+    public function process(string $sourceKey): InboundMailOutcome
     {
         if (null !== $this->messageRepository->findOneBySourceKey($sourceKey)) {
             $this->logger->info('School mail: object already processed, skipped.', ['key' => $sourceKey]);
 
-            return true;
+            return InboundMailOutcome::AlreadyStored;
         }
 
         $raw = $this->download($sourceKey);
@@ -75,7 +77,7 @@ class InboundMailProcessor
                 'messageId' => $messageId,
             ]);
 
-            return true;
+            return InboundMailOutcome::DuplicateMessageId;
         }
 
         $message = $this->buildMessage($parsed, $sourceKey, $messageId);
@@ -96,7 +98,7 @@ class InboundMailProcessor
             'student' => $message->getStudent()?->getUsername(),
         ]);
 
-        return true;
+        return InboundMailOutcome::Stored;
     }
 
     /**
