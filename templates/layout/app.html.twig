@@ -307,7 +307,7 @@
                             {% endif %}
                         {% endfor %}
                         {% endif %}
-                        {% if (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD')) and (feature('ufa_booklet') or feature('laptop_loans')) %}
+                        {% if (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD')) and (feature('ufa_booklet') or feature('laptop_loans') or feature('teacher_dossiers')) %}
                             <li class="nav-item dropdown {{ current_route starts with 'app_ufa' or current_route starts with 'app_laptops' ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-ufa" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ (current_route starts with 'app_ufa' or current_route starts with 'app_laptops') ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'ufaNavLabel'|trans }}</span>
@@ -369,6 +369,13 @@
                                             <a class="dropdown-item {{ current_route starts with 'app_laptops_configuration' ? 'active' }}" href="{{ path('app_laptops_configuration') }}">{{ 'ufaLaptopsConfigurationNavLabel'|trans }}</a>
                                         </div>
                                     </div>
+                                    {% endif %}
+                                    {# « Dossiers intervenants » (design/validated/dossiers-intervenants.md):
+                                       the last entry of the menu, under a heading of its own - without
+                                       one it would read as one more piece of « MATÉRIEL ». #}
+                                    {% if feature('teacher_dossiers') %}
+                                    <h6 class="dropdown-header">{{ 'ufaTeachersGroupLabel'|trans }}</h6>
+                                    <a class="dropdown-item {{ current_route starts with 'app_ufa_teacher_dossier' ? 'active' }}" href="{{ path('app_ufa_teacher_dossiers') }}">{{ 'teacherDossierNavLabel'|trans }}</a>
                                     {% endif %}
                                 </div>
                             </li>

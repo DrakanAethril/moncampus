@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\DossierReviewAction;
 use App\Repository\DossierReviewRepository;
+use App\Service\Dossier\DepositReview;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -22,7 +23,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: DossierReviewRepository::class)]
 #[ORM\Table(name: 'dossier_review')]
-class DossierReview
+class DossierReview implements DepositReview
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]

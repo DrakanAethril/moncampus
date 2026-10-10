@@ -1,0 +1,25 @@
+{# The trail of every administration screen of « Dossiers intervenants »:
+   Accueil › UFA › Dossiers intervenants [› Modèles] [› the dossier or the model] [› leaf].
+
+   `dossier` names the dossier (« Nadia Belkacem — Dossier administratif ») or the model (its title,
+   under « Modèles »); `templates` forces the « Modèles » level on the list of models, which has no
+   dossier to read it from; `leaf` adds the last segment, on a screen under the dossier. #}
+{% set dossier = dossier|default(null) %}
+{% set in_templates = (templates|default(false)) or (dossier and dossier.isTemplate) %}
+{% set segments = [
+    {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+    {label: 'teacherDossierNavLabel'|trans, url: path('app_ufa_teacher_dossiers')},
+] %}
+{% if in_templates %}
+    {% set segments = segments|merge([{label: 'teacherDossierTemplatesTabLabel'|trans, url: path('app_ufa_teacher_dossier_templates')}]) %}
+{% endif %}
+{% if dossier and dossier.id %}
+    {% set segments = segments|merge([{
+        label: dossier.isTemplate ? dossier.title : (dossier.teacher.displayName ?? dossier.teacher.username) ~ ' — ' ~ dossier.title,
+        url: path('app_ufa_teacher_dossier_show', {id: dossier.id}),
+    }]) %}
+{% endif %}
+{% if leaf is defined and leaf %}
+    {% set segments = segments|merge([{label: leaf, url: app.request.requestUri}]) %}
+{% endif %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}

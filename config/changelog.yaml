@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.10'
+      date: '2026-10-10'
+      summary: "Un nouvel outil entre en essai auprès de l'administration : demander des pièces administratives à un intervenant et suivre leur dépôt."
+      entries:
+          - type: nouveaute
+            title: "Dossiers administratifs des intervenants, en essai auprès de l'administration"
+            detail: "Un outil pour demander des pièces à un intervenant et suivre leur dépôt."
+          - type: interne
+            title: "Dossiers documentaires : la règle de statut partagée avec ce nouvel outil"
     - version: '2026.10.09.2'
       date: '2026-10-09'
       summary: "Sur le wiki, les liens vers une autre page ne se perdent plus à l'enregistrement. Le connecteur Claude, toujours en essai, sait saisir et relire les notes d'une évaluation, et modifier une évaluation."

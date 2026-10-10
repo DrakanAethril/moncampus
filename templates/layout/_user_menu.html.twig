@@ -38,6 +38,14 @@
        menu wider than its own entries. #}
     <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow cm-user__menu">
         <a href="{{ path('app_profile') }}" class="dropdown-item">{{ 'profileNavLabel'|trans }}</a>
+        {# « Mes dossiers administratifs » - the pieces the UFA's administration asked of this
+           person (design/validated/dossiers-intervenants.md). Shown to whoever has a dossier handed
+           to them, complete or not, closed or not: the home banner goes away once nothing is
+           expected of them, and this is then the only way back to what they handed in. The
+           function also answers no while the feature is unlit for them. #}
+        {% if has_teacher_dossiers() %}
+            <a href="{{ path('app_my_teacher_dossiers') }}" class="dropdown-item">{{ 'myTeacherDossiersNavLabel'|trans }}</a>
+        {% endif %}
         {# « Leveling » sits with the profile because that is what it is: the
            student's own reading of their own game. It appears only for somebody
            who actually plays one - game_badge() answers null otherwise. #}

@@ -554,6 +554,43 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   The PDF (`templates/ufa/ecf/print.html.twig`, also the online reader's frame) reproduces the
   ministry's template page for page - lengths in points measured on it; an element wider than the
   page makes Chromium scale the whole document down, so nothing may overflow.
+- **Dossiers intervenants** (UFA › INTERVENANTS; « Mes dossiers administratifs » in the profile
+  menu) — `TeacherDossier` → `TeacherDossierGroup` / `TeacherDossierDocument` →
+  `TeacherDossierSubmission` → `TeacherDossierReview`, `App\Controller\Ufa\TeacherDossier*`,
+  `src/Service/TeacherDossier/`, spec `design/validated/dossiers-intervenants.md`. The pieces the
+  administration asks of **one** teacher (identity card, RIB, attestations…), each one deposited
+  or validated. **`Feature::TeacherDossiers` is off for every role: administrators only, until
+  Gestion › Fonctionnalités opens it** - for staff, staff-lead **and** teacher, the intervenant's
+  own screens sitting behind the same switch. Rules the code holds:
+  - **The dossiers documentaires' idea, deliberately not their tables.** The access rule is the
+    opposite - here the administration enters by its role, there nobody does - and the files are
+    somebody's papers. What the two share is the rule: `DossierStatusResolver` reads a piece and its
+    dépôts through three interfaces (`RequestedPiece`, `DepositVersion`, `DepositReview`) both
+    families implement, plus the enums, the `templates/dossier/_*` partials and the `cm-dd-*` kit.
+    A teacher's piece is always visible and its date limite closes nothing (« En retard », no more).
+  - **A model is a dossier with no teacher** (`TeacherDossier::asTemplate()` / `forTeacher()`, the
+    only two ways in): same table, same editor. « Depuis un modèle » **copies** it, for one teacher
+    or several (`TeacherDossierComposer`); `$sourceTemplate` is kept for the record only, so
+    changing or deleting a model touches no dossier. In Twig say `dossier.isTemplate` or
+    `dossier.sourceTemplate`, never `dossier.template` - it resolves to whichever method comes first.
+  - **`TeacherDossierVoter` is the whole « qui fait quoi »**: MANAGE and REVIEW for admin, staff and
+    staff-lead (no validateur is named), VIEW and SUBMIT for the intervenant on their own dossier
+    once published; **nobody reviews their own**; every other teacher gets a 404. The administration
+    also deposits *for* the intervenant (`TeacherDossierSubmission::$submittedBy`).
+  - **Draft → Published → Closed** (reopenable). Only a published dossier takes a dépôt or a review;
+    a closed one stays readable on both sides and no longer lights the banner.
+  - **`TeacherDossierSheets` is the one reading** (status per piece, avancement over the pieces
+    *obligatoires*, points d'attention) for the list, the fiche, the intervenant's page and
+    `TeacherDossierPending` - the home banner and the menu entry. **The banner counts what the
+    intervenant has to do** (to deposit, late, to correct), never a piece waiting for the staff.
+  - **A piece's bytes never get the CDN address.** `TeacherDossierFiles` writes under
+    `teacher-dossiers/{dossier}/{32 hex}.{ext}`; `TeacherDossierFileController` is the only door:
+    Voter, then a redirect to a short-lived signed URL, framed by an app screen. Never
+    `file_url()` on one of these keys. PDF and pictures only (`UploadPolicy::administrativePapers()`),
+    no library tab. Deleting a dossier hands its files to the deferred purge first.
+  - A piece somebody deposited on is no longer deleted (made facultative instead). No mail, no
+    notification - the banner is the only signal (user's decision). Not exposed to the connector
+    nor to the mobile app.
 - **Stage / recherche d'emploi** — `JobSearch`, `JobApplication`, `TrainingOffer`,
   `TrainingApplication` (postulation with free-form attachments). The job search names its own
   démarches: a démarche is never *made* an `Enterprise`, it may only *point at* one of the vivier
@@ -732,10 +769,10 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 32 of them: Assignment, AudienceTargetable,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 33 of them: Assignment, AudienceTargetable,
 DocumentationArticle, Dossier, EcfBooklet, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
 GuestConsole, InternshipTutorLink, LearningPath, LessonLog, MessageThread, OnlineCourse, Portfolio, Progression, ProxmoxHost, QuizFolder,
-QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket,
+QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, TeacherDossier, Ticket,
 Wall, Wiki, WordCloud).
 New per-object rules belong in a Voter, not inline in a controller.
 

@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Enum\DossierDepositType;
 use App\Enum\DossierValidationProfile;
 use App\Repository\DossierDocumentRepository;
+use App\Service\Dossier\RequestedPiece;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -30,7 +31,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 #[ORM\Entity(repositoryClass: DossierDocumentRepository::class)]
 #[ORM\Table(name: 'dossier_document')]
-class DossierDocument
+class DossierDocument implements RequestedPiece
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
