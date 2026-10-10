@@ -12106,6 +12106,73 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-dd-pick--option:has(input:checked) { background: transparent; }
 .cm-dd-pick--option:has(input:checked) .cm-dd-pick__name { color: var(--cm-ink); }
 
+/* ---------- Dossiers intervenants (UFA) -----------------------------------
+   The dossiers documentaires' kit above is reused as it is - same pastilles, same tags, same
+   property panel. What follows is only what a dossier asked of **one** person needs on top: a list
+   whose row is a dossier rather than a cible, and the fiche's row of actions. */
+.cm-td-list__head, .cm-td-list__row {
+    display: grid; grid-template-columns: 1.3fr 1.7fr 1.2fr 1.2fr .9fr .6fr; gap: 14px; align-items: center;
+}
+.cm-td-list__head { padding: 10px 18px; background: var(--dd-soft); border-bottom: 1px solid var(--dd-bd-mid); }
+.cm-td-list__row, .cm-td-mylist__row {
+    padding: 13px 18px; border-bottom: 1px solid var(--dd-bd-soft); color: inherit; text-decoration: none;
+}
+.cm-td-list__row:last-child, .cm-td-mylist__row:last-child { border-bottom: 0; }
+.cm-td-list__row:hover, .cm-td-mylist__row:hover { background: var(--dd-soft); color: inherit; text-decoration: none; }
+.cm-td-list__title { font: 600 14px var(--cm-font-ui); color: var(--dd-blue-tx); }
+.cm-td-list__state { justify-self: end; }
+.cm-td-mylist__head, .cm-td-mylist__row {
+    display: grid; grid-template-columns: 2fr 1.3fr 1.4fr .6fr; gap: 14px; align-items: center;
+}
+.cm-td-mylist__head { padding: 10px 18px; background: var(--dd-soft); border-bottom: 1px solid var(--dd-bd-mid); }
+.cm-td-search { margin-left: auto; }
+.cm-td-search .cm-dd-input { width: 240px; }
+.cm-td-newtemplate { display: flex; gap: 8px; align-items: center; width: 100%; max-width: 520px; }
+.cm-td-newtemplate .cm-dd-input { flex: 1; }
+.cm-td-template {
+    display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--dd-bd-soft); flex-wrap: wrap;
+}
+.cm-td-template:last-child { border-bottom: 0; }
+.cm-td-template .cm-dd-list__name { flex: 1; min-width: 220px; }
+.cm-td-template__end { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cm-td-template__end .cm-dd-ghost { padding: 7px 13px; font-size: 12.5px; }
+.cm-td-summary__head, .cm-td-summary__row {
+    display: grid; grid-template-columns: 2.2fr 1.2fr .8fr .8fr 1fr; gap: 14px; align-items: center; padding: 11px 18px;
+}
+.cm-td-summary__head { background: var(--dd-soft); border-bottom: 1px solid var(--dd-bd-mid); }
+.cm-td-summary__row { border-bottom: 1px solid var(--dd-bd-soft); }
+.cm-td-summary__row:last-child { border-bottom: 0; }
+.cm-td-actions { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
+.cm-td-actions .cm-dd-ghost { padding: 8px 14px; font-size: 13px; }
+.cm-td-actions__end { margin-left: auto; }
+.cm-td-note { margin: 0; font-size: 13px; color: var(--cm-muted); }
+.cm-td-instructions { margin: 6px 0 0; font-size: 14px; color: var(--cm-ink); line-height: 1.5; }
+.cm-td-feedback--ok { background: var(--dd-ok-bg); border-color: transparent; }
+.cm-td-feedback--ok .cm-dd-feedback__head { color: var(--dd-ok-tx); }
+.cm-td-behalf { border-top: 1px solid var(--dd-bd-soft); padding-top: 14px; }
+.cm-td-behalf[open] { display: flex; flex-direction: column; gap: 8px; }
+.cm-td-upload { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.cm-td-upload > :not(button) { align-self: stretch; }
+.cm-td-panel__delete { margin-left: auto; }
+.cm-td-panel__delete .cm-dd-ghost, .cm-td-panel__locked { white-space: nowrap; }
+.cm-td-panel__locked { align-self: center; white-space: normal; }
+.cm-dd-panel__foot:has(.cm-td-panel__delete, .cm-td-panel__locked) { flex-wrap: wrap; }
+/* « Nouveau dossier »: what belongs to one mode is hidden in the other from the radio it holds,
+   through `:has()` - the reason is the one given for the segmented control above. */
+.cm-td-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cm-td-new:has(input[name="mode"][value="blank"]:checked) .cm-td-new__template { display: none; }
+.cm-td-new:not(:has(input[name="mode"][value="blank"]:checked)) .cm-td-new__blank { display: none; }
+/* The second click of a two-click button (confirm_click_controller.js). */
+.cm-dd-ghost--fix.is-armed { background: var(--dd-no-tx); border-color: var(--dd-no-tx); color: #fff; }
+@media (max-width: 820px) {
+    .cm-td-list__head, .cm-td-mylist__head, .cm-td-summary__head { display: none; }
+    .cm-td-list__row, .cm-td-mylist__row, .cm-td-summary__row { grid-template-columns: 1fr; gap: 8px; }
+    .cm-td-list__state { justify-self: start; }
+    .cm-td-modes { grid-template-columns: 1fr; }
+    .cm-td-search { margin-left: 0; width: 100%; }
+    .cm-td-search .cm-dd-input { width: 100%; }
+}
+
 /* How close a bilan is to its own closing date, on the grouped relances screen: a ramp from green
    to brick, ink only. The four steps are decided server-side (AlternancePeriodStatusResolver::
    deadlineToneFor) so the wording and the colour always answer the same question; here there is

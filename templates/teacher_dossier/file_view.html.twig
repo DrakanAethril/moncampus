@@ -1,0 +1,39 @@
+{# One piece of a dossier intervenant, shown inside the application.
+
+   The file is framed rather than opened bare, for the reason
+   templates/ufa/formation/document_view.html.twig gives - a route that redirects to a signed
+   address leaves a tab with no way back - and the frame's own address is the guarded route, so
+   nothing on this page is an address somebody could keep. #}
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = submission.document.name %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% if asHolder %}
+        {{ component('Cm:Breadcrumb', {segments: [
+            {label: 'myTeacherDossiersNavLabel'|trans, url: path('app_my_teacher_dossiers')},
+            {label: dossier.title, url: path('app_my_teacher_dossier', {id: dossier.id, piece: submission.document.id})},
+            {label: heading, url: app.request.requestUri},
+        ]}) }}
+    {% else %}
+        {% include 'ufa/teacher_dossier/_breadcrumb.html.twig' with {dossier: dossier, leaf: heading} only %}
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block page_actions %}
+    <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_teacher_dossier_file_download', {id: submission.id}) }}" data-turbo="false">{{ 'dossierDownloadAction'|trans }}</twig:Cm:Button>
+{% endblock %}
+
+{% block main %}
+    <p class="cm-dd-meta" style="margin-bottom: 10px;">
+        {{ submission.originalFilename }} · v{{ submission.version }} · {{ 'dossierSubmittedOnText'|trans({'%date%': submission.submittedAt|localized_date('d MMM HH:mm')}) }}
+        {%- if submission.onBehalf %} · {{ 'teacherDossierSubmittedOnBehalfText'|trans({'%author%': submission.submittedBy.displayName ?? submission.submittedBy.username}) }}{% endif %}
+    </p>
+    <div class="card">
+        <iframe src="{{ path('app_teacher_dossier_file_raw', {id: submission.id}) }}" title="{{ heading }}" style="width: 100%; height: 80vh; border: 0; background: #e8eef3;"></iframe>
+    </div>
+{% endblock %}

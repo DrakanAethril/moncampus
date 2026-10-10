@@ -1,0 +1,31 @@
+{# One dépôt of a dossier intervenant, read as a file: its extension, its name, its weight, the day
+   it was handed in - and by whom, when the administration deposited it for the intervenant.
+
+   The two links go through App\Controller\TeacherDossierFileController, never through file_url()
+   or download_url(): a piece is opened by a route that asks the Voter, not by an address.
+
+   Parameters: submission, current (bool) - which version is the one that counts. #}
+<div class="cm-dd-file{{ current ? '' : ' cm-dd-file--past' }}">
+    <span class="cm-dd-badge cm-dd-badge--ext">{{ submission.extension ?? 'URL' }}</span>
+    <span class="cm-dd-file__text">
+        <span class="cm-dd-file__name">{{ submission.originalFilename ?? submission.url }}</span>
+        <span class="cm-dd-file__meta">
+            {%- if not current or submission.version > 1 %}v{{ submission.version }} · {% endif -%}
+            {#- A scan is often a few hundred kilobytes: « 0,3 Mo » says it, « 0,0 Mo » would not. -#}
+            {%- if submission.byteSize %}{{ submission.byteSize >= 1048576
+                ? (submission.byteSize / 1048576)|number_format(1, ',', ' ') ~ ' Mo'
+                : max(1, (submission.byteSize / 1024)|round) ~ ' Ko' }} · {% endif -%}
+            {{ 'dossierSubmittedOnText'|trans({'%date%': submission.submittedAt|localized_date('d MMM HH:mm')}) }}
+            {%- if submission.onBehalf %} · {{ 'teacherDossierSubmittedOnBehalfText'|trans({'%author%': submission.submittedBy.displayName ?? submission.submittedBy.username}) }}{% endif -%}
+            {%- if not current %} · {{ 'dossierReplacedLabel'|trans|lower }}{% endif -%}
+        </span>
+    </span>
+    <span class="cm-dd-file__links">
+        {% if submission.url %}
+            <a class="cm-dd-link" href="{{ submission.url }}" target="_blank" rel="noopener noreferrer">{{ 'dossierOpenLinkAction'|trans }}</a>
+        {% else %}
+            <a class="cm-dd-link" href="{{ path('app_teacher_dossier_file_view', {id: submission.id}) }}">{{ 'dossierOpenAction'|trans }}</a>
+            <a class="cm-dd-link" href="{{ path('app_teacher_dossier_file_download', {id: submission.id}) }}" data-turbo="false">{{ 'dossierDownloadAction'|trans }}</a>
+        {% endif %}
+    </span>
+</div>

@@ -1,0 +1,12 @@
+{# The two tabs of UFA › Dossiers intervenants, and the one button each of them carries.
+   Parameters: active ('dossiers' | 'templates'). #}
+<twig:Cm:Tabs :tabs="[
+    {url: path('app_ufa_teacher_dossiers'), label: 'teacherDossierDossiersTabLabel'|trans, active: 'dossiers' == active},
+    {url: path('app_ufa_teacher_dossier_templates'), label: 'teacherDossierTemplatesTabLabel'|trans, active: 'templates' == active},
+]">
+    <twig:block name="action">
+        {% if 'dossiers' == active %}
+            <twig:Cm:Button variant="primary" size="sm" href="{{ path('app_ufa_teacher_dossier_new') }}">{{ 'teacherDossierNewAction'|trans }}</twig:Cm:Button>
+        {% endif %}
+    </twig:block>
+</twig:Cm:Tabs>
