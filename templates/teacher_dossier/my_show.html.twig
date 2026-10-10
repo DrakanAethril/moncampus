@@ -1,0 +1,109 @@
+{# One dossier, read by its intervenant (design/validated/dossiers-intervenants.md, screen 8) - the
+   student's « Mes dossiers » screen of the dossiers documentaires, with two differences: a piece is
+   never « à venir », and its date limite closes nothing, so every piece that is not validated takes
+   a dépôt. A closed dossier is read and takes none. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ dossier.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'myTeacherDossiersNavLabel'|trans, url: path('app_my_teacher_dossiers')},
+        {label: dossier.title, url: path('app_my_teacher_dossier', {id: dossier.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ dossier.title }}{% if dossier.closed %}<span class="cm-dd-titletag"><twig:Cm:Badge :of="dossier.state"/></span>{% endif %}{% endblock %}
+
+{% block main %}
+    {% set awaited = sheet.awaitedFromTeacher %}
+    <div class="cm-dd-page">
+        <div class="cm-dd-banner">
+            <div class="cm-dd-banner__progress">
+                <span class="cm-dd-collabel">{{ 'teacherDossierMyProgressLabel'|trans }}</span>
+                <div class="cm-dd-progress">
+                    <span class="cm-dd-bar cm-dd-bar--lg{{ sheet.complete ? ' cm-dd-bar--done' }}"><span class="cm-dd-bar__fill" style="width: {{ sheet.percent }}%"></span></span>
+                    <span class="cm-dd-banner__frac">{{ sheet.settledRequired }} / {{ sheet.totalRequired }}</span>
+                </div>
+            </div>
+            <div class="cm-dd-banner__info">
+                <span class="cm-dd-banner__item">
+                    <span class="cm-dd-collabel">{{ 'dossierToSubmitLabel'|trans }}</span>
+                    <span class="cm-dd-banner__value{{ awaited.toSubmit > 0 ? ' cm-dd-banner__value--alert' }}">{{ 'dossierPieceCountText'|trans({'%count%': awaited.toSubmit}) }}</span>
+                </span>
+                <span class="cm-dd-banner__item">
+                    <span class="cm-dd-collabel">{{ 'teacherDossierToCorrectLabel'|trans }}</span>
+                    <span class="cm-dd-banner__value{{ awaited.toCorrect > 0 ? ' cm-dd-banner__value--alert' }}">{{ 'dossierPieceCountText'|trans({'%count%': awaited.toCorrect}) }}</span>
+                </span>
+            </div>
+        </div>
+
+        {% if dossier.closed %}
+            <p class="cm-td-note">{{ 'myTeacherDossierClosedNoteText'|trans }}</p>
+        {% endif %}
+        {% if dossier.description %}
+            <div class="cm-dd-card cm-dd-card--pad">
+                <span class="cm-dd-collabel">{{ 'teacherDossierInstructionsFieldLabel'|trans }}</span>
+                <p class="cm-td-instructions">{{ dossier.description|nl2br }}</p>
+            </div>
+        {% endif %}
+
+        {% for entry in sheet.groupedLines %}
+            <div class="cm-dd-card">
+                <div class="cm-dd-cardhead">
+                    <span class="cm-dd-cardtitle">{{ entry.group ? entry.group.title : 'dossierOtherPiecesLabel'|trans }}</span>
+                    <span class="cm-dd-count">{{ 'dossierPieceCountText'|trans({'%count%': entry.lines|length}) }}</span>
+                </div>
+                {% for line in entry.lines %}
+                    {% set document = line.document %}
+                    {% set isOpen = openPiece == document.id %}
+                    {% set is_url = 'url' == document.depositType.value %}
+                    <div class="cm-dd-mydoc" id="piece-{{ document.id }}">
+                        <a class="cm-dd-mydoc__row {{ isOpen ? 'is-open' }}"
+                           href="{{ path('app_my_teacher_dossier', {id: dossier.id, piece: isOpen ? null : document.id}) }}{{ isOpen ? '' : '#piece-' ~ document.id }}">
+                            {% include 'dossier/_status_pill.html.twig' with {status: line.status} only %}
+                            <span class="cm-dd-mydoc__text">
+                                <span class="cm-dd-mydoc__titleline">
+                                    <span class="cm-dd-mydoc__name">{{ document.name }}</span>
+                                    {% include 'dossier/_required.html.twig' with {document: document} only %}
+                                </span>
+                                <span class="cm-dd-mydoc__rules">{%- include 'teacher_dossier/_rules.html.twig' with {document: document} only -%}</span>
+                            </span>
+                            <span class="cm-dd-mydoc__end">
+                                {% include 'dossier/_status_tag.html.twig' with {status: line.status} only %}
+                                {% if not line.acceptsSubmission %}
+                                    <span class="cm-dd-btn cm-dd-btn--sm">{{ 'dossierSeeAction'|trans }}</span>
+                                {% elseif line.status.value in ['corriger', 'retard'] %}
+                                    <span class="cm-dd-btn cm-dd-btn--sm cm-dd-btn--danger">{{ ('corriger' == line.status.value ? 'dossierResubmitAction' : (is_url ? 'dossierAddLinkAction' : 'dossierSubmitAction'))|trans }}</span>
+                                {% elseif line.latest %}
+                                    <span class="cm-dd-btn cm-dd-btn--sm">{{ 'dossierSeeAction'|trans }}</span>
+                                {% else %}
+                                    <span class="cm-dd-btn cm-dd-btn--sm">{{ (is_url ? 'dossierAddLinkAction' : 'dossierSubmitAction')|trans }}</span>
+                                {% endif %}
+                            </span>
+                        </a>
+
+                        {% if isOpen %}
+                            <div class="cm-dd-mydoc__panel">
+                                {% include 'teacher_dossier/_versions.html.twig' with {line: line} only %}
+
+                                {% if line.acceptsSubmission %}
+                                    {% if line.latest %}
+                                        <span class="cm-dd-collabel">{{ 'teacherDossierNewVersionHeading'|trans }}</span>
+                                    {% endif %}
+                                    {% include 'teacher_dossier/_deposit_form.html.twig' with {
+                                        document: document, uploadForm: uploadForm, token: csrf_token('teacher_dossier_submission'),
+                                        action: path('app_my_teacher_dossier_submit', {id: dossier.id, documentId: document.id}),
+                                        label: (line.latest ? 'dossierResubmitAction' : 'dossierSubmitAction')|trans,
+                                    } only %}
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="cm-dd-list__empty">{{ 'teacherDossierCompositionEmptyText'|trans }}</p>
+        {% endfor %}
+    </div>
+{% endblock %}

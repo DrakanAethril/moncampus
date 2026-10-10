@@ -66,6 +66,29 @@
         </div>
     {% endif %}
 
+    {# The UFA's administration is waiting for a piece of this person's dossier administratif
+       (design/validated/dossiers-intervenants.md). Above every dashboard rather than inside the
+       teacher's: an administrator who also teaches reads another dashboard and is asked the same
+       papers. **One** banner whatever the number of dossiers, and only while a piece obligatoire is
+       theirs to hand in - one waiting for the administration's answer does not light it. #}
+    {% set teacher_dossier_awaited = teacher_dossier_awaited() %}
+    {% if teacher_dossier_awaited %}
+        <div class="cm-dash-banner">
+            <span class="cm-dash-banner__icon"><twig:ux:icon name="alert-circle" width="20" height="20"/></span>
+            <span class="cm-dash-banner__body">
+                <span class="cm-dash-banner__title">{{ 'homeTeacherDossierBannerTitle'|trans }}</span>
+                <span class="cm-dash-banner__text">
+                    {%- if teacher_dossier_awaited.toSubmit > 0 %}{{ 'homeTeacherDossierBannerToSubmitText'|trans({'%count%': teacher_dossier_awaited.toSubmit}) }}{% endif -%}
+                    {%- if teacher_dossier_awaited.toSubmit > 0 and teacher_dossier_awaited.toCorrect > 0 %}, {% endif -%}
+                    {%- if teacher_dossier_awaited.toCorrect > 0 %}{{ 'homeTeacherDossierBannerToCorrectText'|trans({'%count%': teacher_dossier_awaited.toCorrect}) }}{% endif -%}.
+                </span>
+            </span>
+            <span class="cm-dash-banner__action">
+                <twig:Cm:Button variant="gold" href="{{ path('app_my_teacher_dossiers') }}">{{ 'homeTeacherDossierBannerAction'|trans }}</twig:Cm:Button>
+            </span>
+        </div>
+    {% endif %}
+
     {% include 'home/_pending_surveys_card.html.twig' %}
 
     {% if admin is defined %}
