@@ -95,6 +95,7 @@ enum Feature: string
     case Jobboard = 'jobboard';
     case CompanySearch = 'company_search';
     case EnterprisePool = 'enterprise_pool';
+    case TeacherDossiers = 'teacher_dossiers';
 
     // --- Technique ---------------------------------------------------------------------------
 
@@ -153,7 +154,7 @@ enum Feature: string
 
             self::UfaBooklet, self::UfaEcf, self::MyAlternance, self::TutorEvaluations, self::LaptopLoans,
             self::TrainingOffers, self::JobSearch, self::Jobboard, self::CompanySearch,
-            self::EnterprisePool => FeatureFamily::Alternance,
+            self::EnterprisePool, self::TeacherDossiers => FeatureFamily::Alternance,
 
             self::MyVms, self::Infrastructure, self::GuestConsole, self::Eco,
             self::ActivityHistory, self::Equipment, self::ClaudeConnector => FeatureFamily::Technical,
@@ -249,6 +250,7 @@ enum Feature: string
             self::Jobboard => 'featureJobboardLabel',
             self::CompanySearch => 'featureCompanySearchLabel',
             self::EnterprisePool => 'featureEnterprisePoolLabel',
+            self::TeacherDossiers => 'featureTeacherDossiersLabel',
             self::MyVms => 'featureMyVmsLabel',
             self::Infrastructure => 'featureInfrastructureLabel',
             self::GuestConsole => 'featureGuestConsoleLabel',
@@ -393,6 +395,12 @@ enum Feature: string
             // and a file of names, addresses and options. The routes are staff/admin either way -
             // this line only says which of those two the establishment delivers it to by default.
             self::ClassListExports => ['ROLE_STAFF', 'ROLE_STAFF-LEAD'],
+
+            // « Dossiers intervenants » (design/validated/dossiers-intervenants.md) is named by no
+            // role: the administrator tries it first. Opening it means ticking staff, staff-lead
+            // **and** teacher - the intervenant's own screens (the home banner, « Mes dossiers
+            // administratifs ») sit behind the same switch as the administration's, so a dossier
+            // published while ROLE_TEACHER is unlit is one its holder cannot see yet.
 
             // The ECF booklet (design/validated/ecf-booklet.md) is read by the administration on the
             // alternance follow-up and written by administrators alone - App\Security\Voter\EcfBookletVoter
