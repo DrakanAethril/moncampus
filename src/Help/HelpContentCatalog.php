@@ -798,6 +798,53 @@ final class HelpContentCatalog
                     'audiences' => [HelpAudience::Staff],
                     'summary' => "Oui : le tuteur se connecte avec un compte qui ne lui donne accès qu'aux alternances qu'il suit. Il n'apparaît pas dans les destinataires de la messagerie.",
                 ],
+                [
+                    'kind' => HelpArticleKind::Article,
+                    'slug' => 'dossiers-intervenants',
+                    'title' => 'Demander ses pièces à un intervenant',
+                    'audiences' => [HelpAudience::Staff],
+                    'summary' => 'Un dossier intervenant réunit les pièces demandées à un enseignant. Il se crée depuis un modèle, pour un ou plusieurs intervenants, et se suit pièce par pièce.',
+                    'body' => <<<'HTML'
+                        <h2>Où le trouver</h2>
+                        <p><strong>UFA &gt; Dossiers intervenants</strong>. La liste s'ouvre sur les dossiers <strong>Incomplets</strong> ; le filtre <strong>À valider</strong> réunit ceux dont une pièce attend votre réponse.</p>
+                        <h2>Les modèles</h2>
+                        <p>L'onglet <strong>Modèles</strong> garde les listes de pièces à réutiliser. Un modèle ne porte ni intervenant ni date. Le modifier ou le supprimer ne change aucun dossier déjà créé.</p>
+                        <h2>Créer un dossier</h2>
+                        <p><strong>Nouveau dossier</strong>, <strong>Depuis un modèle</strong> : choisissez le modèle, un ou plusieurs intervenants et, si vous le souhaitez, une date limite. Un dossier est créé pour chacun. <strong>Créer et publier</strong> le remet tout de suite à l'intervenant ; <strong>Créer en brouillon</strong> vous laisse ajuster ses pièces avant.</p>
+                        <h2>Les pièces</h2>
+                        <p>Chaque pièce est <strong>obligatoire</strong> ou facultative, et se rend en <strong>dépôt simple</strong> ou avec <strong>validation par l'administration</strong>. La date limite ne ferme rien : passé cette date, la pièce se lit « En retard ».</p>
+                        <h2>Valider ou demander une correction</h2>
+                        <p>Ouvrez le dossier, dépliez la pièce, ouvrez le fichier. Une demande de correction porte toujours un commentaire : l'intervenant le lit et dépose une nouvelle version. Tout membre de l'administration peut répondre, sauf sur son propre dossier.</p>
+                        <h2>Une pièce remise en main propre</h2>
+                        <p><strong>Déposer pour l'intervenant</strong>, sur la pièce dépliée. Le dépôt porte votre nom.</p>
+                        <h2>Clôturer</h2>
+                        <p>Un dossier clôturé reste lisible, n'accepte plus de dépôt et ne demande plus rien à l'intervenant. Il se rouvre.</p>
+                        HTML,
+                ],
+                [
+                    'kind' => HelpArticleKind::Article,
+                    'slug' => 'mes-dossiers-administratifs',
+                    'title' => 'Déposer les pièces de mon dossier administratif',
+                    'audiences' => [HelpAudience::Teacher],
+                    'summary' => "L'administration peut vous demander des pièces. Un bandeau vous le signale sur l'accueil, et vos dossiers restent consultables depuis le menu de votre avatar.",
+                    'body' => <<<'HTML'
+                        <h2>Où le trouver</h2>
+                        <p>Un bandeau s'affiche sur votre accueil tant qu'une pièce obligatoire est attendue de vous. À tout moment : menu de l'avatar, <strong>Mes dossiers administratifs</strong>.</p>
+                        <h2>Déposer une pièce</h2>
+                        <p>Dépliez la pièce, choisissez votre fichier (PDF ou image), puis <strong>Déposer</strong>. Certaines pièces sont rendues dès le dépôt, d'autres sont validées par l'administration.</p>
+                        <h2>Une correction est demandée</h2>
+                        <p>La pièce passe « À corriger », avec le commentaire de l'administration. Déposez une nouvelle version : l'ancienne reste visible dessous.</p>
+                        <h2>Qui voit mes pièces</h2>
+                        <p>Vous et l'administration. Aucun autre enseignant n'y a accès.</p>
+                        HTML,
+                ],
+                [
+                    'kind' => HelpArticleKind::Faq,
+                    'slug' => 'dossier-intervenant-date-limite',
+                    'title' => "J'ai dépassé la date limite d'une pièce, puis-je encore la déposer ?",
+                    'audiences' => [HelpAudience::Teacher, HelpAudience::Staff],
+                    'summary' => "Oui. La date limite ne ferme rien : la pièce se lit « En retard » tant qu'elle n'est pas déposée, et se dépose normalement. Seul un dossier clôturé n'accepte plus de dépôt.",
+                ],
             ],
         ];
     }
