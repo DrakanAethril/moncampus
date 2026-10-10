@@ -1,0 +1,63 @@
+{# UFA › Dossiers intervenants › Modèles (design/validated/dossiers-intervenants.md, screen 6).
+
+   A model carries no intervenant and no date. Its row offers the one thing a model is for -
+   « Créer des dossiers » - then the pencil and the bin every list row of this application carries. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'teacherDossierTemplatesTabLabel'|trans }} - {{ 'teacherDossierNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'ufa/teacher_dossier/_breadcrumb.html.twig' with {templates: true} only %}
+{% endblock %}
+
+{% block page_title %}{{ 'teacherDossierNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page cm-dd-page--wide">
+        <div>
+            {% include 'ufa/teacher_dossier/_tabs.html.twig' with {active: 'templates'} only %}
+            <div class="cm-dd-card cm-card--tabbed">
+                <div class="cm-dd-toolbar">
+                    <form method="post" class="cm-td-newtemplate" action="{{ path('app_ufa_teacher_dossier_template_new') }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('teacher_dossier') }}">
+                        <input class="cm-dd-input" type="text" name="title" required maxlength="255"
+                               placeholder="{{ 'teacherDossierTemplateTitlePlaceholder'|trans }}" aria-label="{{ 'teacherDossierTemplateTitlePlaceholder'|trans }}">
+                        <button type="submit" class="cm-dd-btn cm-dd-btn--sm">{{ 'teacherDossierNewTemplateAction'|trans }}</button>
+                    </form>
+                </div>
+                {% for template in templates %}
+                    {% set required = template.requiredDocumentCount %}
+                    {% set created = usage[template.id] ?? 0 %}
+                    <div class="cm-td-template">
+                        <span class="cm-dd-list__name">
+                            <a class="cm-dd-list__title" href="{{ path('app_ufa_teacher_dossier_documents', {id: template.id}) }}">{{ template.title }}</a>
+                            <span class="cm-dd-meta">
+                                {{- 'dossierPieceCountText'|trans({'%count%': template.documents|length}) }} · {{ 'dossierRequiredCountText'|trans({'%count%': required}) }} ·
+                                {{ 'teacherDossierTemplateUsageText'|trans({'%count%': created}) -}}
+                            </span>
+                        </span>
+                        <span class="cm-td-template__end">
+                            <a class="cm-dd-btn cm-dd-btn--sm" href="{{ path('app_ufa_teacher_dossier_new', {template: template.id}) }}">{{ 'teacherDossierCreateFromTemplateAction'|trans }}</a>
+                            <form method="post" action="{{ path('app_ufa_teacher_dossier_template_duplicate', {id: template.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('teacher_dossier') }}">
+                                <button type="submit" class="cm-dd-ghost">{{ 'teacherDossierDuplicateAction'|trans }}</button>
+                            </form>
+                            <a class="cm-dd-docrow__pencil" href="{{ path('app_ufa_teacher_dossier_settings', {id: template.id}) }}"
+                               aria-label="{{ 'teacherDossierEditAction'|trans }}" title="{{ 'teacherDossierEditAction'|trans }}"><twig:ux:icon name="pencil" width="14" height="14"/></a>
+                            <form method="post" action="{{ path('app_ufa_teacher_dossier_delete', {id: template.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('teacher_dossier') }}">
+                                <button type="submit" class="cm-dd-docrow__bin"
+                                        aria-label="{{ 'teacherDossierDeleteTemplateAction'|trans }}" title="{{ 'teacherDossierDeleteTemplateAction'|trans }}"
+                                        data-controller="confirm-submit"
+                                        data-confirm-submit-message-value="{{ 'teacherDossierDeleteTemplateConfirmText'|trans({'%title%': template.title}) }}"
+                                        data-action="click->confirm-submit#confirm"><twig:ux:icon name="trash" width="14" height="14"/></button>
+                            </form>
+                        </span>
+                    </div>
+                {% else %}
+                    <p class="cm-dd-list__empty">{{ 'teacherDossierTemplatesEmptyText'|trans }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

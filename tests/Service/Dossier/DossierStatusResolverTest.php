@@ -130,7 +130,12 @@ class DossierStatusResolverTest extends TestCase
         $second = $this->submission($document, 2);
 
         self::assertSame($second, DossierStatusResolver::latest([$second, $this->submission($document, 1)]));
-        self::assertNull(DossierStatusResolver::latest([]));
+        // Typed rather than a bare `[]`: latest() is generic over what it is handed, and an empty
+        // literal would make this assertion one the analyser already knows the answer to.
+        /** @var list<DossierSubmission> $none */
+        $none = [];
+
+        self::assertNull(DossierStatusResolver::latest($none));
     }
 
     public function testDepositsCloseOnTheDeadlineUnlessTheDocumentSaysOtherwise(): void

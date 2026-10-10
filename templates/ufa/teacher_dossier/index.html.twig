@@ -1,0 +1,101 @@
+{# UFA › Dossiers intervenants — one row per dossier, read from the dépôts
+   (design/validated/dossiers-intervenants.md, screen 2). The list opens on « Incomplets ». #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'teacherDossierNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'ufa/teacher_dossier/_breadcrumb.html.twig' only %}
+{% endblock %}
+
+{% block page_title %}{{ 'teacherDossierNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page cm-dd-page--wide">
+        <div class="cm-dd-kpis">
+            <div class="cm-dd-kpi">
+                <span class="cm-dd-collabel">{{ 'teacherDossierKpiIncompleteLabel'|trans }}</span>
+                <span class="cm-dd-kpi__value">{{ kpis.incomplete }}</span>
+                <span class="cm-dd-meta">{{ 'teacherDossierKpiIncompleteHint'|trans }}</span>
+            </div>
+            <div class="cm-dd-kpi">
+                <span class="cm-dd-collabel">{{ 'teacherDossierKpiToReviewLabel'|trans }}</span>
+                <span class="cm-dd-kpi__value">{{ kpis.toReview }}</span>
+                <span class="cm-dd-meta">{{ 'teacherDossierKpiToReviewHint'|trans }}</span>
+            </div>
+            <div class="cm-dd-kpi">
+                <span class="cm-dd-collabel">{{ 'teacherDossierKpiLateLabel'|trans }}</span>
+                <span class="cm-dd-kpi__value{{ kpis.late > 0 ? ' cm-dd-kpi__value--alert' }}">{{ kpis.late }}</span>
+                <span class="cm-dd-meta">{{ 'teacherDossierKpiLateHint'|trans }}</span>
+            </div>
+        </div>
+
+        <div>
+            {% include 'ufa/teacher_dossier/_tabs.html.twig' with {active: 'dossiers'} only %}
+            <div class="cm-dd-card cm-card--tabbed">
+                <div class="cm-dd-toolbar">
+                    <div class="cm-dd-filters">
+                        {% for candidate in filters %}
+                            <a class="cm-dd-filter {{ filter == candidate ? 'is-on' }}"
+                               href="{{ path('app_ufa_teacher_dossiers', {filter: candidate.value, q: search ?: null}) }}">
+                                {{ candidate.labelKey|trans }}<span class="cm-dd-filter__count">{{ counts[candidate.value] }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                    {# A GET form: the search is a result to show, and a URL somebody can send. #}
+                    <form method="get" class="cm-td-search" action="{{ path('app_ufa_teacher_dossiers') }}" role="search">
+                        <input type="hidden" name="filter" value="{{ filter.value }}">
+                        <input class="cm-dd-input" type="search" name="q" value="{{ search }}"
+                               placeholder="{{ 'teacherDossierSearchPlaceholder'|trans }}" aria-label="{{ 'teacherDossierSearchPlaceholder'|trans }}">
+                    </form>
+                </div>
+
+                <div class="cm-td-list__head">
+                    <span class="cm-dd-collabel">{{ 'teacherDossierTeacherColumnLabel'|trans }}</span>
+                    <span class="cm-dd-collabel">{{ 'teacherDossierDossierColumnLabel'|trans }}</span>
+                    <span class="cm-dd-collabel">{{ 'dossierProgressRequiredColumnLabel'|trans }}</span>
+                    <span class="cm-dd-collabel">{{ 'dossierAttentionColumnLabel'|trans }}</span>
+                    <span class="cm-dd-collabel">{{ 'dossierLastSubmissionColumnLabel'|trans }}</span>
+                    <span class="cm-dd-collabel"></span>
+                </div>
+                {% for sheet in rows %}
+                    {% set dossier = sheet.dossier %}
+                    {% set last = sheet.lastSubmission %}
+                    <a class="cm-td-list__row" href="{{ path('app_ufa_teacher_dossier_show', {id: dossier.id}) }}">
+                        <span class="cm-dd-person">
+                            {% include 'dossier/_avatar.html.twig' with {user: dossier.teacher, size: 32} only %}
+                            <span class="cm-dd-person__text">
+                                <span class="cm-dd-person__name">{{ dossier.teacher.displayName ?? dossier.teacher.username }}</span>
+                            </span>
+                        </span>
+                        <span class="cm-dd-list__name">
+                            <span class="cm-td-list__title">{{ dossier.title }}</span>
+                            <span class="cm-dd-meta">
+                                {{- dossier.sourceTemplate ? 'teacherDossierFromTemplateText'|trans({'%title%': dossier.sourceTemplate.title}) : 'teacherDossierBlankText'|trans -}}
+                            </span>
+                        </span>
+                        {# A brouillon has no avancement to read: nothing can have been handed in on
+                           a dossier its intervenant has never seen. #}
+                        {% if dossier.draft %}
+                            <span class="cm-dd-list__cell">{{ 'dossierPieceCountText'|trans({'%count%': dossier.documents|length}) }}</span>
+                        {% else %}
+                            <span class="cm-dd-progress">
+                                <span class="cm-dd-bar{{ sheet.complete ? ' cm-dd-bar--done' }}" style="height: 8px;"><span class="cm-dd-bar__fill" style="width: {{ sheet.percent }}%"></span></span>
+                                <span class="cm-dd-progress__value">{{ sheet.settledRequired }}/{{ sheet.totalRequired }}</span>
+                            </span>
+                        {% endif %}
+                        <span class="cm-dd-cibles__alerts">
+                            {% if dossier.published %}
+                                {% for alert in sheet.alerts %}{% include 'dossier/_status_tag.html.twig' with {status: alert} only %}{% endfor %}
+                            {% endif %}
+                        </span>
+                        <span class="cm-dd-list__cell">{{ last ? last.submittedAt|localized_date('d MMM HH:mm') : '—' }}</span>
+                        <span class="cm-td-list__state"><twig:Cm:Badge :of="dossier.state"/></span>
+                    </a>
+                {% else %}
+                    <p class="cm-dd-list__empty">{{ (0 == counts.all ? 'teacherDossierListEmptyText' : 'teacherDossierListNoMatchText')|trans }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

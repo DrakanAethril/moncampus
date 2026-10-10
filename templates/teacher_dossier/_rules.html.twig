@@ -1,0 +1,9 @@
+{# « rendu 31 oct. · fichier », or « sans date limite · fichier » - what one piece of a dossier
+   intervenant asks, worded in one place for the five screens that print it. A model's piece has no
+   date at all, so the date is simply left out there (`with_due: false`).
+
+   Parameters: document, with_due (bool, default true). #}
+{%- if with_due is not defined or with_due -%}
+    {{- document.dueOn ? 'dossierRuleDueText'|trans({'%date%': document.dueOn|localized_date('d MMM')}) : 'teacherDossierRuleNoDueText'|trans }} ·
+{% endif -%}
+{{ document.depositType.ruleKey|trans -}}

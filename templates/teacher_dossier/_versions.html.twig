@@ -1,0 +1,40 @@
+{# Everything handed in on one piece: the version that counts, what the administration last
+   answered to it, then the earlier versions folded with the comment that asked for another.
+
+   Shared by the administration's fiche and the intervenant's own page - the same list read from two
+   sides.
+
+   Parameters: line (App\Service\TeacherDossier\TeacherDossierLine). #}
+{% if line.latest %}
+    {% set review = line.lastReview %}
+    {% include 'teacher_dossier/_file.html.twig' with {submission: line.latest, current: true} only %}
+    {% if review %}
+        <div class="cm-dd-feedback{{ review.validation ? ' cm-td-feedback--ok' }}">
+            <span class="cm-dd-feedback__head">{{ (review.validation ? 'teacherDossierValidatedByText' : 'dossierCorrectionRequestedByText')|trans({
+                '%author%': review.author ? (review.author.displayName ?? review.author.username) : '',
+                '%date%': review.createdAt|localized_date('d MMM'),
+            }) }}</span>
+            {% if review.comment %}<span class="cm-dd-feedback__text">{{ review.comment }}</span>{% endif %}
+        </div>
+    {% endif %}
+    {% set previous = line.previousVersions %}
+    {% if previous is not empty %}
+        <details class="cm-dd-oldversions">
+            <summary class="cm-dd-oldversions__summary">{{ 'dossierPreviousVersionsText'|trans({'%count%': previous|length}) }}</summary>
+            <div class="cm-dd-oldversions__list">
+                {% for version in previous %}
+                    {% include 'teacher_dossier/_file.html.twig' with {submission: version, current: false} only %}
+                    {% if version.lastReview and version.lastReview.comment %}
+                        <div class="cm-dd-feedback">
+                            <span class="cm-dd-feedback__head">{{ (version.lastReview.validation ? 'teacherDossierValidatedByText' : 'dossierCorrectionRequestedByText')|trans({
+                                '%author%': version.lastReview.author ? (version.lastReview.author.displayName ?? version.lastReview.author.username) : '',
+                                '%date%': version.lastReview.createdAt|localized_date('d MMM'),
+                            }) }}</span>
+                            <span class="cm-dd-feedback__text">{{ version.lastReview.comment }}</span>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </details>
+    {% endif %}
+{% endif %}

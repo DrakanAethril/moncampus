@@ -1,0 +1,88 @@
+{# « Nouveau dossier » (design/validated/dossiers-intervenants.md, screen 3).
+
+   The two modes are two radio cards lit by `:has(input:checked)`, like the property panel's: the
+   model select and the date belong to « Depuis un modèle » and are hidden by the stylesheet in
+   « Vierge », so the form holds no state for JavaScript to keep in step. The server reads the mode
+   and ignores what does not apply to it. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'teacherDossierNewTitle'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'ufa/teacher_dossier/_breadcrumb.html.twig' with {leaf: 'teacherDossierNewTitle'|trans} only %}
+{% endblock %}
+
+{% block page_title %}{{ 'teacherDossierNewTitle'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page">
+        <form method="post" class="cm-dd-card cm-td-new" action="{{ path('app_ufa_teacher_dossier_new') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('teacher_dossier') }}">
+            <div class="cm-dd-pane">
+                <div class="cm-td-modes">
+                    <label class="cm-dd-radiocard">
+                        <input type="radio" name="mode" value="template"{{ not blank ? ' checked' }}{{ templates is empty ? ' disabled' }}>
+                        <span class="cm-dd-radiocard__dot"></span>
+                        <span class="cm-dd-radiocard__text">
+                            <span class="cm-dd-radiocard__label">{{ 'teacherDossierNewFromTemplateLabel'|trans }}</span>
+                            <span class="cm-dd-radiocard__hint">{{ (templates is empty ? 'teacherDossierNewNoTemplateHint' : 'teacherDossierNewFromTemplateHint')|trans }}</span>
+                        </span>
+                    </label>
+                    <label class="cm-dd-radiocard">
+                        <input type="radio" name="mode" value="blank"{{ blank ? ' checked' }}>
+                        <span class="cm-dd-radiocard__dot"></span>
+                        <span class="cm-dd-radiocard__text">
+                            <span class="cm-dd-radiocard__label">{{ 'teacherDossierNewBlankLabel'|trans }}</span>
+                            <span class="cm-dd-radiocard__hint">{{ 'teacherDossierNewBlankHint'|trans }}</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="cm-dd-field cm-td-new__template">
+                    <label class="cm-dd-label" for="td-template">{{ 'teacherDossierTemplateFieldLabel'|trans }}</label>
+                    <select class="cm-dd-select" id="td-template" name="template_id">
+                        <option value="">{{ 'teacherDossierTemplatePlaceholder'|trans }}</option>
+                        {% for candidate in templates %}
+                            <option value="{{ candidate.id }}"{{ template and template.id == candidate.id ? ' selected' }}>
+                                {{- candidate.title }} · {{ 'dossierPieceCountText'|trans({'%count%': candidate.documents|length}) -}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="cm-dd-field">
+                    <label class="cm-dd-label" for="td-title">{{ 'teacherDossierTitleFieldLabel'|trans }}</label>
+                    <input class="cm-dd-input cm-dd-input--lead" id="td-title" name="title" maxlength="255" value="{{ title }}"
+                           placeholder="{{ 'teacherDossierTitlePlaceholder'|trans }}">
+                    <span class="cm-dd-meta cm-td-new__template">{{ 'teacherDossierTitleFromTemplateHint'|trans }}</span>
+                </div>
+
+                <div class="cm-dd-field">
+                    <label class="cm-dd-label" for="td-teachers">{{ 'teacherDossierTeachersFieldLabel'|trans }}</label>
+                    <select id="td-teachers" name="teachers[]" multiple
+                            data-controller="tom-select"
+                            data-tom-select-url-value="{{ path('app_ufa_teacher_dossier_teacher_search') }}"
+                            data-tom-select-placeholder-value="{{ 'teacherDossierTeachersPlaceholder'|trans }}">
+                        {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}" selected>{{ teacher.displayName ?? teacher.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="cm-dd-meta cm-td-new__template">{{ 'teacherDossierTeachersTemplateHint'|trans }}</span>
+                    <span class="cm-dd-meta cm-td-new__blank">{{ 'teacherDossierTeachersBlankHint'|trans }}</span>
+                </div>
+
+                <div class="cm-dd-field cm-td-new__template" style="max-width: 260px;">
+                    <label class="cm-dd-label" for="td-due">{{ 'teacherDossierDueOnFieldLabel'|trans }}</label>
+                    <input class="cm-dd-input" type="date" id="td-due" name="due_on" value="{{ dueOn }}">
+                    <span class="cm-dd-meta">{{ 'teacherDossierDueOnHint'|trans }}</span>
+                </div>
+
+                <div class="cm-dd-foot cm-dd-foot--end">
+                    <a class="cm-dd-ghost cm-dd-ghost--quiet" href="{{ path('app_ufa_teacher_dossiers') }}">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" name="intent" value="draft" class="cm-dd-ghost">{{ 'teacherDossierCreateDraftAction'|trans }}</button>
+                    <button type="submit" name="intent" value="publish" class="cm-dd-btn cm-dd-btn--wide cm-td-new__template">{{ 'teacherDossierCreatePublishAction'|trans }}</button>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{# « Mes dossiers administratifs » — reached from the profile menu, drawn only for somebody who has
+   several dossiers: with exactly one, the route opens that dossier straight away
+   (App\Controller\MyTeacherDossierController::index()). #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'myTeacherDossiersNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'myTeacherDossiersNavLabel'|trans, url: path('app_my_teacher_dossiers')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'myTeacherDossiersNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page">
+        <div class="cm-dd-card">
+            <div class="cm-td-mylist__head">
+                <span class="cm-dd-collabel">{{ 'teacherDossierDossierColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel">{{ 'dossierProgressRequiredColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel">{{ 'dossierAttentionColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel"></span>
+            </div>
+            {% for sheet in sheets %}
+                {% set dossier = sheet.dossier %}
+                {% set awaited = sheet.awaitedFromTeacher %}
+                <a class="cm-td-mylist__row" href="{{ path('app_my_teacher_dossier', {id: dossier.id}) }}">
+                    <span class="cm-dd-list__name">
+                        <span class="cm-td-list__title">{{ dossier.title }}</span>
+                        <span class="cm-dd-meta">{{ 'teacherDossierReceivedOnText'|trans({'%date%': dossier.publishedAt|localized_date('d MMM yyyy')}) }}</span>
+                    </span>
+                    <span class="cm-dd-progress">
+                        <span class="cm-dd-bar{{ sheet.complete ? ' cm-dd-bar--done' }}" style="height: 8px;"><span class="cm-dd-bar__fill" style="width: {{ sheet.percent }}%"></span></span>
+                        <span class="cm-dd-progress__value">{{ sheet.settledRequired }}/{{ sheet.totalRequired }}</span>
+                    </span>
+                    <span class="cm-dd-list__cell">
+                        {%- if awaited.toSubmit + awaited.toCorrect > 0 -%}
+                            {{ 'teacherDossierAwaitedText'|trans({'%count%': awaited.toSubmit + awaited.toCorrect}) }}
+                        {%- elseif dossier.published and not sheet.complete -%}
+                            {{ 'teacherDossierAwaitingStaffText'|trans }}
+                        {%- else -%}
+                            —
+                        {%- endif -%}
+                    </span>
+                    <span class="cm-td-list__state"><twig:Cm:Badge :of="dossier.state"/></span>
+                </a>
+            {% else %}
+                <p class="cm-dd-list__empty">{{ 'myTeacherDossiersEmptyText'|trans }}</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{# Step 3 — what the dossier asks, read back, and the one place a brouillon is published from.
+   Parameters (passed with `only`): dossier. #}
+<div class="cm-dd-pane">
+    <div class="cm-dd-recap">
+        <div class="cm-dd-recap__card">
+            <span class="cm-dd-collabel">{{ 'teacherDossierTeacherFieldLabel'|trans }}</span>
+            <span class="cm-dd-recap__value">{{ dossier.teacher.displayName ?? dossier.teacher.username }}</span>
+            <span class="cm-dd-recap__detail">{{ dossier.sourceTemplate ? 'teacherDossierFromTemplateText'|trans({'%title%': dossier.sourceTemplate.title}) : 'teacherDossierBlankText'|trans }}</span>
+        </div>
+        <div class="cm-dd-recap__card">
+            <span class="cm-dd-collabel">{{ 'teacherDossierPiecesColumnLabel'|trans }}</span>
+            <span class="cm-dd-recap__value">{{ 'dossierPieceCountText'|trans({'%count%': dossier.documents|length}) }}</span>
+            <span class="cm-dd-recap__detail">{{ 'dossierRequiredCountText'|trans({'%count%': dossier.requiredDocumentCount}) }} · {{ 'dossierGroupCountText'|trans({'%count%': dossier.groups|length}) }}</span>
+        </div>
+        <div class="cm-dd-recap__card">
+            <span class="cm-dd-collabel">{{ 'teacherDossierStateColumnLabel'|trans }}</span>
+            <span class="cm-dd-recap__value"><twig:Cm:Badge :of="dossier.state"/></span>
+            <span class="cm-dd-recap__detail">{{ (dossier.draft ? 'teacherDossierDraftHint' : 'teacherDossierPublishedHint')|trans }}</span>
+        </div>
+    </div>
+
+    <div class="cm-dd-card">
+        <div class="cm-td-summary__head">
+            <span class="cm-dd-collabel">{{ 'teacherDossierPieceColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierGroupColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierTypeColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierDueColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierValidationColumnLabel'|trans }}</span>
+        </div>
+        {% for document in dossier.documents %}
+            <div class="cm-td-summary__row">
+                <span class="cm-dd-summary__name">{{ document.name }}{% include 'dossier/_required.html.twig' with {document: document} only %}</span>
+                <span class="cm-dd-list__cell">{{ document.group ? document.group.title : 'dossierUngroupedLabel'|trans }}</span>
+                <span class="cm-dd-list__cell">{{ document.depositType.labelKey|trans }}</span>
+                <span class="cm-dd-list__cell">{{ document.dueOn ? document.dueOn|localized_date('d MMM') : '—' }}</span>
+                <span>{% include 'dossier/_profile.html.twig' with {document: document} only %}</span>
+            </div>
+        {% else %}
+            <p class="cm-dd-list__empty">{{ 'teacherDossierCompositionEmptyText'|trans }}</p>
+        {% endfor %}
+    </div>
+
+    <div class="cm-dd-foot cm-dd-foot--end">
+        {% if dossier.draft %}
+            {# Goes back to the list rather than saving: the dossier has been a saved brouillon since
+               it was created, so there is nothing left to record. #}
+            <a class="cm-dd-ghost cm-dd-ghost--quiet" href="{{ path('app_ufa_teacher_dossiers', {filter: 'draft'}) }}">{{ 'teacherDossierKeepDraftAction'|trans }}</a>
+            <form method="post" action="{{ path('app_ufa_teacher_dossier_publish', {id: dossier.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('teacher_dossier') }}">
+                <button type="submit" class="cm-dd-btn cm-dd-btn--wide">{{ 'teacherDossierPublishAction'|trans }}</button>
+            </form>
+        {% else %}
+            <a class="cm-dd-btn cm-dd-btn--navy" href="{{ path('app_ufa_teacher_dossier_show', {id: dossier.id}) }}">{{ 'teacherDossierBackToDossierAction'|trans }}</a>
+        {% endif %}
+    </div>
+</div>

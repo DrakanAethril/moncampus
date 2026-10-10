@@ -1,0 +1,29 @@
+{# Step 1 — the title and the consignes. The intervenant is not here: a dossier is theirs from the
+   moment it is created, and it never changes hands. Parameters (passed with `only`): dossier. #}
+<form method="post" id="teacher-dossier-settings-form" class="cm-dd-pane" action="{{ path('app_ufa_teacher_dossier_settings', {id: dossier.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('teacher_dossier') }}">
+
+    {% if not dossier.isTemplate %}
+        <div class="cm-dd-field">
+            <span class="cm-dd-label">{{ 'teacherDossierTeacherFieldLabel'|trans }}</span>
+            <span class="cm-dd-person">
+                {% include 'dossier/_avatar.html.twig' with {user: dossier.teacher, size: 32} only %}
+                <span class="cm-dd-person__text">
+                    <span class="cm-dd-person__name">{{ dossier.teacher.displayName ?? dossier.teacher.username }}</span>
+                    <span class="cm-dd-meta">{{ 'teacherDossierTeacherFixedHint'|trans }}</span>
+                </span>
+            </span>
+        </div>
+    {% endif %}
+
+    <div class="cm-dd-field">
+        <label class="cm-dd-label" for="td-title">{{ (dossier.isTemplate ? 'teacherDossierTemplateTitleFieldLabel' : 'teacherDossierTitleFieldLabel')|trans }}</label>
+        <input class="cm-dd-input cm-dd-input--lead" id="td-title" name="title" required maxlength="255" value="{{ dossier.title }}">
+    </div>
+
+    <div class="cm-dd-field">
+        <label class="cm-dd-label" for="td-description">{{ 'teacherDossierInstructionsFieldLabel'|trans }}</label>
+        <textarea class="cm-dd-textarea" id="td-description" name="description" rows="4">{{ dossier.description }}</textarea>
+        <span class="cm-dd-meta">{{ 'teacherDossierInstructionsHint'|trans }}</span>
+    </div>
+</form>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\DossierSubmissionRepository;
+use App\Service\Dossier\DepositVersion;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -31,7 +32,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'dossier_submission')]
 #[ORM\UniqueConstraint(name: 'dossier_submission_version_unique', columns: ['document_id', 'student_id', 'version'])]
 #[ORM\Index(name: 'dossier_submission_document_student_idx', columns: ['document_id', 'student_id'])]
-class DossierSubmission
+class DossierSubmission implements DepositVersion
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]

@@ -1,0 +1,20 @@
+{# The dépôt form of one piece - a file picker, or a URL field, never both. Posted to `action`,
+   which is the intervenant's own route or the administration's « déposer pour ».
+
+   The upload form view is rendered **once per page**: only one piece is unfolded at a time, and a
+   Symfony form view cannot be drawn twice.
+
+   Parameters: document, action, uploadForm, token, label. #}
+{% if 'url' == document.depositType.value %}
+    <form method="post" class="cm-dd-urlform" action="{{ action }}">
+        <input type="hidden" name="_token" value="{{ token }}">
+        <input class="cm-dd-input" type="url" name="url" required maxlength="2048" placeholder="https://" value=""
+               aria-label="{{ 'dossierDepositTypeUrlLabel'|trans }}">
+        <button type="submit" class="cm-dd-btn">{{ 'dossierSaveLinkAction'|trans }}</button>
+    </form>
+{% else %}
+    {{ form_start(uploadForm, {action: action, attr: {class: 'cm-td-upload'}}) }}
+        {{ form_row(uploadForm.file) }}
+        <button type="submit" class="cm-dd-btn">{{ label }}</button>
+    {{ form_end(uploadForm) }}
+{% endif %}

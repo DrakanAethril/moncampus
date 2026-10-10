@@ -378,6 +378,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/my-dossiers' => 200,
             '/dossiers' => 403,
             '/dossiers/new' => 403,
+            // Dossiers intervenants: the administration's screens are the UFA's, refused like the
+            // rest of it. « Mes dossiers administratifs » asks for no role - being the intervenant
+            // of a dossier is the whole right - so anybody reads it, as an empty list.
+            '/ufa/teacher-dossiers' => 403,
+            '/my-administrative-dossiers' => 200,
             // Portfolio: « Mon portfolio » exists only when a formation of the student runs it, and
             // the fixture's does not; the review side is the designated validateurs' - see
             // PortfolioAccessTest for both sides with a portfolio in place.
@@ -552,6 +557,14 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/dossiers' => 200,
             '/dossiers/new' => 200,
             '/my-dossiers' => 200,
+            // Dossiers intervenants: a teacher is the one the pieces are asked *of*. They read
+            // their own under « Mes dossiers administratifs » - an empty list here - and nothing of
+            // the administration's side, models included (tests/Functional/TeacherDossierTest.php
+            // pins the 404 on somebody else's dossier).
+            '/ufa/teacher-dossiers' => 403,
+            '/ufa/teacher-dossiers/templates' => 403,
+            '/ufa/teacher-dossiers/new' => 403,
+            '/my-administrative-dossiers' => 200,
             // Portfolio: a teacher nobody designated has no « Portfolios » at all (a 404, not a
             // refusal), and the référentiels are the administration's.
             '/portfolios' => 404,
@@ -602,6 +615,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises/siret-review' => 302,
             '/ufa/reminders' => 200,
             '/ufa/configuration/contract-import' => 200,
+            '/ufa/teacher-dossiers' => 200,
+            '/ufa/teacher-dossiers/templates' => 200,
+            '/ufa/teacher-dossiers/new' => 200,
+            '/my-administrative-dossiers' => 200,
             '/eco/parcours' => 200,
             '/eco/pwa-probe' => 200,
             '/assignments' => 200,

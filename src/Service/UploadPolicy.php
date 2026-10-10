@@ -391,6 +391,15 @@ final class UploadPolicy
         return self::platform()->restrictTo('pdf');
     }
 
+    /**
+     * The pieces of a dossier intervenant: scans and photographs of papers, and nothing that has
+     * to be opened in an office suite to be read.
+     */
+    public static function administrativePapers(): self
+    {
+        return self::platform()->restrictTo('pdf', 'jpg', 'jpeg', 'png');
+    }
+
     /** UFA contract import, quiz import. */
     public static function spreadsheets(): self
     {
@@ -418,6 +427,7 @@ final class UploadPolicy
             'documents' => self::documents(),
             'images' => self::images(),
             'pdf' => self::pdf(),
+            'administrativePapers' => self::administrativePapers(),
             'spreadsheets' => self::spreadsheets(),
             'media' => self::media(),
         ];

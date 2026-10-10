@@ -1,0 +1,72 @@
+{# The editor of a dossier intervenant - and of a model, which is a dossier with no intervenant
+   (design/validated/dossiers-intervenants.md, screen 4).
+
+   The assistant of the dossiers documentaires minus its cibles: three steps, each a route of its
+   own, so every step is a URL somebody can come back to. A model stops at step 2 - there is nobody
+   to publish it to. #}
+{% extends 'layout/app.html.twig' %}
+
+{% set step_labels = {1: 'teacherDossierStep1Label', 2: 'teacherDossierStep2Label', 3: 'teacherDossierStep3Label'} %}
+
+{% block title %}{{ dossier.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'ufa/teacher_dossier/_breadcrumb.html.twig' with {dossier: dossier, leaf: step_labels[step]|trans} only %}
+{% endblock %}
+
+{% block page_title %}
+    {{- dossier.isTemplate ? dossier.title : (dossier.teacher.displayName ?? dossier.teacher.username) ~ ' — ' ~ dossier.title -}}
+    <span class="cm-dd-titletag">{% if dossier.isTemplate %}<twig:Cm:Badge tone="purple">{{ 'teacherDossierTemplateLabel'|trans }}</twig:Cm:Badge>{% else %}<twig:Cm:Badge :of="dossier.state"/>{% endif %}</span>
+{% endblock %}
+
+{% block main %}
+    {% set steps = [
+        {num: 1, label: 'teacherDossierStep1Label', hint: 'teacherDossierStep1Hint', route: 'app_ufa_teacher_dossier_settings'},
+        {num: 2, label: 'teacherDossierStep2Label', hint: dossier.isTemplate ? 'teacherDossierStep2TemplateHint' : 'teacherDossierStep2Hint', route: 'app_ufa_teacher_dossier_documents'},
+    ]|merge(dossier.isTemplate ? [] : [
+        {num: 3, label: 'teacherDossierStep3Label', hint: dossier.draft ? 'teacherDossierStep3Hint' : 'teacherDossierStep3PublishedHint', route: 'app_ufa_teacher_dossier_summary'},
+    ]) %}
+    <div class="cm-dd-page">
+        <div class="cm-dd-card">
+            <div class="cm-dd-steps">
+                {% for entry in steps %}
+                    <a class="cm-dd-step {{ step == entry.num ? 'is-on' }}" href="{{ path(entry.route, {id: dossier.id}) }}">
+                        <span class="cm-dd-step__num">{{ entry.num }}</span>
+                        <span class="cm-dd-step__text">
+                            <span class="cm-dd-step__label">{{ entry.label|trans }}</span>
+                            <span class="cm-dd-step__hint">{{ entry.hint|trans }}</span>
+                        </span>
+                    </a>
+                {% endfor %}
+            </div>
+
+            {% if 1 == step %}
+                {% include 'ufa/teacher_dossier/_editor_settings.html.twig' with {dossier: dossier} only %}
+            {% elseif 2 == step %}
+                {% include 'ufa/teacher_dossier/_editor_documents.html.twig' with {
+                    dossier: dossier, groups: groups, selection: selection, isNewDocument: isNewDocument,
+                    selectionLocked: selectionLocked, depositTypes: depositTypes, validationProfiles: validationProfiles,
+                } only %}
+            {% else %}
+                {% include 'ufa/teacher_dossier/_editor_summary.html.twig' with {dossier: dossier} only %}
+            {% endif %}
+        </div>
+
+        {# Précédent / Suivant. Step 1's « Suivant » is its form's submit button, drawn here through
+           the `form` attribute: moving on from step 1 means saving. The last step of each kind has
+           no « Suivant » - a button that goes nowhere is worse than an absent one - and offers the
+           way back to where the editor was opened from instead. #}
+        <div class="cm-dd-nav">
+            {% if 1 != step %}
+                <a class="cm-dd-ghost cm-dd-ghost--quiet" href="{{ path(2 == step ? 'app_ufa_teacher_dossier_settings' : 'app_ufa_teacher_dossier_documents', {id: dossier.id}) }}">{{ 'dossierPreviousAction'|trans }}</a>
+            {% endif %}
+            {% if 1 == step %}
+                <button type="submit" form="teacher-dossier-settings-form" class="cm-dd-btn cm-dd-btn--navy">{{ 'dossierNextAction'|trans }}</button>
+            {% elseif 2 == step and not dossier.isTemplate %}
+                <a class="cm-dd-btn cm-dd-btn--navy" href="{{ path('app_ufa_teacher_dossier_summary', {id: dossier.id}) }}">{{ 'dossierNextAction'|trans }}</a>
+            {% elseif 2 == step %}
+                <a class="cm-dd-btn cm-dd-btn--navy" href="{{ path('app_ufa_teacher_dossier_templates') }}">{{ 'teacherDossierBackToTemplatesAction'|trans }}</a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

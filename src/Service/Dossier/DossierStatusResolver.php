@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Dossier;
 
-use App\Entity\DossierDocument;
-use App\Entity\DossierSubmission;
 use App\Enum\DossierDocumentStatus;
 
 /**
@@ -27,14 +25,18 @@ use App\Enum\DossierDocumentStatus;
  * Note 4 reads the last review of the *latest* dépôt only. A correction requested on v1 is answered
  * by v2, and v2 carries no review, so the cell goes back to `AwaitingReview` - which is exactly what
  * the validateur's queue is: the dépôts nobody has answered yet.
+ *
+ * It reads a piece and its dépôts through three small interfaces rather than through the entities
+ * of one feature, because two features ask this question: the dossiers documentaires and the
+ * dossiers intervenants (App\Entity\TeacherDossierDocument) - whose pieces are always visible and
+ * never closed by their date, so that only six of the seven cases ever come out for them.
  */
 class DossierStatusResolver
 {
     /**
-     * @param list<DossierSubmission> $submissions every dépôt of this cible on this document,
-     *                                             any order
+     * @param list<DepositVersion> $submissions every dépôt of this cible on this document, any order
      */
-    public function resolve(DossierDocument $document, array $submissions, \DateTimeImmutable $today): DossierDocumentStatus
+    public function resolve(RequestedPiece $document, array $submissions, \DateTimeImmutable $today): DossierDocumentStatus
     {
         if (!$document->isVisibleOn($today)) {
             return DossierDocumentStatus::Upcoming;
@@ -68,9 +70,9 @@ class DossierStatusResolver
      * asking for nothing. A validated document is closed for the opposite reason: there is nothing
      * left to ask.
      *
-     * @param list<DossierSubmission> $submissions
+     * @param list<DepositVersion> $submissions
      */
-    public function acceptsSubmission(DossierDocument $document, array $submissions, \DateTimeImmutable $today): bool
+    public function acceptsSubmission(RequestedPiece $document, array $submissions, \DateTimeImmutable $today): bool
     {
         $status = $this->resolve($document, $submissions, $today);
 
@@ -91,9 +93,13 @@ class DossierStatusResolver
      * By version rather than by date: the version is what the unique index guarantees, and two
      * dépôts saved in the same second would otherwise be ordered by nothing.
      *
-     * @param list<DossierSubmission> $submissions
+     * @template T of DepositVersion
+     *
+     * @param list<T> $submissions
+     *
+     * @return T|null
      */
-    public static function latest(array $submissions): ?DossierSubmission
+    public static function latest(array $submissions): ?DepositVersion
     {
         $latest = null;
 

@@ -1,0 +1,156 @@
+{# The fiche of a dossier intervenant (design/validated/dossiers-intervenants.md, screen 5).
+
+   Since a dossier has one intervenant, this one screen replaces both the suivi grid and the
+   validation screen of the dossiers documentaires: the pieces with their status, and - on the piece
+   unfolded by `?piece=` - its files, the administration's answer, and « Déposer pour
+   l'intervenant ». Only one piece is unfolded at a time, which is also what lets the upload form
+   be drawn once. #}
+{% extends 'layout/app.html.twig' %}
+
+{% set teacher_name = dossier.teacher.displayName ?? dossier.teacher.username %}
+{% set token = csrf_token('teacher_dossier') %}
+
+{% block title %}{{ teacher_name }} — {{ dossier.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'ufa/teacher_dossier/_breadcrumb.html.twig' with {dossier: dossier} only %}
+{% endblock %}
+
+{% block page_title %}{{ teacher_name }} — {{ dossier.title }}<span class="cm-dd-titletag"><twig:Cm:Badge :of="dossier.state"/></span>{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page">
+        <div class="cm-dd-banner">
+            <div class="cm-dd-banner__progress">
+                <span class="cm-dd-collabel">{{ 'dossierProgressRequiredColumnLabel'|trans }}</span>
+                <div class="cm-dd-progress">
+                    <span class="cm-dd-bar cm-dd-bar--lg{{ sheet.complete ? ' cm-dd-bar--done' }}"><span class="cm-dd-bar__fill" style="width: {{ sheet.percent }}%"></span></span>
+                    <span class="cm-dd-banner__frac">{{ sheet.settledRequired }} / {{ sheet.totalRequired }}</span>
+                </div>
+            </div>
+            <div class="cm-dd-banner__info">
+                <span class="cm-dd-banner__item">
+                    <span class="cm-dd-collabel">{{ 'teacherDossierPublishedOnLabel'|trans }}</span>
+                    <span class="cm-dd-banner__value">{{ dossier.publishedAt ? dossier.publishedAt|localized_date('d MMM yyyy') : '—' }}</span>
+                </span>
+                <span class="cm-dd-banner__item">
+                    <span class="cm-dd-collabel">{{ 'teacherDossierTemplateFieldLabel'|trans }}</span>
+                    <span class="cm-dd-banner__value">{{ dossier.sourceTemplate ? dossier.sourceTemplate.title : 'teacherDossierBlankText'|trans }}</span>
+                </span>
+                {% if dossier.closed %}
+                    <span class="cm-dd-banner__item">
+                        <span class="cm-dd-collabel">{{ 'teacherDossierClosedOnLabel'|trans }}</span>
+                        <span class="cm-dd-banner__value">{{ dossier.closedAt|localized_date('d MMM yyyy') }}</span>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="cm-td-actions">
+            <a class="cm-dd-ghost" href="{{ path('app_ufa_teacher_dossier_documents', {id: dossier.id}) }}">{{ 'teacherDossierEditAction'|trans }}</a>
+            <a class="cm-dd-ghost" href="{{ path('app_ufa_teacher_dossier_archive', {id: dossier.id}) }}" data-turbo="false">{{ 'teacherDossierArchiveAction'|trans }}</a>
+            <form method="post" action="{{ path('app_ufa_teacher_dossier_save_as_template', {id: dossier.id}) }}">
+                <input type="hidden" name="_token" value="{{ token }}">
+                <button type="submit" class="cm-dd-ghost">{{ 'teacherDossierSaveAsTemplateAction'|trans }}</button>
+            </form>
+            <form method="post" action="{{ path(dossier.closed ? 'app_ufa_teacher_dossier_reopen' : 'app_ufa_teacher_dossier_close', {id: dossier.id}) }}">
+                <input type="hidden" name="_token" value="{{ token }}">
+                <button type="submit" class="cm-dd-ghost">{{ (dossier.closed ? 'teacherDossierReopenAction' : 'teacherDossierCloseAction')|trans }}</button>
+            </form>
+            {# Two clicks, never a confirm(): the label becomes « Confirmer la suppression ». #}
+            <form method="post" class="cm-td-actions__end" action="{{ path('app_ufa_teacher_dossier_delete', {id: dossier.id}) }}">
+                <input type="hidden" name="_token" value="{{ token }}">
+                <button type="submit" class="cm-dd-ghost cm-dd-ghost--fix"
+                        data-controller="confirm-click"
+                        data-confirm-click-label-value="{{ 'teacherDossierConfirmDeleteAction'|trans }}"
+                        data-action="click->confirm-click#arm">{{ 'teacherDossierDeleteAction'|trans }}</button>
+            </form>
+        </div>
+
+        {% if dossier.closed %}
+            <p class="cm-td-note">{{ 'teacherDossierClosedNoteText'|trans }}</p>
+        {% endif %}
+        {% if dossier.description %}
+            <div class="cm-dd-card cm-dd-card--pad">
+                <span class="cm-dd-collabel">{{ 'teacherDossierInstructionsFieldLabel'|trans }}</span>
+                <p class="cm-td-instructions">{{ dossier.description|nl2br }}</p>
+            </div>
+        {% endif %}
+
+        {% for entry in sheet.groupedLines %}
+            <div class="cm-dd-card">
+                <div class="cm-dd-cardhead">
+                    <span class="cm-dd-cardtitle">{{ entry.group ? entry.group.title : 'dossierOtherPiecesLabel'|trans }}</span>
+                    <span class="cm-dd-count">{{ 'dossierPieceCountText'|trans({'%count%': entry.lines|length}) }}</span>
+                </div>
+                {% for line in entry.lines %}
+                    {% set document = line.document %}
+                    {% set isOpen = openPiece == document.id %}
+                    <div class="cm-dd-mydoc" id="piece-{{ document.id }}">
+                        <a class="cm-dd-mydoc__row {{ isOpen ? 'is-open' }}"
+                           href="{{ path('app_ufa_teacher_dossier_show', {id: dossier.id, piece: isOpen ? null : document.id}) }}{{ isOpen ? '' : '#piece-' ~ document.id }}">
+                            {% include 'dossier/_status_pill.html.twig' with {status: line.status} only %}
+                            <span class="cm-dd-mydoc__text">
+                                <span class="cm-dd-mydoc__titleline">
+                                    <span class="cm-dd-mydoc__name">{{ document.name }}</span>
+                                    {% include 'dossier/_required.html.twig' with {document: document} only %}
+                                    {% include 'dossier/_profile.html.twig' with {document: document} only %}
+                                </span>
+                                <span class="cm-dd-mydoc__rules">
+                                    {%- include 'teacher_dossier/_rules.html.twig' with {document: document} only -%}
+                                    {%- if line.latest %} · {{ 'dossierSubmittedOnText'|trans({'%date%': line.latest.submittedAt|localized_date('d MMM HH:mm')})|lower }}{% endif -%}
+                                </span>
+                            </span>
+                            <span class="cm-dd-mydoc__end">
+                                {% include 'dossier/_status_tag.html.twig' with {status: line.status} only %}
+                                <span class="cm-dd-cibles__action">{{ (isOpen ? 'dossierFoldAction' : 'dossierDetailAction')|trans }}</span>
+                            </span>
+                        </a>
+
+                        {% if isOpen %}
+                            <div class="cm-dd-mydoc__panel">
+                                {% include 'teacher_dossier/_versions.html.twig' with {line: line} only %}
+
+                                {# The answer to the dépôt that counts - offered only while it
+                                   waits for one, and never on one's own dossier. #}
+                                {% if canReview and line.status.awaitingValidator and line.latest %}
+                                    <form method="post" class="cm-dd-decide cm-td-decide" action="{{ path('app_ufa_teacher_dossier_review', {id: dossier.id, submissionId: line.latest.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ token }}">
+                                        <textarea class="cm-dd-textarea" name="comment" rows="3" maxlength="2000"
+                                                  placeholder="{{ 'teacherDossierReviewCommentPlaceholder'|trans }}" aria-label="{{ 'teacherDossierReviewCommentPlaceholder'|trans }}"></textarea>
+                                        <div class="cm-dd-decide__actions">
+                                            <button type="submit" name="action" value="demande_correction" class="cm-dd-ghost cm-dd-ghost--fix">{{ 'dossierRequestCorrectionAction'|trans }}</button>
+                                            <button type="submit" name="action" value="validation" class="cm-dd-btn cm-dd-btn--ok">{{ 'dossierValidateAction'|trans }}</button>
+                                        </div>
+                                    </form>
+                                {% elseif line.status.awaitingValidator and not canReview %}
+                                    <p class="cm-td-note">{{ 'teacherDossierOwnReviewNoteText'|trans }}</p>
+                                {% endif %}
+
+                                {# Folded once something has been handed in: the gesture is then
+                                   the exception, and the answer above it is what the piece is
+                                   opened for. Open while the piece is empty - there, it is the only
+                                   thing the panel has to offer. #}
+                                {% if canSubmit and line.acceptsSubmission %}
+                                    <details class="cm-td-behalf"{{ line.latest ? '' : ' open' }}>
+                                        <summary class="cm-dd-oldversions__summary">{{ 'teacherDossierDepositForHeading'|trans }}</summary>
+                                        <span class="cm-dd-meta">{{ 'teacherDossierDepositForHint'|trans({'%name%': teacher_name}) }}</span>
+                                        {% include 'teacher_dossier/_deposit_form.html.twig' with {
+                                            document: document, uploadForm: uploadForm, token: token,
+                                            action: path('app_ufa_teacher_dossier_deposit', {id: dossier.id, documentId: document.id}),
+                                            label: 'teacherDossierDepositForAction'|trans,
+                                        } only %}
+                                    </details>
+                                {% elseif not line.latest %}
+                                    <p class="cm-td-note">{{ 'teacherDossierNothingSubmittedText'|trans }}</p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="cm-dd-list__empty">{{ 'teacherDossierCompositionEmptyText'|trans }}</p>
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -1,0 +1,155 @@
+{# Step 2 — the pieces. The list on the left, the property panel on the right.
+
+   Which piece the panel edits is a **query parameter**: a row is a plain link, « + Pièce » is a
+   plain link, and the save comes back on the same URL - no JavaScript holds any of it.
+
+   Parameters (passed with `only`): dossier, groups, selection, isNewDocument, selectionLocked,
+   depositTypes, validationProfiles. #}
+{% set token = csrf_token('teacher_dossier') %}
+<div class="cm-dd-compose">
+    <div class="cm-dd-compose__list">
+        <div class="cm-dd-compose__bar">
+            <span class="cm-dd-label">{{ 'teacherDossierCompositionLabel'|trans }}</span>
+            <span style="margin-left: auto;"></span>
+            <form method="post" class="cm-dd-newgroup" action="{{ path('app_ufa_teacher_dossier_group_create', {id: dossier.id}) }}"
+                  data-controller="dossier-newgroup">
+                <input type="hidden" name="_token" value="{{ token }}">
+                <input class="cm-dd-input" type="text" name="title" maxlength="255" hidden required
+                       placeholder="{{ 'dossierGroupNamePlaceholder'|trans }}" data-dossier-newgroup-target="input">
+                <button type="submit" class="cm-dd-ghost" data-action="dossier-newgroup#open">{{ 'dossierAddGroupAction'|trans }}</button>
+            </form>
+            <a class="cm-dd-btn cm-dd-btn--sm" href="{{ path('app_ufa_teacher_dossier_documents', {id: dossier.id, piece: 'new'}) }}">{{ 'teacherDossierAddPieceAction'|trans }}</a>
+        </div>
+
+        {% for entry in groups %}
+            <div class="cm-dd-compose__group">
+                <div class="cm-dd-compose__title">
+                    <span class="cm-dd-compose__name">{{ entry.group ? entry.group.title : 'dossierUngroupedLabel'|trans }}</span>
+                    <span class="cm-dd-meta">{{ 'dossierPieceCountText'|trans({'%count%': entry.documents|length}) }}</span>
+                </div>
+                <div class="cm-dd-card">
+                    {% for document in entry.documents %}
+                        <div class="cm-dd-docrow {{ not isNewDocument and selection and selection.id == document.id ? 'is-on' }}">
+                            {% include 'dossier/_doc_badges.html.twig' with {document: document} only %}
+                            <span class="cm-dd-docrow__text">
+                                <a class="cm-dd-docrow__name cm-dd-docrow__select" href="{{ path('app_ufa_teacher_dossier_documents', {id: dossier.id, piece: document.id}) }}">{{ document.name }}</a>
+                                <span class="cm-dd-docrow__rules">{% include 'teacher_dossier/_rules.html.twig' with {document: document, with_due: not dossier.isTemplate} only %}</span>
+                            </span>
+                            {% include 'dossier/_required.html.twig' with {document: document} only %}
+                            <span class="cm-dd-docrow__end">
+                                {% include 'dossier/_profile.html.twig' with {document: document} only %}
+                                <a class="cm-dd-docrow__pencil" href="{{ path('app_ufa_teacher_dossier_documents', {id: dossier.id, piece: document.id}) }}"
+                                   aria-label="{{ 'teacherDossierEditPieceAction'|trans }}" title="{{ 'teacherDossierEditPieceAction'|trans }}"><twig:ux:icon name="pencil" width="14" height="14"/></a>
+                            </span>
+                        </div>
+                    {% else %}
+                        <p class="cm-dd-list__empty">{{ 'teacherDossierGroupEmptyText'|trans }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <p class="cm-dd-list__empty">{{ 'teacherDossierCompositionEmptyText'|trans }}</p>
+        {% endfor %}
+    </div>
+
+    {# The property panel of one piece. No date on a model's piece: the date is given when the
+       model becomes a dossier. #}
+    {% set document = isNewDocument ? null : selection %}
+    {% set isNew = document is null %}
+    <div class="cm-dd-compose__panel">
+        <form method="post" id="teacher-dossier-piece-form" action="{{ path('app_ufa_teacher_dossier_document_save', {id: dossier.id}) }}" style="display: contents;">
+            <input type="hidden" name="_token" value="{{ token }}">
+            {% if not isNew %}<input type="hidden" name="document_id" value="{{ document.id }}">{% endif %}
+
+            <span class="cm-dd-panel__title">{{ (isNew ? 'teacherDossierPieceNewTitle' : 'teacherDossierPiecePropertiesTitle')|trans }}</span>
+
+            <div class="cm-dd-field">
+                <label class="cm-dd-label" for="td-piece-name">{{ 'teacherDossierPieceNameFieldLabel'|trans }}</label>
+                <input class="cm-dd-input" id="td-piece-name" name="name" required maxlength="255"
+                       placeholder="{{ 'teacherDossierPieceNamePlaceholder'|trans }}" value="{{ isNew ? '' : document.name }}">
+            </div>
+
+            <div class="cm-dd-field">
+                <label class="cm-dd-label" for="td-piece-group">{{ 'dossierDocumentGroupFieldLabel'|trans }}</label>
+                <select class="cm-dd-select" id="td-piece-group" name="group_id">
+                    <option value="">{{ 'dossierDocumentNoGroupOption'|trans }}</option>
+                    {% for group in dossier.groups %}
+                        <option value="{{ group.id }}"{{ not isNew and document.group and document.group.id == group.id ? ' selected' }}>{{ group.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 14px;">
+                <div class="cm-dd-field" style="flex: 1;">
+                    <span class="cm-dd-label">{{ 'teacherDossierPieceDepositTypeFieldLabel'|trans }}</span>
+                    <div class="cm-dd-seg">
+                        {% for type in depositTypes %}
+                            <label class="cm-dd-seg__item">
+                                <input type="radio" name="deposit_type" value="{{ type.value }}"
+                                       {{ (isNew ? 'upload' : document.depositType.value) == type.value ? 'checked' }}>
+                                {{ type.labelKey|trans }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="cm-dd-field" style="flex: none;">
+                    <span class="cm-dd-label">{{ 'dossierDocumentRequiredFieldLabel'|trans }}</span>
+                    <label class="cm-dd-switchbox">
+                        <input type="checkbox" name="required" value="1"{{ isNew or document.required ? ' checked' }}>
+                        <span class="cm-dd-switch"><span class="cm-dd-switch__knob"></span></span>
+                        <span class="cm-dd-switchbox__text">
+                            <span class="cm-dd-switchbox__on">{{ 'yesLabel'|trans }}</span>
+                            <span class="cm-dd-switchbox__off">{{ 'noLabel'|trans }}</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            {% if not dossier.isTemplate %}
+                <div class="cm-dd-field">
+                    <label class="cm-dd-label" for="td-piece-due">{{ 'teacherDossierDueOnFieldLabel'|trans }}</label>
+                    <input class="cm-dd-input" type="date" id="td-piece-due" name="due_on"
+                           value="{{ not isNew and document.dueOn ? document.dueOn|date('Y-m-d') }}">
+                    <span class="cm-dd-meta">{{ 'teacherDossierPieceDueOnHint'|trans }}</span>
+                </div>
+            {% endif %}
+
+            <div class="cm-dd-field">
+                <span class="cm-dd-label">{{ 'dossierDocumentValidationProfileFieldLabel'|trans }}</span>
+                {% for profile in validationProfiles %}
+                    <label class="cm-dd-radiocard">
+                        <input type="radio" name="validation_profile" value="{{ profile.value }}"
+                               {{ (isNew ? 'depot' : document.validationProfile.value) == profile.value ? 'checked' }}>
+                        <span class="cm-dd-radiocard__dot"></span>
+                        <span class="cm-dd-radiocard__text">
+                            <span class="cm-dd-radiocard__label">{{ ('validation' == profile.value ? 'teacherDossierProfileValidationLabel' : profile.labelKey)|trans }}</span>
+                            <span class="cm-dd-radiocard__hint">{{ ('validation' == profile.value ? 'teacherDossierProfileValidationHint' : 'teacherDossierProfileDepositHint')|trans }}</span>
+                        </span>
+                    </label>
+                {% endfor %}
+            </div>
+        </form>
+
+        {# The buttons sit outside the save form because the bin is a form of its own, and a form
+           inside a form is not one: « Enregistrer » reaches its form through the `form` attribute. #}
+        <div class="cm-dd-panel__foot">
+            <button type="submit" form="teacher-dossier-piece-form" class="cm-dd-btn">{{ 'teacherDossierPieceSaveAction'|trans }}</button>
+            <a class="cm-dd-ghost cm-dd-ghost--quiet" href="{{ path('app_ufa_teacher_dossier_documents', {id: dossier.id}) }}">{{ 'cancelAction'|trans }}</a>
+            {% if not isNew %}
+                {# A piece somebody has deposited on is no longer deleted - its file would go with
+                   it. It is made facultative instead, and the panel says so where the bin was. #}
+                {% if selectionLocked %}
+                    <span class="cm-dd-meta cm-td-panel__locked">{{ 'teacherDossierPieceLockedText'|trans }}</span>
+                {% else %}
+                    <form method="post" class="cm-td-panel__delete" action="{{ path('app_ufa_teacher_dossier_document_delete', {id: dossier.id, documentId: document.id}) }}">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <button type="submit" class="cm-dd-ghost cm-dd-ghost--fix"
+                                data-controller="confirm-click"
+                                data-confirm-click-label-value="{{ 'teacherDossierConfirmDeleteAction'|trans }}"
+                                data-action="click->confirm-click#arm">{{ 'teacherDossierDeletePieceAction'|trans }}</button>
+                    </form>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
