@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.12'
+      date: '2026-10-12'
+      summary: "Prêts d'ordinateurs portables : la convention de prêt porte le numéro interne de la machine, et la formation suivie se précise au moment du prêt."
+      entries:
+          - type: modification
+            title: "Prêts d'ordinateurs portables : le numéro interne de la machine figure sur la convention"
+          - type: modification
+            title: "Prêts d'ordinateurs portables : la formation suivie et ses dates sont proposées au moment du prêt, et restent modifiables"
+            detail: "Ce qui est enregistré est ce que la convention et le formulaire de restitution impriment."
     - version: '2026.10.10'
       date: '2026-10-10'
       summary: "Un nouvel outil entre en essai auprès de l'administration : demander des pièces administratives à un intervenant et suivre leur dépôt."
