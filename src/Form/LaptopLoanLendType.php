@@ -15,6 +15,7 @@ use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
@@ -40,6 +41,31 @@ class LaptopLoanLendType extends AbstractType
                 'choice_label' => static fn (LaptopLoanType $type): string => $type->labelKey(),
                 'label' => 'laptopLoanTypeFieldLabel',
                 'placeholder' => 'laptopLoanTypePlaceholder',
+            ])
+            // The formation as the convention will print it. The three fields are filled in from
+            // the borrower's programme as soon as a borrower is picked
+            // (laptop_loan_type_controller.js), then belong to the operator: what is saved here
+            // is what the paper says. All three optional - a borrower with no programme signs a
+            // convention whose lines are filled in by hand. The empty string, rather than null,
+            // for a name left blank is what LaptopLoan::carriesProgramDetails() reads.
+            ->add('programName', TextType::class, [
+                'label' => 'laptopLoanProgramNameFieldLabel',
+                'required' => false,
+                'empty_data' => '',
+            ])
+            ->add('programStartDate', DateType::class, [
+                'label' => 'laptopLoanProgramStartDateFieldLabel',
+                'widget' => 'single_text',
+                'html5' => true,
+                'input' => 'datetime_immutable',
+                'required' => false,
+            ])
+            ->add('programEndDate', DateType::class, [
+                'label' => 'laptopLoanProgramEndDateFieldLabel',
+                'widget' => 'single_text',
+                'html5' => true,
+                'input' => 'datetime_immutable',
+                'required' => false,
             ])
             // The loan date can be entered, as on mockup 25e: it was until now frozen at the moment
             // of saving, which forbade entering a loan after the fact - the common case when the
@@ -147,6 +173,16 @@ class LaptopLoanLendType extends AbstractType
             $event->setData($data);
         });
 
+        // The formation is only asked on a loan that prints a convention; the fields stay in the
+        // page, hidden, on an internal one, and whatever they still hold must not be kept.
+        $builder->addEventListener(FormEvents::POST_SUBMIT, static function (FormEvent $event): void {
+            $loan = $event->getData();
+
+            if ($loan instanceof LaptopLoan && false === $loan->getLoanType()?->hasConvention()) {
+                $loan->clearProgramDetails();
+            }
+        });
+
         // The box starts out reflecting the loan it is shown on, which on a fresh form is simply
         // "no type picked yet, so nothing indefinite".
         $builder->addEventListener(FormEvents::PRE_SET_DATA, static function (FormEvent $event): void {
@@ -163,6 +199,7 @@ class LaptopLoanLendType extends AbstractType
     public function buildView(FormView $view, FormInterface $form, array $options): void
     {
         $view->vars['indefinite_duration_types'] = LaptopLoanType::indefiniteDurationValues();
+        $view->vars['convention_types'] = LaptopLoanType::conventionValues();
     }
 
     public function configureOptions(OptionsResolver $resolver): void

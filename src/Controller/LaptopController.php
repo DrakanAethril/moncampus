@@ -358,14 +358,21 @@ class LaptopController extends AbstractController
     // The running-loan count is a remark, never a refusal: lending several machines to the same
     // person is ordinary (a teacher equipping a room, a student with a second machine for a
     // placement). What the operator needs is to know it, not to be stopped.
+    //
+    // It also hands over the borrower's formation - name and dates, the three lines the convention
+    // prints - which the form shows as fields the operator may correct. The same programme the
+    // list and the search name (ProgramRepository::findActiveForStudent()); a borrower with none
+    // gets three empty fields.
     #[Route(path: '/laptops/loans/suggested-type', name: 'app_laptops_loans_suggested_type')]
-    public function suggestedLoanType(Request $request, UserRepository $userRepository, ProgramStudentModalityRepository $modalityRepository, LaptopLoanRepository $loanRepository, TranslatorInterface $translator): JsonResponse
+    public function suggestedLoanType(Request $request, UserRepository $userRepository, ProgramRepository $programRepository, ProgramStudentModalityRepository $modalityRepository, LaptopLoanRepository $loanRepository, TranslatorInterface $translator): JsonResponse
     {
         $borrower = $this->resolveActiveBorrower($userRepository, $request->query->get('borrower'));
 
         if (null === $borrower) {
-            return $this->json(['loanType' => null, 'activeLoansNotice' => null]);
+            return $this->json(['loanType' => null, 'activeLoansNotice' => null, 'program' => null]);
         }
+
+        $program = $programRepository->findActiveForStudent($borrower);
 
         // A borrower who is not a student signs nothing: the institution does not contract with its
         // own staff over a machine it owns - see App\Enum\LaptopLoanType::Interne.
@@ -378,6 +385,14 @@ class LaptopController extends AbstractController
             'activeLoansNotice' => $activeLoans > 0
                 ? $translator->trans('laptopLoanBorrowerAlreadyHoldsNoticeText', ['%count%' => $activeLoans])
                 : null,
+            // The plain name, not the display one: "TEST - " and "(masqué)" are marks for the
+            // application's own screens and have no place on a signed paper. Dates in the format
+            // an <input type="date"> takes.
+            'program' => null === $program ? null : [
+                'name' => $program->getName(),
+                'startDate' => $program->getStartDate()?->format('Y-m-d'),
+                'endDate' => $program->getEndDate()?->format('Y-m-d'),
+            ],
         ]);
     }
 

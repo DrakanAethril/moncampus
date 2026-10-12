@@ -62,6 +62,20 @@ enum LaptopLoanType: string
     }
 
     /**
+     * The values of the types that print a convention, for the front end - the lend form asks for
+     * the formation on those and on no other.
+     *
+     * @return list<string>
+     */
+    public static function conventionValues(): array
+    {
+        return array_values(array_map(
+            static fn (self $type): string => $type->value,
+            array_filter(self::cases(), static fn (self $type): bool => $type->hasConvention()),
+        ));
+    }
+
+    /**
      * Whether this type of loan may be recorded with no return date at all.
      *
      * Only an internal loan may: a machine handed to a member of staff is often lent for as long as
