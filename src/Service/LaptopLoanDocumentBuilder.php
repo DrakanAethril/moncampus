@@ -18,11 +18,14 @@ use App\Repository\ProgramRepository;
  * templates carry millimetre coordinates and nothing else, so adjusting the layout never means
  * touching formatting rules and the other way round.
  *
- * Nothing is frozen at signing time. The programme and its dates are re-read at every print, so a
- * convention reprinted after the borrower changed programme no longer says what the signed copy
- * said. Accepted on 2026-08-14, along with blank values being filled in by hand: any active account
- * may borrow (App\Service\LaptopLoanEligibility::isEligibleBorrower() only checks the account is
- * active), including a teacher with no programme at all.
+ * The formation's name and dates are the loan's own since 2026-10-12: the lend form proposes them
+ * from the borrower's programme, the operator corrects them, and what was saved is what is printed
+ * - a line saved empty stays empty and is filled in by hand, as it is for a teacher with no
+ * programme at all (any active account may borrow, see
+ * App\Service\LaptopLoanEligibility::isEligibleBorrower()). Only a loan recorded before that
+ * (LaptopLoan::carriesProgramDetails()) still has its programme re-read at every print, so that
+ * one reprinted after the borrower changed programme no longer says what the signed copy said.
+ * Nothing else is frozen at signing time.
  *
  * @phpstan-type LoanDocumentData array{
  *     ufaName: string,
@@ -89,7 +92,10 @@ class LaptopLoanDocumentBuilder
         $formationCenter = $this->formationCenterRepository->findSingleton();
         $laptop = $loan->getLaptop();
         $borrower = $loan->getBorrower();
-        $program = $borrower instanceof User ? $this->programRepository->findActiveForStudent($borrower) : null;
+        // Looked up only for a loan that recorded no formation of its own - see the class docblock.
+        $program = !$loan->carriesProgramDetails() && $borrower instanceof User
+            ? $this->programRepository->findActiveForStudent($borrower)
+            : null;
 
         $directorFirstName = $formationCenter?->getDirectorFirstName() ?? '';
         $directorLastName = $formationCenter?->getDirectorLastName() ?? '';
@@ -107,9 +113,9 @@ class LaptopLoanDocumentBuilder
             'representativeRole' => self::REPRESENTATIVE_ROLE,
             'borrowerLastName' => $borrower?->getLastname() ?? '',
             'borrowerFirstName' => $borrower?->getFirstname() ?? '',
-            'programName' => $program?->getDisplayName() ?? '',
-            'programStartDate' => self::date($program?->getStartDate()),
-            'programEndDate' => self::date($program?->getEndDate()),
+            'programName' => $loan->getProgramName() ?? $program?->getDisplayName() ?? '',
+            'programStartDate' => self::date($loan->carriesProgramDetails() ? $loan->getProgramStartDate() : $program?->getStartDate()),
+            'programEndDate' => self::date($loan->carriesProgramDetails() ? $loan->getProgramEndDate() : $program?->getEndDate()),
             'assetTag' => $laptop?->getAssetTag() ?? '',
             'brand' => $laptop?->getBrand() ?? '',
             'model' => $laptop?->getModel() ?? '',

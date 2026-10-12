@@ -41,7 +41,9 @@ class LaptopLoanDocumentExporter
         'ufa' => [
             'directory' => 'ufa-v3-2025-08-01',
             'template' => 'laptop/documents/ufa.html.twig',
-            'convention' => [1 => 'page-1.png', 2 => 'page-2.png', 3 => 'page-3.png'],
+            // The model has no line for the internal number: "assetTagLabel" is the patch that
+            // adds one over page 1 - see the template, which is where it is placed.
+            'convention' => [1 => 'page-1.png', 2 => 'page-2.png', 3 => 'page-3.png', 'assetTagLabel' => 'asset-tag-label.png'],
             'return_form' => [4 => 'page-4.png'],
         ],
         'cfc' => [

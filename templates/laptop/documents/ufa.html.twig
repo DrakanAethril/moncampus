@@ -80,6 +80,12 @@
         white-space: nowrap;
     }
 
+    /* A piece of the page redrawn over its background - see the internal number on page 1. */
+    .patch {
+        position: absolute;
+        display: block;
+    }
+
     .zone--block {
         display: block;
         padding: 1mm;
@@ -125,7 +131,20 @@
         {{ zone.field(27.8, 125.8, 44.8, 5.8, document.brand) }}
         {{ zone.field(86.0, 125.8, 41.1, 5.8, document.model) }}
         {{ zone.field(157.1, 125.8, 39.9, 5.8, document.serialNumber) }}
-        {{ zone.field(40.5, 133.1, 156.5, 5.7, document.conditionName) }}
+        {# The model has no line for the internal number, and the institution needs it next to the
+           serial number: the right end of "État du matériel" is given over to it. The patch covers
+           that field from the right edge of "Type" to the left edge of "Numéro de série" with the
+           page's white and the words « Numéro interne : » - set in the model's own typeface, since
+           they are assembled from words the scan already carries (asset-tag-label.png, 354 x 77 px
+           at the scan's 300 dpi). What is left of the blue on its right is the value's field. It
+           overshoots the row by 0.3 mm above and below, onto white, so that no rounding lets a
+           hairline of blue through. #}
+        {% if images.assetTagLabel is defined %}
+            <img class="patch" src="{{ images.assetTagLabel }}" alt=""
+                 style="left:127.13mm; top:132.72mm; width:29.96mm; height:6.52mm">
+        {% endif %}
+        {{ zone.field(40.5, 133.1, 86.6, 5.7, document.conditionName) }}
+        {{ zone.field(157.1, 133.1, 39.9, 5.7, document.assetTag) }}
         {{ zone.field(50.3, 140.4, 146.7, 5.7, document.accessories) }}
         {{ zone.field(65.7, 147.7, 36.2, 5.9, document.lentAt) }}
         {{ zone.field(157.1, 147.7, 39.9, 5.7, document.dueAt) }}

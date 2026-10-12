@@ -1832,6 +1832,10 @@ laptopLoanBorrowerSearchPlaceholder: 'Rechercher un utilisateur…'
 laptopLoanBorrowerAnyAccountHint: "N'importe quel compte actif : étudiant, enseignant, personnel, tuteur."
 laptopLoanBorrowerAlreadyHoldsNoticeText: 'Cette personne a déjà %count% machine(s) en cours de prêt.'
 laptopLoanDueAtFieldLabel: 'Retour prévu le'
+laptopLoanProgramNameFieldLabel: 'Formation suivie'
+laptopLoanProgramStartDateFieldLabel: 'Début de la formation'
+laptopLoanProgramEndDateFieldLabel: 'Fin de la formation'
+laptopLoanProgramFieldsHint: "Repris de la classe de l'emprunteur. Ce qui est saisi ici est ce que la convention imprimera."
 laptopLoanLentAtFieldLabel: 'Date du prêt'
 laptopLoanIndefiniteDurationFieldLabel: 'Durée indéfinie'
 laptopLoanIndefiniteDurationShortLabel: 'Indéterminée'
