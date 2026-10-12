@@ -47,6 +47,21 @@ class LaptopLoan
     #[Assert\NotNull]
     private ?LaptopLoanType $loanType = null;
 
+    // The formation as the convention prints it: its name and its two dates, proposed from the
+    // borrower's programme when the loan is recorded and corrected by the operator where the
+    // paper must say something else (a student signing before their enrolment is entered, a
+    // formation whose dates differ from the class's). What is stored is what is printed - see
+    // carriesProgramDetails() for the loans that have none.
+    #[ORM\Column(name: 'program_name', length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
+    private ?string $programName = null;
+
+    #[ORM\Column(name: 'program_start_date', type: Types::DATE_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $programStartDate = null;
+
+    #[ORM\Column(name: 'program_end_date', type: Types::DATE_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $programEndDate = null;
+
     #[ORM\Column(name: 'lent_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $lentAt;
 
@@ -158,6 +173,67 @@ class LaptopLoan
     public function setLoanType(?LaptopLoanType $loanType): static
     {
         $this->loanType = $loanType;
+
+        return $this;
+    }
+
+    public function getProgramName(): ?string
+    {
+        return $this->programName;
+    }
+
+    public function setProgramName(?string $programName): static
+    {
+        $this->programName = $programName;
+
+        return $this;
+    }
+
+    public function getProgramStartDate(): ?\DateTimeImmutable
+    {
+        return $this->programStartDate;
+    }
+
+    public function setProgramStartDate(?\DateTimeImmutable $programStartDate): static
+    {
+        $this->programStartDate = $programStartDate;
+
+        return $this;
+    }
+
+    public function getProgramEndDate(): ?\DateTimeImmutable
+    {
+        return $this->programEndDate;
+    }
+
+    public function setProgramEndDate(?\DateTimeImmutable $programEndDate): static
+    {
+        $this->programEndDate = $programEndDate;
+
+        return $this;
+    }
+
+    /**
+     * Whether the lend form asked for the formation on this loan.
+     *
+     * The name is what tells: the form writes an empty string for a line deliberately left blank
+     * (to be filled in by hand on the paper), so null only ever means "never asked" - a loan
+     * recorded before these three fields existed, or an internal one, which prints nothing. Those
+     * keep reading the borrower's programme at print time (App\Service\LaptopLoanDocumentBuilder).
+     */
+    public function carriesProgramDetails(): bool
+    {
+        return null !== $this->programName;
+    }
+
+    /**
+     * Forgets the formation: a loan with no convention has no paper to print it on.
+     */
+    public function clearProgramDetails(): static
+    {
+        $this->programName = null;
+        $this->programStartDate = null;
+        $this->programEndDate = null;
 
         return $this;
     }
