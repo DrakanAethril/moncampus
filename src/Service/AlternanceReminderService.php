@@ -55,6 +55,9 @@ class AlternanceReminderService
             ->htmlTemplate('emails/internship_alternance_reminder.html.twig')
             ->context([
                 'period' => $period,
+                // Formatted here rather than in the template, which UFA > Configuration > Emails
+                // also renders with a placeholder where the date goes.
+                'deadline' => $period?->getEndDate()?->format('d/m/Y'),
                 'ctaRoute' => $this->ctaRouteForStep($step),
                 // No route needs params yet (app_internship_tutor_home / app_home) - will gain
                 // tutorLinkId/periodId once Phase 5/6 wires this into the real per-role wizard

@@ -1584,6 +1584,42 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .tox .tox-tbtn--enabled { background: var(--cm-blue-bg) !important; }
 
 /* ==========================================================================
+   UFA > Configuration > Emails (.cm-emails) - the mails the platform sends, to
+   read only: their list on the left, the chosen one in the middle. The mail
+   itself is drawn in a frame and keeps its own colours whatever the theme.
+   ========================================================================== */
+.cm-emails { display: grid; grid-template-columns: 290px minmax(0, 1fr); align-items: start; }
+.cm-emails__menu { display: flex; flex-direction: column; gap: 2px; padding: 14px 10px; }
+.cm-emails__group {
+    padding: 10px 10px 4px; font: 600 11px var(--cm-font-ui); letter-spacing: .06em;
+    text-transform: uppercase; color: var(--cm-faint);
+}
+.cm-emails__group:first-child { padding-top: 2px; }
+.cm-emails__item {
+    padding: 7px 10px; border-radius: var(--cm-radius-sm); font-size: 14px; line-height: 1.35;
+    color: var(--cm-ink); text-decoration: none;
+}
+.cm-emails__item:hover { background: var(--cm-bg); color: var(--cm-ink); text-decoration: none; }
+.cm-emails__item.is-active { background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-weight: 600; }
+.cm-emails__main { min-width: 0; padding: 18px 22px 22px; border-left: 1px solid var(--cm-border-soft); }
+.cm-emails__subject { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px; }
+.cm-emails__subject dt { flex: 0 0 auto; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-emails__subject dd { margin: 0; font-weight: 600; color: var(--cm-ink); overflow-wrap: anywhere; }
+.cm-emails__frame {
+    display: block; width: 100%; height: 520px; border: 1px solid var(--cm-border-soft);
+    border-radius: var(--cm-radius-sm); background: #e9edf1;
+}
+.cm-emails__variables { margin-top: 16px; }
+.cm-emails__variables-title { margin-bottom: 6px; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-emails__variables dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 13.5px; }
+.cm-emails__variables dt { font-family: var(--cm-font-mono); font-weight: 600; color: var(--cm-ink); }
+.cm-emails__variables dd { margin: 0; color: var(--cm-muted); }
+@media (max-width: 991.98px) {
+    .cm-emails { grid-template-columns: minmax(0, 1fr); }
+    .cm-emails__main { border-left: 0; border-top: 1px solid var(--cm-border-soft); }
+}
+
+/* ==========================================================================
    The rail (.cm-rail) - GLOBAL pattern for "here are the N things you are
    working through, and this is the one you are on".
 

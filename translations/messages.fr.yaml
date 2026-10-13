@@ -11435,3 +11435,43 @@ homeTeacherDossierBannerToSubmitText: "{1}1 pièce à déposer|]1,Inf[%count% pi
 homeTeacherDossierBannerToCorrectText: "{1}1 pièce à corriger|]1,Inf[%count% pièces à corriger"
 homeTeacherDossierBannerAction: "Compléter"
 teacherDossierMyProgressLabel: "Pièces obligatoires rendues"
+
+# --- UFA > Configuration > Emails ---
+ufaConfigurationEmailsNavLabel: 'Emails'
+ufaEmailsPageHeading: 'Emails'
+ufaEmailsSubjectLabel: 'Objet'
+ufaEmailsVariablesTitle: "Ce qui change d'un envoi à l'autre"
+platformEmailGroupAlternanceLabel: 'Alternance'
+platformEmailGroupAccountLabel: 'Connexion et compte'
+platformEmailGroupMessagingLabel: 'Messagerie'
+platformEmailEngagementInviteTutorTitle: 'Engagement à signer — tuteur'
+platformEmailEngagementInviteTutorWhen: "Envoyé au tuteur en entreprise à la création de l'alternance."
+platformEmailEngagementInviteStudentTitle: 'Engagement à signer — alternant'
+platformEmailEngagementInviteStudentWhen: "Envoyé à l'alternant à la création de l'alternance."
+platformEmailReminderEngagementTitle: "Relance — signature de l'engagement"
+platformEmailReminderEngagementWhen: "Envoyé au tuteur ou à l'alternant depuis les relances, tant que la mise à disposition du livret n'est pas signée."
+platformEmailReminderPeriodTitle: "Relance — période d'évaluation"
+platformEmailReminderPeriodWhen: "Envoyé depuis les relances à la personne dont l'action est attendue sur une période d'évaluation, avec le tuteur ou le référent en copie s'ils sont cochés."
+platformEmailPeriodTurnTitle: "Période d'évaluation — au tour de l'alternant"
+platformEmailPeriodTurnWhen: "Envoyé à l'alternant dès que son tuteur a signé son évaluation de la période."
+platformEmailEvaluationReminderStudentTitle: 'Rappel — auto-évaluation en attente'
+platformEmailEvaluationReminderStudentWhen: "Envoyé depuis les rappels d'une formation aux alternants qui n'ont pas rendu leur auto-évaluation de la période."
+platformEmailEvaluationReminderTutorTitle: 'Rappel — évaluation du tuteur en attente'
+platformEmailEvaluationReminderTutorWhen: "Envoyé depuis les rappels d'une formation aux tuteurs qui n'ont pas rendu leur évaluation de la période."
+platformEmailMagicLoginTitle: 'Lien de connexion'
+platformEmailMagicLoginWhen: "Envoyé à la personne qui demande à se connecter par e-mail depuis l'écran de connexion."
+platformEmailMagicLoginMobileTitle: 'Lien de connexion — application mobile'
+platformEmailMagicLoginMobileWhen: "Envoyé à la personne qui demande à se connecter par e-mail depuis l'application."
+platformEmailContactEmailConfirmationTitle: "Confirmation de l'adresse de contact"
+platformEmailContactEmailConfirmationWhen: "Envoyé à la nouvelle adresse quand une personne change son adresse de contact dans son profil."
+platformEmailMessageCopyTitle: "Copie d'un message reçu"
+platformEmailMessageCopyWhen: "Envoyé aux destinataires d'un message de la messagerie interne qui ont demandé à en recevoir une copie."
+platformEmailVariablePeriod: "Le nom de la période d'évaluation"
+platformEmailVariableDeadline: 'La date de fin de la période'
+platformEmailVariableProgram: 'Le nom court de la formation'
+platformEmailVariableStudent: "Le nom de l'alternant"
+platformEmailVariableAddress: "L'adresse à confirmer"
+platformEmailVariableSender: "Le nom de l'expéditeur"
+platformEmailVariableSubject: "L'objet du message"
+platformEmailVariableBody: 'Le texte du message'
+platformEmailVariableSignature: "La signature de l'expéditeur, s'il en a une"

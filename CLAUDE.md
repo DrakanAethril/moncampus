@@ -617,6 +617,15 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   mail yet (« à écrire », derived, never a status), carrying the SIRET; its `studentNote` is read by
   their teachers. « Marquer terminé » on 1a asks the outcome: « Stage trouvé » enters the vivier,
   « Alternance trouvée » does not (the UFA contract will).
+- **Emails (UFA › Configuration)** — `App\Controller\Ufa\EmailCatalogController`,
+  `src/Service/PlatformEmail/`. The mails the platform writes itself, **to read only**: the list on
+  the left, the chosen one (subject + body) in the middle. `PlatformEmailCatalog` names each mail
+  and the context its sender passes, with a placeholder (`$PERIODE`, `$ALTERNANT`…) wherever a
+  value changes from one send to the next; `PlatformEmailPreviewer` renders it through **the
+  sender's own template**, so the screen cannot show a text the mail does not carry. A template
+  that sends two texts is two entries. `PlatformEmailCatalogTest` refuses a template of
+  `templates/emails/` no entry names: a new mail is listed or the test fails. Courrier pro is
+  absent on purpose - students write those.
 - **Courrier pro** — student mailboxes: `EmailAlias`, `EmailMessage`, `EmailAttachment`,
   `EmailEvent`, suppressions. Inbound via SES→S3→SQS, outbound via SES.
 - **Messagerie** — `MessageThread`/`Message`, audience-resolved. Present on web, **not** exposed in the
