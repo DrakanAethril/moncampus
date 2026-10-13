@@ -1,0 +1,50 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaEmailsPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaConfigurationNavLabel'|trans, url: path('app_ufa_configuration_formation_center')},
+        {label: 'ufaEmailsPageHeading'|trans, url: path('app_ufa_configuration_emails')},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'ufaEmailsPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card cm-emails">
+        <nav class="cm-emails__menu" aria-label="{{ 'ufaEmailsPageHeading'|trans }}">
+            {% for entry in groups %}
+                <div class="cm-emails__group">{{ entry.group.labelKey|trans }}</div>
+                {% for email in entry.emails %}
+                    <a class="cm-emails__item {{ email.key == selected.key ? 'is-active' }}"
+                       href="{{ path('app_ufa_configuration_emails', {key: email.key}) }}"
+                       {% if email.key == selected.key %}aria-current="page"{% endif %}>{{ email.titleKey|trans }}</a>
+                {% endfor %}
+            {% endfor %}
+        </nav>
+        <div class="cm-emails__main">
+            <twig:Cm:Subhead :title="selected.titleKey|trans" :hint="selected.whenKey|trans"/>
+            <dl class="cm-emails__subject">
+                <dt>{{ 'ufaEmailsSubjectLabel'|trans }}</dt>
+                <dd>{{ preview.subject }}</dd>
+            </dl>
+            {# The mail is a whole document with its own styles: a frame keeps the app's theme out
+               of it. No script runs inside; same-origin only lets the page measure its height. #}
+            <iframe class="cm-emails__frame" title="{{ selected.titleKey|trans }}" sandbox="allow-same-origin"
+                    srcdoc="{{ preview.html }}"
+                    data-controller="email-preview" data-action="load->email-preview#fit"></iframe>
+            {% if selected.variables is not empty %}
+                <div class="cm-emails__variables">
+                    <div class="cm-emails__variables-title">{{ 'ufaEmailsVariablesTitle'|trans }}</div>
+                    <dl>
+                        {% for name, labelKey in selected.variables %}
+                            <dt>{{ name }}</dt>
+                            <dd>{{ labelKey|trans }}</dd>
+                        {% endfor %}
+                    </dl>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -10200,3 +10200,12 @@ homeTeacherDossierBannerToSubmitText: "{1}1 document to hand in|]1,Inf[%count% d
 homeTeacherDossierBannerToCorrectText: "{1}1 document to correct|]1,Inf[%count% documents to correct"
 homeTeacherDossierBannerAction: "Complete"
 teacherDossierMyProgressLabel: "Required documents handed in"
+
+# --- UFA > Configuration > Emails ---
+ufaConfigurationEmailsNavLabel: 'Emails'
+ufaEmailsPageHeading: 'Emails'
+ufaEmailsSubjectLabel: 'Subject'
+ufaEmailsVariablesTitle: 'What changes from one send to the next'
+platformEmailGroupAlternanceLabel: 'Work-study'
+platformEmailGroupAccountLabel: 'Sign-in and account'
+platformEmailGroupMessagingLabel: 'Messaging'

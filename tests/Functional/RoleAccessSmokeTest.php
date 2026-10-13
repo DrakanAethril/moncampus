@@ -369,6 +369,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises' => 403,
             '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
+            '/ufa/configuration/emails' => 403,
             '/eco/parcours' => 403,
             '/eco/pwa-probe' => 403,
             // Dossiers documentaires. The two sides of the tool are two sets of routes, and this is
@@ -549,6 +550,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises' => 403,
             '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
+            '/ufa/configuration/emails' => 403,
             '/eco/parcours' => 403,
             '/eco/pwa-probe' => 403,
             // Dossiers documentaires: a teacher composes one, and reads « Mes dossiers » as an
@@ -615,6 +617,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises/siret-review' => 302,
             '/ufa/reminders' => 200,
             '/ufa/configuration/contract-import' => 200,
+            '/ufa/configuration/emails' => 200,
             '/ufa/teacher-dossiers' => 200,
             '/ufa/teacher-dossiers/templates' => 200,
             '/ufa/teacher-dossiers/new' => 200,
@@ -903,6 +906,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises' => 403,
             '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
+            '/ufa/configuration/emails' => 403,
             '/eco/parcours' => 403,
             '/eco/pwa-probe' => 403,
         ]);
