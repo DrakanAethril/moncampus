@@ -29,7 +29,7 @@ class MagicLoginService
     // The mobile link is deliberately shorter-lived than the web one: it is meant to be opened on
     // the phone that just asked for it, within the minute (design_handoff_mobile, principe 7 -
     // "lien à usage unique, valable 15 min").
-    private const int MOBILE_TOKEN_TTL_MINUTES = 15;
+    public const int MOBILE_TOKEN_TTL_MINUTES = 15;
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
