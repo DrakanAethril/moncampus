@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.13'
+      date: '2026-10-13'
+      summary: "L'UFA peut relire, dans sa configuration, les mails que la plateforme envoie d'elle-même : leur objet et leur texte, tels qu'ils partent."
+      entries:
+          - type: nouveaute
+            title: "UFA : les mails envoyés par la plateforme se consultent dans la configuration, en lecture seule"
+            detail: "Ce qui change d'un envoi à l'autre, comme le nom de l'alternant ou la période, y est indiqué à sa place."
     - version: '2026.10.12'
       date: '2026-10-12'
       summary: "Prêts d'ordinateurs portables : la convention de prêt porte le numéro interne de la machine, et la formation suivie se précise au moment du prêt."
