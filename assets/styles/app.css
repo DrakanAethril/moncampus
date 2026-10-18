@@ -13837,3 +13837,38 @@ dialog.cm-wall-panel::backdrop { background: rgba(18, 52, 77, .2); }
 .cm-wall-roster__meta { margin-left: auto; font-size: 12px; color: var(--cm-faint); white-space: nowrap; }
 .cm-wall-roster__wall .cm-wall-tile__format { font-size: 12px; }
 .cm-wall-notice { margin: 0; font-size: 13px; color: var(--cm-muted); }
+
+/* ===== Serious games (design/validated/serious-games.md) ======================================
+   The module's screens inside the Formatool shell. The games themselves draw their own world in
+   their sandboxed frame (public/serious-games/{slug}/); nothing here reaches it. */
+
+/* --- The avatar editor (design/conception_serious_games/avatar.html) --- */
+.cm-sg-ed { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.cm-sg-ed__left { padding: 26px; display: grid; gap: 14px; justify-items: center; }
+.cm-sg-ed__preview { width: 220px; height: 220px; border-radius: 50%; overflow: hidden; }
+.cm-sg-ed__row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+.cm-sg-ed__btn { height: 40px; border: 1px solid var(--cm-border); background: var(--cm-surface); border-radius: var(--cm-radius-sm); font: 600 13px var(--cm-font-ui); color: var(--cm-ink); cursor: pointer; }
+.cm-sg-ed__btn:hover { border-color: var(--cm-ink); }
+.cm-sg-ed__save { width: 100%; height: 44px; border: 0; border-radius: var(--cm-radius-sm); background: var(--cm-ink); color: var(--cm-surface); font: 600 14px var(--cm-font-ui); cursor: pointer; }
+.cm-sg-ed__save[data-saved="true"] { background: #3E8E5E; color: #fff; }
+.cm-sg-ed__save:disabled { opacity: .6; cursor: progress; }
+.cm-sg-ed__note { margin: 0; font-size: 12.5px; color: var(--cm-muted); text-align: center; }
+.cm-sg-ed__right { padding: 0 0 18px; min-width: 0; }
+.cm-sg-ed__cats { display: flex; border-bottom: 1px solid var(--cm-border-soft); padding: 0 12px; overflow-x: auto; scrollbar-width: none; }
+.cm-sg-ed__cats button { height: 40px; padding: 0 12px; border: 0; background: transparent; border-bottom: 2px solid transparent; margin-bottom: -1px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-muted); cursor: pointer; white-space: nowrap; }
+.cm-sg-ed__cats button[aria-selected="true"] { font-weight: 600; color: var(--cm-ink); border-bottom-color: var(--cm-ink); }
+.cm-sg-ed__groups { padding: 16px 18px 0; display: grid; gap: 18px; }
+.cm-sg-ed__gt { font: 600 11px var(--cm-font-ui); letter-spacing: 1.2px; text-transform: uppercase; color: var(--cm-muted); margin-bottom: 8px; }
+.cm-sg-ed__opts { display: flex; flex-wrap: wrap; gap: 10px; }
+.cm-sg-ed__tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 9px 7px; background: var(--cm-surface); border: 2px solid var(--cm-border-soft); border-radius: 8px; cursor: pointer; min-width: 92px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-sg-ed__tile[aria-pressed="true"] { background: var(--cm-surface-alt); border-color: var(--cm-ink); }
+.cm-sg-ed__th { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; }
+.cm-sg-ed__new { position: absolute; top: -8px; right: -6px; background: #6b4fa0; color: #fff; font: 700 9.5px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; padding: 2px 6px; border-radius: 10px; }
+.cm-sg-ed__sw { width: 38px; height: 38px; border-radius: 50%; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+.cm-sg-ed__sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--cm-surface), 0 0 0 4px var(--cm-ink); }
+.cm-sg-ed__pin { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; border: 2px solid var(--cm-border-soft); border-radius: 22px; background: var(--cm-surface); cursor: pointer; font: 500 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-sg-ed__pin[aria-pressed="true"] { border-color: var(--cm-ink); background: var(--cm-surface-alt); }
+.cm-sg-ed__pin[disabled] { opacity: .45; cursor: not-allowed; }
+.cm-sg-ed__hint { margin: 10px 0 0; font-size: 12.5px; color: var(--cm-muted); }
+.cm-sg-ed button:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
+@media (max-width: 760px) { .cm-sg-ed { grid-template-columns: 1fr; } }
