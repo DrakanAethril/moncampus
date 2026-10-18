@@ -1,0 +1,134 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "transcription",
+  "label": "De l’ADN à l’ARN messager",
+  "misconceptions": [
+    {
+      "id": "transcription-thymine",
+      "label": "Thymine écrite dans l’ARN",
+      "explanation": "L’ARN ne contient pas de thymine : en face d’un A du brin transcrit, on écrit U. Les trois autres appariements restent ceux de l’ADN."
+    },
+    {
+      "id": "transcription-copie",
+      "label": "Brin recopié au lieu d’être transcrit",
+      "explanation": "L’ARN messager est fabriqué en face du brin transcrit, base par base : il lui est complémentaire, pas identique."
+    },
+    {
+      "id": "transcription-remplacement",
+      "label": "T remplacé par U sans complémentarité",
+      "explanation": "Remplacer les T par des U ne suffit pas : l’ARN est complémentaire du brin transcrit. A → U, T → A, C → G, G → C."
+    },
+    {
+      "id": "transcription-brin",
+      "label": "Le mauvais brin transcrit",
+      "explanation": "Seul le brin transcrit sert de modèle. L’ARN messager est complémentaire du brin transcrit, donc identique au brin non transcrit, U remplaçant T."
+    }
+  ],
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Neuf bases",
+      "params": {
+        "t": "dna(9)"
+      },
+      "let": {
+        "m": "transcribe(t)"
+      },
+      "constraints": [
+        "has(chars(t), 'A') and has(chars(t), 'T') and has(chars(t), 'C') and has(chars(t), 'G')"
+      ],
+      "prompt": "Voici le brin <b>transcrit</b> d’un gène :<br>{{ seq(t) }}Écrivez l’ARN messager produit.",
+      "answer": {
+        "type": "sequence",
+        "value": "m",
+        "display": "seq(m)"
+      },
+      "wrongs": [
+        {
+          "misconception": "transcription-thymine",
+          "value": "complement(t)"
+        },
+        {
+          "misconception": "transcription-copie",
+          "value": "t"
+        },
+        {
+          "misconception": "transcription-remplacement",
+          "value": "replace(t, 'T', 'U')"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "L’ARNm est complémentaire du brin transcrit, avec <b>U</b> à la place de T : A → U, T → A, C → G, G → C."
+    },
+    {
+      "difficulty": 2,
+      "label": "Douze à quinze bases",
+      "params": {
+        "t": "dna(pick([12, 15]))"
+      },
+      "let": {
+        "m": "transcribe(t)"
+      },
+      "constraints": [
+        "has(chars(t), 'A') and has(chars(t), 'T') and has(chars(t), 'C') and has(chars(t), 'G')"
+      ],
+      "prompt": "Voici le brin <b>transcrit</b> d’un gène :<br>{{ seq(t) }}Écrivez l’ARN messager produit.",
+      "answer": {
+        "type": "sequence",
+        "value": "m",
+        "display": "seq(m)"
+      },
+      "wrongs": [
+        {
+          "misconception": "transcription-thymine",
+          "value": "complement(t)"
+        },
+        {
+          "misconception": "transcription-copie",
+          "value": "t"
+        },
+        {
+          "misconception": "transcription-remplacement",
+          "value": "replace(t, 'T', 'U')"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "L’ARNm est complémentaire du brin transcrit, avec <b>U</b> à la place de T : A → U, T → A, C → G, G → C."
+    },
+    {
+      "difficulty": 3,
+      "label": "Depuis le brin non transcrit",
+      "params": {
+        "cs": "dna(pick([12, 15]))"
+      },
+      "let": {
+        "m": "replace(cs, 'T', 'U')"
+      },
+      "constraints": [
+        "has(chars(cs), 'A') and has(chars(cs), 'T') and has(chars(cs), 'C') and has(chars(cs), 'G')"
+      ],
+      "prompt": "Voici le brin <b>non transcrit</b> d’un gène (le brin transcrit est son complémentaire) :<br>{{ seq(cs) }}Écrivez l’ARN messager produit.",
+      "answer": {
+        "type": "sequence",
+        "value": "m",
+        "display": "seq(m)"
+      },
+      "wrongs": [
+        {
+          "misconception": "transcription-brin",
+          "value": "transcribe(cs)"
+        },
+        {
+          "misconception": "transcription-copie",
+          "value": "cs"
+        },
+        {
+          "misconception": "transcription-thymine",
+          "value": "complement(cs)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Le brin transcrit est le complémentaire de celui-ci ; l’ARNm, complémentaire du brin transcrit, reprend donc cette séquence avec <b>U</b> à la place de T."
+    }
+  ]
+}

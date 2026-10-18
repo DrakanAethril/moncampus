@@ -1,0 +1,113 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "for-since",
+  "label": "for, since, ago",
+  "misconceptions": [
+    {
+      "id": "for-since-confusion",
+      "label": "for et since confondus",
+      "explanation": "For introduit une durée (for three years, pendant / depuis trois ans) ; since introduit un point de départ (since 1891, depuis 1891). Demande-toi : combien de temps, ou depuis quand ?"
+    },
+    {
+      "id": "for-since-ago",
+      "label": "« ago » mal employé",
+      "explanation": "Ago se place après une durée et accompagne le prétérit : he arrived three years ago (il y a trois ans). Avec le present perfect, on dit for ou since, jamais ago."
+    },
+    {
+      "id": "for-since-ago-oublie",
+      "label": "for ou since à la place de ago",
+      "explanation": "Un verbe au prétérit (arrived) date un moment passé : « il y a trois ans » se dit three years ago. For et since accompagnent le present perfect."
+    }
+  ],
+  "params": {
+    "k": "int(0, 2)",
+    "s": "pick([['the cabman', 3, 'he'], ['Mrs Hudson', 3, 'she'], ['the baker', 3, 'he'], ['a sailor', 3, 'he'], ['the flower girl', 3, 'she'], ['the night watchman', 3, 'he']])",
+    "d": "pick(['three years', 'a long time', 'six months', 'two hours', 'ages', 'ten days'])",
+    "p": "pick(['1891', 'Christmas', 'Monday', 'the fire at the docks', 'the winter of 1889', 'last spring'])",
+    "j": "pick(['has worked in Covent Garden', 'has lived on Baker Street', 'has known Wiggins', 'has sold flowers at the market'])"
+  },
+  "let": {
+    "line": "k == 2 ? ucfirst(s[0]) ~ ' arrived in London ' ~ d ~ ' <span class=\"q-blank\">…</span>.' : ucfirst(s[0]) ~ ' ' ~ j ~ ' <span class=\"q-blank\">…</span> ' ~ (k == 0 ? d : p) ~ '.'",
+    "right": "k == 0 ? 'for' : (k == 1 ? 'since' : 'ago')",
+    "why": "k == 0 ? '« ' ~ d ~ ' » est une durée : <b>for</b>.' : (k == 1 ? '« ' ~ p ~ ' » est un point de départ : <b>since</b>.' : 'Prétérit + durée + <b>ago</b> : « il y a ' ~ d ~ ' ».')"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Choisir",
+      "prompt": "Complete:<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "choice",
+        "value": "right",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "for-since-confusion",
+          "value": "'since'",
+          "when": "k == 0"
+        },
+        {
+          "misconception": "for-since-confusion",
+          "value": "'for'",
+          "when": "k == 1"
+        },
+        {
+          "misconception": "for-since-ago",
+          "value": "'ago'",
+          "when": "k != 2"
+        },
+        {
+          "misconception": "for-since-ago-oublie",
+          "value": "'for'",
+          "when": "k == 2"
+        },
+        {
+          "misconception": "for-since-ago-oublie",
+          "value": "'since'",
+          "when": "k == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ why }}"
+    },
+    {
+      "weight": 1,
+      "label": "Taper",
+      "prompt": "Type for, since or ago:<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "text",
+        "value": "right"
+      },
+      "wrongs": [
+        {
+          "misconception": "for-since-confusion",
+          "value": "'since'",
+          "when": "k == 0"
+        },
+        {
+          "misconception": "for-since-confusion",
+          "value": "'for'",
+          "when": "k == 1"
+        },
+        {
+          "misconception": "for-since-ago",
+          "value": "'ago'",
+          "when": "k != 2"
+        },
+        {
+          "misconception": "for-since-ago-oublie",
+          "value": "'for'",
+          "when": "k == 2"
+        },
+        {
+          "misconception": "for-since-ago-oublie",
+          "value": "'since'",
+          "when": "k == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ why }}"
+    }
+  ]
+}

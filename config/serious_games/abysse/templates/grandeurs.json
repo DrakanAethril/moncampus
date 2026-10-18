@@ -1,0 +1,114 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "grandeurs",
+  "label": "Ordres de grandeur du vivant",
+  "misconceptions": [
+    {
+      "id": "grandeurs-inverse",
+      "label": "Conversion faite dans le mauvais sens",
+      "explanation": "Vers une unité plus petite, le nombre grandit : on multiplie par 1 000. Vers une unité plus grande, il diminue : on divise par 1 000."
+    },
+    {
+      "id": "grandeurs-facteur",
+      "label": "Facteur 100 au lieu de 1 000",
+      "explanation": "Entre le millimètre, le micromètre et le nanomètre, on change d’unité par 1 000, pas par 100. 1 mm = 1 000 µm et 1 µm = 1 000 nm."
+    },
+    {
+      "id": "grandeurs-une-etape",
+      "label": "Une seule conversion au lieu de deux",
+      "explanation": "Du millimètre au nanomètre, on passe par le micromètre : deux facteurs 1 000, soit un million. Comptez les unités franchies."
+    }
+  ],
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Vers une unité plus petite",
+      "params": {
+        "o": "pick([['une bactérie', 2, 'µm', 'nm'], ['une cellule de crevette', 20, 'µm', 'nm'], ['le noyau d’une cellule de moule', 6, 'µm', 'nm'], ['une diatomée', 50, 'µm', 'nm'], ['un grain de plancton', 0.3, 'mm', 'µm'], ['un copépode', 1.2, 'mm', 'µm'], ['une larve de crabe', 0.8, 'mm', 'µm']])",
+        "r": "int(6, 14)"
+      },
+      "let": {
+        "v": "round(o[1] * r / 10, 3)",
+        "f": "1000",
+        "ans": "round(v * f, 9)"
+      },
+      "prompt": "Au microscope de la station, {{ o[0] }} mesure <b>{{ v }} {{ o[2] }}</b>. Combien cela fait-il en {{ o[3] }} ?",
+      "answer": {
+        "type": "number",
+        "value": "ans"
+      },
+      "wrongs": [
+        {
+          "misconception": "grandeurs-inverse",
+          "value": "round(v / f, 9)"
+        },
+        {
+          "misconception": "grandeurs-facteur",
+          "value": "round(v * 100, 9)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "1 mm = 1 000 µm et 1 µm = 1 000 nm. {{ v }} {{ o[2] }} = <b>{{ ans }} {{ o[3] }}</b>."
+    },
+    {
+      "difficulty": 2,
+      "label": "Vers une unité plus grande",
+      "params": {
+        "o": "pick([['un virus de la colonne d’eau', 100, 'nm', 'µm'], ['un ribosome', 25, 'nm', 'µm'], ['une bactérie', 2, 'µm', 'mm'], ['une cellule de crevette', 20, 'µm', 'mm'], ['une diatomée', 50, 'µm', 'mm'], ['une membrane cellulaire', 8, 'nm', 'µm']])",
+        "r": "int(6, 14)"
+      },
+      "let": {
+        "v": "round(o[1] * r / 10, 3)",
+        "f": "0.001",
+        "ans": "round(v * f, 9)"
+      },
+      "prompt": "Au microscope de la station, {{ o[0] }} mesure <b>{{ v }} {{ o[2] }}</b>. Combien cela fait-il en {{ o[3] }} ?",
+      "answer": {
+        "type": "number",
+        "value": "ans"
+      },
+      "wrongs": [
+        {
+          "misconception": "grandeurs-inverse",
+          "value": "round(v / f, 9)"
+        },
+        {
+          "misconception": "grandeurs-facteur",
+          "value": "round(v * 0.01, 9)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "1 mm = 1 000 µm et 1 µm = 1 000 nm. {{ v }} {{ o[2] }} = <b>{{ ans }} {{ o[3] }}</b>."
+    },
+    {
+      "difficulty": 3,
+      "label": "Deux unités d’écart",
+      "params": {
+        "o": "pick([['un grain de plancton', 0.3, 'mm', 'nm', 1000000], ['un copépode', 1.2, 'mm', 'nm', 1000000], ['un virus de la colonne d’eau', 100, 'nm', 'mm', 1e-06], ['un ribosome', 25, 'nm', 'mm', 1e-06], ['une larve de crabe', 0.8, 'mm', 'nm', 1000000]])",
+        "r": "int(6, 14)"
+      },
+      "let": {
+        "v": "round(o[1] * r / 10, 3)",
+        "f": "o[4]",
+        "ans": "round(v * f, 12)"
+      },
+      "prompt": "Au microscope de la station, {{ o[0] }} mesure <b>{{ v }} {{ o[2] }}</b>. Combien cela fait-il en {{ o[3] }} ?",
+      "answer": {
+        "type": "number",
+        "value": "ans"
+      },
+      "wrongs": [
+        {
+          "misconception": "grandeurs-une-etape",
+          "value": "round(v * (f > 1 ? 1000 : 0.001), 12)"
+        },
+        {
+          "misconception": "grandeurs-inverse",
+          "value": "round(v / f, 12)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Du {{ o[2] == 'mm' ? 'millimètre au nanomètre' : 'nanomètre au millimètre' }}, on franchit deux unités : {{ o[2] == 'mm' ? '× 1 000 000' : '÷ 1 000 000' }}. {{ v }} {{ o[2] }} = <b>{{ ans }} {{ o[3] }}</b>."
+    }
+  ]
+}

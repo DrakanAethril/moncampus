@@ -1,0 +1,131 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "disparition",
+  "label": "Si une espèce disparaît…",
+  "misconceptions": [
+    {
+      "id": "disparition-sens-fleche",
+      "label": "Sens de la relation alimentaire inversé",
+      "explanation": "Si un prédateur disparaît, ses proies sont libérées et augmentent ; si un aliment disparaît, ceux qui le mangent manquent de nourriture et diminuent. Repérez d’abord qui mange qui, d’après le sens des flèches."
+    },
+    {
+      "id": "disparition-sans-effet",
+      "label": "Effet de la disparition ignoré",
+      "explanation": "Dans un réseau, les populations dépendent les unes des autres : la disparition d’un être vivant retentit sur ceux qui le mangent et sur ceux qu’il mange. Suivez les flèches qui le relient aux autres."
+    },
+    {
+      "id": "disparition-indirect",
+      "label": "Effet indirect, à distance dans le réseau, ignoré",
+      "explanation": "Toute la matière organique d’un réseau vient de ses producteurs. Si le seul producteur disparaît, tous les consommateurs finissent par manquer de nourriture, même ceux qui ne le mangent pas directement."
+    }
+  ],
+  "params": {
+    "WEBS": "[{'zone': 'le récif', 'levels': {'algues': 0, 'oursin': 1, 'perroquet': 1, 'baliste': 2, 'merou': 2, 'requin': 3}, 'names': {'algues': 'Algues', 'oursin': 'Oursin', 'perroquet': 'Poisson-perroquet', 'baliste': 'Baliste', 'merou': 'Mérou', 'requin': 'Requin'}, 'def': {'algues': 'les algues', 'oursin': 'l’oursin', 'perroquet': 'le poisson-perroquet', 'baliste': 'le baliste', 'merou': 'le mérou', 'requin': 'le requin'}, 'edges': [['algues', 'oursin'], ['algues', 'perroquet'], ['oursin', 'baliste'], ['perroquet', 'merou'], ['baliste', 'requin'], ['merou', 'requin']]}, {'zone': 'la pleine eau', 'levels': {'phyto': 0, 'copepode': 1, 'krill': 1, 'lanterne': 2, 'calmar': 3, 'baudroie': 3, 'cachalot': 4}, 'names': {'phyto': 'Phytoplancton', 'copepode': 'Copépodes', 'krill': 'Krill', 'lanterne': 'Poisson-lanterne', 'calmar': 'Calmar', 'baudroie': 'Baudroie abyssale', 'cachalot': 'Cachalot'}, 'def': {'phyto': 'le phytoplancton', 'copepode': 'les copépodes', 'krill': 'le krill', 'lanterne': 'le poisson-lanterne', 'calmar': 'le calmar', 'baudroie': 'la baudroie abyssale', 'cachalot': 'le cachalot'}, 'edges': [['phyto', 'copepode'], ['phyto', 'krill'], ['copepode', 'lanterne'], ['krill', 'lanterne'], ['lanterne', 'calmar'], ['lanterne', 'baudroie'], ['calmar', 'cachalot']]}, {'zone': 'la source chaude', 'levels': {'bact': 0, 'crevette': 1, 'moule': 1, 'crabe': 2, 'zoarcide': 3, 'poulpe': 3}, 'names': {'bact': 'Bactéries chimiosynthétiques', 'crevette': 'Crevette Rimicaris', 'moule': 'Moule Bathymodiolus', 'crabe': 'Crabe Bythograea', 'zoarcide': 'Poisson zoarcidé', 'poulpe': 'Poulpe'}, 'def': {'bact': 'les bactéries chimiosynthétiques', 'crevette': 'la crevette Rimicaris', 'moule': 'la moule Bathymodiolus', 'crabe': 'le crabe Bythograea', 'zoarcide': 'le poisson zoarcidé', 'poulpe': 'le poulpe'}, 'edges': [['bact', 'crevette'], ['bact', 'moule'], ['crevette', 'crabe'], ['moule', 'crabe'], ['crabe', 'zoarcide'], ['crabe', 'poulpe']]}]",
+    "w": "pick(WEBS)",
+    "E": "w['edges']",
+    "K": "keys(w['levels'])"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Un prédateur disparaît",
+      "params": {
+        "e": "pick(filter(E, 'count(predatorsOf(E, item[0])) == 1'))",
+        "x": "e[1]",
+        "y": "e[0]",
+        "res": "'augmenterait'"
+      },
+      "prompt": "Réseau : {{ w['zone'] }}. Si {{ w['def'][x] }} {{ substr(w['def'][x], 0, 4) == 'les ' ? 'disparaissaient' : 'disparaissait' }}, la population {{ frDe(w['def'][y]) }}…",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "choice",
+        "value": "res",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "disparition-sens-fleche",
+          "value": "res == 'augmenterait' ? 'diminuerait' : 'augmenterait'"
+        },
+        {
+          "misconception": "disparition-sans-effet",
+          "value": "'resterait la même'"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ucfirst(w['def'][y]) }} {{ substr(w['def'][y], 0, 4) == 'les ' ? 'n’ont' : 'n’a' }} pas d’autre prédateur que {{ w['def'][x] }} dans ce réseau : sa population, libérée de la prédation, augmenterait."
+    },
+    {
+      "difficulty": 2,
+      "label": "Un aliment disparaît",
+      "params": {
+        "e": "pick(filter(E, 'count(preysOf(E, item[1])) == 1'))",
+        "x": "e[0]",
+        "y": "e[1]",
+        "res": "'diminuerait'"
+      },
+      "prompt": "Réseau : {{ w['zone'] }}. Si {{ w['def'][x] }} {{ substr(w['def'][x], 0, 4) == 'les ' ? 'disparaissaient' : 'disparaissait' }}, la population {{ frDe(w['def'][y]) }}…",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "choice",
+        "value": "res",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "disparition-sens-fleche",
+          "value": "res == 'augmenterait' ? 'diminuerait' : 'augmenterait'"
+        },
+        {
+          "misconception": "disparition-sans-effet",
+          "value": "'resterait la même'"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ucfirst(w['def'][y]) }} ne se {{ substr(w['def'][y], 0, 4) == 'les ' ? 'nourrissent' : 'nourrit' }} que {{ frDe(w['def'][x]) }} dans ce réseau : sa population, privée de nourriture, diminuerait."
+    },
+    {
+      "difficulty": 3,
+      "label": "Effet à distance",
+      "params": {
+        "x": "pick(filter(K, 'w[\"levels\"][item] == 0'))",
+        "y": "pick(filter(K, 'w[\"levels\"][item] >= 2'))",
+        "res": "'diminuerait'"
+      },
+      "prompt": "Réseau : {{ w['zone'] }}. Si {{ w['def'][x] }} {{ substr(w['def'][x], 0, 4) == 'les ' ? 'disparaissaient' : 'disparaissait' }}, la population {{ frDe(w['def'][y]) }}…",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "choice",
+        "value": "res",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "disparition-indirect",
+          "value": "'resterait la même'"
+        },
+        {
+          "misconception": "disparition-sens-fleche",
+          "value": "'augmenterait'"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ucfirst(w['def'][x]) }} {{ substr(w['def'][x], 0, 4) == 'les ' ? 'sont' : 'est' }} le seul producteur du réseau : toute la nourriture qui parvient {{ frA(w['def'][y]) }} en vient, par les maillons intermédiaires. Sa population diminuerait."
+    }
+  ]
+}

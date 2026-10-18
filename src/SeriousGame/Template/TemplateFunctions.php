@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\SeriousGame\Template;
 
 use App\SeriousGame\Answer\IntervalChecker;
+use App\SeriousGame\Biology\GeneticCode;
+use App\SeriousGame\English\EnglishForms;
 use App\SeriousGame\Latin\LatinMorphology;
 use App\SeriousGame\Latin\LatinTables;
 use App\SeriousGame\Math\MathFormat;
@@ -20,13 +22,17 @@ use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
  * registers it, and the connector's `format_guide` prints it (catalogue()), so the guide and the
  * engine cannot drift apart.
  *
- * Four families, as the format describes them:
+ * The families, as the format describes them:
  * - **draws** (`int`, `pick`, `nonZero`…): only in `params`, from the question's seeded draw;
  * - **calculation** on numbers and lists (`gcd`, `median`, `map`…);
  * - **writing** (`fmt`, `frac`, `pow`, `poly`, `table`…), producing the restricted HTML of a
  *   statement;
  * - **latin** (`form`, `forms`, `analyses`, `declTable`…), the grammar of LatinMorphology over the
- *   lexicon a template writes in its `params`.
+ *   lexicon a template writes in its `params`;
+ * - **vivant** (`complement`, `transcribe`, `translate`, `drift`…), Station Abysse's genetic code,
+ *   food webs and simulated populations;
+ * - **anglais** (`s3`, `ing`), the two spelling rules The Irregulars computes - its irregular verbs
+ *   are a lexicon, never a rule.
  *
  * map(), filter(), any(), all(), find() and sortBy() take their per-item rule as an expression in a
  * string, evaluated with `item` and `index` bound - ExpressionLanguage has no lambdas.
@@ -297,6 +303,103 @@ final class TemplateFunctions implements ExpressionFunctionProviderInterface
             'table' => [static fn (TemplateContext $c, array $v, mixed $rows, mixed $headerRow = false): string => MathFormat::table(array_map(self::list(...), self::list($rows)), true === $headerRow), 'écriture', 'table(lignes, ligneEnTête = false)', 'Un petit tableau : chaque ligne est une liste dont le premier élément est l’en-tête de ligne.'],
             'plain' => [static fn (TemplateContext $c, array $v, mixed $html): string => MathFormat::plain(self::string($html)), 'écriture', 'plain(html)', 'Le texte tapé d’une écriture : fractions en a/b, exposants en ^n, balises retirées.'],
 
+            // --- Ensembles et textes, encore ----------------------------------------------------
+            'intersect' => [static fn (TemplateContext $c, array $v, mixed $a, mixed $b): array => array_values(array_filter(self::list($a), static fn (mixed $x): bool => [] !== array_filter(self::list($b), static fn (mixed $y): bool => self::equal($x, $y)))),
+                'calcul', 'intersect(l1, l2)', 'Les éléments de l1 qui sont aussi dans l2, dans l’ordre de l1.'],
+            'without' => [static fn (TemplateContext $c, array $v, mixed $a, mixed $b): array => array_values(array_filter(self::list($a), static fn (mixed $x): bool => [] === array_filter(self::list($b), static fn (mixed $y): bool => self::equal($x, $y)))),
+                'calcul', 'without(l1, l2)', 'Les éléments de l1 qui ne sont pas dans l2.'],
+            'sameSet' => [static fn (TemplateContext $c, array $v, mixed $a, mixed $b): bool => self::sameSet(self::list($a), self::list($b)),
+                'calcul', 'sameSet(l1, l2)', 'Vrai si les deux listes ont les mêmes éléments, dans n’importe quel ordre.'],
+            'includes' => [static fn (TemplateContext $c, array $v, mixed $a, mixed $b): bool => [] === array_filter(self::list($b), static fn (mixed $y): bool => [] === array_filter(self::list($a), static fn (mixed $x): bool => self::equal($x, $y))),
+                'calcul', 'includes(l1, l2)', 'Vrai si tous les éléments de l2 sont dans l1.'],
+            'keys' => [static fn (TemplateContext $c, array $v, mixed $map): array => \is_array($map) ? array_map('strval', array_keys($map)) : throw new TemplateFormatException('', 'keys() attend un objet { clé: valeur }'),
+                'calcul', 'keys(objet)', 'Les clés d’un objet { clé: valeur }, dans l’ordre écrit.'],
+            'substr' => [static fn (TemplateContext $c, array $v, mixed $s, mixed $start, mixed $length = null): string => mb_substr(self::string($s), self::integer($start), null === $length ? null : self::integer($length)),
+                'texte', 'substr(texte, début, longueur?)', 'Une partie du texte (début compté à partir de 0).'],
+            'len' => [static fn (TemplateContext $c, array $v, mixed $s): int => mb_strlen(self::string($s)), 'texte', 'len(texte)', 'Le nombre de caractères.'],
+            'chars' => [static fn (TemplateContext $c, array $v, mixed $s): array => mb_str_split(self::string($s)), 'texte', 'chars(texte)', 'Les caractères du texte, en liste.'],
+            'strReverse' => [static fn (TemplateContext $c, array $v, mixed $s): string => implode('', array_reverse(mb_str_split(self::string($s)))), 'texte', 'strReverse(texte)', 'Le texte écrit à l’envers.'],
+            'words' => [static fn (TemplateContext $c, array $v, mixed $s): array => array_values(array_filter(explode(' ', self::string($s)), static fn (string $w): bool => '' !== $w)),
+                'texte', 'words(texte)', 'Les mots du texte, coupés aux espaces : les cases d’une réponse « spot ».'],
+            'gauss' => [static function (TemplateContext $c, array $v): float {
+                $random = $c->random('gauss');
+
+                return sqrt(-2 * log(1 - $random->float())) * cos(2 * \M_PI * $random->float());
+            }, 'tirage', 'gauss()', 'Nombre tiré selon la loi normale centrée réduite : le bruit d’une mesure (o0 + 0.1 * gauss()).'],
+
+            // --- Vivant (Station Abysse) ---------------------------------------------------------
+            'complement' => [static fn (TemplateContext $c, array $v, mixed $dna): string => GeneticCode::complement(self::string($dna)), 'vivant', 'complement(adn)', 'Le brin d’ADN complémentaire : A avec T, C avec G.'],
+            'transcribe' => [static fn (TemplateContext $c, array $v, mixed $dna): string => GeneticCode::transcribe(self::string($dna)), 'vivant', 'transcribe(brinTranscrit)', 'L’ARN messager transcrit d’un brin : A → U, T → A, C → G, G → C.'],
+            'aminoAcid' => [static fn (TemplateContext $c, array $v, mixed $codon): string => GeneticCode::aminoAcid(self::string($codon)), 'vivant', "aminoAcid('AUG')", 'L’acide aminé d’un codon, en trois lettres (« Met ») ; « Stop » pour un codon stop.'],
+            'translate' => [static fn (TemplateContext $c, array $v, mixed $rna): array => GeneticCode::translate(self::string($rna)), 'vivant', 'translate(arn)', 'Les acides aminés codés, lus codon par codon depuis la première lettre, jusqu’au premier codon stop.'],
+            'groups' => [static fn (TemplateContext $c, array $v, mixed $s): string => GeneticCode::groups(self::string($s)), 'vivant', 'groups(séquence)', 'La séquence par groupes de trois : « ATG CCA TTG ».'],
+            'seq' => [static fn (TemplateContext $c, array $v, mixed $s): string => '<span class="q-seq">'.htmlspecialchars(GeneticCode::groups(self::string($s)), \ENT_NOQUOTES).'</span>', 'vivant', 'seq(séquence)', 'La séquence écrite comme le séquenceur l’imprime, sur sa ligne, par groupes de trois.'],
+            'dna' => [static function (TemplateContext $c, array $v, mixed $n): string {
+                $random = $c->random('dna');
+                $out = '';
+                for ($i = 0, $count = self::integer($n); $i < $count; ++$i) {
+                    $out .= 'ATCG'[$random->int(0, 3)];
+                }
+
+                return $out;
+            }, 'tirage', 'dna(n)', 'Un brin d’ADN de n bases tirées au hasard.'],
+            'senseCodons' => [static function (TemplateContext $c, array $v, mixed $n): string {
+                $random = $c->random('senseCodons');
+                $out = '';
+                for ($i = 0, $count = self::integer($n); $i < $count; ++$i) {
+                    do {
+                        $codon = 'UCAG'[$random->int(0, 3)].'UCAG'[$random->int(0, 3)].'UCAG'[$random->int(0, 3)];
+                    } while (GeneticCode::isStop($codon));
+                    $out .= $codon;
+                }
+
+                return $out;
+            }, 'tirage', 'senseCodons(n)', 'Un ARN de n codons tirés au hasard, aucun codon stop.'],
+            'preysOf' => [static fn (TemplateContext $c, array $v, mixed $edges, mixed $k): array => array_values(array_map(static fn (array $e): mixed => $e[0], array_filter(self::edges($edges), static fn (array $e): bool => $e[1] === $k))),
+                'vivant', 'preysOf(flèches, x)', 'Ce que mange x dans un réseau dont les flèches sont [aliment, consommateur].'],
+            'predatorsOf' => [static fn (TemplateContext $c, array $v, mixed $edges, mixed $k): array => array_values(array_map(static fn (array $e): mixed => $e[1], array_filter(self::edges($edges), static fn (array $e): bool => $e[0] === $k))),
+                'vivant', 'predatorsOf(flèches, x)', 'Ce qui mange x.'],
+            'chainFrom' => [static function (TemplateContext $c, array $v, mixed $edges, mixed $start): array {
+                $random = $c->random('chainFrom');
+                $edges = self::edges($edges);
+                $chain = [$start];
+                while (\count($chain) < 12) {
+                    $next = array_values(array_map(static fn (array $e): mixed => $e[1], array_filter($edges, static fn (array $e): bool => $e[0] === $chain[\count($chain) - 1])));
+                    if ([] === $next) {
+                        break;
+                    }
+                    $chain[] = $random->pick($next);
+                }
+
+                return $chain;
+            }, 'tirage', 'chainFrom(flèches, producteur)', 'Une chaîne alimentaire tirée dans le réseau, du producteur donné jusqu’à un consommateur que rien ne mange.'],
+            'drift' => [static function (TemplateContext $c, array $v, mixed $size, mixed $advantage, mixed $start, mixed $generations): array {
+                $random = $c->random('drift');
+                [$n, $g] = [max(1, self::integer($size)), max(1, self::integer($generations))];
+                [$s, $p] = [self::number($advantage), self::number($start)];
+                $points = [[0, MathFormat::round($p, 4)]];
+                for ($t = 1; $t <= $g; ++$t) {
+                    $expected = $p * (1 + $s) / (1 + $s * $p);
+                    if ($n <= 60) {
+                        $hits = 0;
+                        for ($i = 0; $i < 2 * $n; ++$i) {
+                            $hits += $random->float() < $expected ? 1 : 0;
+                        }
+                        $p = $hits / (2 * $n);
+                    } else {
+                        $noise = sqrt(-2 * log(1 - $random->float())) * cos(2 * \M_PI * $random->float());
+                        $p = max(0.0, min(1.0, $expected + $noise * sqrt($expected * (1 - $expected) / (2 * $n))));
+                    }
+                    $points[] = [$t, MathFormat::round($p, 4)];
+                }
+
+                return $points;
+            }, 'tirage', 'drift(effectif, avantage, fréquenceInitiale, générations)', 'La fréquence d’un allèle génération après génération, dans une population de cet effectif : tirage des allèles (dérive) et avantage sélectif s (0 sans sélection). Des points [génération, fréquence] pour une série de graphique.'],
+
+            // --- Anglais (The Irregulars) --------------------------------------------------------
+            's3' => [static fn (TemplateContext $c, array $v, mixed $base): string => EnglishForms::thirdPerson(self::string($base)), 'anglais', "s3('watch')", 'La 3e personne du présent simple : watches, carries, has.'],
+            'ing' => [static fn (TemplateContext $c, array $v, mixed $base): string => EnglishForms::ing(self::string($base)), 'anglais', "ing('stop')", 'La forme en -ing : stopping, writing, lying.'],
+
             // --- Latin (Les Tablettes de Pompéi) --------------------------------------------------
             // A noun is written as the dictionary gives it: ['rosa', 'rosae', 'f', 'la rose'] ; an
             // adjective ['bonus', 'bona', 'bonum', 'boni', 'bon'] ; a pronoun by its lemma ('hic').
@@ -468,6 +571,38 @@ final class TemplateFunctions implements ExpressionFunctionProviderInterface
     private static function flatten(array $values): array
     {
         return 1 === \count($values) && \is_array($values[0]) ? array_values($values[0]) : $values;
+    }
+
+    /** @return list<array{0: mixed, 1: mixed}> the arrows of a food web, [food, eater] */
+    private static function edges(mixed $edges): array
+    {
+        $out = [];
+        foreach (self::list($edges) as $edge) {
+            if (!\is_array($edge) || 2 !== \count($edge)) {
+                throw new TemplateFormatException('', 'une flèche s’écrit [aliment, consommateur]');
+            }
+            $edge = array_values($edge);
+            $out[] = [$edge[0], $edge[1]];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param list<mixed> $a
+     * @param list<mixed> $b
+     */
+    private static function sameSet(array $a, array $b): bool
+    {
+        foreach ([[$a, $b], [$b, $a]] as [$x, $y]) {
+            foreach ($x as $item) {
+                if ([] === array_filter($y, static fn (mixed $other): bool => self::equal($item, $other))) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private static function equal(mixed $a, mixed $b): bool

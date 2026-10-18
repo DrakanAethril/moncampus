@@ -1,0 +1,152 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "capture",
+  "label": "Estimer un effectif (capture-recapture)",
+  "misconceptions": [
+    {
+      "id": "capture-formule-inversee",
+      "label": "Formule de capture-recapture inversée",
+      "explanation": "La proportion d’individus marqués est la même dans l’échantillon recapturé et dans toute la population : R ÷ C = M ÷ N. On en tire N = M × C ÷ R, en vérifiant que N est plus grand que M."
+    },
+    {
+      "id": "capture-addition",
+      "label": "Effectifs additionnés au lieu d’être mis en proportion",
+      "explanation": "Additionner ou soustraire les captures ne donne pas l’effectif : seule la proportion de marqués dans l’échantillon renseigne sur la population entière. Écrivez d’abord l’égalité des proportions."
+    },
+    {
+      "id": "capture-echantillon",
+      "label": "Échantillon et population confondus",
+      "explanation": "Les individus capturés ne sont qu’un échantillon : la population est bien plus nombreuse. On estime la population à partir de la proportion de marqués dans cet échantillon."
+    },
+    {
+      "id": "capture-une-plongee",
+      "label": "Une seule recapture prise en compte",
+      "explanation": "Quand il y a plusieurs recaptures, on réunit tout ce qui a été recapturé : le total des individus et le total des marqués. Une seule plongée donne une estimation moins fiable."
+    }
+  ],
+  "params": {
+    "SPEC": "['crevettes', 'crabes', 'poissons-clowns', 'oursins', 'étoiles de mer', 'moules']"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Estimer N",
+      "params": {
+        "s": "pick(SPEC)",
+        "M": "int(3, 8) * 10",
+        "R": "int(4, 12)",
+        "k": "int(3, 9)"
+      },
+      "let": {
+        "C": "R * k",
+        "N": "M * k"
+      },
+      "prompt": "On capture et on marque <b>{{ M }}</b> {{ s }}, puis on les relâche. Une semaine plus tard, on en capture <b>{{ C }}</b>, dont <b>{{ R }}</b> portent une marque. Estimez l’effectif de la population.",
+      "answer": {
+        "type": "number",
+        "value": "N",
+        "unit": "individus"
+      },
+      "wrongs": [
+        {
+          "misconception": "capture-formule-inversee",
+          "value": "M * R / C"
+        },
+        {
+          "misconception": "capture-addition",
+          "value": "M + C - R"
+        },
+        {
+          "misconception": "capture-echantillon",
+          "value": "C"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Même proportion de marqués dans l’échantillon et dans la population : N = M × C ÷ R = {{ M }} × {{ C }} ÷ {{ R }} = <b>{{ N }}</b>."
+    },
+    {
+      "difficulty": 2,
+      "label": "Deux recaptures",
+      "params": {
+        "s": "pick(SPEC)",
+        "M": "int(6, 30) * 5",
+        "R1": "int(3, 10)",
+        "R2": "int(3, 10)",
+        "k1": "int(3, 9)",
+        "k2": "int(3, 9)"
+      },
+      "let": {
+        "C1": "R1 * k1",
+        "C2": "R2 * k2",
+        "C": "C1 + C2",
+        "R": "R1 + R2",
+        "N": "round(M * C / R, 0)"
+      },
+      "constraints": [
+        "k1 != k2",
+        "abs(M * C1 / R1 - N) > 1.5"
+      ],
+      "prompt": "On marque <b>{{ M }}</b> {{ s }}. Deux plongées de recapture en ramènent <b>{{ C1 }}</b>, dont <b>{{ R1 }}</b> portent une marque, puis <b>{{ C2 }}</b>, dont <b>{{ R2 }}</b> portent une marque. Estimez l’effectif de la population à partir des deux plongées réunies (arrondi à l’unité).",
+      "answer": {
+        "type": "number",
+        "value": "N",
+        "unit": "individus",
+        "tolerance": 0.6
+      },
+      "wrongs": [
+        {
+          "misconception": "capture-une-plongee",
+          "value": "round(M * C1 / R1, 0)"
+        },
+        {
+          "misconception": "capture-formule-inversee",
+          "value": "round(M * R / C, 1)",
+          "when": "abs(M * R / C - N) > 1.5"
+        },
+        {
+          "misconception": "capture-addition",
+          "value": "M + C - R",
+          "when": "abs(M + C - R - N) > 1.5"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "On réunit les deux plongées : C = {{ C1 }} + {{ C2 }} = {{ C }} individus, dont R = {{ R1 }} + {{ R2 }} = {{ R }} marqués. N = M × C ÷ R = {{ M }} × {{ C }} ÷ {{ R }} ≈ <b>{{ N }}</b>."
+    },
+    {
+      "difficulty": 3,
+      "label": "Retrouver les marqués",
+      "params": {
+        "s": "pick(SPEC)",
+        "M": "int(3, 12) * 10",
+        "R": "int(4, 12)",
+        "k": "int(3, 9)"
+      },
+      "let": {
+        "C": "R * k",
+        "N": "M * k"
+      },
+      "prompt": "Une population de {{ s }} est estimée à <b>{{ N }}</b> individus par capture-recapture. Lors de la recapture, on a capturé <b>{{ C }}</b> individus, dont <b>{{ R }}</b> portaient une marque. Combien d’individus avaient été marqués lors de la première capture ?",
+      "answer": {
+        "type": "number",
+        "value": "M",
+        "unit": "individus"
+      },
+      "wrongs": [
+        {
+          "misconception": "capture-formule-inversee",
+          "value": "N * C / R"
+        },
+        {
+          "misconception": "capture-addition",
+          "value": "N - C"
+        },
+        {
+          "misconception": "capture-echantillon",
+          "value": "R"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "R ÷ C = M ÷ N, donc M = N × R ÷ C = {{ N }} × {{ R }} ÷ {{ C }} = <b>{{ M }}</b>."
+    }
+  ]
+}

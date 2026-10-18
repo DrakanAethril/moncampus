@@ -1,0 +1,130 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "echelles",
+  "label": "Les trois échelles de la biodiversité",
+  "misconceptions": [
+    {
+      "id": "echelles-individus-especes",
+      "label": "Diversité génétique et diversité des espèces confondues",
+      "explanation": "La diversité génétique compare des individus d’une même espèce, leurs allèles ; la diversité spécifique compte des espèces différentes. Demandez-vous d’abord : parle-t-on d’une seule espèce ou de plusieurs ?"
+    },
+    {
+      "id": "echelles-milieux",
+      "label": "Diversité des écosystèmes confondue avec une autre échelle",
+      "explanation": "La diversité des écosystèmes compare des milieux entiers (récif, source chaude, plaine) avec les êtres vivants qui les peuplent. Si l’observation porte sur des individus ou des espèces d’un seul milieu, ce n’est pas cette échelle."
+    }
+  ],
+  "params": {
+    "L": "['Diversité génétique', 'Diversité des espèces', 'Diversité des écosystèmes']",
+    "k": "int(0, 2)"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Une observation",
+      "params": {
+        "o": "pick([['crevettes', 'la couleur de la carapace'], ['poissons-lanternes', 'le nombre de photophores'], ['moules', 'l’épaisseur de la coquille'], ['crabes', 'la taille des pinces'], ['étoiles de mer', 'le nombre de bras']])",
+        "n": "int(14, 90)",
+        "g": "pick(['poissons', 'crustacés', 'éponges', 'mollusques'])",
+        "h1": "pick(['le récif', 'la plaine abyssale', 'les sources chaudes', 'les herbiers', 'la fosse'])",
+        "hh": "sample(['le récif', 'la plaine abyssale', 'les sources chaudes', 'les herbiers', 'la fosse'], 3)"
+      },
+      "let": {
+        "text": "k == 0 ? 'Chez les ' ~ o[0] ~ ' d’une même colonie, ' ~ o[1] ~ ' varie d’un individu à l’autre.' : (k == 1 ? 'Une seule plongée sur ' ~ h1 ~ ' a permis de recenser ' ~ n ~ ' espèces de ' ~ g ~ '.' : 'La station étudie trois milieux très différents : ' ~ hh[0] ~ ', ' ~ hh[1] ~ ' et ' ~ hh[2] ~ '.')"
+      },
+      "prompt": "À quelle échelle de la biodiversité cette observation correspond-elle ?<br><span class=\"q-line\">{{ text }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "L[k]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "echelles-individus-especes",
+          "value": "L[k == 0 ? 1 : 0]",
+          "when": "k != 2"
+        },
+        {
+          "misconception": "echelles-milieux",
+          "value": "L[k == 0 ? 2 : (k == 1 ? 2 : 0)]"
+        },
+        {
+          "misconception": "echelles-milieux",
+          "value": "L[1]",
+          "when": "k == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ['Des individus d’une même espèce qui diffèrent : c’est la diversité de leurs allèles, la diversité génétique.', 'On compte des espèces différentes dans un milieu : c’est la diversité spécifique.', 'On compare des milieux entiers : c’est la diversité des écosystèmes.'][k] }}"
+    },
+    {
+      "difficulty": 2,
+      "label": "Une observation plus fine",
+      "params": {
+        "text": "k == 0 ? pick(['Les crevettes Rimicaris de deux sources voisines ne portent pas tout à fait les mêmes allèles.', 'Dans une même population de poissons-lanternes, un gène de la luminescence existe sous trois versions.', 'Deux moules Bathymodiolus de la même espèce n’ont pas la même séquence pour le gène de la coquille.', 'Le séquençage de cinquante crabes d’une même espèce révèle quatre allèles d’un gène de pigment.', 'Parmi les coraux d’une même espèce, certains individus résistent mieux à la chaleur que d’autres, grâce à leurs allèles.']) : (k == 1 ? pick(['Autour d’un seul fumeur noir, on identifie 35 espèces de crustacés.', 'Le récif abrite plus de deux cents espèces de poissons.', 'Deux relevés de la même plaine comptent l’un 12 espèces de vers, l’autre 19.', 'Un mètre carré d’herbier héberge une vingtaine d’espèces de mollusques.', 'Le séquençage de l’eau d’une source révèle l’ADN de 60 espèces de bactéries.']) : pick(['La dorsale alterne sources chaudes, plaines de sédiments et champs de basalte.', 'Au large de la station, on passe d’un récif à un herbier, puis à une plaine abyssale.', 'La station compare un récif corallien et un champ de sources hydrothermales.', 'Une carte de la région distingue une mangrove, un lagon et un tombant rocheux.', 'Entre la côte et la fosse, on traverse un estran, un herbier et un plateau sableux.']))"
+      },
+      "prompt": "À quelle échelle de la biodiversité cette observation correspond-elle ?<br><span class=\"q-line\">{{ text }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "L[k]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "echelles-individus-especes",
+          "value": "L[k == 0 ? 1 : 0]",
+          "when": "k != 2"
+        },
+        {
+          "misconception": "echelles-milieux",
+          "value": "L[k == 0 ? 2 : (k == 1 ? 2 : 0)]"
+        },
+        {
+          "misconception": "echelles-milieux",
+          "value": "L[1]",
+          "when": "k == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ['Des individus d’une même espèce qui diffèrent : c’est la diversité de leurs allèles, la diversité génétique.', 'On compte des espèces différentes dans un milieu : c’est la diversité spécifique.', 'On compare des milieux entiers : c’est la diversité des écosystèmes.'][k] }}"
+    },
+    {
+      "difficulty": 3,
+      "label": "Trouver l’observation",
+      "params": {
+        "site": "pick([['Menez Gwen', '850'], ['Lucky Strike', '1 700'], ['Rainbow', '2 300'], ['Logatchev', '3 000'], ['Snake Pit', '3 500'], ['TAG', '3 650']])",
+        "g0": "pick(['Les crevettes Rimicaris de deux sources voisines ne portent pas tout à fait les mêmes allèles.', 'Dans une même population de poissons-lanternes, un gène de la luminescence existe sous trois versions.', 'Deux moules Bathymodiolus de la même espèce n’ont pas la même séquence pour le gène de la coquille.', 'Le séquençage de cinquante crabes d’une même espèce révèle quatre allèles d’un gène de pigment.', 'Parmi les coraux d’une même espèce, certains individus résistent mieux à la chaleur que d’autres, grâce à leurs allèles.'])",
+        "s0": "pick(['Autour d’un seul fumeur noir, on identifie 35 espèces de crustacés.', 'Le récif abrite plus de deux cents espèces de poissons.', 'Deux relevés de la même plaine comptent l’un 12 espèces de vers, l’autre 19.', 'Un mètre carré d’herbier héberge une vingtaine d’espèces de mollusques.', 'Le séquençage de l’eau d’une source révèle l’ADN de 60 espèces de bactéries.'])",
+        "e0": "pick(['La dorsale alterne sources chaudes, plaines de sédiments et champs de basalte.', 'Au large de la station, on passe d’un récif à un herbier, puis à une plaine abyssale.', 'La station compare un récif corallien et un champ de sources hydrothermales.', 'Une carte de la région distingue une mangrove, un lagon et un tombant rocheux.', 'Entre la côte et la fosse, on traverse un estran, un herbier et un plateau sableux.'])"
+      },
+      "let": {
+        "obs": "[g0, s0, e0]",
+        "what": "['génétique', 'des espèces', 'des écosystèmes'][k]"
+      },
+      "prompt": "Le carnet de la plongée sur le site {{ site[0] }} contient trois observations. Laquelle relève de la <b>diversité {{ what }}</b> ?",
+      "answer": {
+        "type": "choice",
+        "value": "obs[k]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "echelles-individus-especes",
+          "value": "obs[k == 0 ? 1 : 0]",
+          "when": "k != 2"
+        },
+        {
+          "misconception": "echelles-milieux",
+          "value": "obs[k == 2 ? 0 : 2]"
+        },
+        {
+          "misconception": "echelles-milieux",
+          "value": "obs[1]",
+          "when": "k == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "Diversité génétique : des individus d’une même espèce qui diffèrent par leurs allèles. Diversité des espèces : le nombre d’espèces d’un milieu. Diversité des écosystèmes : des milieux différents."
+    }
+  ]
+}

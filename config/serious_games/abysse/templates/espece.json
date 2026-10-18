@@ -1,0 +1,153 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "espece",
+  "label": "Deux populations, une espèce ?",
+  "misconceptions": [
+    {
+      "id": "espece-ressemblance",
+      "label": "Espèce définie par la ressemblance",
+      "explanation": "Deux espèces peuvent se ressembler beaucoup, et les individus d’une même espèce être très différents. Le critère est l’interfécondité : se reproduire ensemble et avoir des descendants fertiles."
+    },
+    {
+      "id": "espece-milieu",
+      "label": "Espèce définie par le milieu de vie",
+      "explanation": "Vivre dans le même océan ne dit rien de l’appartenance à une espèce. Seule compte la possibilité de se reproduire ensemble et d’avoir des descendants fertiles."
+    },
+    {
+      "id": "espece-sterilite",
+      "label": "Descendants stériles jugés suffisants",
+      "explanation": "Avoir des descendants ne suffit pas : ils doivent être fertiles. Des descendants tous stériles montrent que les deux populations sont devenues deux espèces."
+    },
+    {
+      "id": "espece-separation",
+      "label": "Séparation prise pour une preuve de deux espèces",
+      "explanation": "Être séparées longtemps ne suffit pas à faire deux espèces. Si les individus réunis ont encore des descendants fertiles, ils appartiennent toujours à la même espèce."
+    },
+    {
+      "id": "espece-interfecondite",
+      "label": "Interfécondité supposée sans avoir été observée",
+      "explanation": "On ne peut conclure à une seule espèce que si les individus se reproduisent ensemble et ont des descendants fertiles. S’ils ne se reproduisent pas entre eux, ce n’est pas le cas."
+    }
+  ],
+  "params": {
+    "O": "['Une seule espèce : leurs descendants sont fertiles', 'Deux espèces : ils ne sont plus interféconds', 'Deux espèces : ils ne se ressemblent plus', 'Une seule espèce : ils vivent dans le même océan']",
+    "SPO": "['crabes', 'gastéropodes', 'poissons zoarcidés', 'vers polychètes', 'crevettes']"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Le critère",
+      "params": {
+        "org": "pick(SPO)"
+      },
+      "prompt": "Le carnet doit dire si les {{ org }} de deux sources éloignées appartiennent à la même espèce. Quelle question faut-il se poser ?",
+      "answer": {
+        "type": "choice",
+        "value": "'Peuvent-ils se reproduire entre eux et avoir des descendants fertiles ?'"
+      },
+      "wrongs": [
+        {
+          "misconception": "espece-ressemblance",
+          "value": "'Se ressemblent-ils ?'"
+        },
+        {
+          "misconception": "espece-milieu",
+          "value": "'Vivent-ils dans le même milieu ?'"
+        },
+        {
+          "misconception": "espece-sterilite",
+          "value": "'Peuvent-ils avoir des descendants ensemble, même stériles ?'"
+        }
+      ],
+      "method": "Une espèce regroupe des individus qui peuvent se reproduire entre eux et avoir des descendants <b>fertiles</b>. La ressemblance ou le milieu ne suffisent pas."
+    },
+    {
+      "difficulty": 2,
+      "label": "Une rencontre en aquarium",
+      "params": {
+        "org": "pick(SPO)",
+        "n": "int(2, 9) * 1000",
+        "k": "int(0, 1)",
+        "diff": "chance(0.5)"
+      },
+      "prompt": "Deux populations de {{ org }}, séparées par la dorsale depuis {{ n }} générations, sont réunies dans un aquarium de la station. {{ diff ? 'Elles n’ont plus la même couleur.' : 'Elles se ressemblent beaucoup.' }} Les individus des deux populations {{ ['ont des descendants fertiles', 'ne se reproduisent pas entre eux', 'ont des descendants, tous stériles'][k] }}. Que conclure ?",
+      "answer": {
+        "type": "choice",
+        "value": "O[k == 0 ? 0 : 1]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "espece-separation",
+          "value": "O[1]",
+          "when": "k == 0"
+        },
+        {
+          "misconception": "espece-interfecondite",
+          "value": "O[0]",
+          "when": "k == 1"
+        },
+        {
+          "misconception": "espece-sterilite",
+          "value": "O[0]",
+          "when": "k == 2"
+        },
+        {
+          "misconception": "espece-ressemblance",
+          "value": "O[2]",
+          "when": "diff"
+        },
+        {
+          "misconception": "espece-milieu",
+          "value": "O[3]"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "Une espèce regroupe des individus qui peuvent se reproduire entre eux et avoir des descendants <b>fertiles</b>. La ressemblance ne suffit pas."
+    },
+    {
+      "difficulty": 3,
+      "label": "Des descendants stériles",
+      "params": {
+        "org": "pick(SPO)",
+        "n": "int(2, 9) * 1000",
+        "k": "2",
+        "diff": "chance(0.5)"
+      },
+      "prompt": "Deux populations de {{ org }}, séparées par la dorsale depuis {{ n }} générations, sont réunies dans un aquarium de la station. {{ diff ? 'Elles n’ont plus la même couleur.' : 'Elles se ressemblent beaucoup.' }} Les individus des deux populations {{ ['ont des descendants fertiles', 'ne se reproduisent pas entre eux', 'ont des descendants, tous stériles'][k] }}. Que conclure ?",
+      "answer": {
+        "type": "choice",
+        "value": "O[1]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "espece-separation",
+          "value": "O[1]",
+          "when": "k == 0"
+        },
+        {
+          "misconception": "espece-interfecondite",
+          "value": "O[0]",
+          "when": "k == 1"
+        },
+        {
+          "misconception": "espece-sterilite",
+          "value": "O[0]",
+          "when": "k == 2"
+        },
+        {
+          "misconception": "espece-ressemblance",
+          "value": "O[2]",
+          "when": "diff"
+        },
+        {
+          "misconception": "espece-milieu",
+          "value": "O[3]"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "Ils se reproduisent, mais leurs descendants sont stériles : les deux populations ne sont plus interfécondes. Ce sont deux espèces."
+    }
+  ]
+}

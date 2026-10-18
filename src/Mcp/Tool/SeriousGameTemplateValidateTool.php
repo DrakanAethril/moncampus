@@ -42,7 +42,7 @@ final readonly class SeriousGameTemplateValidateTool implements McpTool
         return [
             'type' => 'object',
             'properties' => [
-                'game' => ['type' => 'string', 'description' => 'Identifiant du jeu : « observatoire » (par défaut) ou « pompei ».'],
+                'game' => ['type' => 'string', 'description' => 'Identifiant du jeu : « observatoire » (par défaut), « pompei », « abysse » ou « irregulars ».'],
                 'unit' => ['type' => 'string'],
                 'version' => ['type' => 'integer', 'description' => 'Numéro du brouillon à valider.'],
             ],

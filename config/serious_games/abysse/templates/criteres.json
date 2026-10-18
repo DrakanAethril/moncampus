@@ -1,0 +1,115 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "criteres",
+  "label": "Ce qui ne sert pas à classer",
+  "misconceptions": [
+    {
+      "id": "criteres-caractere-ecarte",
+      "label": "Caractère anatomique hérité écarté du classement",
+      "explanation": "Les caractères anatomiques hérités (vertèbres, mâchoires, poils…) sont justement ceux qui servent à établir les parentés. Seuls les modes de vie et les mesures sans rapport avec l’hérédité sont écartés."
+    },
+    {
+      "id": "criteres-mode-de-vie",
+      "label": "Mode de vie pris pour un critère de parenté",
+      "explanation": "Vivre au même endroit, se nourrir de la même façon ou mesurer la même taille arrive chez des espèces très éloignées. Ces critères ne disent rien de la parenté : on classe sur des caractères anatomiques hérités."
+    },
+    {
+      "id": "criteres-ressemblance",
+      "label": "Ressemblance due au milieu prise pour une parenté",
+      "explanation": "Deux espèces éloignées peuvent se ressembler parce qu’elles vivent dans le même milieu (forme fuselée, ailes). On compare les caractères hérités qu’elles partagent, pas leur allure générale."
+    }
+  ],
+  "params": {
+    "CH": "{'vert': 'Vertèbres', 'mach': 'Mâchoires', 'ray': 'Nageoires rayonnées', 'charnu': 'Membres charnus', 'doigts': 'Membres à doigts', 'amnios': 'Amnios', 'plumes': 'Plumes', 'poils': 'Poils', 'mamelles': 'Mamelles'}",
+    "FAKE": "['Vit dans les grandes profondeurs', 'Se nourrit de plancton', 'Nage rapidement', 'Mesure plus d’un mètre', 'Vit en banc', 'Vit près des sources chaudes', 'Chasse la nuit']",
+    "PAIRS": "['Pieuvre', 'Lamproie', 'Requin', 'Thon', 'Hippocampe', 'Cœlacanthe', 'Grenouille', 'Tortue marine', 'Goéland', 'Otarie']",
+    "CONV": "[['le dauphin', 'le requin', 'l’otarie', 'ont une nageoire dorsale et un corps fuselé', 'des poils et des mamelles', 'en mer'], ['la chauve-souris', 'le goéland', 'l’otarie', 'ont des ailes et volent', 'des poils et des mamelles', 'près des côtes'], ['la tortue marine', 'le thon', 'le goéland', 'nagent en pleine mer', 'un amnios et des membres à doigts', 'au-dessus de l’océan ou dedans'], ['le manchot', 'l’otarie', 'le goéland', 'nagent avec des membres en forme de palettes', 'des plumes et un bec', 'au bord de la mer'], ['le cœlacanthe', 'le thon', 'la grenouille', 'vivent dans l’eau et portent des nageoires', 'des membres charnus', 'dans l’eau, au moins une partie de leur vie']]"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Le critère écarté",
+      "params": {
+        "two": "sample(PAIRS, 2)",
+        "reals": "sample(keys(CH), 3)",
+        "fake": "pick(FAKE)"
+      },
+      "prompt": "Pour établir des liens de parenté entre <b>{{ two[0] }}</b> et <b>{{ two[1] }}</b>, lequel de ces critères <b>ne peut pas</b> être utilisé ?",
+      "answer": {
+        "type": "choice",
+        "value": "fake"
+      },
+      "wrongs": [
+        {
+          "misconception": "criteres-caractere-ecarte",
+          "value": "CH[reals[0]]"
+        },
+        {
+          "misconception": "criteres-caractere-ecarte",
+          "value": "CH[reals[1]]"
+        },
+        {
+          "misconception": "criteres-caractere-ecarte",
+          "value": "CH[reals[2]]"
+        }
+      ],
+      "method": "On classe sur des caractères anatomiques hérités, partagés par descendance. « {{ fake }} » peut se rencontrer chez des espèces éloignées : ce critère ne dit rien de la parenté."
+    },
+    {
+      "difficulty": 2,
+      "label": "Le critère utile",
+      "params": {
+        "two": "sample(PAIRS, 2)",
+        "real": "pick(keys(CH))",
+        "fakes": "sample(FAKE, 3)"
+      },
+      "prompt": "Lequel de ces critères peut servir à établir un lien de parenté entre <b>{{ two[0] }}</b> et <b>{{ two[1] }}</b> ?",
+      "answer": {
+        "type": "choice",
+        "value": "CH[real]"
+      },
+      "wrongs": [
+        {
+          "misconception": "criteres-mode-de-vie",
+          "value": "fakes[0]"
+        },
+        {
+          "misconception": "criteres-mode-de-vie",
+          "value": "fakes[1]"
+        },
+        {
+          "misconception": "criteres-mode-de-vie",
+          "value": "fakes[2]"
+        }
+      ],
+      "method": "{{ CH[real] }} : un caractère anatomique hérité, présent ou absent selon l’histoire des espèces. Les modes de vie ne sont pas des caractères de parenté."
+    },
+    {
+      "difficulty": 3,
+      "label": "Une ressemblance trompeuse",
+      "params": {
+        "c": "pick(CONV)"
+      },
+      "prompt": "{{ ucfirst(c[0]) }} et {{ c[1] }} {{ c[3] }}. Pourtant, le carnet range {{ c[0] }} plus près de {{ c[2] }}. Pourquoi ?",
+      "answer": {
+        "type": "choice",
+        "value": "ucfirst(c[0]) ~ ' et ' ~ c[2] ~ ' partagent ' ~ c[4] ~ ', caractères hérités d’un ancêtre commun'"
+      },
+      "wrongs": [
+        {
+          "misconception": "criteres-ressemblance",
+          "value": "ucfirst(c[0]) ~ ' et ' ~ c[1] ~ ' se ressemblent tant que le carnet se trompe'"
+        },
+        {
+          "misconception": "criteres-mode-de-vie",
+          "value": "ucfirst(c[0]) ~ ' et ' ~ c[2] ~ ' vivent ' ~ c[5]"
+        },
+        {
+          "misconception": "criteres-caractere-ecarte",
+          "value": "'Les caractères anatomiques ne servent pas à établir une parenté'"
+        }
+      ],
+      "method": "Une même forme peut apparaître chez des espèces éloignées qui vivent dans le même milieu. La parenté se lit sur les caractères hérités partagés : ici {{ c[4] }}."
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "as-as",
+  "label": "as … as, not as … as",
+  "misconceptions": [
+    {
+      "id": "as-as-lecture",
+      "label": "Comparaison contraire aux données",
+      "explanation": "Not as old as veut dire « moins vieux que ». Vérifie sur les étiquettes que le premier objet a bien la plus petite valeur pour l’adjectif employé."
+    },
+    {
+      "id": "as-as-forme",
+      "label": "Structure « as … as » mal formée",
+      "explanation": "On encadre l’adjectif à la forme simple : as old as, not as heavy as. Jamais de comparatif (as older as), et jamais un seul as."
+    }
+  ],
+  "params": {
+    "A": "pick([[1, 'old', 'young', ' years old'], [2, 'heavy', 'light', ' kg'], [4, 'tall', 'short', ' cm tall']])",
+    "p": "sample([['the Egyptian vase', 3200, 12, 900, 60, 2], ['the Roman coin', 1900, 0.01, 300, 2, 4], ['the Viking sword', 1100, 3, 1500, 90, 3], ['the Greek statue', 2400, 450, 5000, 180, 2], ['the Chinese scroll', 800, 0.5, 2200, 120, 5], ['the Aztec mask', 600, 2, 3000, 30, 4], ['the medieval helmet', 700, 4, 1200, 35, 1]], 2)"
+  },
+  "constraints": [
+    "p[0][A[0]] != p[1][A[0]]"
+  ],
+  "let": {
+    "less": "p[0][A[0]] < p[1][A[0]]",
+    "a0": "ucfirst(p[0][0])",
+    "b0": "p[1][0]",
+    "adj": "less ? A[1] : A[2]",
+    "anti": "less ? A[2] : A[1]",
+    "comp": "{'old': 'older', 'heavy': 'heavier', 'tall': 'taller', 'young': 'younger', 'light': 'lighter', 'short': 'shorter'}",
+    "cards": "'<ul class=\"q-cards\">' ~ '<li><b>' ~ ucfirst(replace(p[0][0], 'the ', '')) ~ '</b> — ' ~ str(p[0][A[0]]) ~ A[3] ~ '</li>' ~ '<li><b>' ~ ucfirst(replace(p[1][0], 'the ', '')) ~ '</b> — ' ~ str(p[1][A[0]]) ~ A[3] ~ '</li>' ~ '</ul>'"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "La phrase vraie",
+      "prompt": "Museum labels:{{ cards }}Which sentence is true?",
+      "answer": {
+        "type": "choice",
+        "value": "a0 ~ ' is not as ' ~ adj ~ ' as ' ~ b0 ~ '.'"
+      },
+      "wrongs": [
+        {
+          "misconception": "as-as-lecture",
+          "value": "a0 ~ ' is not as ' ~ anti ~ ' as ' ~ b0 ~ '.'"
+        },
+        {
+          "misconception": "as-as-forme",
+          "value": "a0 ~ ' is not as ' ~ comp[adj] ~ ' as ' ~ b0 ~ '.'"
+        },
+        {
+          "misconception": "as-as-forme",
+          "value": "a0 ~ ' is not ' ~ adj ~ ' as ' ~ b0 ~ '.'"
+        }
+      ],
+      "method": "<b>not as + adjectif + as</b> exprime l’infériorité, l’adjectif reste à la forme simple. Ici {{ str(p[0][A[0]]) ~ A[3] }} contre {{ str(p[1][A[0]]) ~ A[3] }}."
+    },
+    {
+      "weight": 1,
+      "label": "Taper l’adjectif",
+      "prompt": "Museum labels:{{ cards }}Type « {{ A[1] }} » or « {{ A[2] }} », as the labels say:<span class=\"q-line\">“{{ a0 }} is not as <span class=\"q-blank\">…</span> as {{ b0 }}.”</span>",
+      "answer": {
+        "type": "text",
+        "value": "adj"
+      },
+      "wrongs": [
+        {
+          "misconception": "as-as-lecture",
+          "value": "anti"
+        },
+        {
+          "misconception": "as-as-forme",
+          "value": "comp[adj]"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "<b>not as + adjectif + as</b> exprime l’infériorité, l’adjectif reste à la forme simple : not as <b>{{ adj }}</b> as. Ici {{ str(p[0][A[0]]) ~ A[3] }} contre {{ str(p[1][A[0]]) ~ A[3] }}."
+    }
+  ]
+}

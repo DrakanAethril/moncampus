@@ -1,0 +1,91 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "aux",
+  "label": "Le bon auxiliaire",
+  "misconceptions": [
+    {
+      "id": "aux-temps",
+      "label": "Auxiliaire d’un autre temps",
+      "explanation": "Chaque temps a son auxiliaire de question : do / does (présent simple), am / is / are (présent en -ing), did (prétérit), have / has (present perfect). Repère d’abord la forme du verbe et le marqueur de temps."
+    },
+    {
+      "id": "aux-personne",
+      "label": "Auxiliaire à la mauvaise personne",
+      "explanation": "L’auxiliaire s’accorde avec le sujet : does, is, has avec he, she ou un nom singulier ; do, are, have avec you, we, they ou un pluriel."
+    }
+  ],
+  "params": {
+    "s": "pick([['the cabman', 3, 'he'], ['Mrs Hudson', 3, 'she'], ['the baker', 3, 'he'], ['a sailor', 3, 'he'], ['the flower girl', 3, 'she'], ['the night watchman', 3, 'he'], ['two dockers', 6, 'they'], ['the Smith brothers', 6, 'they'], ['we', 4, 'we'], ['you', 2, 'you']])",
+    "tense": "int(0, 3)",
+    "v": "pick([['bring', 'brought', 'brought', 'a lamp'], ['buy', 'bought', 'bought', 'a newspaper'], ['find', 'found', 'found', 'the key'], ['hide', 'hid', 'hidden', 'the jewels'], ['lose', 'lost', 'lost', 'the key'], ['see', 'saw', 'seen', 'a tall man'], ['sell', 'sold', 'sold', 'flowers'], ['steal', 'stole', 'stolen', 'a gold watch'], ['take', 'took', 'taken', 'the last train'], ['throw', 'threw', 'thrown', 'a stone']])",
+    "o": "pick(['a black bag', 'a strange letter', 'the stolen watch', 'a broken lamp', 'the jeweller’s box', 'a silver key'])"
+  },
+  "let": {
+    "third": "s[1] == 3",
+    "all": "third ? ['Does', 'Is', 'Did', 'Has'] : ['Do', 'Are', 'Did', 'Have']",
+    "other": "third ? ['Do', 'Are', 'Did', 'Have'] : ['Does', 'Is', 'Did', 'Has']",
+    "right": "all[tense]",
+    "rest": "tense == 0 ? s[0] ~ ' ' ~ v[0] ~ ' ' ~ o ~ ' every day?' : (tense == 1 ? s[0] ~ ' ' ~ ing(v[0]) ~ ' ' ~ o ~ ' right now?' : (tense == 2 ? s[0] ~ ' ' ~ v[0] ~ ' ' ~ o ~ ' last night?' : s[0] ~ ' ever ' ~ v[2] ~ ' ' ~ o ~ '?'))",
+    "how": "['Présent simple (« every day ») : <b>do / does</b> + base verbale.', 'Présent en be + -ing (« right now ») : <b>be</b> en tête.', 'Prétérit (« last night ») : <b>did</b> + base verbale.', 'Present perfect (participe passé, « ever ») : <b>have / has</b> en tête.']"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Choisir",
+      "prompt": "Complete the question:<span class=\"q-line\">“<span class=\"q-blank\">…</span> {{ rest }}”</span>",
+      "answer": {
+        "type": "choice",
+        "value": "right"
+      },
+      "wrongs": [
+        {
+          "misconception": "aux-temps",
+          "value": "all[(tense + 1) % 4]"
+        },
+        {
+          "misconception": "aux-temps",
+          "value": "all[(tense + 2) % 4]"
+        },
+        {
+          "misconception": "aux-temps",
+          "value": "all[(tense + 3) % 4]"
+        },
+        {
+          "misconception": "aux-personne",
+          "value": "other[tense]",
+          "when": "tense != 2"
+        }
+      ],
+      "method": "{{ how[tense] }}"
+    },
+    {
+      "weight": 1,
+      "label": "Taper",
+      "prompt": "Type the auxiliary that starts the question:<span class=\"q-line\">“<span class=\"q-blank\">…</span> {{ rest }}”</span>",
+      "answer": {
+        "type": "text",
+        "value": "right"
+      },
+      "wrongs": [
+        {
+          "misconception": "aux-personne",
+          "value": "other[tense]",
+          "when": "tense != 2"
+        },
+        {
+          "misconception": "aux-temps",
+          "value": "all[(tense + 1) % 4]"
+        },
+        {
+          "misconception": "aux-temps",
+          "value": "all[(tense + 2) % 4]"
+        },
+        {
+          "misconception": "aux-temps",
+          "value": "all[(tense + 3) % 4]"
+        }
+      ],
+      "method": "{{ how[tense] }}"
+    }
+  ]
+}

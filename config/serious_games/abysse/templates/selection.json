@@ -1,0 +1,106 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "selection",
+  "label": "Prévoir l’effet d’une sélection",
+  "misconceptions": [
+    {
+      "id": "selection-pression-ignoree",
+      "label": "Pression de sélection ignorée",
+      "explanation": "Quand un prédateur repère ou brise plus facilement une forme, les individus de l’autre forme survivent plus souvent et se reproduisent davantage. Leur allèle devient plus fréquent au fil des générations."
+    },
+    {
+      "id": "selection-finalisme",
+      "label": "Individus qui changeraient « pour survivre »",
+      "explanation": "Un individu ne change pas ses allèles pour s’adapter : il les a reçus de ses parents. Le milieu ne fait que trier, en favorisant la reproduction des individus qui portent déjà l’allèle avantageux."
+    },
+    {
+      "id": "selection-milieu-ancien",
+      "label": "Ancien milieu pris en compte après un changement",
+      "explanation": "Un avantage dépend du milieu : quand le milieu change, la forme favorisée peut devenir désavantagée. Raisonnez sur le milieu tel qu’il est maintenant."
+    }
+  ],
+  "params": {
+    "SEL": "[['crabes', 'clairs', 'sombres', 'les roches basaltiques noires', 'un poulpe qui chasse à vue', 'une coulée de sédiments clairs recouvre les roches'], ['crevettes', 'rouges', 'blanches', 'les tapis de bactéries blanches', 'un poisson qui chasse à vue', 'les tapis de bactéries disparaissent, laissant la roche rouge du fer à nu'], ['gastéropodes', 'à coquille fine', 'à coquille épaisse', 'les cheminées où vivent des crabes broyeurs', 'un crabe qui brise les coquilles', 'les crabes broyeurs disparaissent des cheminées'], ['moules', 'à coquille fine', 'à coquille épaisse', 'un champ de sources', 'une étoile de mer qui force les coquilles', 'les étoiles de mer disparaissent du champ de sources'], ['poissons zoarcidés', 'unis', 'tachetés', 'des fonds de cailloux tachetés', 'un poulpe qui chasse à vue', 'les cailloux sont recouverts d’une boue uniforme']]"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "La forme avantagée",
+      "params": {
+        "S": "pick(SEL)"
+      },
+      "prompt": "Des {{ S[0] }} {{ S[1] }} et {{ S[2] }} vivent sur {{ S[3] }}. Leur principal prédateur est {{ S[4] }}. Quelle forme survit le plus souvent ?",
+      "answer": {
+        "type": "choice",
+        "value": "'Les ' ~ S[0] ~ ' ' ~ S[2]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "selection-pression-ignoree",
+          "value": "'Les ' ~ S[0] ~ ' ' ~ S[1]"
+        },
+        {
+          "misconception": "selection-pression-ignoree",
+          "value": "'Les deux formes autant'"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "Le prédateur repère ou brise moins facilement les {{ S[0] }} {{ S[2] }} : cette forme survit plus souvent."
+    },
+    {
+      "difficulty": 2,
+      "label": "L’allèle au fil des générations",
+      "params": {
+        "S": "pick(SEL)"
+      },
+      "prompt": "Des {{ S[0] }} {{ S[1] }} et {{ S[2] }} vivent sur {{ S[3] }}. Leur principal prédateur est {{ S[4] }}. Que devient, au fil des générations, la fréquence de l’allèle des {{ S[0] }} {{ S[2] }} ?",
+      "answer": {
+        "type": "choice",
+        "value": "'Elle augmente'"
+      },
+      "wrongs": [
+        {
+          "misconception": "selection-pression-ignoree",
+          "value": "'Elle diminue'"
+        },
+        {
+          "misconception": "selection-pression-ignoree",
+          "value": "'Elle ne change pas'"
+        },
+        {
+          "misconception": "selection-finalisme",
+          "value": "'Elle augmente parce que les ' ~ S[0] ~ ' ' ~ S[1] ~ ' changent de forme pour survivre'"
+        }
+      ],
+      "method": "Les {{ S[0] }} {{ S[2] }} échappent plus souvent au prédateur, se reproduisent davantage et transmettent plus souvent leur allèle : c’est la sélection naturelle."
+    },
+    {
+      "difficulty": 3,
+      "label": "Le milieu change",
+      "params": {
+        "S": "pick(SEL)"
+      },
+      "prompt": "Des {{ S[0] }} {{ S[1] }} et {{ S[2] }} vivent sur {{ S[3] }}, où {{ S[4] }} favorise les {{ S[2] }}. Un jour, {{ S[5] }}. Que devient alors la fréquence de l’allèle des {{ S[0] }} {{ S[2] }} ?",
+      "answer": {
+        "type": "choice",
+        "value": "'Elle cesse d’augmenter, et diminue si l’autre forme devient avantagée'"
+      },
+      "wrongs": [
+        {
+          "misconception": "selection-milieu-ancien",
+          "value": "'Elle continue d’augmenter, comme avant'"
+        },
+        {
+          "misconception": "selection-finalisme",
+          "value": "'Elle diminue parce que les ' ~ S[0] ~ ' ' ~ S[2] ~ ' changent de forme pour survivre'"
+        },
+        {
+          "misconception": "selection-pression-ignoree",
+          "value": "'Le changement du milieu n’a aucun effet sur elle'"
+        }
+      ],
+      "method": "L’avantage des {{ S[0] }} {{ S[2] }} venait du milieu. Le milieu a changé : la pression de sélection change, et peut même favoriser l’autre forme."
+    }
+  ]
+}

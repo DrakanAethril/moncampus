@@ -89,12 +89,22 @@ final class QuestionEngine
      * $size questions on one unit, none twice, each of a kind the game accepts - a template that
      * mixes QCM and typed answers serves only its typed ones to a game that accepts no QCM.
      *
+     * With `tiers` (the manifest's `series.tiers`, Station Abysse's 200, 1 000 and 3 000 m), the
+     * series climbs: so many questions of difficulty 1, then of difficulty 2, then 3 - the last tier
+     * taking every difficulty above it. A template that has no question of a tier lends the tier the
+     * nearest difficulty it has, easier first, so that a series is always whole.
+     *
      * @param list<string>|null $kinds the kinds of answer the game accepts; null for every kind
+     * @param list<int>         $tiers how many questions of each difficulty, in order; [] for none
      *
      * @return list<PlannedQuestion>
      */
-    public function seriesPlan(TemplateDefinition $template, int $size, ?array $kinds = null): array
+    public function seriesPlan(TemplateDefinition $template, int $size, ?array $kinds = null, array $tiers = []): array
     {
+        if ([] !== $tiers) {
+            return $this->tieredPlan($template, $kinds, $tiers);
+        }
+
         $plan = [];
         $seen = [];
         for ($draw = 0; \count($plan) < $size && $draw < self::MAX_DRAWS; ++$draw) {
@@ -109,6 +119,58 @@ final class QuestionEngine
         }
 
         return $plan;
+    }
+
+    /**
+     * @param list<string>|null $kinds
+     * @param list<int>         $tiers
+     *
+     * @return list<PlannedQuestion>
+     */
+    private function tieredPlan(TemplateDefinition $template, ?array $kinds, array $tiers): array
+    {
+        $levels = \count($tiers);
+        $buckets = array_fill(1, $levels, []);
+        $seen = [];
+        $needed = array_sum($tiers);
+        for ($draw = 0; $draw < 2 * self::MAX_DRAWS; ++$draw) {
+            $full = true;
+            foreach ($tiers as $i => $count) {
+                if (\count($buckets[$i + 1]) < $count) {
+                    $full = false;
+                }
+            }
+            // a tier the template cannot fill is not waited for longer than a plain series would be
+            if ($full || $draw >= self::MAX_DRAWS && array_sum(array_map(count(...), $buckets)) >= $needed) {
+                break;
+            }
+            $seed = $this->newSeed();
+            $question = $this->generate($template, $seed);
+            if (isset($seen[$question->identity()]) || !self::accepts($question, $kinds)) {
+                continue;
+            }
+            $seen[$question->identity()] = true;
+            $level = max(1, min($levels, $question->difficulty));
+            $buckets[$level][] = ['unit' => $template->unit, 'version' => $template->version, 'seed' => $seed];
+        }
+
+        // Each tier takes its own questions, then borrows from the nearest tiers, easier first.
+        $plan = [];
+        $used = array_fill(1, $levels, 0);
+        foreach ($tiers as $i => $count) {
+            $level = $i + 1;
+            $taken = 0;
+            for ($distance = 0; $taken < $count && $distance < $levels; ++$distance) {
+                foreach (array_unique([$level - $distance, $level + $distance]) as $from) {
+                    while ($taken < $count && isset($buckets[$from]) && $used[$from] < \count($buckets[$from])) {
+                        $plan[] = $buckets[$from][$used[$from]++];
+                        ++$taken;
+                    }
+                }
+            }
+        }
+
+        return \array_slice($plan, 0, $needed);
     }
 
     /**

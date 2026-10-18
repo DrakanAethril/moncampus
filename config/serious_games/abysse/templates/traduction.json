@@ -1,0 +1,126 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "traduction",
+  "label": "Traduire avec le code génétique",
+  "misconceptions": [
+    {
+      "id": "traduction-decalage",
+      "label": "Lecture décalée d’un nucléotide",
+      "explanation": "Les codons se lisent trois par trois à partir du codon initiateur AUG, sans sauter ni ajouter de nucléotide. Découpez d’abord l’ARNm en codons."
+    },
+    {
+      "id": "traduction-sens",
+      "label": "Lecture dans le mauvais sens",
+      "explanation": "L’ARNm se lit dans un seul sens, depuis le codon initiateur AUG. Lu à l’envers, il donnerait d’autres codons."
+    },
+    {
+      "id": "traduction-brin",
+      "label": "Codons lus sur une séquence complémentaire",
+      "explanation": "Le code génétique se lit directement sur les codons de l’ARN messager. On ne prend pas les bases complémentaires avant de lire le tableau."
+    },
+    {
+      "id": "traduction-sans-transcription",
+      "label": "Brin d’ADN traduit sans être transcrit",
+      "explanation": "Les ribosomes lisent l’ARN messager, pas l’ADN. Il faut d’abord transcrire le brin d’ADN (A → U, T → A, C → G, G → C), puis lire les codons."
+    }
+  ],
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Trois codons",
+      "params": {
+        "m": "'AUG' ~ senseCodons(2)",
+        "dd": "senseCodons(2)"
+      },
+      "let": {
+        "tab": "table(concat([['Codon', 'Acide aminé']], map(sortBy(unique(concat(map(range(0, floor(len(m) / 3) - 1), 'substr(m, item * 3, 3)'), map(range(0, floor(len(dd) / 3) - 1), 'substr(dd, item * 3, 3)'))), 'item'), '[item, aminoAcid(item)]')), true)",
+        "p": "join(translate(m), '-')"
+      },
+      "prompt": "Traduisez cet ARN messager à l’aide de l’extrait du code génétique :<br>{{ seq(m) }}{{ tab }}",
+      "answer": {
+        "type": "choice",
+        "value": "p"
+      },
+      "wrongs": [
+        {
+          "misconception": "traduction-decalage",
+          "value": "join(translate(substr(m, 1) ~ 'A'), '-')"
+        },
+        {
+          "misconception": "traduction-sens",
+          "value": "join(translate(strReverse(m)), '-')"
+        },
+        {
+          "misconception": "traduction-brin",
+          "value": "join(translate(join(map(chars(m), '{\"U\": \"A\", \"A\": \"U\", \"G\": \"C\", \"C\": \"G\"}[item]'), '')), '-')"
+        }
+      ],
+      "method": "On lit l’ARNm codon par codon depuis AUG : {{ join(map(map(range(0, floor(len(m) / 3) - 1), 'substr(m, item * 3, 3)'), 'item ~ \" = \" ~ aminoAcid(item)'), ', ') }}."
+    },
+    {
+      "difficulty": 2,
+      "label": "Cinq codons",
+      "params": {
+        "m": "'AUG' ~ senseCodons(4)",
+        "dd": "senseCodons(2)"
+      },
+      "let": {
+        "tab": "table(concat([['Codon', 'Acide aminé']], map(sortBy(unique(concat(map(range(0, floor(len(m) / 3) - 1), 'substr(m, item * 3, 3)'), map(range(0, floor(len(dd) / 3) - 1), 'substr(dd, item * 3, 3)'))), 'item'), '[item, aminoAcid(item)]')), true)",
+        "p": "join(translate(m), '-')"
+      },
+      "prompt": "Traduisez cet ARN messager à l’aide de l’extrait du code génétique :<br>{{ seq(m) }}{{ tab }}",
+      "answer": {
+        "type": "choice",
+        "value": "p"
+      },
+      "wrongs": [
+        {
+          "misconception": "traduction-decalage",
+          "value": "join(translate(substr(m, 1) ~ 'A'), '-')"
+        },
+        {
+          "misconception": "traduction-sens",
+          "value": "join(translate(strReverse(m)), '-')"
+        },
+        {
+          "misconception": "traduction-brin",
+          "value": "join(translate(join(map(chars(m), '{\"U\": \"A\", \"A\": \"U\", \"G\": \"C\", \"C\": \"G\"}[item]'), '')), '-')"
+        }
+      ],
+      "method": "On lit l’ARNm codon par codon depuis AUG : {{ join(map(map(range(0, floor(len(m) / 3) - 1), 'substr(m, item * 3, 3)'), 'item ~ \" = \" ~ aminoAcid(item)'), ', ') }}."
+    },
+    {
+      "difficulty": 3,
+      "label": "Depuis l’ADN",
+      "params": {
+        "m": "'AUG' ~ senseCodons(3)",
+        "dd": "senseCodons(2)"
+      },
+      "let": {
+        "tpl": "join(map(chars(m), '{\"U\": \"A\", \"A\": \"T\", \"G\": \"C\", \"C\": \"G\"}[item]'), '')",
+        "tab": "table(concat([['Codon', 'Acide aminé']], map(sortBy(unique(concat(map(range(0, floor(len(m) / 3) - 1), 'substr(m, item * 3, 3)'), map(range(0, floor(len(dd) / 3) - 1), 'substr(dd, item * 3, 3)'))), 'item'), '[item, aminoAcid(item)]')), true)",
+        "p": "join(translate(m), '-')"
+      },
+      "prompt": "Voici le brin <b>transcrit</b> d’un gène :<br>{{ seq(tpl) }}Quelle chaîne d’acides aminés code-t-il ? (extrait du code génétique){{ tab }}",
+      "answer": {
+        "type": "choice",
+        "value": "p"
+      },
+      "wrongs": [
+        {
+          "misconception": "traduction-sans-transcription",
+          "value": "join(translate(replace(tpl, 'T', 'U')), '-')"
+        },
+        {
+          "misconception": "traduction-decalage",
+          "value": "join(translate(substr(m, 1) ~ 'A'), '-')"
+        },
+        {
+          "misconception": "traduction-sens",
+          "value": "join(translate(strReverse(m)), '-')"
+        }
+      ],
+      "method": "On transcrit d’abord : ARNm = {{ seq(m) }}. Puis on lit codon par codon : {{ join(map(map(range(0, floor(len(m) / 3) - 1), 'substr(m, item * 3, 3)'), 'item ~ \" = \" ~ aminoAcid(item)'), ', ') }}."
+    }
+  ]
+}

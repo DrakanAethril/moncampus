@@ -15,7 +15,8 @@ use App\SeriousGame\Math\MathFormat;
  * validatable. Over a fixed list of seeds, every question must hold the same invariants as the
  * reference's JavaScript bench:
  *
- * - the expected answer is accepted, as typed and as displayed;
+ * - the expected answer is accepted, as typed and as displayed (as sent, for items put in order and
+ *   a word pointed at);
  * - every wrong value is refused **and** recognised as its own typical error, not another one;
  * - the wrong values of a question are distinct from one another and from the right answer;
  * - « je ne sais pas » is accepted, attributed to no error;
@@ -103,7 +104,7 @@ final class TemplateBench
                 $fail($seed, 'answer-typed', '« '.$question->answerText.' » refusée '.self::why($typed).' | '.$summary);
             }
             $shown = trim(MathFormat::plain($question->answerDisplay));
-            $displayed = $corrector->check($question, $shown);
+            $displayed = $question->spec->type->displayIsSent() ? $corrector->check($question, $shown) : $typed;
             if (!$displayed->ok) {
                 $fail($seed, 'answer-displayed', '« '.$shown.' » refusée '.self::why($displayed).' | '.$summary);
             }

@@ -78,6 +78,19 @@ final readonly class SeriousGameManifest
         return $this->int(['series', 'size'], 12);
     }
 
+    /**
+     * How many questions of each difficulty a series climbs through (`series.tiers`, Station
+     * Abysse's three depths); [] when a series is drawn regardless of difficulty.
+     *
+     * @return list<int>
+     */
+    public function seriesTiers(): array
+    {
+        $tiers = array_values(array_filter(self::list($this->path(['series', 'tiers'])), is_int(...)));
+
+        return array_sum($tiers) === $this->seriesSize() ? $tiers : [];
+    }
+
     public function litAt(): int
     {
         return $this->int(['series', 'lit_at'], 6);

@@ -1,0 +1,157 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "trophie",
+  "label": "Autotrophe ou hétérotrophe",
+  "misconceptions": [
+    {
+      "id": "trophie-lumiere",
+      "label": "Autotrophie confondue avec photosynthèse",
+      "explanation": "Un autotrophe fabrique sa matière organique à partir de matière minérale ; l’énergie peut venir de la lumière ou de réactions chimiques. Dans le noir des abysses, des bactéries sont autotrophes par chimiosynthèse."
+    },
+    {
+      "id": "trophie-source",
+      "label": "Source d’énergie de l’autotrophie confondue",
+      "explanation": "Les deux autotrophies diffèrent par leur source d’énergie : la lumière pour la photosynthèse, des réactions chimiques pour la chimiosynthèse. Un être vivant éclairé et chlorophyllien fait la photosynthèse."
+    },
+    {
+      "id": "trophie-aspect",
+      "label": "Autotrophie jugée sur l’aspect de l’être vivant",
+      "explanation": "On ne juge pas sur l’allure (plante, animal, immobile) mais sur l’origine de la matière organique. Fabriquée à partir de minéraux : autotrophe ; prélevée sur d’autres êtres vivants : hétérotrophe."
+    },
+    {
+      "id": "trophie-symbiose",
+      "label": "Hôte d’une symbiose pris pour un autotrophe",
+      "explanation": "Un animal qui héberge des bactéries chimiosynthétiques reste hétérotrophe : il consomme la matière organique que ses bactéries fabriquent. Ce sont les bactéries qui sont autotrophes."
+    }
+  ],
+  "params": {
+    "L": "['Autotrophe, par photosynthèse', 'Autotrophe, par chimiosynthèse', 'Hétérotrophe']"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Classique",
+      "params": {
+        "o": "pick([['Algue verte du récif', 0], ['Posidonie de l’herbier', 0], ['Phytoplancton de surface', 0], ['Poisson-lanterne', 2], ['Calmar géant', 2], ['Crabe Bythograea', 2], ['Cachalot', 2], ['Requin de récif', 2]])"
+      },
+      "prompt": "Comment cet être vivant produit-il sa matière organique ?<br><span class=\"q-line\">{{ o[0] }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "L[o[1]]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "trophie-lumiere",
+          "value": "L[0]",
+          "when": "o[1] == 1"
+        },
+        {
+          "misconception": "trophie-lumiere",
+          "value": "L[2]",
+          "when": "o[1] == 1"
+        },
+        {
+          "misconception": "trophie-source",
+          "value": "L[1]",
+          "when": "o[1] == 0"
+        },
+        {
+          "misconception": "trophie-aspect",
+          "value": "L[2]",
+          "when": "o[1] == 0"
+        },
+        {
+          "misconception": "trophie-aspect",
+          "value": "L[0]",
+          "when": "o[1] == 2"
+        },
+        {
+          "misconception": "trophie-aspect",
+          "value": "L[1]",
+          "when": "o[1] == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ['Il fabrique sa matière organique à partir de matière minérale et de l’énergie lumineuse.', 'Il fabrique sa matière organique à partir de matière minérale, avec l’énergie de réactions chimiques (soufre, méthane, hydrogène, fer) : aucune lumière n’atteint ces profondeurs.', 'Il prélève sa matière organique dans son milieu, en consommant d’autres êtres vivants ou leurs restes.'][o[1]] }}"
+    },
+    {
+      "difficulty": 2,
+      "label": "Moins évident",
+      "params": {
+        "o": "pick([['Cyanobactérie', 0], ['Diatomée du phytoplancton', 0], ['Champignon décomposeur des carcasses', 2], ['Levure', 2], ['Corail sans ses algues', 2], ['Éponge', 2], ['Bactérie décomposeuse des sédiments', 2], ['Chlorelle', 0], ['Bactérie chimiosynthétique d’une cheminée', 1], ['Archée des sédiments chauds, qui produit du méthane', 1]])"
+      },
+      "prompt": "Comment cet être vivant produit-il sa matière organique ?<br><span class=\"q-line\">{{ o[0] }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "L[o[1]]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "trophie-lumiere",
+          "value": "L[0]",
+          "when": "o[1] == 1"
+        },
+        {
+          "misconception": "trophie-lumiere",
+          "value": "L[2]",
+          "when": "o[1] == 1"
+        },
+        {
+          "misconception": "trophie-source",
+          "value": "L[1]",
+          "when": "o[1] == 0"
+        },
+        {
+          "misconception": "trophie-aspect",
+          "value": "L[2]",
+          "when": "o[1] == 0"
+        },
+        {
+          "misconception": "trophie-aspect",
+          "value": "L[0]",
+          "when": "o[1] == 2"
+        },
+        {
+          "misconception": "trophie-aspect",
+          "value": "L[1]",
+          "when": "o[1] == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ['Il fabrique sa matière organique à partir de matière minérale et de l’énergie lumineuse.', 'Il fabrique sa matière organique à partir de matière minérale, avec l’énergie de réactions chimiques (soufre, méthane, hydrogène, fer) : aucune lumière n’atteint ces profondeurs.', 'Il prélève sa matière organique dans son milieu, en consommant d’autres êtres vivants ou leurs restes.'][o[1]] }}"
+    },
+    {
+      "difficulty": 3,
+      "label": "Sans lumière",
+      "params": {
+        "site": "pick([['Menez Gwen', '850'], ['Lucky Strike', '1 700'], ['Rainbow', '2 300'], ['Logatchev', '3 000'], ['Snake Pit', '3 500'], ['TAG', '3 650']])",
+        "o": "pick([['Bactérie sulfo-oxydante d’une source hydrothermale', 1], ['Archée méthanogène des fumeurs noirs', 1], ['Bactérie qui oxyde l’hydrogène près d’une source', 1], ['Bactérie qui oxyde le fer des basaltes', 1], ['Archée qui vit à 90 °C au pied d’une cheminée', 1]])",
+        "ph": "pick(['Algue verte du récif', 'Cyanobactérie', 'Diatomée du phytoplancton', 'Posidonie de l’herbier'])",
+        "he": "pick(['Crevette Rimicaris', 'Crabe Bythograea', 'Poisson zoarcidé', 'Poulpe des sources'])",
+        "sy": "pick(['Ver géant Riftia, qui abrite des bactéries dans son corps', 'Moule Bathymodiolus, qui abrite des bactéries dans ses branchies'])"
+      },
+      "prompt": "Sur le site hydrothermal {{ site[0] }}, à {{ site[1] }} m de fond, le bathyscaphe a prélevé quatre êtres vivants. Lequel fabrique lui-même sa matière organique, sans lumière ?",
+      "answer": {
+        "type": "choice",
+        "value": "o[0]"
+      },
+      "wrongs": [
+        {
+          "misconception": "trophie-source",
+          "value": "ph"
+        },
+        {
+          "misconception": "trophie-symbiose",
+          "value": "sy"
+        },
+        {
+          "misconception": "trophie-aspect",
+          "value": "he"
+        }
+      ],
+      "method": "{{ o[0] }} : autotrophe par chimiosynthèse, l’énergie vient de réactions chimiques. L’algue ou la cyanobactérie ont besoin de lumière ; l’animal qui abrite des bactéries consomme ce qu’elles fabriquent."
+    }
+  ]
+}

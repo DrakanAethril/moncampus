@@ -1,0 +1,142 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "chargaff",
+  "label": "Proportions des bases",
+  "misconceptions": [
+    {
+      "id": "chargaff-complement-100",
+      "label": "Complément à 100 sans tenir compte des paires",
+      "explanation": "Les quatre bases se partagent 100 %, mais par paires : A = T et C = G. Retrancher une seule base de 100 oublie sa partenaire."
+    },
+    {
+      "id": "chargaff-egalite-ag",
+      "label": "A = G supposé",
+      "explanation": "L’adénine s’apparie avec la thymine, pas avec la guanine : A = T et G = C. Les pourcentages de A et de G n’ont aucune raison d’être égaux."
+    },
+    {
+      "id": "chargaff-oubli-moitie",
+      "label": "C + G non divisé par deux",
+      "explanation": "Ce qui reste après A et T revient à C et G réunis. Comme C = G, chacune en prend la moitié."
+    },
+    {
+      "id": "chargaff-appariement",
+      "label": "Bases mal appariées",
+      "explanation": "Dans la double hélice, A fait toujours face à T, et C à G. Il y a donc autant de T que de A."
+    },
+    {
+      "id": "chargaff-paires-bases",
+      "label": "Paires de bases comptées comme des bases",
+      "explanation": "Un fragment de N paires de bases compte 2N bases. On raisonne sur les bases : A = T, puis le reste se partage entre C et G."
+    }
+  ],
+  "params": {
+    "ORGS": "['la bactérie des sources', 'la crevette Rimicaris', 'le ver de Pompéi', 'le poisson-lanterne', 'la moule Bathymodiolus', 'le crabe Bythograea']"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Thymine",
+      "params": {
+        "o": "pick(ORGS)",
+        "A": "int(12, 38)"
+      },
+      "constraints": [
+        "A != 25"
+      ],
+      "prompt": "L’ADN {{ frDe(o) }} contient <b>{{ A }} %</b> d’adénine (A). Quel pourcentage de thymine (T) contient-il ?",
+      "answer": {
+        "type": "number",
+        "value": "A",
+        "unit": "%"
+      },
+      "wrongs": [
+        {
+          "misconception": "chargaff-complement-100",
+          "value": "100 - A"
+        },
+        {
+          "misconception": "chargaff-appariement",
+          "value": "50 - A"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "A s’apparie avec T : il y a autant de T que de A, soit <b>{{ A }} %</b>."
+    },
+    {
+      "difficulty": 2,
+      "label": "Guanine",
+      "params": {
+        "o": "pick(ORGS)",
+        "A": "int(12, 38)"
+      },
+      "constraints": [
+        "A != 25"
+      ],
+      "prompt": "L’ADN {{ frDe(o) }} contient <b>{{ A }} %</b> d’adénine (A). Quel pourcentage de guanine (G) contient-il ?",
+      "answer": {
+        "type": "number",
+        "value": "50 - A",
+        "unit": "%"
+      },
+      "wrongs": [
+        {
+          "misconception": "chargaff-egalite-ag",
+          "value": "A"
+        },
+        {
+          "misconception": "chargaff-complement-100",
+          "value": "100 - A"
+        },
+        {
+          "misconception": "chargaff-oubli-moitie",
+          "value": "100 - 2 * A"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "A = T et C = G. Donc A + T = {{ 2 * A }} %, il reste {{ 100 - 2 * A }} % pour C + G, soit <b>{{ 50 - A }} %</b> de G."
+    },
+    {
+      "difficulty": 3,
+      "label": "Nombre de bases",
+      "params": {
+        "o": "pick(ORGS)",
+        "N": "int(2, 10) * 100",
+        "pc": "int(15, 35)"
+      },
+      "let": {
+        "A": "N * pc / 100",
+        "G": "N - N * pc / 100"
+      },
+      "constraints": [
+        "isInt(A)"
+      ],
+      "prompt": "Un fragment d’ADN {{ frDe(o) }} compte <b>{{ N }} paires de bases</b>, dont <b>{{ A }}</b> adénines (A). Combien de guanines (G) contient-il ?",
+      "answer": {
+        "type": "number",
+        "value": "G",
+        "unit": "guanines"
+      },
+      "wrongs": [
+        {
+          "misconception": "chargaff-egalite-ag",
+          "value": "A"
+        },
+        {
+          "misconception": "chargaff-oubli-moitie",
+          "value": "2 * N - 2 * A"
+        },
+        {
+          "misconception": "chargaff-paires-bases",
+          "value": "(N - 2 * A) / 2",
+          "when": "N > 2 * A"
+        },
+        {
+          "misconception": "chargaff-complement-100",
+          "value": "2 * N - A"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ N }} paires de bases = {{ 2 * N }} bases. A = T = {{ A }}, donc C + G = {{ 2 * N }} − {{ 2 * A }} = {{ 2 * N - 2 * A }}, et G = <b>{{ G }}</b>."
+    }
+  ]
+}

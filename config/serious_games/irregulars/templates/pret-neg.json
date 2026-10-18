@@ -1,0 +1,97 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "pret-neg",
+  "label": "Prétérit à la forme négative",
+  "misconceptions": [
+    {
+      "id": "pret-neg-double-passe",
+      "label": "Prétérit après didn’t (marque du passé en double)",
+      "explanation": "Dans une phrase négative au prétérit, c’est l’auxiliaire did qui porte le passé. Le verbe qui suit reste à la base verbale : he didn’t see, jamais he didn’t saw."
+    },
+    {
+      "id": "pret-neg-present",
+      "label": "Auxiliaire du présent avec un marqueur du passé",
+      "explanation": "Don’t et doesn’t sont les auxiliaires du présent. Avec yesterday ou last night, la négation se fait avec didn’t, à toutes les personnes."
+    },
+    {
+      "id": "pret-neg-sans-auxiliaire",
+      "label": "Négation sans auxiliaire",
+      "explanation": "En anglais, not ne se place pas directement devant un verbe conjugué : il faut l’auxiliaire did. On écrit he didn’t see, pas he not saw."
+    },
+    {
+      "id": "pret-neg-hypercorrection",
+      "label": "Une faute vue dans une phrase correcte",
+      "explanation": "Didn’t suivi de la base verbale est la forme juste de la négation au prétérit. Avant de corriger, vérifie l’auxiliaire, puis la forme du verbe qui le suit."
+    }
+  ],
+  "params": {
+    "v": "pick([['bring', 'brought', 'brought', 'a lamp'], ['buy', 'bought', 'bought', 'a newspaper'], ['find', 'found', 'found', 'the key'], ['hide', 'hid', 'hidden', 'the jewels'], ['lose', 'lost', 'lost', 'the key'], ['see', 'saw', 'seen', 'a tall man'], ['sell', 'sold', 'sold', 'flowers'], ['steal', 'stole', 'stolen', 'a gold watch'], ['take', 'took', 'taken', 'the last train'], ['throw', 'threw', 'thrown', 'a stone']])",
+    "s": "pick([['the cabman', 3, 'he'], ['Mrs Hudson', 3, 'she'], ['the baker', 3, 'he'], ['a sailor', 3, 'he'], ['the flower girl', 3, 'she'], ['the night watchman', 3, 'he'], ['two dockers', 6, 'they'], ['the Smith brothers', 6, 'they'], ['I', 1, 'I'], ['we', 4, 'we'], ['you', 2, 'you']])",
+    "o": "pick(['a black bag', 'a strange letter', 'the stolen watch', 'a broken lamp', 'the jeweller’s box', 'a silver key'])",
+    "t": "pick(['yesterday', 'last night', 'two hours ago', 'on Tuesday'])",
+    "k": "pick(['ok', 'ok', 'ok', 'ok', 'pret', 'pret', 'pret', 'pret', 'pret', 'pres', 'pres'])"
+  },
+  "let": {
+    "n": "count(words(s[0]))",
+    "aux": "k == 'pres' ? (s[1] == 3 ? 'doesn’t' : 'don’t') : 'didn’t'",
+    "verb": "k == 'pret' ? v[1] : v[0]",
+    "line": "ucfirst(s[0]) ~ ' ' ~ aux ~ ' ' ~ verb ~ ' ' ~ o ~ ' ' ~ t ~ '.'",
+    "pos": "k == 'ok' ? -1 : (k == 'pret' ? n + 1 : n)"
+  },
+  "variants": [
+    {
+      "weight": 3,
+      "label": "Repérer la faute",
+      "prompt": "Inspector Lestrade’s notes. Click the wrong word, or confirm the line is correct.<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "spot",
+        "value": "pos",
+        "labels": "words(line)",
+        "display": "k == 'ok' ? 'La phrase est correcte.' : (k == 'pret' ? '<s>' ~ v[1] ~ '</s> → <b>' ~ v[0] ~ '</b>' : '<s>' ~ aux ~ '</s> → <b>didn’t</b>')"
+      },
+      "wrongs": [
+        {
+          "misconception": "pret-neg-double-passe",
+          "value": "-1",
+          "when": "k == 'pret'"
+        },
+        {
+          "misconception": "pret-neg-present",
+          "value": "-1",
+          "when": "k == 'pres'"
+        },
+        {
+          "misconception": "pret-neg-hypercorrection",
+          "value": "-2",
+          "display": "'Une faute signalée dans une phrase correcte'"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Négation au prétérit : <b>didn’t + base verbale</b>, à toutes les personnes : {{ ucfirst(s[0]) }} didn’t {{ v[0] }} {{ o }} {{ t }}. Le passé est déjà porté par l’auxiliaire."
+    },
+    {
+      "weight": 1,
+      "label": "Choisir la négation",
+      "prompt": "Complete the witness statement with the negative form of « {{ v[0] }} »:<span class=\"q-line\">“{{ ucfirst(s[0]) }} <span class=\"q-blank\">…</span> {{ o }} {{ t }}.”</span>",
+      "answer": {
+        "type": "choice",
+        "value": "'didn’t ' ~ v[0]"
+      },
+      "wrongs": [
+        {
+          "misconception": "pret-neg-double-passe",
+          "value": "'didn’t ' ~ v[1]"
+        },
+        {
+          "misconception": "pret-neg-sans-auxiliaire",
+          "value": "'not ' ~ v[1]"
+        },
+        {
+          "misconception": "pret-neg-present",
+          "value": "(s[1] == 3 ? 'doesn’t ' : 'don’t ') ~ v[0]"
+        }
+      ],
+      "method": "Négation au prétérit : <b>didn’t + base verbale</b> : didn’t {{ v[0] }}. Ni not seul, ni don’t / doesn’t, qui sont du présent."
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "genotype",
+  "label": "Du génotype au phénotype",
+  "misconceptions": [
+    {
+      "id": "genotype-dominance",
+      "label": "Allèles dominant et récessif inversés",
+      "explanation": "Un allèle dominant s’exprime dès qu’il est présent, même en un seul exemplaire. Le phénotype récessif n’apparaît que chez les individus qui portent deux allèles récessifs."
+    },
+    {
+      "id": "genotype-codominance",
+      "label": "Phénotype intermédiaire supposé",
+      "explanation": "Quand un allèle est dominant, l’hétérozygote a le phénotype de l’allèle dominant, pas un mélange des deux. L’énoncé dit lequel domine."
+    },
+    {
+      "id": "genotype-proportions",
+      "label": "Proportions d’un croisement mal calculées",
+      "explanation": "Dressez l’échiquier de croisement : chaque parent donne l’un ou l’autre de ses allèles, avec la même chance. On compte ensuite les cases qui donnent chaque phénotype."
+    },
+    {
+      "id": "genotype-recessif-masque",
+      "label": "Allèle récessif supposé disparu",
+      "explanation": "Un allèle récessif masqué chez les parents hétérozygotes n’a pas disparu : un quart des descendants reçoit deux allèles récessifs et montre le phénotype récessif."
+    }
+  ],
+  "params": {
+    "GT": "[['luminescent', 'non luminescent', 'L', 'l', 'un poisson', 'poissons'], ['à carapace rouge', 'à carapace blanche', 'R', 'b', 'une crevette', 'crevettes'], ['à pinces larges', 'à pinces fines', 'P', 'f', 'un crabe', 'crabes'], ['à coquille épaisse', 'à coquille fine', 'E', 'e', 'une moule', 'moules']]"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Un génotype",
+      "params": {
+        "T": "pick(GT)",
+        "g": "int(0, 2)"
+      },
+      "let": {
+        "gt": "[[T[2], T[2]], [T[2], T[3]], [T[3], T[3]]][g]",
+        "dom": "g < 2"
+      },
+      "prompt": "L’allèle {{ T[2] }} ({{ T[0] }}) est dominant sur l’allèle {{ T[3] }} ({{ T[1] }}). {{ ucfirst(T[4]) }} a le génotype ({{ gt[0] }}//{{ gt[1] }}). Quel est son phénotype ?",
+      "answer": {
+        "type": "choice",
+        "value": "ucfirst(dom ? T[0] : T[1])",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "genotype-dominance",
+          "value": "ucfirst(dom ? T[1] : T[0])"
+        },
+        {
+          "misconception": "genotype-codominance",
+          "value": "'Intermédiaire entre les deux'"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ dom ? 'Un seul allèle dominant suffit à s’exprimer.' : 'Seuls deux allèles récessifs donnent le phénotype récessif.' }}"
+    },
+    {
+      "difficulty": 2,
+      "label": "Un croisement",
+      "params": {
+        "T": "pick(GT)",
+        "q": "int(0, 2)"
+      },
+      "let": {
+        "right": "['3/4', '1/4', '1/2'][q]",
+        "asked": "q == 1 ? T[1] : T[0]",
+        "other": "q == 2 ? T[3] ~ '//' ~ T[3] : T[2] ~ '//' ~ T[3]"
+      },
+      "prompt": "On croise des {{ T[5] }} ({{ T[2] }}//{{ T[3] }}) avec des {{ T[5] }} ({{ other }}). L’allèle {{ T[2] }} ({{ T[0] }}) est dominant. Quelle proportion des descendants sera {{ asked }} ?",
+      "answer": {
+        "type": "choice",
+        "value": "right"
+      },
+      "wrongs": [
+        {
+          "misconception": "genotype-proportions",
+          "value": "'1/2'",
+          "when": "q != 2"
+        },
+        {
+          "misconception": "genotype-dominance",
+          "value": "'1/4'",
+          "when": "q == 0"
+        },
+        {
+          "misconception": "genotype-dominance",
+          "value": "'3/4'",
+          "when": "q == 1"
+        },
+        {
+          "misconception": "genotype-recessif-masque",
+          "value": "'Aucun'",
+          "when": "q == 1"
+        },
+        {
+          "misconception": "genotype-proportions",
+          "value": "'Tous'",
+          "when": "q != 1"
+        },
+        {
+          "misconception": "genotype-proportions",
+          "value": "'3/4'",
+          "when": "q == 2"
+        },
+        {
+          "misconception": "genotype-dominance",
+          "value": "'1/4'",
+          "when": "q == 2"
+        }
+      ],
+      "method": "{{ ['Échiquier : ' ~ T[2] ~ '//' ~ T[2] ~ ', ' ~ T[2] ~ '//' ~ T[3] ~ ', ' ~ T[3] ~ '//' ~ T[2] ~ ', ' ~ T[3] ~ '//' ~ T[3] ~ ' : trois cases sur quatre portent au moins un ' ~ T[2] ~ '.', 'Échiquier : seule la case ' ~ T[3] ~ '//' ~ T[3] ~ ', une sur quatre, donne le phénotype récessif.', 'Un parent ne donne que ' ~ T[3] ~ ' ; l’autre donne ' ~ T[2] ~ ' une fois sur deux : la moitié des descendants est ' ~ T[0] ~ '.'][q] }}"
+    },
+    {
+      "difficulty": 3,
+      "label": "Prévoir des effectifs",
+      "params": {
+        "T": "pick(GT)",
+        "n": "pick([80, 120, 200, 400])",
+        "rec": "chance(0.5)"
+      },
+      "prompt": "On croise des {{ T[5] }} ({{ T[2] }}//{{ T[3] }}) entre eux et on obtient <b>{{ n }}</b> descendants. L’allèle {{ T[2] }} ({{ T[0] }}) est dominant. Combien de descendants seront {{ rec ? T[1] : T[0] }}, en théorie ?",
+      "answer": {
+        "type": "number",
+        "value": "rec ? n / 4 : 3 * n / 4"
+      },
+      "wrongs": [
+        {
+          "misconception": "genotype-proportions",
+          "value": "n / 2"
+        },
+        {
+          "misconception": "genotype-dominance",
+          "value": "rec ? 3 * n / 4 : n / 4"
+        },
+        {
+          "misconception": "genotype-recessif-masque",
+          "value": "rec ? 0 : n"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Échiquier : {{ rec ? 'une case sur quatre' : 'trois cases sur quatre' }}, soit {{ rec ? '1/4' : '3/4' }} de {{ n }} = <b>{{ rec ? n / 4 : 3 * n / 4 }}</b>."
+    }
+  ]
+}

@@ -93,7 +93,7 @@
 	# keep their file names across versions, so every fetch revalidates. The game folder is a
 	# directory, not a `file` to @phpRoute below - without the rewrite it would reach Symfony, whose
 	# /serious-games/… routes are the module's screens.
-	@seriousGameFiles path /serious-games/shared/* /serious-games/observatoire/* /serious-games/pompei/*
+	@seriousGameFiles path /serious-games/shared/* /serious-games/observatoire/* /serious-games/pompei/* /serious-games/abysse/* /serious-games/irregulars/*
 	header @seriousGameFiles ?Cache-Control "no-cache"
 	# A font is always fetched in CORS mode, and the game's frame has an opaque origin: without this
 	# header its own typefaces would be refused. Fonts only - they carry nothing of anybody.
@@ -103,6 +103,10 @@
 	rewrite /serious-games/observatoire/ /serious-games/observatoire/index.html
 	redir /serious-games/pompei /serious-games/pompei/ 308
 	rewrite /serious-games/pompei/ /serious-games/pompei/index.html
+	redir /serious-games/abysse /serious-games/abysse/ 308
+	rewrite /serious-games/abysse/ /serious-games/abysse/index.html
+	redir /serious-games/irregulars /serious-games/irregulars/ 308
+	rewrite /serious-games/irregulars/ /serious-games/irregulars/index.html
 
 	# The Claude connector's upload addresses (App\Controller\McpUploadController) take one file as
 	# a raw PUT body, sent with `curl --data-binary` - which labels it

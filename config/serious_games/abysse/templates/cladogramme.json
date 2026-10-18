@@ -1,0 +1,159 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "cladogramme",
+  "label": "Lire un arbre de parenté",
+  "misconceptions": [
+    {
+      "id": "cladogramme-voisin",
+      "label": "Arbre lu selon la place des noms au lieu des nœuds",
+      "explanation": "Deux espèces voisines sur le dessin ne sont pas forcément les plus proches parentes. On remonte les branches jusqu’au nœud qui les réunit : plus ce nœud est proche des feuilles, plus leur ancêtre commun est récent."
+    },
+    {
+      "id": "cladogramme-externe",
+      "label": "Groupe externe pris pour un proche parent",
+      "explanation": "L’espèce qui se détache la première de l’arbre (le groupe externe) ne possède aucun des caractères marqués sur le tronc. Elle est la plus éloignée de toutes les autres."
+    },
+    {
+      "id": "cladogramme-niveau",
+      "label": "Caractère placé sur la mauvaise branche",
+      "explanation": "Un caractère marqué sur une branche est possédé par toutes les espèces situées au-dessus de cette marque, et par elles seules. Repérez où se trouve chaque marque avant de répondre."
+    },
+    {
+      "id": "cladogramme-ancetre",
+      "label": "Une espèce actuelle prise pour l’ancêtre d’une autre",
+      "explanation": "Toutes les espèces au bout des branches sont actuelles : aucune n’est l’ancêtre d’une autre. Les ancêtres communs sont aux nœuds, et ils ne sont pas nommés."
+    },
+    {
+      "id": "cladogramme-mode-de-vie",
+      "label": "Mode de vie pris pour un caractère hérité",
+      "explanation": "Un arbre de parenté se construit sur des caractères anatomiques hérités, marqués sur ses branches. Un mode de vie ne figure jamais sur l’arbre."
+    }
+  ],
+  "params": {
+    "CH": "{'vert': 'Vertèbres', 'mach': 'Mâchoires', 'ray': 'Nageoires rayonnées', 'charnu': 'Membres charnus', 'doigts': 'Membres à doigts', 'amnios': 'Amnios', 'plumes': 'Plumes', 'poils': 'Poils', 'mamelles': 'Mamelles'}",
+    "SP": "[['Pieuvre', []], ['Lamproie', ['vert']], ['Requin', ['vert', 'mach']], ['Thon', ['vert', 'mach', 'ray']], ['Hippocampe', ['vert', 'mach', 'ray']], ['Cœlacanthe', ['vert', 'mach', 'charnu']], ['Grenouille', ['vert', 'mach', 'charnu', 'doigts']], ['Tortue marine', ['vert', 'mach', 'charnu', 'doigts', 'amnios']], ['Goéland', ['vert', 'mach', 'charnu', 'doigts', 'amnios', 'plumes']], ['Otarie', ['vert', 'mach', 'charnu', 'doigts', 'amnios', 'poils', 'mamelles']]]",
+    "FAKE": "['Vit dans les grandes profondeurs', 'Se nourrit de plancton', 'Nage rapidement', 'Mesure plus d’un mètre', 'Vit en banc', 'Vit près des sources chaudes', 'Chasse la nuit']",
+    "p": "sortBy(sample(SP, 4), 'count(item[1])')",
+    "AB": "intersect(p[2][1], p[3][1])",
+    "AC": "intersect(p[2][1], p[1][1])",
+    "BC": "intersect(p[3][1], p[1][1])",
+    "O0": "intersect(p[0][1], p[2][1])",
+    "t1": "without(AC, O0)",
+    "t2": "without(AB, AC)",
+    "flip": "chance(0.5)"
+  },
+  "let": {
+    "O": "p[0][0]",
+    "C": "p[1][0]",
+    "X": "flip ? p[3][0] : p[2][0]",
+    "Y": "flip ? p[2][0] : p[3][0]"
+  },
+  "constraints": [
+    "sameSet(AC, BC)",
+    "sameSet(O0, intersect(p[0][1], p[1][1]))",
+    "sameSet(O0, intersect(p[0][1], p[3][1]))",
+    "includes(AB, AC)",
+    "count(AB) > count(AC)",
+    "includes(AC, O0)",
+    "count(AC) > count(O0)"
+  ],
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Plus proche parent",
+      "prompt": "D’après cet arbre, quelle est l’espèce la plus proche parente {{ de(X) }} ?",
+      "figure": {
+        "type": "cladogram",
+        "leaves": "[p[0][0], p[1][0], p[2][0], p[3][0]]",
+        "first": "map(t1, 'CH[item]')",
+        "second": "map(t2, 'CH[item]')"
+      },
+      "answer": {
+        "type": "choice",
+        "value": "Y",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "cladogramme-voisin",
+          "value": "C"
+        },
+        {
+          "misconception": "cladogramme-externe",
+          "value": "O"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ X }} et {{ Y }} partagent un ancêtre commun exclusif, qui possédait : {{ lower(join(map(t2, 'CH[item]'), ', ')) }}. On lit l’arbre de nœud en nœud, pas selon la place des noms."
+    },
+    {
+      "difficulty": 2,
+      "label": "Caractère d’un nœud",
+      "params": {
+        "r": "pick(count(t1) > 0 ? t1 : ['vert'])",
+        "w2": "pick(count(t2) > 0 ? t2 : ['vert'])",
+        "w0": "pick(count(O0) > 0 ? O0 : ['x'])",
+        "fake": "pick(FAKE)"
+      },
+      "prompt": "D’après cet arbre, quel caractère, hérité d’un ancêtre commun, se retrouve chez <b>{{ p[1][0] }}</b>, <b>{{ p[2][0] }}</b> et <b>{{ p[3][0] }}</b>, mais pas chez <b>{{ p[0][0] }}</b> ?",
+      "figure": {
+        "type": "cladogram",
+        "leaves": "[p[0][0], p[1][0], p[2][0], p[3][0]]",
+        "first": "map(t1, 'CH[item]')",
+        "second": "map(t2, 'CH[item]')"
+      },
+      "answer": {
+        "type": "choice",
+        "value": "CH[r]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "cladogramme-niveau",
+          "value": "CH[w2]"
+        },
+        {
+          "misconception": "cladogramme-niveau",
+          "value": "CH[w0]",
+          "when": "count(O0) > 0"
+        },
+        {
+          "misconception": "cladogramme-mode-de-vie",
+          "value": "fake"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "La première marque du tronc, au-dessus de {{ p[0][0] }}, porte : {{ lower(join(map(t1, 'CH[item]'), ', ')) }}. Toutes les espèces situées au-dessus de cette marque possèdent ces caractères."
+    },
+    {
+      "difficulty": 3,
+      "label": "Affirmation juste",
+      "prompt": "D’après cet arbre, laquelle de ces affirmations est juste ?",
+      "figure": {
+        "type": "cladogram",
+        "leaves": "[p[0][0], p[1][0], p[2][0], p[3][0]]",
+        "first": "map(t1, 'CH[item]')",
+        "second": "map(t2, 'CH[item]')"
+      },
+      "answer": {
+        "type": "choice",
+        "value": "X ~ ' et ' ~ Y ~ ' ont un ancêtre commun plus récent que celui ' ~ de(X) ~ ' et ' ~ de(C)"
+      },
+      "wrongs": [
+        {
+          "misconception": "cladogramme-voisin",
+          "value": "X ~ ' et ' ~ C ~ ' ont un ancêtre commun plus récent que celui ' ~ de(X) ~ ' et ' ~ de(Y)"
+        },
+        {
+          "misconception": "cladogramme-ancetre",
+          "value": "O ~ ' est l’ancêtre ' ~ de(X) ~ ' et ' ~ de(Y)"
+        },
+        {
+          "misconception": "cladogramme-externe",
+          "value": "C ~ ' et ' ~ O ~ ' ont un ancêtre commun plus récent que celui ' ~ de(C) ~ ' et ' ~ de(X)"
+        }
+      ],
+      "method": "Le nœud qui réunit {{ X }} et {{ Y }} est le plus proche des feuilles : leur ancêtre commun est le plus récent. Aucune espèce actuelle n’est l’ancêtre d’une autre."
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "pp-form",
+  "label": "Forme du present perfect",
+  "misconceptions": [
+    {
+      "id": "pp-form-preterit",
+      "label": "Prétérit à la place du participe passé",
+      "explanation": "Le present perfect se forme avec have ou has suivi du participe passé, la 3e colonne de la liste : has stolen, pas has stole. Pour un verbe irrégulier, prétérit et participe ne se ressemblent pas toujours."
+    },
+    {
+      "id": "pp-form-regularisation",
+      "label": "Participe régularisé en -ed",
+      "explanation": "Ce verbe est irrégulier : son participe passé s’apprend dans la liste (steal, stole, stolen). Ajouter -ed ne marche que pour les verbes réguliers."
+    },
+    {
+      "id": "pp-form-base",
+      "label": "Base verbale après have",
+      "explanation": "Après have ou has, le verbe ne reste jamais à la base verbale : il se met au participe passé. He has stolen, pas he has steal."
+    }
+  ],
+  "constraints": [
+    "v[3] != s[0]"
+  ],
+  "params": {
+    "v": "pick([['begin', 'began', 'begun', 'the search'], ['break', 'broke', 'broken', 'the window'], ['come', 'came', 'come', 'home late'], ['drink', 'drank', 'drunk', 'a cup of tea'], ['drive', 'drove', 'driven', 'the cab'], ['eat', 'ate', 'eaten', 'a meat pie'], ['fall', 'fell', 'fallen', 'on the ice'], ['forget', 'forgot', 'forgotten', 'the address'], ['give', 'gave', 'given', 'the letter to the inspector'], ['go', 'went', 'gone', 'to the docks'], ['hide', 'hid', 'hidden', 'the jewels'], ['know', 'knew', 'known', 'the thief'], ['ride', 'rode', 'ridden', 'a horse'], ['ring', 'rang', 'rung', 'the bell'], ['run', 'ran', 'run', 'away'], ['see', 'saw', 'seen', 'a tall man'], ['sing', 'sang', 'sung', 'a song'], ['speak', 'spoke', 'spoken', 'to the inspector'], ['steal', 'stole', 'stolen', 'a gold watch'], ['take', 'took', 'taken', 'the last train'], ['throw', 'threw', 'thrown', 'a stone'], ['wake', 'woke', 'woken', 'up at dawn'], ['wear', 'wore', 'worn', 'a grey coat'], ['write', 'wrote', 'written', 'a letter']])",
+    "s": "pick([['the cabman', 3, 'he'], ['Mrs Hudson', 3, 'she'], ['the baker', 3, 'he'], ['a sailor', 3, 'he'], ['the flower girl', 3, 'she'], ['the night watchman', 3, 'he'], ['two dockers', 6, 'they'], ['the Smith brothers', 6, 'they'], ['I', 1, 'I'], ['we', 4, 'we'], ['you', 2, 'you']])",
+    "look": "pick(['Look!', 'Quick, Wiggins!', 'Good news!', 'Listen!'])"
+  },
+  "let": {
+    "have": "s[1] == 3 ? 'has' : 'have'",
+    "line": "look ~ ' ' ~ ucfirst(s[0]) ~ ' ' ~ have ~ ' <span class=\"q-blank\">…</span> (' ~ v[0] ~ ') ' ~ v[3] ~ '!'"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Taper le participe",
+      "prompt": "Type the past participle:<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "text",
+        "value": "v[2]"
+      },
+      "wrongs": [
+        {
+          "misconception": "pp-form-preterit",
+          "value": "v[1]"
+        },
+        {
+          "misconception": "pp-form-regularisation",
+          "value": "v[0] ~ (v[0] matches '/e$/' ? 'd' : 'ed')"
+        },
+        {
+          "misconception": "pp-form-base",
+          "value": "v[0]",
+          "when": "v[0] != v[2]"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "Present perfect : have / has + <b>participe passé</b>, la 3e colonne : {{ v[0] }} – {{ v[1] }} – <b>{{ v[2] }}</b>."
+    },
+    {
+      "weight": 1,
+      "label": "Choisir le participe",
+      "prompt": "Complete:<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "choice",
+        "value": "v[2]"
+      },
+      "wrongs": [
+        {
+          "misconception": "pp-form-preterit",
+          "value": "v[1]"
+        },
+        {
+          "misconception": "pp-form-regularisation",
+          "value": "v[0] ~ (v[0] matches '/e$/' ? 'd' : 'ed')"
+        },
+        {
+          "misconception": "pp-form-base",
+          "value": "v[0]",
+          "when": "v[0] != v[2]"
+        }
+      ],
+      "method": "Present perfect : have / has + <b>participe passé</b>, la 3e colonne : {{ v[0] }} – {{ v[1] }} – <b>{{ v[2] }}</b>."
+    }
+  ]
+}

@@ -224,7 +224,7 @@ final class TemplateInterpreter
             return null;
         }
         $display = isset($answer['display']) ? $this->string($answer['display'], $variables, 'answer.display') : $this->defaultDisplay($spec, $value);
-        $text = isset($answer['text']) ? $this->string($answer['text'], $variables, 'answer.text') : MathFormat::plain($display);
+        $text = isset($answer['text']) ? $this->string($answer['text'], $variables, 'answer.text') : self::sentText($spec, $value) ?? MathFormat::plain($display);
 
         $wrongs = [];
         foreach (\is_array($variant['wrongs'] ?? null) ? $variant['wrongs'] : [] as $i => $wrong) {
@@ -249,7 +249,7 @@ final class TemplateInterpreter
             $wrongs[] = [
                 'value' => $wrongValue,
                 'display' => $wrongDisplay,
-                'text' => isset($wrong['text']) ? $this->string($wrong['text'], $variables, $path.'.text') : MathFormat::plain($wrongDisplay),
+                'text' => isset($wrong['text']) ? $this->string($wrong['text'], $variables, $path.'.text') : self::sentText($spec, $wrongValue) ?? MathFormat::plain($wrongDisplay),
                 'misconception' => $wrong['misconception'],
             ];
         }
@@ -275,6 +275,19 @@ final class TemplateInterpreter
                 $options[] = ['value' => $wrong['text'], 'html' => $wrong['display']];
             }
             $choices = (new SeededRandom($seed, $template->unit.'#choices'))->shuffle($options);
+        }
+        // Items to put in order go to the game shuffled, never in the order of the answer - nor in
+        // the order of a typical wrong answer, which would hand it over.
+        if (AnswerType::Order === $spec->type && \is_array($value)) {
+            $items = array_map(static fn (string $item): array => ['value' => $item, 'html' => htmlspecialchars($item, \ENT_NOQUOTES)], array_values(array_filter($value, is_string(...))));
+            $random = new SeededRandom($seed, $template->unit.'#order');
+            $forbidden = [array_column($items, 'value'), ...array_map(static fn (array $w): mixed => $w['value'], $wrongs)];
+            for ($i = 0; $i < 20; ++$i) {
+                $choices = $random->shuffle($items);
+                if (!\in_array(array_column($choices, 'value'), $forbidden, true)) {
+                    break;
+                }
+            }
         }
 
         $figure = null;
@@ -381,6 +394,24 @@ final class TemplateInterpreter
         }
 
         return $kept;
+    }
+
+    /**
+     * What the game sends for a value that is not typed: items put in order joined by « | », the
+     * place of the word pointed at (« correct » for a correct line; the first word for « any
+     * word »). Null for the typed types, whose text is their display.
+     */
+    private static function sentText(AnswerSpec $spec, mixed $value): ?string
+    {
+        return match ($spec->type) {
+            AnswerType::Order => \is_array($value) ? implode('|', array_map(static fn (mixed $item): string => \is_string($item) ? $item : '', $value)) : null,
+            AnswerType::Spot => \is_int($value) ? match (true) {
+                -1 === $value => 'correct',
+                $value < -1 => '0',
+                default => (string) $value,
+            } : null,
+            default => null,
+        };
     }
 
     /** Whether an answer type is read as a number, where the closest wrong value wins. */
@@ -519,6 +550,10 @@ final class TemplateInterpreter
             AnswerType::Scientific => \is_array($value) && isset($value['m'], $value['e']) && \is_float($value['m']) && \is_int($value['e']) ? MathFormat::sci($value['m'], $value['e']) : '',
             // a Latin form in italics, its first accepted writing; a table, its cells in order
             AnswerType::Latin => \is_array($value) && \is_string($value[0] ?? null) ? '<i>'.htmlspecialchars($value[0], \ENT_NOQUOTES).'</i>' : '',
+            AnswerType::Text => \is_array($value) && \is_string($value[0] ?? null) ? htmlspecialchars($value[0], \ENT_NOQUOTES) : '',
+            AnswerType::Sequence => \is_string($value) ? '<span class="q-seq">'.htmlspecialchars(trim((string) preg_replace('/(.{3})/', '$1 ', $value)), \ENT_NOQUOTES).'</span>' : '',
+            AnswerType::Order => \is_array($value) ? implode(' → ', array_map(static fn (mixed $item): string => \is_string($item) ? htmlspecialchars($item, \ENT_NOQUOTES) : '', $value)) : '',
+            AnswerType::Spot => \is_int($value) ? ($value < 0 ? 'La phrase est correcte.' : '<b>'.htmlspecialchars($spec->labels[$value] ?? '', \ENT_NOQUOTES).'</b>') : '',
             AnswerType::Forms => \is_array($value) ? implode(' · ', array_map(static fn (mixed $cell): string => \is_array($cell) && \is_string($cell[0] ?? null) ? '<i>'.htmlspecialchars($cell[0], \ENT_NOQUOTES).'</i>' : '', $value)) : '',
             default => \is_int($value) || \is_float($value) ? MathFormat::fmt($value) : (\is_string($value) ? $value : ''),
         };
@@ -640,9 +675,9 @@ final class TemplateInterpreter
         }
 
         $type = $figure['type'] ?? null;
-        if ('tree' === $type) {
-            self::onlyKeys($figure, ['type', 'when', 'p', 'q', 'q2'], $path);
-            foreach (['p', 'q', 'q2', 'when'] as $key) {
+        if (\is_string($type) && isset(TemplateFigures::KEYS[$type])) {
+            self::onlyKeys($figure, ['type', 'when', ...TemplateFigures::KEYS[$type]], $path);
+            foreach (['when', ...TemplateFigures::KEYS[$type]] as $key) {
                 $this->lint($figure[$key] ?? null, $path.'.'.$key);
             }
 
@@ -650,7 +685,7 @@ final class TemplateInterpreter
         }
 
         if ('grid' !== $type) {
-            throw new TemplateFormatException($path.'.type', 'figure inconnue (attendu : grid, tree)');
+            throw new TemplateFormatException($path.'.type', 'figure inconnue (attendu : '.implode(', ', TemplateFigures::TYPES).')');
         }
 
         self::onlyKeys($figure, ['type', 'when', 'x', 'y', 'unit', 'items'], $path);

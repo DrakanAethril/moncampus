@@ -20,7 +20,9 @@
   // The pins a student can wear (one per finished game).
   var PINS = [
     { id: 'pin-etoile', name: 'Épinglette Étoile', color: '#1B2550', glyph: '✦' },
-    { id: 'pin-cave-canem', name: 'Épinglette Cave canem', color: '#9E2B25', glyph: 'C' }
+    { id: 'pin-cave-canem', name: 'Épinglette Cave canem', color: '#9E2B25', glyph: 'C' },
+    { id: 'pin-vague', name: 'Épinglette Abysse', color: '#167784', glyph: '≈' },
+    { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', glyph: '⌕' }
   ];
   A.PINS = PINS;
 
@@ -148,6 +150,19 @@
       return el('path', sx({ d: 'M70 44 L50 108', stroke: '#8C6A2E', strokeWidth: 6.5 })) + el('path', sx({ d: 'M70 44 L50 108', stroke: '#D9A441', strokeWidth: 4 })) +
         el('path', { d: 'M64.5 36 L76.5 39.5 L72.8 47.2 L66 45.2 Z', fill: '#D9A441', stroke: '#8C6A2E', strokeWidth: 1.2, strokeLinejoin: 'round' }) +
         el('circle', { cx: 49.6, cy: 109.4, r: 1.6, fill: '#5E4520' });
+    } },
+    // Station Abysse: the diving mask pushed up on the forehead, its strap, the snorkel at the side.
+    abysse: { label: 'Masque relevé sur le front', svg: function () {
+      return el('path', sx({ d: 'M42 72 Q100 52 158 72', stroke: '#1F2A33', strokeWidth: 6 })) +
+        el('rect', { x: 60, y: 52, width: 80, height: 28, rx: 12, fill: '#8FE1EA', opacity: .42, stroke: '#167784', strokeWidth: 4 }) +
+        el('path', sx({ d: 'M100 54 L100 78', stroke: '#167784', strokeWidth: 3 })) +
+        el('path', sx({ d: 'M70 58 Q76 54 84 56', stroke: '#FFFFFF', strokeWidth: 2.5, opacity: .7 })) +
+        el('path', sx({ d: 'M154 70 Q166 92 160 128', stroke: '#E0A93B', strokeWidth: 6 }));
+    } },
+    // The Irregulars: the street urchin's flat cap of 1895, its peak and its button.
+    irregulars: { label: 'Casquette gavroche', svg: function () {
+      return el('path', { d: 'M38 80 Q38 30 100 28 Q162 30 162 80 Q100 62 38 80 Z', fill: '#5B5348' }) + el('path', sx({ d: 'M100 30 L100 66', stroke: '#4A433A', strokeWidth: 2 })) +
+        el('path', { d: 'M38 80 Q100 62 162 80 Q172 92 150 92 Q100 76 50 92 Q30 92 38 80 Z', fill: '#433C34' }) + el('circle', { cx: 100, cy: 29, r: 4, fill: '#433C34' });
     } }
   };
 

@@ -1,0 +1,163 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "niveau",
+  "label": "Niveau trophique",
+  "misconceptions": [
+    {
+      "id": "niveau-producteur-compte",
+      "label": "Le producteur compté comme premier consommateur",
+      "explanation": "Le producteur forme le premier niveau ; ceux qui le mangent sont les consommateurs primaires. Comptez les flèches à partir du producteur : une flèche, consommateur primaire."
+    },
+    {
+      "id": "niveau-sens-fleche",
+      "label": "Niveaux comptés depuis le sommet du réseau",
+      "explanation": "Les niveaux se comptent à partir du producteur, en suivant les flèches « est mangé par ». Le sommet du réseau est le dernier niveau, pas le premier."
+    },
+    {
+      "id": "niveau-fleche-oubliee",
+      "label": "Une flèche oubliée dans le décompte",
+      "explanation": "Suivez la chaîne flèche par flèche depuis le producteur jusqu’à l’être vivant étudié. Chaque flèche franchie fait monter d’un niveau."
+    },
+    {
+      "id": "niveau-producteurs-oublies",
+      "label": "Producteurs non comptés comme un niveau",
+      "explanation": "Les producteurs forment le premier niveau trophique d’un réseau. Le nombre de niveaux est donc le nombre de flèches de la plus longue chaîne, plus un."
+    },
+    {
+      "id": "niveau-especes",
+      "label": "Êtres vivants comptés au lieu des niveaux",
+      "explanation": "Plusieurs êtres vivants peuvent occuper le même niveau. On compte les étages du réseau, pas les êtres vivants qui y figurent."
+    }
+  ],
+  "params": {
+    "WEBS": "[{'zone': 'le récif', 'levels': {'algues': 0, 'oursin': 1, 'perroquet': 1, 'baliste': 2, 'merou': 2, 'requin': 3}, 'names': {'algues': 'Algues', 'oursin': 'Oursin', 'perroquet': 'Poisson-perroquet', 'baliste': 'Baliste', 'merou': 'Mérou', 'requin': 'Requin'}, 'def': {'algues': 'les algues', 'oursin': 'l’oursin', 'perroquet': 'le poisson-perroquet', 'baliste': 'le baliste', 'merou': 'le mérou', 'requin': 'le requin'}, 'edges': [['algues', 'oursin'], ['algues', 'perroquet'], ['oursin', 'baliste'], ['perroquet', 'merou'], ['baliste', 'requin'], ['merou', 'requin']]}, {'zone': 'la pleine eau', 'levels': {'phyto': 0, 'copepode': 1, 'krill': 1, 'lanterne': 2, 'calmar': 3, 'baudroie': 3, 'cachalot': 4}, 'names': {'phyto': 'Phytoplancton', 'copepode': 'Copépodes', 'krill': 'Krill', 'lanterne': 'Poisson-lanterne', 'calmar': 'Calmar', 'baudroie': 'Baudroie abyssale', 'cachalot': 'Cachalot'}, 'def': {'phyto': 'le phytoplancton', 'copepode': 'les copépodes', 'krill': 'le krill', 'lanterne': 'le poisson-lanterne', 'calmar': 'le calmar', 'baudroie': 'la baudroie abyssale', 'cachalot': 'le cachalot'}, 'edges': [['phyto', 'copepode'], ['phyto', 'krill'], ['copepode', 'lanterne'], ['krill', 'lanterne'], ['lanterne', 'calmar'], ['lanterne', 'baudroie'], ['calmar', 'cachalot']]}, {'zone': 'la source chaude', 'levels': {'bact': 0, 'crevette': 1, 'moule': 1, 'crabe': 2, 'zoarcide': 3, 'poulpe': 3}, 'names': {'bact': 'Bactéries chimiosynthétiques', 'crevette': 'Crevette Rimicaris', 'moule': 'Moule Bathymodiolus', 'crabe': 'Crabe Bythograea', 'zoarcide': 'Poisson zoarcidé', 'poulpe': 'Poulpe'}, 'def': {'bact': 'les bactéries chimiosynthétiques', 'crevette': 'la crevette Rimicaris', 'moule': 'la moule Bathymodiolus', 'crabe': 'le crabe Bythograea', 'zoarcide': 'le poisson zoarcidé', 'poulpe': 'le poulpe'}, 'edges': [['bact', 'crevette'], ['bact', 'moule'], ['crevette', 'crabe'], ['moule', 'crabe'], ['crabe', 'zoarcide'], ['crabe', 'poulpe']]}]",
+    "w": "pick(WEBS)",
+    "E": "w['edges']",
+    "K": "keys(w['levels'])",
+    "LV": "['Producteur', 'Consommateur primaire', 'Consommateur secondaire', 'Consommateur tertiaire', 'Consommateur de 4e ordre', 'Consommateur de 5e ordre']"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Bas du réseau",
+      "params": {
+        "x": "pick(filter(K, 'w[\"levels\"][item] <= 1'))"
+      },
+      "let": {
+        "l": "w['levels'][x]",
+        "mx": "max(map(K, 'w[\"levels\"][item]'))"
+      },
+      "prompt": "Dans ce réseau ({{ w['zone'] }}), quel est le niveau trophique {{ frDe(w['def'][x]) }} ?",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "choice",
+        "value": "LV[l]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "niveau-producteur-compte",
+          "value": "LV[l + 1]"
+        },
+        {
+          "misconception": "niveau-sens-fleche",
+          "value": "LV[mx - l]",
+          "when": "mx - l != l"
+        },
+        {
+          "misconception": "niveau-fleche-oubliee",
+          "value": "LV[l - 1]",
+          "when": "l > 0"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "On compte les flèches depuis un producteur : {{ l == 0 ? 'aucune, c’est un producteur.' : l ~ ' flèche' ~ (l > 1 ? 's' : '') ~ ' → ' ~ lower(LV[l]) ~ '.' }}"
+    },
+    {
+      "difficulty": 2,
+      "label": "Haut du réseau",
+      "params": {
+        "x": "pick(filter(K, 'w[\"levels\"][item] >= 2'))"
+      },
+      "let": {
+        "l": "w['levels'][x]",
+        "mx": "max(map(K, 'w[\"levels\"][item]'))"
+      },
+      "prompt": "Dans ce réseau ({{ w['zone'] }}), quel est le niveau trophique {{ frDe(w['def'][x]) }} ?",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "choice",
+        "value": "LV[l]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "niveau-producteur-compte",
+          "value": "LV[l + 1]"
+        },
+        {
+          "misconception": "niveau-sens-fleche",
+          "value": "LV[mx - l]",
+          "when": "mx - l != l"
+        },
+        {
+          "misconception": "niveau-fleche-oubliee",
+          "value": "LV[l - 1]",
+          "when": "l > 0"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "On compte les flèches depuis un producteur : {{ l == 0 ? 'aucune, c’est un producteur.' : l ~ ' flèche' ~ (l > 1 ? 's' : '') ~ ' → ' ~ lower(LV[l]) ~ '.' }}"
+    },
+    {
+      "difficulty": 3,
+      "label": "Compter les niveaux",
+      "params": {
+        "cons": "chance(0.5)"
+      },
+      "let": {
+        "mx": "max(map(K, 'w[\"levels\"][item]'))",
+        "ncons": "count(filter(K, 'w[\"levels\"][item] > 0'))"
+      },
+      "prompt": "Réseau observé : {{ w['zone'] }}. Combien de niveaux {{ cons ? 'de consommateurs' : 'trophiques' }} ce réseau compte-t-il ?",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "number",
+        "value": "cons ? mx : mx + 1"
+      },
+      "wrongs": [
+        {
+          "misconception": "niveau-producteurs-oublies",
+          "value": "mx",
+          "when": "not cons"
+        },
+        {
+          "misconception": "niveau-producteur-compte",
+          "value": "mx + 1",
+          "when": "cons"
+        },
+        {
+          "misconception": "niveau-especes",
+          "value": "cons ? ncons : count(K)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "La plus longue chaîne compte {{ mx }} flèches : {{ mx + 1 }} niveaux trophiques, producteurs compris, dont {{ mx }} de consommateurs."
+    }
+  ]
+}

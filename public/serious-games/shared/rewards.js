@@ -1,12 +1,14 @@
 /* Formatool — serious games — the drawings of the collection pieces (design/validated/serious-games.md
-   §8), ported from the conception's sg-rewards.js: L'Observatoire's, and those of Les Tablettes de
-   Pompéi drawn after the Claude Design page « Serious game - Tablettes de Pompéi v2 ».
+   §8), ported from the conception's sg-rewards.js: L'Observatoire's, Station Abysse's and The
+   Irregulars', and those of Les Tablettes de Pompéi drawn after the Claude Design page « Serious
+   game - Tablettes de Pompéi v2 ».
 
    A classic script that sets globalThis.SGRewards - loaded by the game in its frame and by
    Formatool's screens (the player page, the showcase), like shared/avatar.js:
 
      SGRewards.art(kind, code, {size, finish, locked}) → SVG markup
-       kind: 'trophy' ('astrolabe', 'groma') | 'card' ('card-<game>-<chapter>') | 'pin' ('pin-etoile', 'pin-cave-canem')
+       kind: 'trophy' ('astrolabe', 'groma', 'nautile', 'loupe') | 'card' ('card-<game>-<chapter>')
+             | 'pin' ('pin-etoile', 'pin-cave-canem', 'pin-vague', 'pin-loupe')
        finish (trophy only): 'brass' | 'silver' | 'gold' - gold carries its glints
        locked: a silhouette in currentColor, readable on both themes.
 
@@ -20,15 +22,15 @@
     parfait: { base: '#E2B23A', light: '#FFE69A', dark: '#A8761B', deep: '#6F4C0E' }
   };
   var LOCK = { base: 'currentColor', light: 'currentColor', dark: 'currentColor', deep: 'currentColor' };
-
-  var LOCK = { base: 'currentColor', light: 'currentColor', dark: 'currentColor', deep: 'currentColor' };
   // The stored finishes (SeriousGameFinish) and the drawing's names for them.
   var FINISH = { brass: 'simple', silver: 'brillant', gold: 'parfait' };
 
   // Card palette (frame, paper, ink, accent, display font)
   var CARD = {
     observatoire: { bg: '#101833', paper: '#1B2550', ink: '#EDE6D6', accent: '#D9A441', font: "'Cormorant Garamond', Georgia, serif", italic: true },
-    pompei: { bg: '#EFE3CB', paper: '#9E2B25', ink: '#2E1D14', accent: '#C9923E', font: "'Cormorant Garamond', Georgia, serif", italic: false }
+    pompei: { bg: '#EFE3CB', paper: '#9E2B25', ink: '#2E1D14', accent: '#C9923E', font: "'Cormorant Garamond', Georgia, serif", italic: false },
+    abysse: { bg: '#031319', paper: '#072B36', ink: '#CFF7F1', accent: '#7FF5E3', font: "'Chakra Petch', 'Trebuchet MS', sans-serif", italic: false },
+    irregulars: { bg: '#142820', paper: '#1F3A2E', ink: '#E9D8A6', accent: '#C9A04E', font: "'Libre Caslon Display', Georgia, serif", italic: false }
   };
   var GAMES = {
     observatoire: { title: "L'Observatoire", chapters: [
@@ -45,15 +47,34 @@
       { id: 'peristylium', name: 'Le Péristyle', topic: 'Adjectifs et accord' },
       { id: 'thermae', name: 'Les Thermes', topic: 'Pronoms' },
       { id: 'hortus', name: "L'Hortus", topic: 'Cas et fonctions' }],
-      finale: { id: 'lararium', name: 'Le Lararium', topic: "Journée de l'épreuve" } }
+      finale: { id: 'lararium', name: 'Le Lararium', topic: "Journée de l'épreuve" } },
+    abysse: { title: 'Station Abysse', chapters: [
+      { id: 'recif', name: 'Le Récif', topic: 'Biodiversité et classification' },
+      { id: 'fosse', name: 'La Fosse', topic: 'ADN et expression génétique' },
+      { id: 'sources', name: 'Les Sources chaudes', topic: 'Métabolisme cellulaire' },
+      { id: 'plateau', name: 'Le Plateau', topic: 'Écosystèmes et réseaux trophiques' },
+      { id: 'dorsale', name: 'La Dorsale', topic: 'Évolution et sélection' }],
+      finale: { id: 'remontee', name: 'La Remontée', topic: 'Tout le carnet' } },
+    irregulars: { title: 'The Irregulars', chapters: [
+      { id: 'docks', name: 'The Docks', topic: 'Le prétérit' },
+      { id: 'market', name: 'Covent Garden', topic: 'Le present perfect' },
+      { id: 'theatre', name: 'The Lyceum', topic: 'Questions et auxiliaires' },
+      { id: 'museum', name: 'The Museum', topic: 'Comparatifs et superlatifs' },
+      { id: 'station', name: 'Paddington', topic: 'Modaux et futur' }],
+      finale: { id: 'final-case', name: 'The Final Case', topic: 'Toutes les affaires' } }
   };
   var PINS = [
     { id: 'pin-etoile', name: 'Épinglette Étoile', color: '#1B2550' },
-    { id: 'pin-cave-canem', name: 'Épinglette Cave canem', color: '#EFE3CB', ink: '#1E1410', ring: '#9E2B25' }
+    { id: 'pin-cave-canem', name: 'Épinglette Cave canem', color: '#EFE3CB', ink: '#1E1410', ring: '#9E2B25' },
+    { id: 'pin-vague', name: 'Épinglette Abysse', color: '#167784' },
+    { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', ink: '#E9D8A6' }
   ];
 
   function cardOf(code) {
-    var m = /^card-([a-z0-9-]+?)-([a-z0-9]+)$/.exec(code || '');
+    // a game slug and a chapter code may both carry hyphens (card-irregulars-final-case): the
+    // game is the longest known prefix
+    var rest = /^card-(.+)$/.exec(code || ''), m = null;
+    Object.keys(GAMES).forEach(function (g) { if (rest && rest[1].indexOf(g + '-') === 0 && (!m || g.length > m[1].length)) m = [null, g, rest[1].slice(g.length + 1)]; });
     var game = m && GAMES[m[1]];
     if (!game) return null;
     var chapter = game.chapters.filter(function (c) { return c.id === m[2]; })[0];
@@ -129,6 +150,41 @@
         '<line x1="43" y1="12" x2="77" y2="40" stroke="' + M.deep + '" stroke-width="5.4" stroke-linecap="round"/>' +
         '<line x1="43" y1="12" x2="77" y2="40" stroke="url(#' + g + ')" stroke-width="3.6" stroke-linecap="round"/>' +
         '<circle cx="60" cy="26" r="5" fill="' + M.light + '" stroke="' + M.deep + '" stroke-width="1.2"/>' + bobs;
+    },
+    /* Le Nautile (Station Abysse): a logarithmic whorl r = a·e^(bθ) with its septa, on a stand. */
+    nautile: function (M, g) {
+      var a = 2.7, b = .22, cx = 62, cy = 54, pts = [], inner = [], septa = '', N = 64;
+      for (var i = 0; i <= N; i++) {
+        var t = i / N * 2 * Math.PI + 2 * Math.PI;
+        var ro = a * Math.exp(b * t), ri = a * Math.exp(b * (t - 2 * Math.PI));
+        pts.push([cx + ro * Math.cos(t), cy + ro * Math.sin(t)]);
+        inner.push([cx + ri * Math.cos(t), cy + ri * Math.sin(t)]);
+        if (i % 6 === 3 && i < N - 4) septa += '<path d="M' + inner[i][0].toFixed(1) + ' ' + inner[i][1].toFixed(1) + ' Q' + ((pts[i][0] + inner[i][0]) / 2 + 3).toFixed(1) + ' ' + ((pts[i][1] + inner[i][1]) / 2 - 2).toFixed(1) + ' ' + pts[i][0].toFixed(1) + ' ' + pts[i][1].toFixed(1) + '" stroke="' + M.dark + '" stroke-width="1.6" fill="none"/>';
+      }
+      var d = 'M' + pts.map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' L') + ' L' + inner.slice().reverse().map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' L') + ' Z';
+      var full = 'M' + pts.map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' L') + ' Z';
+      var core = '';
+      for (var j = 0; j <= 40; j++) { var tt = j / 40 * 2 * Math.PI, rr = a * Math.exp(b * tt); core += (j ? ' L' : 'M') + (cx + rr * Math.cos(tt)).toFixed(1) + ' ' + (cy + rr * Math.sin(tt)).toFixed(1); }
+      return '<ellipse cx="60" cy="104" rx="30" ry="5" fill="' + M.deep + '" opacity=".35"/>' +
+        '<path d="M48 104 L52 92 L68 92 L72 104 Z" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1"/>' +
+        '<path d="' + full + '" fill="' + M.dark + '" stroke="' + M.deep + '" stroke-width="1.4"/>' +
+        '<path d="' + d + '" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.4" stroke-linejoin="round"/>' + septa +
+        '<path d="' + core + '" fill="none" stroke="' + M.deep + '" stroke-width="1.4"/>' +
+        '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="' + M.deep + '"/>';
+    },
+    /* La Loupe (The Irregulars): the detective's magnifying glass, a wooden handle and its ferrule. */
+    loupe: function (M, g, locked) {
+      var lens = locked ? 'currentColor' : '#BFD9E6', wood = locked ? 'currentColor' : '#5A3A28', woodD = locked ? 'currentColor' : '#3E271A';
+      return '<g transform="rotate(-40 60 60)">' +
+        '<rect x="54" y="72" width="12" height="40" rx="5" fill="' + wood + '" stroke="' + woodD + '" stroke-width="1"/>' +
+        '<line x1="57" y1="80" x2="57" y2="106" stroke="' + woodD + '" stroke-width="1" opacity=".6"/>' +
+        '<rect x="52" y="64" width="16" height="10" rx="2" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1"/>' +
+        '<line x1="52" y1="69" x2="68" y2="69" stroke="' + M.dark + '" stroke-width="1"/>' +
+        '</g>' +
+        '<circle cx="50" cy="50" r="30" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.4"/>' +
+        '<circle cx="50" cy="50" r="23" fill="' + lens + '" opacity="' + (locked ? 1 : .55) + '" stroke="' + M.dark + '" stroke-width="1.2"/>' +
+        (locked ? '' : '<path d="M36 42 Q40 32 52 30" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".85"/><circle cx="62" cy="62" r="2" fill="#fff" opacity=".6"/>') +
+        '<circle cx="50" cy="50" r="27" fill="none" stroke="' + M.light + '" stroke-width=".8" opacity=".8"/>';
     }
   };
 
@@ -157,6 +213,8 @@
       s += '<circle cx="60" cy="64" r="34" fill="none" stroke="' + a + '" stroke-width=".8" stroke-dasharray="2 4" opacity=".6"/>';
     }
     if (gameId === 'pompei') s = villaEmblem(idx, P);
+    if (gameId === 'abysse') s = abyssEmblem(idx, P);
+    if (gameId === 'irregulars') s = londonEmblem(idx, P);
     return s;
   }
   /* The fresco of a room of the villa, inside the card's red panel (x 9-111, y 22-118): one
@@ -186,6 +244,60 @@
       default: // the Lararium's shrine
         return frame + '<path d="M30 54 L60 36 L90 54 Z" fill="' + g + '"/>' + column(40, 58, 30) + column(80, 58, 30) +
           '<rect x="50" y="70" width="20" height="18" fill="' + c + '"/><rect x="46" y="66" width="28" height="4" fill="' + g + '"/>' + waves;
+    }
+  }
+  /* A zone of Station Abysse seen through the porthole: the reef's fish, the trench's double
+     helix, the hot spring's smoker, the plateau's jellyfish, the ridge's two populations; the
+     nautilus for the ascent. */
+  function abyssEmblem(idx, P) {
+    var a = P.accent, bg = P.bg, s = '<circle cx="60" cy="66" r="40" fill="none" stroke="' + a + '" stroke-width="1" opacity=".5"/>';
+    switch (idx) {
+      case 0:
+        s += '<path d="M30 64 Q50 44 78 62 L92 52 L90 76 L78 66 Q50 86 30 64 Z" fill="' + a + '" opacity=".85"/><circle cx="40" cy="62" r="2.4" fill="' + bg + '"/>';
+        break;
+      case 1:
+        for (var k = 0; k < 7; k++) {
+          var y = 38 + k * 8;
+          s += '<line x1="' + (60 - 16 * Math.cos(k * .9)).toFixed(1) + '" y1="' + y + '" x2="' + (60 + 16 * Math.cos(k * .9)).toFixed(1) + '" y2="' + y + '" stroke="' + a + '" stroke-width="1.6" opacity=".8"/>';
+        }
+        s += '<path d="M44 36 Q76 52 44 68 Q76 84 44 100" fill="none" stroke="' + a + '" stroke-width="2.4"/><path d="M76 36 Q44 52 76 68 Q44 84 76 100" fill="none" stroke="' + a + '" stroke-width="2.4"/>';
+        break;
+      case 2:
+        s += '<path d="M48 100 L54 64 L66 64 L72 100 Z" fill="' + a + '" opacity=".7"/><path d="M60 62 q-12 -10 -4 -20 q8 -8 -2 -16" fill="none" stroke="' + a + '" stroke-width="5" opacity=".45" stroke-linecap="round"/>';
+        break;
+      case 3:
+        s += '<path d="M36 64 Q36 38 60 38 Q84 38 84 64 Z" fill="' + a + '" opacity=".75"/>';
+        for (var t = 0; t < 6; t++) s += '<path d="M' + (40 + t * 8) + ' 64 q4 12 -2 26" stroke="' + a + '" stroke-width="1.6" fill="none" opacity=".8"/>';
+        break;
+      case 4:
+        s += '<path d="M60 30 L60 102" stroke="' + a + '" stroke-width="1.4" stroke-dasharray="3 3"/>' +
+          '<path d="M30 58 q8 -8 18 0 q-8 8 -18 0 Z M30 76 q8 -8 18 0 q-8 8 -18 0 Z" fill="' + a + '" opacity=".85"/>' +
+          '<path d="M72 58 q8 -8 18 0 q-8 8 -18 0 Z M72 76 q8 -8 18 0 q-8 8 -18 0 Z" fill="' + a + '" opacity=".5"/>';
+        break;
+      default:
+        s += '<path d="M40 92 Q30 70 46 54 Q62 40 76 50 Q90 62 80 80" fill="none" stroke="' + a + '" stroke-width="5" stroke-linecap="round"/><circle cx="60" cy="68" r="6" fill="' + a + '" opacity=".6"/>';
+    }
+    return s + '<circle cx="34" cy="96" r="1.6" fill="' + a + '" opacity=".6"/><circle cx="88" cy="40" r="1.2" fill="' + a + '" opacity=".6"/>';
+  }
+  /* A place of The Irregulars' London: the docks' crane, the market's arcade, the Lyceum's
+     portico, the museum's vase, Paddington's clock; the magnifying glass on the roofs for the
+     final case. */
+  function londonEmblem(idx, P) {
+    var a = P.accent, ink = P.ink;
+    var roofs = '<path d="M20 100 L20 84 L30 84 L30 76 L38 76 L38 84 L48 84 L48 72 L56 66 L64 72 L64 84 L74 84 L74 62 L80 56 L86 62 L86 84 L100 84 L100 100 Z" fill="' + a + '" opacity=".3"/>';
+    switch (idx) {
+      case 0:
+        return roofs + '<path d="M44 96 L44 40 L84 40 M44 48 L76 40 M78 40 L78 58" stroke="' + ink + '" stroke-width="2.4" fill="none"/><rect x="72" y="58" width="12" height="10" fill="' + ink + '"/><path d="M28 104 q8 -5 16 0 t16 0 t16 0 t16 0" stroke="' + a + '" stroke-width="2" fill="none"/>';
+      case 1:
+        return roofs + '<path d="M28 96 V60 Q38 46 48 60 V96 M48 60 Q58 46 68 60 V96 M68 60 Q78 46 88 60 V96" stroke="' + ink + '" stroke-width="2.4" fill="none"/><path d="M26 58 H90" stroke="' + ink + '" stroke-width="3"/>';
+      case 2:
+        return roofs + '<path d="M30 52 L60 36 L90 52 Z" fill="' + ink + '"/><rect x="34" y="54" width="6" height="40" fill="' + ink + '"/><rect x="50" y="54" width="6" height="40" fill="' + ink + '"/><rect x="64" y="54" width="6" height="40" fill="' + ink + '"/><rect x="80" y="54" width="6" height="40" fill="' + ink + '"/>';
+      case 3:
+        return roofs + '<path d="M50 42 h20 v6 q12 8 10 24 q-2 16 -20 20 q-18 -4 -20 -20 q-2 -16 10 -24 Z" fill="' + ink + '"/><path d="M44 66 h32" stroke="' + a + '" stroke-width="2"/>';
+      case 4:
+        return roofs + '<circle cx="60" cy="62" r="22" fill="none" stroke="' + ink + '" stroke-width="3"/><path d="M60 62 V48 M60 62 L70 68" stroke="' + ink + '" stroke-width="2.4" stroke-linecap="round"/><circle cx="60" cy="62" r="2" fill="' + ink + '"/>';
+      default:
+        return roofs + '<circle cx="60" cy="62" r="13" fill="none" stroke="' + ink + '" stroke-width="3"/><line x1="69" y1="71" x2="80" y2="82" stroke="' + ink + '" stroke-width="4" stroke-linecap="round"/>';
     }
   }
   var ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
@@ -229,6 +341,8 @@
   var PIN_GLYPH = {
     'pin-etoile': function (c) { return '<path d="M30 14 Q31.5 28.5 46 30 Q31.5 31.5 30 46 Q28.5 31.5 14 30 Q28.5 28.5 30 14 Z" fill="' + c + '"/><circle cx="41" cy="19" r="1.6" fill="' + c + '"/>'; },
     // The dog of the mosaic at the door of the House of the Tragic Poet, running, its red collar.
+    'pin-vague': function (c) { return '<path d="M14 26 Q20 20 26 26 T38 26 T48 26 M14 35 Q20 29 26 35 T38 35 T48 35" stroke="' + c + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>'; },
+    'pin-loupe': function (c) { return '<circle cx="27" cy="27" r="9" fill="none" stroke="' + c + '" stroke-width="3"/><line x1="34" y1="34" x2="43" y2="43" stroke="' + c + '" stroke-width="4" stroke-linecap="round"/>'; },
     'pin-cave-canem': function (c, accent) {
       return '<path d="M13 31.5 L17.5 28.6 L27 28 L34.5 27.4 L39.6 22.6 L43.4 21.2 L46.8 23.4 L45.8 26 L42.6 26.8 L41.2 30.8 L44.2 36.4 L42.2 37.4 L38.4 32.6 L30.6 33.6 L26.4 38.2 L24.2 37.6 L26.2 33.2 L20.4 34 L16.4 38.6 L14.4 37.6 L17.6 33.2 Z" fill="' + c + '"/>' +
         '<path d="M13.5 31.4 L9 27" stroke="' + c + '" stroke-width="2" stroke-linecap="round"/>' +

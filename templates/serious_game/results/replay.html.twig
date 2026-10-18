@@ -24,8 +24,19 @@
             <p class="text-secondary">{{ unitName }} · {{ answer.answeredAt|date('d/m/Y') }} · {{ 'seriousGameReplayVersion'|trans({'%version%': answer.templateVersion}) }}</p>
             <div class="cm-sg-sample__prompt">{{ question.prompt|raw }}</div>
             {% if question.figure %}<div class="cm-sg-sample__figure">{{ question.figure|raw }}</div>{% endif %}
+            {% set type = question.spec.type.value %}
+            {# A line to correct: its words, the one the student pointed at marked. #}
+            {% if type == 'spot' %}
+                <p class="cm-sg-replay__spot">
+                    {% for word in question.spec.labels %}
+                        <span class="{{ loop.index0 == question.answerValue ? 'is-right' }} {{ (loop.index0 ~ '') == answer.input ? 'is-chosen' }}">{{ word }}</span>
+                    {% endfor %}
+                </p>
+            {# Items to put in order: as they were shown, shuffled. #}
+            {% elseif type == 'order' %}
+                <p class="cm-sg-replay__order">{{ 'seriousGameReplayShuffled'|trans }} {{ question.choices|map(c => c.value)|join(' · ') }}</p>
             {# A QCM: the propositions as they were shown, the one chosen and the right one marked. #}
-            {% if question.choices is not empty %}
+            {% elseif question.choices is not empty %}
                 <ol class="cm-sg-replay__choices">
                     {% for choice in question.choices %}
                         <li class="{{ choice.value == question.answerText ? 'is-right' }} {{ choice.value == answer.input ? 'is-chosen' }}">{{ choice.html|raw }}</li>
@@ -34,7 +45,7 @@
             {% endif %}
             <dl class="cm-sg-replay__facts">
                 <dt>{{ 'seriousGameReplayInput'|trans }}</dt>
-                <dd>{% if answer.dontKnow %}{{ 'seriousGameDontKnowLabel'|trans }}{% else %}<code>{{ answer.input|replace({'|': ' · '}) }}</code>{% endif %}
+                <dd>{% if answer.dontKnow %}{{ 'seriousGameDontKnowLabel'|trans }}{% elseif type == 'spot' %}{{ answer.input == 'correct' ? 'seriousGameReplaySpotCorrect'|trans : (question.spec.labels[answer.input] ?? answer.input) }}{% else %}<code>{{ answer.input|replace({'|': ' · '}) }}</code>{% endif %}
                     {% if answer.ok %}<twig:Cm:Badge tone="green">{{ 'seriousGameAnswerRight'|trans }}</twig:Cm:Badge>{% elseif misconceptionLabel %}<twig:Cm:Badge tone="red">{{ misconceptionLabel }}</twig:Cm:Badge>{% endif %}</dd>
                 <dt>{{ 'seriousGameExpectedAnswer'|trans }}</dt>
                 <dd>{{ question.answerDisplay|raw }}</dd>

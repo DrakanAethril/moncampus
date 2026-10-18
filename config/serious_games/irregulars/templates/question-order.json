@@ -1,0 +1,76 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "question-order",
+  "label": "Construire une question",
+  "misconceptions": [
+    {
+      "id": "question-order-inversion",
+      "label": "Sujet placé avant l’auxiliaire",
+      "explanation": "Dans une question, l’auxiliaire passe devant le sujet : Where did the cabman hide the bag? L’ordre de la phrase affirmative (the cabman did…) ne fait pas une question."
+    },
+    {
+      "id": "question-order-verbe-sujet",
+      "label": "Verbe placé avant le sujet",
+      "explanation": "En français, on peut dire « Où a caché le cocher le sac ? » ; en anglais, jamais. Ordre fixe : mot interrogatif + auxiliaire + sujet + verbe + complément."
+    }
+  ],
+  "params": {
+    "s": "pick([['the cabman', 3, 'he'], ['Mrs Hudson', 3, 'she'], ['the baker', 3, 'he'], ['a sailor', 3, 'he'], ['the flower girl', 3, 'she'], ['the night watchman', 3, 'he']])",
+    "w": "pick([['Where', 'the bag', 'hide', 'hidden'], ['When', 'the letter', 'send', 'sent'], ['Why', 'the watch', 'steal', 'stolen'], ['How', 'the door', 'break', 'broken'], ['Where', 'the key', 'find', 'found'], ['When', 'the jewels', 'hide', 'hidden'], ['Why', 'the lamp', 'throw', 'thrown'], ['Where', 'the newspaper', 'buy', 'bought']])",
+    "perfect": "chance(0.35)"
+  },
+  "let": {
+    "pp": "perfect and w[0] != 'When'",
+    "aux": "pp ? 'has' : 'did'",
+    "verb": "pp ? w[3] : w[2]",
+    "parts": "[w[0], aux, s[0], verb, w[1] ~ '?']",
+    "inv": "[w[0], s[0], aux, verb, w[1] ~ '?']",
+    "vs": "[w[0], aux, verb, s[0], w[1] ~ '?']"
+  },
+  "variants": [
+    {
+      "weight": 3,
+      "label": "Ranger les mots",
+      "difficulty": 2,
+      "prompt": "Put the words in order to ask the witness a question.",
+      "answer": {
+        "type": "order",
+        "value": "parts"
+      },
+      "wrongs": [
+        {
+          "misconception": "question-order-inversion",
+          "value": "inv"
+        },
+        {
+          "misconception": "question-order-verbe-sujet",
+          "value": "vs"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "Mot interrogatif + auxiliaire + sujet + {{ pp ? 'participe passé' : 'base verbale' }} + complément : <b>{{ join(parts, ' ') }}</b>"
+    },
+    {
+      "weight": 1,
+      "label": "Choisir la question",
+      "prompt": "Which question is correct? Wiggins wants to know more about {{ s[0] }} and {{ w[1] }}.",
+      "answer": {
+        "type": "choice",
+        "value": "join(parts, ' ')",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "question-order-inversion",
+          "value": "join(inv, ' ')"
+        },
+        {
+          "misconception": "question-order-verbe-sujet",
+          "value": "join(vs, ' ')"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "Mot interrogatif + auxiliaire + sujet + {{ pp ? 'participe passé' : 'base verbale' }} + complément : <b>{{ join(parts, ' ') }}</b>"
+    }
+  ]
+}
