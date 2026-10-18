@@ -1,0 +1,74 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "will-going",
+  "label": "will ou be going to",
+  "misconceptions": [
+    {
+      "id": "will-going-confusion",
+      "label": "will et be going to confondus",
+      "explanation": "Be going to annonce ce qui est déjà décidé ou ce que l’on voit venir (des nuages noirs : it is going to rain). Will exprime une décision prise sur le moment ou une opinion sur l’avenir (I think he will…)."
+    },
+    {
+      "id": "will-going-present",
+      "label": "Présent simple pour parler du futur",
+      "explanation": "Le présent simple décrit une habitude ou une vérité générale, pas un événement à venir. Pour parler du futur, on emploie will ou be going to + base verbale."
+    }
+  ],
+  "params": {
+    "c": "pick([['Look at those black clouds over the station!', 'It', 'rain', 1, 'Une prédiction appuyée sur un indice visible → <b>be going to</b>.'], ['Look! The cabman is driving much too fast.', 'He', 'hit the lamp post', 1, 'Une prédiction appuyée sur un indice visible → <b>be going to</b>.'], ['Quick! The doors are closing and that boy is still on the stairs.', 'He', 'miss the train', 1, 'Une prédiction appuyée sur un indice visible → <b>be going to</b>.'], ['I’ve already bought my ticket to Brighton.', 'I', 'visit my aunt', 1, 'Une intention décidée avant de parler → <b>be going to</b>.'], ['We have planned everything for tonight.', 'We', 'follow the man in grey', 1, 'Un projet déjà décidé → <b>be going to</b>.'], ['Mrs Hudson has bought flour, eggs and sugar.', 'She', 'make a cake', 1, 'Une intention décidée avant de parler → <b>be going to</b>.'], ['The inspector has made up his mind.', 'He', 'search the luggage office', 1, 'Un projet déjà décidé → <b>be going to</b>.'], ['Oh, the telegraph is ringing!', 'I', 'answer it', 0, 'Une décision prise sur le moment → <b>will</b>.'], ['This bag looks heavy.', 'I', 'carry it for you', 0, 'Une décision prise sur le moment, une offre → <b>will</b>.'], ['You have lost your ticket? Don’t worry.', 'I', 'buy you another one', 0, 'Une décision prise sur le moment → <b>will</b>.'], ['It’s so cold in this waiting room.', 'I', 'close the window', 0, 'Une décision prise sur le moment → <b>will</b>.'], ['I think the inspector is clever.', 'He', 'find the thief', 0, 'Une prédiction d’opinion (I think…) → <b>will</b>.'], ['I’m sure the new engine is very fast.', 'It', 'arrive on time', 0, 'Une prédiction d’opinion (I’m sure…) → <b>will</b>.'], ['I think Wiggins is the cleverest of us.', 'He', 'solve the case', 0, 'Une prédiction d’opinion (I think…) → <b>will</b>.']])"
+  },
+  "let": {
+    "be": "{'It': 'is', 'I': 'am', 'He': 'is', 'We': 'are', 'She': 'is'}[c[1]]",
+    "third": "c[1] in ['It', 'He', 'She']",
+    "verb": "words(c[2])[0]",
+    "tail": "substr(c[2], len(words(c[2])[0]))",
+    "will": "c[1] ~ ' will ' ~ c[2] ~ '.'",
+    "going": "c[1] ~ ' ' ~ be ~ ' going to ' ~ c[2] ~ '.'",
+    "pres": "c[1] ~ ' ' ~ (third ? s3(verb) : verb) ~ tail ~ '.'"
+  },
+  "variants": [
+    {
+      "weight": 1,
+      "label": "Choisir",
+      "prompt": "<span class=\"q-line\">“{{ c[0] }} {{ c[1] }} <span class=\"q-blank\">…</span> {{ c[2] }}.”</span>Which form fits best?",
+      "answer": {
+        "type": "choice",
+        "value": "c[3] ? going : will",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "will-going-confusion",
+          "value": "c[3] ? will : going"
+        },
+        {
+          "misconception": "will-going-present",
+          "value": "pres"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ c[4] }}"
+    },
+    {
+      "weight": 1,
+      "label": "Taper",
+      "prompt": "Type the verb « {{ verb }} » with will or be going to:<span class=\"q-line\">“{{ c[0] }} {{ c[1] }} <span class=\"q-blank\">…</span>{{ tail }}.”</span>",
+      "answer": {
+        "type": "text",
+        "value": "c[3] ? be ~ ' going to ' ~ verb : 'will ' ~ verb"
+      },
+      "wrongs": [
+        {
+          "misconception": "will-going-confusion",
+          "value": "c[3] ? 'will ' ~ verb : be ~ ' going to ' ~ verb"
+        },
+        {
+          "misconception": "will-going-present",
+          "value": "third ? s3(verb) : verb"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ c[4] }} {{ c[3] ? going : will }}"
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "photosynthese",
+  "label": "Bilan de la photosynthèse",
+  "misconceptions": [
+    {
+      "id": "photosynthese-reactif-produit",
+      "label": "Réactif pris pour un produit",
+      "explanation": "La photosynthèse consomme du dioxyde de carbone et de l’eau, et produit du glucose et du dioxygène. Placez chacun du bon côté de la flèche."
+    },
+    {
+      "id": "photosynthese-inversion",
+      "label": "Photosynthèse et respiration confondues",
+      "explanation": "La lumière n’est pas un réactif : c’est la source d’énergie de la photosynthèse. Les bilans de la photosynthèse et de la respiration sont inverses l’un de l’autre."
+    },
+    {
+      "id": "photosynthese-obscurite",
+      "label": "Photosynthèse supposée sans lumière",
+      "explanation": "Sans lumière, la photosynthèse s’arrête ; les cellules chlorophylliennes continuent pourtant de respirer. À l’obscurité, elles consomment donc du dioxygène."
+    }
+  ],
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Une phrase",
+      "params": {
+        "c": "pick([['À la lumière, la chlorelle absorbe de l’eau et du ___.', 'dioxyde de carbone', 'in'], ['À la lumière, la chlorelle absorbe du dioxyde de carbone et de l’___.', 'eau', 'in'], ['À la lumière, la chlorelle produit du dioxygène et du ___.', 'glucose', 'out'], ['À la lumière, la chlorelle produit du glucose et du ___.', 'dioxygène', 'out']])"
+      },
+      "let": {
+        "line": "replace(c[0], '___', '<span class=\"q-blank\">…</span>')",
+        "same": "[filter(['dioxyde de carbone', 'eau'], 'item != c[1]')[0], filter(['glucose', 'dioxygène'], 'item != c[1]')[0]][c[2] == 'in' ? 0 : 1]",
+        "other": "[filter(['dioxyde de carbone', 'eau'], 'item != c[1]')[0], filter(['glucose', 'dioxygène'], 'item != c[1]')[0]][c[2] == 'in' ? 1 : 0]"
+      },
+      "prompt": "Complétez :<br><span class=\"q-line\">{{ line }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "c[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "photosynthese-reactif-produit",
+          "value": "other"
+        },
+        {
+          "misconception": "photosynthese-inversion",
+          "value": "'lumière'"
+        },
+        {
+          "misconception": "photosynthese-inversion",
+          "value": "'éthanol'"
+        },
+        {
+          "misconception": "photosynthese-reactif-produit",
+          "value": "same"
+        }
+      ],
+      "method": "Photosynthèse : dioxyde de carbone + eau → glucose + dioxygène, grâce à l’énergie lumineuse."
+    },
+    {
+      "difficulty": 2,
+      "label": "Le bilan",
+      "params": {
+        "c": "pick([['dioxyde de carbone + ___ → glucose + dioxygène', 'eau', 'in'], ['___ + eau → glucose + dioxygène', 'dioxyde de carbone', 'in'], ['dioxyde de carbone + eau → ___ + dioxygène', 'glucose', 'out'], ['dioxyde de carbone + eau → glucose + ___', 'dioxygène', 'out']])"
+      },
+      "let": {
+        "line": "replace(c[0], '___', '<span class=\"q-blank\">…</span>')",
+        "same": "[filter(['dioxyde de carbone', 'eau'], 'item != c[1]')[0], filter(['glucose', 'dioxygène'], 'item != c[1]')[0]][c[2] == 'in' ? 0 : 1]",
+        "other": "[filter(['dioxyde de carbone', 'eau'], 'item != c[1]')[0], filter(['glucose', 'dioxygène'], 'item != c[1]')[0]][c[2] == 'in' ? 1 : 0]"
+      },
+      "prompt": "Complétez le bilan de la photosynthèse :<br><span class=\"q-line\">{{ line }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "c[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "photosynthese-reactif-produit",
+          "value": "other"
+        },
+        {
+          "misconception": "photosynthese-inversion",
+          "value": "'lumière'"
+        },
+        {
+          "misconception": "photosynthese-inversion",
+          "value": "'éthanol'"
+        },
+        {
+          "misconception": "photosynthese-reactif-produit",
+          "value": "same"
+        }
+      ],
+      "method": "Photosynthèse : dioxyde de carbone + eau → glucose + dioxygène, grâce à l’énergie lumineuse."
+    },
+    {
+      "difficulty": 3,
+      "label": "Lumière ou obscurité",
+      "params": {
+        "o": "pick(['des chlorelles', 'des algues vertes du récif', 'des feuilles de posidonie', 'des diatomées', 'des cyanobactéries'])",
+        "lit": "chance(0.5)"
+      },
+      "prompt": "Dans une enceinte fermée {{ lit ? 'fortement éclairée' : 'placée à l’obscurité' }}, on suit la teneur en dioxygène de l’eau où vivent {{ o }}. Comment évolue-t-elle ?",
+      "answer": {
+        "type": "choice",
+        "value": "lit ? 'Elle augmente : la photosynthèse produit plus de dioxygène que la respiration n’en consomme' : 'Elle diminue : sans lumière, seule la respiration se poursuit'"
+      },
+      "wrongs": [
+        {
+          "misconception": "photosynthese-obscurite",
+          "value": "'Elle augmente : la photosynthèse produit plus de dioxygène que la respiration n’en consomme'",
+          "when": "not lit"
+        },
+        {
+          "misconception": "photosynthese-inversion",
+          "value": "'Elle diminue : sans lumière, seule la respiration se poursuit'",
+          "when": "lit"
+        },
+        {
+          "misconception": "photosynthese-inversion",
+          "value": "'Elle diminue : la photosynthèse consomme du dioxygène'"
+        },
+        {
+          "misconception": "photosynthese-reactif-produit",
+          "value": "'Elle ne change pas : le dioxygène n’intervient pas dans ces échanges'"
+        }
+      ],
+      "method": "{{ lit ? 'À forte lumière, la photosynthèse l’emporte sur la respiration : le dioxygène augmente.' : 'À l’obscurité, la photosynthèse s’arrête et les cellules continuent de respirer : le dioxygène diminue.' }}"
+    }
+  ]
+}

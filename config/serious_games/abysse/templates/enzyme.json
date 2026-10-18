@@ -1,0 +1,149 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "enzyme",
+  "label": "Optimum d’une enzyme",
+  "misconceptions": [
+    {
+      "id": "enzyme-axe",
+      "label": "Lecture sur le mauvais axe",
+      "explanation": "La température se lit sur l’axe horizontal, l’activité sur l’axe vertical. Repérez le sommet de la courbe, puis descendez jusqu’à l’axe des températures."
+    },
+    {
+      "id": "enzyme-un-seul",
+      "label": "Un seul optimum lu au lieu de l’écart",
+      "explanation": "La question compare deux enzymes : on lit l’optimum de chacune, puis on calcule la différence. Un seul optimum ne répond pas."
+    }
+  ],
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Graduation ronde",
+      "params": {
+        "opt": "int(2, 8) * 10",
+        "top": "int(6, 9) * 10"
+      },
+      "constraints": [
+        "abs(top - opt) > 6"
+      ],
+      "let": {
+        "pts": "map(range(0, 40), '[item * 2.5, top * 2.718281828459045 ** ((0 - (item * 2.5 - opt) ** 2) / (2 * (item * 2.5 < opt ? 22 : 9) ** 2))]')",
+        "org": "opt >= 70 ? 'une archée des fumeurs noirs' : (opt >= 45 ? 'une bactérie des sources tièdes' : 'un poisson de la plaine abyssale')"
+      },
+      "figure": {
+        "type": "chart",
+        "x": "[0, 100]",
+        "y": "[0, 100]",
+        "xstep": 10,
+        "ystep": 20,
+        "xlabel": "'Température (°C)'",
+        "ylabel": "'Activité (unités arbitraires)'",
+        "series": "[{'name': '', 'color': 'teal', 'points': pts}]"
+      },
+      "prompt": "Activité d’une enzyme extraite {{ de(org) }}. À quelle température son activité est-elle maximale ?",
+      "answer": {
+        "type": "number",
+        "value": "opt",
+        "tolerance": 2.6,
+        "unit": "°C"
+      },
+      "wrongs": [
+        {
+          "misconception": "enzyme-axe",
+          "value": "top"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "On repère le sommet de la courbe, puis on lit l’abscisse : <b>{{ opt }} °C</b>. Au-delà, l’enzyme se dénature vite."
+    },
+    {
+      "difficulty": 2,
+      "label": "Entre deux graduations",
+      "params": {
+        "opt": "int(1, 8) * 10 + 5",
+        "top": "int(6, 9) * 10"
+      },
+      "constraints": [
+        "abs(top - opt) > 6"
+      ],
+      "let": {
+        "pts": "map(range(0, 40), '[item * 2.5, top * 2.718281828459045 ** ((0 - (item * 2.5 - opt) ** 2) / (2 * (item * 2.5 < opt ? 22 : 9) ** 2))]')",
+        "org": "opt >= 70 ? 'une archée des fumeurs noirs' : (opt >= 45 ? 'une bactérie des sources tièdes' : 'un poisson de la plaine abyssale')"
+      },
+      "figure": {
+        "type": "chart",
+        "x": "[0, 100]",
+        "y": "[0, 100]",
+        "xstep": 10,
+        "ystep": 20,
+        "xlabel": "'Température (°C)'",
+        "ylabel": "'Activité (unités arbitraires)'",
+        "series": "[{'name': '', 'color': 'teal', 'points': pts}]"
+      },
+      "prompt": "Activité d’une enzyme extraite {{ de(org) }}. À quelle température son activité est-elle maximale ?",
+      "answer": {
+        "type": "number",
+        "value": "opt",
+        "tolerance": 2.6,
+        "unit": "°C"
+      },
+      "wrongs": [
+        {
+          "misconception": "enzyme-axe",
+          "value": "top"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "On repère le sommet de la courbe, puis on lit l’abscisse : <b>{{ opt }} °C</b>. Au-delà, l’enzyme se dénature vite."
+    },
+    {
+      "difficulty": 3,
+      "label": "Deux enzymes",
+      "params": {
+        "o1": "int(2, 6) * 5",
+        "o2": "int(14, 17) * 5",
+        "t1": "int(6, 9) * 10",
+        "t2": "int(6, 9) * 10"
+      },
+      "let": {
+        "ans": "o2 - o1",
+        "q1": "map(range(0, 40), '[item * 2.5, t1 * 2.718281828459045 ** ((0 - (item * 2.5 - o1) ** 2) / (2 * (item * 2.5 < o1 ? 22 : 9) ** 2))]')",
+        "q2": "map(range(0, 40), '[item * 2.5, t2 * 2.718281828459045 ** ((0 - (item * 2.5 - o2) ** 2) / (2 * (item * 2.5 < o2 ? 22 : 9) ** 2))]')"
+      },
+      "figure": {
+        "type": "chart",
+        "x": "[0, 100]",
+        "y": "[0, 100]",
+        "xstep": 10,
+        "ystep": 20,
+        "xlabel": "'Température (°C)'",
+        "ylabel": "'Activité (unités arbitraires)'",
+        "series": "[{'name': 'Poisson de la plaine', 'color': 'blue', 'points': q1}, {'name': 'Archée des fumeurs', 'color': 'red', 'points': q2}]"
+      },
+      "prompt": "Les enzymes d’un poisson de la plaine abyssale et d’une archée des fumeurs noirs ont été testées à différentes températures. Combien de degrés séparent leurs températures optimales ?",
+      "answer": {
+        "type": "number",
+        "value": "ans",
+        "tolerance": 5.1,
+        "unit": "°C"
+      },
+      "wrongs": [
+        {
+          "misconception": "enzyme-un-seul",
+          "value": "o2"
+        },
+        {
+          "misconception": "enzyme-un-seul",
+          "value": "o1",
+          "when": "abs(o1 - ans) > 11"
+        },
+        {
+          "misconception": "enzyme-axe",
+          "value": "abs(t2 - t1)",
+          "when": "abs(abs(t2 - t1) - ans) > 11 and abs(abs(t2 - t1) - o1) > 11 and abs(abs(t2 - t1) - o2) > 11"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Optimum du poisson : {{ o1 }} °C ; optimum de l’archée : {{ o2 }} °C. Écart : {{ o2 }} − {{ o1 }} = <b>{{ ans }} °C</b>."
+    }
+  ]
+}

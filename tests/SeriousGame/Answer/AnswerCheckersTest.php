@@ -105,6 +105,36 @@ class AnswerCheckersTest extends TestCase
         yield 'choice' => [AnswerType::Choice, 'génitif singulier', 'génitif singulier', true];
         yield 'choice without accents' => [AnswerType::Choice, 'génitif singulier', 'Genitif singulier', true];
         yield 'another choice' => [AnswerType::Choice, 'génitif singulier', 'datif singulier', false];
+        // text, with its accepted alternatives
+        yield 'text' => [AnswerType::Text, 'stopped', 'stopped', true];
+        yield 'text with case and full stop' => [AnswerType::Text, 'has just left', 'Has just left.', true];
+        yield 'curly apostrophe' => [AnswerType::Text, "didn't see", 'didn’t see', true];
+        yield 'american spelling accepted' => [AnswerType::Text, ['travelled', 'traveled'], 'traveled', true];
+        yield 'a spelling mistake' => [AnswerType::Text, ['travelled', 'traveled'], 'traveld', false];
+        // sequence
+        yield 'sequence grouped' => [AnswerType::Sequence, 'ATGCCA', 'atg cca', true];
+        yield 'sequence with dashes' => [AnswerType::Sequence, 'AUGGCU', 'A-U-G-G-C-U', true];
+        yield 'another sequence' => [AnswerType::Sequence, 'ATGCCA', 'ATGCCT', false];
+        yield 'not a sequence' => [AnswerType::Sequence, 'ATGCCA', 'ATG 123', false];
+        // order
+        yield 'order' => [AnswerType::Order, ['Algues', 'Oursin', 'Baliste'], 'Algues|Oursin|Baliste', true];
+        yield 'order without case' => [AnswerType::Order, ['Algues', 'Oursin', 'Baliste'], 'algues | oursin | baliste', true];
+        yield 'order reversed' => [AnswerType::Order, ['Algues', 'Oursin', 'Baliste'], 'Baliste|Oursin|Algues', false];
+        yield 'order incomplete' => [AnswerType::Order, ['Algues', 'Oursin', 'Baliste'], 'Algues|Oursin', false];
+        // spot
+        yield 'spot the word' => [AnswerType::Spot, 2, '2', true, ['labels' => ['He', 'didn’t', 'saw', 'it.']]];
+        yield 'spot another word' => [AnswerType::Spot, 2, '1', false, ['labels' => ['He', 'didn’t', 'saw', 'it.']]];
+        yield 'spot a correct line' => [AnswerType::Spot, -1, 'correct', true, ['labels' => ['He', 'didn’t', 'see', 'it.']]];
+        yield 'spot past the line' => [AnswerType::Spot, 2, '9', false, ['labels' => ['He', 'didn’t', 'saw', 'it.']]];
+    }
+
+    public function testAnyWordIsAWrongAnswerOfACorrectLineOnly(): void
+    {
+        $spec = AnswerSpec::fromArray(['type' => 'spot', 'labels' => ['He', 'didn’t', 'see', 'it.']]);
+        $checker = AnswerCheckers::for(AnswerType::Spot);
+
+        self::assertTrue($checker->same(3, -2, $spec), 'a word clicked in a correct line is « any word »');
+        self::assertFalse($checker->same(-1, -2, $spec), '« correct » is not a word');
     }
 
     /** @param array<string, mixed> $options */

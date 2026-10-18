@@ -262,9 +262,10 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
 - **Serious games** (`/serious-games`) — `SeriousGame*` entities, `src/SeriousGame/`,
-  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; two games built,
-  **L'Observatoire** (automatismes de 1re) and **Les Tablettes de Pompéi** (déclinaisons latines,
-  4e-2nde, `design/validated/serious-games-pompei.md`). **In the margin of Formatool**: it shares the sign-in
+  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; four games built,
+  **L'Observatoire** (automatismes de 1re), **Les Tablettes de Pompéi** (déclinaisons latines,
+  4e-2nde, `design/validated/serious-games-pompei.md`), **Station Abysse** (SVT, 2nde-1re,
+  `serious-games-abysse.md`) and **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`). **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
   mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus
   one line per game in the « Serious games » block of Paramètres › Fonctionnalités
@@ -286,17 +287,22 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     bench is green and it is validated (`SeriousGameTemplates`, the one door of the screen and the
     connector). `app:serious-games:sync` installs the shipped ones; `TemplateBench` is what makes a
     version validatable (CI runs 200 seeds per template, `ObservatoireTemplatesTest`,
-    `PompeiTemplatesTest`).
+    `PompeiTemplatesTest`, `AbysseTemplatesTest`, `IrregularsTemplatesTest`).
   - **A game is its manifest** (`config/serious_games/{slug}/game.yaml`, read by
     `SeriousGameManifest`): chapters and units, series, final test, comets, grades, rewards - and
     its own **`words`**, which Formatool's screens use for it (`serious_game_words()`: a star is
     « allumée », a tablet « tracée »; a comet is a « lézarde » in Pompéi). Never write a game's
     vocabulary into a translation key.
-  - **Two kinds of answer**: `short` (typed) and `choice` (a QCM), from the answer type of each
-    variant (`AnswerType::kind()`); a game accepts the kinds an administrator ticks. A question of a
+  - **Four kinds of answer**: `short` (typed), `choice` (a QCM), `order` (items to put in order)
+    and `spot` (the wrong word of a line, or « correct »), from the answer type of each variant
+    (`AnswerType::kind()`); a game accepts the kinds an administrator ticks. A question of a
     refused kind is never planned (`QuestionEngine`), a unit with no servable variant is hidden. A
     QCM's propositions are the answer and its typical wrong answers, shuffled by the seed - a
-    proposition that is also right (an ambiguous Latin form) must be excluded by its `when`.
+    proposition that is also right (an ambiguous Latin form) must be excluded by its `when`. Items
+    to put in order reach the game shuffled, never in the answer's order nor a wrong answer's.
+  - **A series may climb** (`series.tiers` in the manifest, Station Abysse's 200 / 1 000 / 3 000 m):
+    so many questions of difficulty 1, then 2, then 3, a missing tier borrowing the nearest
+    difficulty (`QuestionEngine::seriesPlan()`).
   - **The Latin is a grammar, not a word list**: `App\SeriousGame\Latin\LatinMorphology` declines
     nouns, adjectives and pronouns from their dictionary entry (the templates hold the lexicon);
     the game's Bibliothèque (`public/serious-games/pompei/library.js`) is a dump of it, and

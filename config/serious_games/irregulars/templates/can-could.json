@@ -1,0 +1,90 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "can-could",
+  "label": "can, could, will be able to",
+  "misconceptions": [
+    {
+      "id": "can-could-temps",
+      "label": "can, could, will be able to confondus",
+      "explanation": "La capacité se dit can au présent, could au passé, will be able to au futur. Le marqueur de temps de la phrase (now, when he was five, next month) décide."
+    },
+    {
+      "id": "can-could-obligation",
+      "label": "Capacité confondue avec l’obligation",
+      "explanation": "Must exprime une obligation, pas une capacité. Pour dire qu’on sait ou qu’on peut faire quelque chose, on emploie can, could ou will be able to."
+    }
+  ],
+  "params": {
+    "s": "pick([['the cabman', 3, 'he'], ['Mrs Hudson', 3, 'she'], ['the baker', 3, 'he'], ['a sailor', 3, 'he'], ['the flower girl', 3, 'she'], ['the night watchman', 3, 'he']])",
+    "k": "int(0, 2)",
+    "act": "pick(['read the timetable', 'speak French', 'drive a cab', 'pick a lock', 'swim across the Thames', 'whistle like a train', 'climb onto the roof'])"
+  },
+  "let": {
+    "lead": "['Now, ' ~ s[0], 'When ' ~ s[0] ~ ' was ten, ' ~ s[2], 'Next month, after a few lessons, ' ~ s[0]][k]",
+    "right": "['can', 'could', 'will be able to'][k]"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Choisir",
+      "prompt": "Complete:<span class=\"q-line\">“{{ lead }} <span class=\"q-blank\">…</span> {{ act }}.”</span>",
+      "answer": {
+        "type": "choice",
+        "value": "right"
+      },
+      "wrongs": [
+        {
+          "misconception": "can-could-temps",
+          "value": "'can'",
+          "when": "k != 0"
+        },
+        {
+          "misconception": "can-could-temps",
+          "value": "'could'",
+          "when": "k != 1"
+        },
+        {
+          "misconception": "can-could-temps",
+          "value": "'will be able to'",
+          "when": "k != 2"
+        },
+        {
+          "misconception": "can-could-obligation",
+          "value": "'must'"
+        }
+      ],
+      "method": "Capacité : <b>can</b> au présent, <b>could</b> au passé, <b>will be able to</b> au futur. Ici : <b>{{ right }}</b>."
+    },
+    {
+      "weight": 1,
+      "label": "Taper",
+      "prompt": "Type can, could or will be able to:<span class=\"q-line\">“{{ lead }} <span class=\"q-blank\">…</span> {{ act }}.”</span>",
+      "answer": {
+        "type": "text",
+        "value": "right"
+      },
+      "wrongs": [
+        {
+          "misconception": "can-could-temps",
+          "value": "'can'",
+          "when": "k != 0"
+        },
+        {
+          "misconception": "can-could-temps",
+          "value": "'could'",
+          "when": "k != 1"
+        },
+        {
+          "misconception": "can-could-temps",
+          "value": "'will be able to'",
+          "when": "k != 2"
+        },
+        {
+          "misconception": "can-could-obligation",
+          "value": "'must'"
+        }
+      ],
+      "method": "Capacité : <b>can</b> au présent, <b>could</b> au passé, <b>will be able to</b> au futur. Ici : <b>{{ right }}</b>."
+    }
+  ]
+}

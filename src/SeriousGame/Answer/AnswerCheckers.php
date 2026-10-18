@@ -26,6 +26,9 @@ final class AnswerCheckers
             AnswerType::Latin => new LatinChecker(),
             AnswerType::Forms => new FormsChecker(),
             AnswerType::Choice => new ChoiceChecker(),
+            AnswerType::Sequence => new SequenceChecker(),
+            AnswerType::Order => new OrderChecker(),
+            AnswerType::Spot => new SpotChecker(),
         };
     }
 }

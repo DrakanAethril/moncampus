@@ -1,0 +1,163 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "rendement",
+  "label": "Transfert d’énergie",
+  "misconceptions": [
+    {
+      "id": "rendement-pourcent",
+      "label": "Pourcentage appliqué sans diviser par 100",
+      "explanation": "Prendre r % d’une quantité, c’est la multiplier par r ÷ 100. Un rendement de 10 % transmet un dixième de l’énergie, jamais davantage que ce qui est disponible."
+    },
+    {
+      "id": "rendement-perte",
+      "label": "Perte d’énergie prise pour l’énergie transmise",
+      "explanation": "Le rendement donne la part transmise au maillon suivant ; le reste est perdu (respiration, chaleur, déchets). Vérifiez que l’énergie transmise est la plus petite des deux."
+    },
+    {
+      "id": "rendement-inverse",
+      "label": "Rapport inversé",
+      "explanation": "Le rendement compare ce qui est reçu à ce qui était disponible : énergie transmise ÷ énergie disponible × 100. Il est toujours inférieur à 100 %."
+    },
+    {
+      "id": "rendement-une-etape",
+      "label": "Un seul transfert calculé",
+      "explanation": "Entre trois maillons, il y a deux transferts : on applique le premier rendement, puis le second au résultat. Chaque flèche fait perdre de l’énergie."
+    },
+    {
+      "id": "rendement-additionne",
+      "label": "Rendements additionnés au lieu d’être multipliés",
+      "explanation": "Deux transferts successifs se multiplient : 10 % de 20 %, c’est 2 %. Additionner les rendements surestime l’énergie qui parvient au dernier maillon."
+    }
+  ],
+  "params": {
+    "CH": "[['le phytoplancton', 'les copépodes', 'les poissons-lanternes'], ['les algues du récif', 'les oursins', 'les balistes'], ['les bactéries des sources', 'les crevettes Rimicaris', 'les crabes Bythograea'], ['le krill', 'les poissons-lanternes', 'les calmars'], ['les algues du récif', 'les poissons-perroquets', 'les mérous']]"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Rendement simple",
+      "params": {
+        "c": "pick(CH)",
+        "E": "int(2, 9) * 1000",
+        "r": "pick([10, 20])"
+      },
+      "let": {
+        "ans": "E * r / 100"
+      },
+      "prompt": "Sur un mètre carré, l’énergie contenue dans {{ c[0] }} est de <b>{{ E }} kJ</b>. Le rendement de transfert vers {{ c[1] }} est de <b>{{ r }} %</b>. Quelle énergie passe {{ frA(c[1]) }} ?",
+      "answer": {
+        "type": "number",
+        "value": "ans",
+        "unit": "kJ"
+      },
+      "wrongs": [
+        {
+          "misconception": "rendement-pourcent",
+          "value": "E * r"
+        },
+        {
+          "misconception": "rendement-perte",
+          "value": "E - ans"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ E }} × {{ r }} ÷ 100 = <b>{{ ans }} kJ</b>. Le reste est perdu (respiration, chaleur, déchets)."
+    },
+    {
+      "difficulty": 2,
+      "label": "Rendement quelconque",
+      "params": {
+        "c": "pick(CH)",
+        "E": "int(2, 9) * 1000",
+        "r": "pick([5, 8, 12, 15])"
+      },
+      "let": {
+        "ans": "E * r / 100"
+      },
+      "prompt": "Sur un mètre carré, l’énergie contenue dans {{ c[0] }} est de <b>{{ E }} kJ</b>. Le rendement de transfert vers {{ c[1] }} est de <b>{{ r }} %</b>. Quelle énergie passe {{ frA(c[1]) }} ?",
+      "answer": {
+        "type": "number",
+        "value": "ans",
+        "unit": "kJ"
+      },
+      "wrongs": [
+        {
+          "misconception": "rendement-pourcent",
+          "value": "E * r"
+        },
+        {
+          "misconception": "rendement-perte",
+          "value": "E - ans"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ E }} × {{ r }} ÷ 100 = <b>{{ ans }} kJ</b>. Le reste est perdu (respiration, chaleur, déchets)."
+    },
+    {
+      "difficulty": 2,
+      "label": "Calculer le rendement",
+      "weight": 0.6,
+      "params": {
+        "c": "pick(CH)",
+        "E": "int(2, 9) * 1000",
+        "r": "pick([5, 8, 10, 12, 15, 20])"
+      },
+      "let": {
+        "T": "E * r / 100"
+      },
+      "prompt": "Sur un mètre carré, l’énergie contenue dans {{ c[0] }} est de <b>{{ E }} kJ</b> ; {{ c[1] }} en reçoivent <b>{{ T }} kJ</b>. Quel est le rendement de ce transfert, en % ?",
+      "answer": {
+        "type": "number",
+        "value": "r",
+        "unit": "%"
+      },
+      "wrongs": [
+        {
+          "misconception": "rendement-inverse",
+          "value": "E / T"
+        },
+        {
+          "misconception": "rendement-perte",
+          "value": "100 - r"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ T }} ÷ {{ E }} × 100 = <b>{{ r }} %</b> : énergie reçue ÷ énergie disponible."
+    },
+    {
+      "difficulty": 3,
+      "label": "Deux transferts",
+      "params": {
+        "c": "pick(CH)",
+        "E": "int(2, 9) * 1000",
+        "r1": "pick([10, 15, 20])",
+        "r2": "pick([10, 20])"
+      },
+      "let": {
+        "ans": "round(E * r1 * r2 / 10000, 3)"
+      },
+      "prompt": "Sur un mètre carré, l’énergie contenue dans {{ c[0] }} est de <b>{{ E }} kJ</b>. Rendement vers {{ c[1] }} : <b>{{ r1 }} %</b> ; puis vers {{ c[2] }} : <b>{{ r2 }} %</b>. Quelle énergie parvient {{ frA(c[2]) }} ?",
+      "answer": {
+        "type": "number",
+        "value": "ans",
+        "unit": "kJ"
+      },
+      "wrongs": [
+        {
+          "misconception": "rendement-une-etape",
+          "value": "E * r1 / 100"
+        },
+        {
+          "misconception": "rendement-additionne",
+          "value": "E * (r1 + r2) / 100"
+        },
+        {
+          "misconception": "rendement-pourcent",
+          "value": "E * r1 * r2 / 100"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ E }} × {{ r1 }} ÷ 100 = {{ E * r1 / 100 }} kJ pour {{ c[1] }}, puis × {{ r2 }} ÷ 100 = <b>{{ ans }} kJ</b> pour {{ c[2] }}."
+    }
+  ]
+}

@@ -14054,6 +14054,18 @@ body.cm-sg-immersive { overflow: hidden; }
 .cm-sg-replay__choices li { padding: 4px 10px; border: 1px solid var(--cm-border); border-radius: 4px; }
 .cm-sg-replay__choices li.is-right { border-color: var(--cm-green-tx); background: var(--cm-green-bg); font-weight: 600; }
 .cm-sg-replay__choices li.is-chosen:not(.is-right) { border-color: var(--cm-red-tx); background: var(--cm-red-bg); }
+.cm-sg-replay__spot { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; }
+.cm-sg-replay__spot span { padding: 2px 8px; border: 1px solid var(--cm-border); border-radius: 4px; }
+.cm-sg-replay__spot span.is-right { border-color: var(--cm-green-tx); background: var(--cm-green-bg); font-weight: 600; }
+.cm-sg-replay__spot span.is-chosen:not(.is-right) { border-color: var(--cm-red-tx); background: var(--cm-red-bg); }
+.cm-sg-replay__order { margin: 12px 0 0; color: var(--cm-muted); }
+/* Station Abysse's and The Irregulars' statements, read back on the teachers' screens. */
+.cm-sg-sample__prompt .q-seq { display: block; margin: .4em 0; font-family: 'IBM Plex Mono', monospace; letter-spacing: .14em; overflow-wrap: anywhere; }
+.cm-sg-sample__prompt .q-line { display: block; margin: .45em 0; }
+.cm-sg-sample__prompt .q-blank { display: inline-block; min-width: 2.6em; border-bottom: 2px solid currentColor; }
+.cm-sg-sample__prompt .q-cards { list-style: none; padding: 0; margin: .4em 0; display: grid; gap: 3px; font-size: 15px; }
+.cm-sg-sample__prompt .q-cards li { padding: 3px 8px; border: 1px dashed var(--cm-border); border-radius: 3px; }
+.cm-sg-sample__prompt .q-mut { color: var(--cm-red-tx); text-decoration: underline; }
 /* Tabler's .card is a column: these rows are rows, and a subhead inside a card keeps its gutter. */
 .cm-sg-player__head, .cm-sg-filters { flex-direction: row; }
 .cm-sg-results .card > .cm-subhead, .cm-sg-results__columns .card > .cm-subhead, .cm-sg-showcase > .cm-subhead, .cm-sg-tpl .card > .cm-subhead { padding: 14px 18px 0; }

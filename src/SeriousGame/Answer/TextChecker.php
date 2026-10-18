@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\SeriousGame\Answer;
 
 /**
- * A word or a short text, compared without case and without the spaces around it. No game uses it
- * yet; it is declared so that one asking a word does not have to dress it as a number.
+ * A word or a short text (The Irregulars: « stopped », « has just left »), compared without case,
+ * without the spaces around it, the final full stop or the curly apostrophe a keyboard types
+ * instead of the straight one. A value may list several accepted texts, the first being the one
+ * shown - British and American spellings (« travelled », « traveled »), « didn’t » and
+ * « did not ».
  */
 final class TextChecker implements AnswerChecker
 {
@@ -15,13 +18,24 @@ final class TextChecker implements AnswerChecker
         return AnswerType::Text === $type;
     }
 
-    public function value(mixed $raw, AnswerSpec $spec): string
+    /** @return list<string> */
+    public function value(mixed $raw, AnswerSpec $spec): array
     {
-        if (!\is_string($raw) && !\is_int($raw) && !\is_float($raw)) {
-            throw new \InvalidArgumentException('un texte était attendu');
+        $values = \is_array($raw) ? array_values($raw) : [$raw];
+        $out = [];
+        foreach ($values as $value) {
+            if (!\is_string($value) && !\is_int($value) && !\is_float($value)) {
+                throw new \InvalidArgumentException('un texte (ou une liste de textes acceptés) était attendu');
+            }
+            if ('' !== trim((string) $value)) {
+                $out[] = (string) $value;
+            }
+        }
+        if ([] === $out) {
+            throw new \InvalidArgumentException('un texte non vide était attendu');
         }
 
-        return (string) $raw;
+        return $out;
     }
 
     public function read(string $input, AnswerSpec $spec): ?string
@@ -33,11 +47,22 @@ final class TextChecker implements AnswerChecker
 
     public function same(mixed $a, mixed $b, AnswerSpec $spec, ?float $tolerance = null): bool
     {
-        return \is_string($a) && \is_string($b) && self::fold($a) === self::fold($b);
+        foreach (\is_array($a) ? $a : [$a] as $x) {
+            foreach (\is_array($b) ? $b : [$b] as $y) {
+                if (\is_string($x) && \is_string($y) && self::fold($x) === self::fold($y)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
-    private static function fold(string $text): string
+    public static function fold(string $text): string
     {
-        return mb_strtolower((string) preg_replace('/\s+/u', ' ', trim($text)));
+        $text = str_replace(['’', '‘', '`'], "'", $text);
+        $text = (string) preg_replace('/\s+/u', ' ', trim($text));
+
+        return mb_strtolower(rtrim($text, ' .!?'));
     }
 }

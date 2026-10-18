@@ -1,0 +1,135 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "cadre",
+  "label": "Longueur d’une protéine",
+  "misconceptions": [
+    {
+      "id": "cadre-methionine",
+      "label": "Méthionine initiale oubliée",
+      "explanation": "Le codon initiateur AUG est traduit : il code la méthionine, premier acide aminé de la protéine. On le compte."
+    },
+    {
+      "id": "cadre-stop",
+      "label": "Codon stop compté comme un acide aminé",
+      "explanation": "Le codon stop (UAA, UAG ou UGA) arrête la traduction : il ne code aucun acide aminé. On compte les codons de AUG jusqu’au stop, stop exclu."
+    },
+    {
+      "id": "cadre-tout-le-brin",
+      "label": "Tout le brin compté, hors cadre de lecture",
+      "explanation": "Seule la partie entre le codon initiateur AUG et le codon stop est traduite. Les nucléotides avant AUG et après le stop ne comptent pas."
+    }
+  ],
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Court",
+      "params": {
+        "lead": "join(map(range(1, int(2, 4)), 'pick([\"U\", \"C\", \"G\"])'), '')",
+        "n": "int(2, 4)",
+        "stop": "pick(['UAA', 'UAG', 'UGA'])",
+        "mid": "senseCodons(n)",
+        "tail": "'GC' ~ pick(['U', 'C', 'A', 'G'])"
+      },
+      "let": {
+        "m": "lead ~ 'AUG' ~ mid ~ stop ~ tail",
+        "tpl": "join(map(chars(m), '{\"U\": \"A\", \"A\": \"T\", \"G\": \"C\", \"C\": \"G\"}[item]'), '')"
+      },
+      "answer": {
+        "type": "number",
+        "value": "n + 1",
+        "unit": "acides aminés"
+      },
+      "wrongs": [
+        {
+          "misconception": "cadre-methionine",
+          "value": "n"
+        },
+        {
+          "misconception": "cadre-stop",
+          "value": "n + 2"
+        },
+        {
+          "misconception": "cadre-tout-le-brin",
+          "value": "floor(len(m) / 3)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "On cherche le codon initiateur AUG, puis on lit trois par trois jusqu’au codon stop {{ stop }} (non traduit) : Met + {{ n }} acides aminés = <b>{{ n + 1 }}</b>.",
+      "prompt": "Combien d’acides aminés compte la protéine codée par cet ARN messager ?<br><span class=\"q-seq\">{{ m }}</span>"
+    },
+    {
+      "difficulty": 2,
+      "label": "Long",
+      "params": {
+        "lead": "join(map(range(1, int(4, 7)), 'pick([\"U\", \"C\", \"G\"])'), '')",
+        "n": "int(5, 8)",
+        "stop": "pick(['UAA', 'UAG', 'UGA'])",
+        "mid": "senseCodons(n)",
+        "tail": "senseCodons(2)"
+      },
+      "let": {
+        "m": "lead ~ 'AUG' ~ mid ~ stop ~ tail",
+        "tpl": "join(map(chars(m), '{\"U\": \"A\", \"A\": \"T\", \"G\": \"C\", \"C\": \"G\"}[item]'), '')"
+      },
+      "answer": {
+        "type": "number",
+        "value": "n + 1",
+        "unit": "acides aminés"
+      },
+      "wrongs": [
+        {
+          "misconception": "cadre-methionine",
+          "value": "n"
+        },
+        {
+          "misconception": "cadre-stop",
+          "value": "n + 2"
+        },
+        {
+          "misconception": "cadre-tout-le-brin",
+          "value": "floor(len(m) / 3)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "On cherche le codon initiateur AUG, puis on lit trois par trois jusqu’au codon stop {{ stop }} (non traduit) : Met + {{ n }} acides aminés = <b>{{ n + 1 }}</b>.",
+      "prompt": "Combien d’acides aminés compte la protéine codée par cet ARN messager ?<br><span class=\"q-seq\">{{ m }}</span>"
+    },
+    {
+      "difficulty": 3,
+      "label": "Depuis l’ADN",
+      "params": {
+        "lead": "join(map(range(1, int(2, 5)), 'pick([\"U\", \"C\", \"G\"])'), '')",
+        "n": "int(3, 6)",
+        "stop": "pick(['UAA', 'UAG', 'UGA'])",
+        "mid": "senseCodons(n)",
+        "tail": "'GC' ~ pick(['U', 'C', 'A', 'G'])"
+      },
+      "let": {
+        "m": "lead ~ 'AUG' ~ mid ~ stop ~ tail",
+        "tpl": "join(map(chars(m), '{\"U\": \"A\", \"A\": \"T\", \"G\": \"C\", \"C\": \"G\"}[item]'), '')"
+      },
+      "answer": {
+        "type": "number",
+        "value": "n + 1",
+        "unit": "acides aminés"
+      },
+      "wrongs": [
+        {
+          "misconception": "cadre-methionine",
+          "value": "n"
+        },
+        {
+          "misconception": "cadre-stop",
+          "value": "n + 2"
+        },
+        {
+          "misconception": "cadre-tout-le-brin",
+          "value": "floor(len(m) / 3)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "On transcrit d’abord : ARNm = <span class=\"q-seq\">{{ m }}</span>. On cherche le codon initiateur AUG, puis on lit trois par trois jusqu’au codon stop {{ stop }} (non traduit) : Met + {{ n }} acides aminés = <b>{{ n + 1 }}</b>.",
+      "prompt": "Voici le brin <b>transcrit</b> d’un gène :<br><span class=\"q-seq\">{{ tpl }}</span>Combien d’acides aminés compte la protéine qu’il code ?"
+    }
+  ]
+}

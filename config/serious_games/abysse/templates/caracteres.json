@@ -1,0 +1,174 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "caracteres",
+  "label": "Caractères partagés",
+  "misconceptions": [
+    {
+      "id": "caracteres-commun",
+      "label": "Caractère partagé par toutes les espèces comparées",
+      "explanation": "Un caractère que possèdent toutes les espèces comparées ne les distingue pas : il ne dit rien d’une parenté particulière. On cherche celui que les deux espèces nommées sont seules à posséder."
+    },
+    {
+      "id": "caracteres-propre",
+      "label": "Caractère que possède une seule des deux espèces",
+      "explanation": "Pour rapprocher deux espèces, un caractère doit être présent chez les deux. Reprenez la liste des caractères de chacune avant de conclure."
+    },
+    {
+      "id": "caracteres-absent",
+      "label": "Caractère qu’aucune des deux espèces ne possède",
+      "explanation": "Un caractère absent chez les deux espèces ne témoigne d’aucun héritage commun. Partez des caractères présents chez chacune."
+    },
+    {
+      "id": "caracteres-ecologique",
+      "label": "Mode de vie pris pour un caractère anatomique",
+      "explanation": "Un mode de vie (nager vite, vivre en profondeur) n’est pas un caractère anatomique hérité : des espèces éloignées peuvent le partager. On classe sur des caractères anatomiques comme les vertèbres ou les mamelles."
+    }
+  ],
+  "params": {
+    "CH": "{'vert': 'Vertèbres', 'mach': 'Mâchoires', 'ray': 'Nageoires rayonnées', 'charnu': 'Membres charnus', 'doigts': 'Membres à doigts', 'amnios': 'Amnios', 'plumes': 'Plumes', 'poils': 'Poils', 'mamelles': 'Mamelles'}",
+    "SP": "[['Pieuvre', []], ['Lamproie', ['vert']], ['Requin', ['vert', 'mach']], ['Thon', ['vert', 'mach', 'ray']], ['Hippocampe', ['vert', 'mach', 'ray']], ['Cœlacanthe', ['vert', 'mach', 'charnu']], ['Grenouille', ['vert', 'mach', 'charnu', 'doigts']], ['Tortue marine', ['vert', 'mach', 'charnu', 'doigts', 'amnios']], ['Goéland', ['vert', 'mach', 'charnu', 'doigts', 'amnios', 'plumes']], ['Otarie', ['vert', 'mach', 'charnu', 'doigts', 'amnios', 'poils', 'mamelles']]]",
+    "FAKE": "['Vit dans les grandes profondeurs', 'Se nourrit de plancton', 'Nage rapidement', 'Mesure plus d’un mètre', 'Vit en banc', 'Vit près des sources chaudes', 'Chasse la nuit']"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Deux espèces",
+      "params": {
+        "t": "sample(filter(SP, 'count(item[1]) > 1'), 2)",
+        "shared": "intersect(t[0][1], t[1][1])",
+        "own": "without(concat(t[0][1], t[1][1]), shared)",
+        "absent": "without(keys(CH), concat(t[0][1], t[1][1]))",
+        "right": "pick(count(shared) > 0 ? shared : ['vert'])",
+        "ownP": "pick(count(own) > 0 ? own : ['x'])",
+        "absentP": "pick(count(absent) > 0 ? absent : ['x'])",
+        "fake": "pick(FAKE)"
+      },
+      "constraints": [
+        "count(shared) > 0",
+        "count(own) > 0 or count(absent) > 1"
+      ],
+      "prompt": "Lequel de ces caractères anatomiques se retrouve à la fois chez <b>{{ t[0][0] }}</b> et chez <b>{{ t[1][0] }}</b> ?",
+      "answer": {
+        "type": "choice",
+        "value": "CH[right]"
+      },
+      "wrongs": [
+        {
+          "misconception": "caracteres-propre",
+          "value": "CH[ownP]",
+          "when": "count(own) > 0"
+        },
+        {
+          "misconception": "caracteres-absent",
+          "value": "CH[absentP]",
+          "when": "count(absent) > 0"
+        },
+        {
+          "misconception": "caracteres-ecologique",
+          "value": "fake"
+        },
+        {
+          "misconception": "caracteres-absent",
+          "value": "CH[last(absent)]",
+          "when": "count(absent) > 1"
+        }
+      ],
+      "method": "{{ t[0][0] }} : {{ lower(join(map(t[0][1], 'CH[item]'), ', ')) }}. {{ t[1][0] }} : {{ lower(join(map(t[1][1], 'CH[item]'), ', ')) }}. Un caractère commun aux deux est présent dans les deux listes."
+    },
+    {
+      "difficulty": 2,
+      "label": "Trois espèces",
+      "params": {
+        "t": "sample(filter(SP, 'count(item[1]) > 0'), 3)",
+        "cands": "without(intersect(t[0][1], t[1][1]), t[2][1])",
+        "all": "intersect(intersect(t[0][1], t[1][1]), t[2][1])",
+        "own": "without(concat(t[0][1], t[1][1]), intersect(t[0][1], t[1][1]))",
+        "absent": "without(keys(CH), concat(t[0][1], t[1][1]))",
+        "right": "pick(count(cands) > 0 ? cands : ['vert'])",
+        "allP": "pick(count(all) > 0 ? all : ['x'])",
+        "ownP": "pick(count(own) > 0 ? own : ['x'])",
+        "absentP": "pick(count(absent) > 0 ? absent : ['x'])",
+        "fake": "pick(FAKE)"
+      },
+      "constraints": [
+        "count(cands) > 0"
+      ],
+      "prompt": "Quel caractère anatomique se retrouve chez <b>{{ t[0][0] }}</b> et chez <b>{{ t[1][0] }}</b>, mais pas chez <b>{{ t[2][0] }}</b> ?",
+      "answer": {
+        "type": "choice",
+        "value": "CH[right]"
+      },
+      "wrongs": [
+        {
+          "misconception": "caracteres-commun",
+          "value": "CH[allP]",
+          "when": "count(all) > 0"
+        },
+        {
+          "misconception": "caracteres-propre",
+          "value": "CH[ownP]",
+          "when": "count(own) > 0"
+        },
+        {
+          "misconception": "caracteres-ecologique",
+          "value": "fake"
+        },
+        {
+          "misconception": "caracteres-absent",
+          "value": "CH[absentP]",
+          "when": "count(absent) > 0"
+        }
+      ],
+      "method": "{{ t[0][0] }} : {{ lower(join(map(t[0][1], 'CH[item]'), ', ')) }}. {{ t[1][0] }} : {{ lower(join(map(t[1][1], 'CH[item]'), ', ')) }}. {{ t[2][0] }} : {{ count(t[2][1]) > 0 ? lower(join(map(t[2][1], 'CH[item]'), ', ')) : 'aucun de ces caractères' }}."
+    },
+    {
+      "difficulty": 3,
+      "label": "Tableau de caractères",
+      "params": {
+        "t": "sample(SP, 4)",
+        "others": "concat(t[2][1], t[3][1])",
+        "cands": "without(intersect(t[0][1], t[1][1]), others)",
+        "wider": "intersect(intersect(t[0][1], t[1][1]), others)",
+        "own": "without(t[0][1], t[1][1])",
+        "right": "pick(count(cands) > 0 ? cands : ['vert'])",
+        "widerP": "pick(count(wider) > 0 ? wider : ['x'])",
+        "ownP": "pick(count(own) > 0 ? own : ['x'])",
+        "fake": "pick(FAKE)"
+      },
+      "constraints": [
+        "count(cands) > 0"
+      ],
+      "let": {
+        "cols": "filter(keys(CH), 'has(concat(t[0][1], t[1][1], others), item)')",
+        "head": "concat([''], map(cols, 'CH[item]'))",
+        "r0": "concat([t[0][0]], map(cols, 'has(t[0][1], item) ? \"+\" : \"−\"'))",
+        "r1": "concat([t[1][0]], map(cols, 'has(t[1][1], item) ? \"+\" : \"−\"'))",
+        "r2": "concat([t[2][0]], map(cols, 'has(t[2][1], item) ? \"+\" : \"−\"'))",
+        "r3": "concat([t[3][0]], map(cols, 'has(t[3][1], item) ? \"+\" : \"−\"'))"
+      },
+      "prompt": "Le carnet relève la présence (+) ou l’absence (−) de caractères chez quatre espèces :{{ table([head, r0, r1, r2, r3], true) }}Parmi ces quatre espèces, quel caractère ne se trouve que chez <b>{{ t[0][0] }}</b> et <b>{{ t[1][0] }}</b> ?",
+      "answer": {
+        "type": "choice",
+        "value": "CH[right]"
+      },
+      "wrongs": [
+        {
+          "misconception": "caracteres-commun",
+          "value": "CH[widerP]",
+          "when": "count(wider) > 0"
+        },
+        {
+          "misconception": "caracteres-propre",
+          "value": "CH[ownP]",
+          "when": "count(own) > 0"
+        },
+        {
+          "misconception": "caracteres-ecologique",
+          "value": "fake"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "On cherche la colonne où {{ t[0][0] }} et {{ t[1][0] }} portent un + et les deux autres espèces un − : {{ lower(CH[right]) }}. Un caractère que d’autres espèces possèdent aussi ne les rapproche pas en particulier."
+    }
+  ]
+}

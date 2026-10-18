@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\SeriousGame\Engine;
 
 use App\SeriousGame\Answer\AnswerSpec;
+use App\SeriousGame\Answer\AnswerType;
 
 /**
  * One question, as a template and a seed give it back (design/validated/serious-games.md §5.5).
@@ -47,7 +48,11 @@ final readonly class GeneratedQuestion
     /** What makes two questions of one series the same question. */
     public function identity(): string
     {
-        return $this->prompt.($this->figure ?? '');
+        // items to put in order may share a statement: what tells the questions apart is the items
+        $items = AnswerType::Order === $this->spec->type ? array_column($this->choices, 'value') : [];
+        sort($items);
+
+        return $this->prompt.($this->figure ?? '').implode('|', $items);
     }
 
     /** @return list<string> the misconceptions this very question can recognise */

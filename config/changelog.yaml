@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.18.2'
+      date: '2026-10-18'
+      summary: "Deux nouveaux jeux d'entraînement rejoignent l'essai auprès de l'administration : les SVT de seconde et de première, et l'anglais du collège."
+      entries:
+          - type: nouveaute
+            title: "Deux nouveaux jeux d'entraînement, en essai auprès de l'administration"
+            detail: "Une station sous-marine pour les SVT (ADN, métabolisme, écosystèmes, évolution) et une enquête dans le Londres de 1895 pour l'anglais (temps, questions, comparatifs, modaux)."
+          - type: interne
+            title: "Les questions des jeux savent faire ranger des éléments, désigner le mot fautif d'une phrase et monter en difficulté au fil d'une série"
     - version: '2026.10.18'
       date: '2026-10-18'
       summary: "Un module de jeux d'entraînement entre en essai auprès de l'administration : on s'y exerce librement, en mathématiques et en latin."

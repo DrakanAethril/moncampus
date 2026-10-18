@@ -1,0 +1,82 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "comp-long",
+  "label": "Comparatif des adjectifs longs",
+  "misconceptions": [
+    {
+      "id": "comp-long-er",
+      "label": "-er sur un adjectif long",
+      "explanation": "Un adjectif long (deux syllabes ou plus, sauf ceux en -y) ne prend pas -er : on dit more expensive, more valuable. « Expensiver » n’existe pas."
+    },
+    {
+      "id": "comp-long-superlatif",
+      "label": "Superlatif à la place du comparatif",
+      "explanation": "The most + adjectif désigne le premier d’un groupe ; il ne se construit pas avec than. Pour comparer deux objets : more / less + adjectif + than."
+    },
+    {
+      "id": "comp-long-lecture",
+      "label": "Comparaison contraire aux données",
+      "explanation": "Compare les deux prix des étiquettes avant d’écrire : more si le premier objet vaut plus, less s’il vaut moins."
+    }
+  ],
+  "params": {
+    "A": "pick([[3, 'expensive', '£', ''], [3, 'valuable', 'worth £', '']])",
+    "p": "sample([['the Egyptian vase', 3200, 12, 900, 60, 2], ['the Roman coin', 1900, 0.01, 300, 2, 4], ['the Viking sword', 1100, 3, 1500, 90, 3], ['the Greek statue', 2400, 450, 5000, 180, 2], ['the Chinese scroll', 800, 0.5, 2200, 120, 5], ['the Aztec mask', 600, 2, 3000, 30, 4], ['the medieval helmet', 700, 4, 1200, 35, 1]], 2)"
+  },
+  "let": {
+    "more": "p[0][3] > p[1][3]",
+    "right": "(more ? 'more ' : 'less ') ~ A[1] ~ ' than'",
+    "cards": "'<ul class=\"q-cards\">' ~ '<li><b>' ~ ucfirst(replace(p[0][0], 'the ', '')) ~ '</b> — ' ~ A[2] ~ str(p[0][3]) ~ '</li>' ~ '<li><b>' ~ ucfirst(replace(p[1][0], 'the ', '')) ~ '</b> — ' ~ A[2] ~ str(p[1][3]) ~ '</li>' ~ '</ul>'",
+    "line": "ucfirst(p[0][0]) ~ ' is <span class=\"q-blank\">…</span> ' ~ p[1][0] ~ '.'"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Choisir",
+      "prompt": "Museum labels:{{ cards }}Complete:<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "choice",
+        "value": "right"
+      },
+      "wrongs": [
+        {
+          "misconception": "comp-long-lecture",
+          "value": "(more ? 'less ' : 'more ') ~ A[1] ~ ' than'"
+        },
+        {
+          "misconception": "comp-long-er",
+          "value": "A[1] ~ 'r than'"
+        },
+        {
+          "misconception": "comp-long-superlatif",
+          "value": "'the most ' ~ A[1] ~ ' than'"
+        }
+      ],
+      "method": "Adjectif long : <b>more / less</b> + adjectif + than. Ici {{ A[2] ~ str(p[0][3]) }} contre {{ A[2] ~ str(p[1][3]) }} : <b>{{ right }}</b>."
+    },
+    {
+      "weight": 1,
+      "label": "Taper",
+      "prompt": "Museum labels:{{ cards }}Type the missing words, with « {{ A[1] }} »:<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "text",
+        "value": "more ? [right] : [right, (A[1] == 'expensive' ? 'cheaper than' : right)]"
+      },
+      "wrongs": [
+        {
+          "misconception": "comp-long-lecture",
+          "value": "(more ? 'less ' : 'more ') ~ A[1] ~ ' than'"
+        },
+        {
+          "misconception": "comp-long-er",
+          "value": "A[1] ~ 'r than'"
+        },
+        {
+          "misconception": "comp-long-superlatif",
+          "value": "'the most ' ~ A[1] ~ ' than'"
+        }
+      ],
+      "method": "Adjectif long : <b>more / less</b> + adjectif + than. Ici {{ A[2] ~ str(p[0][3]) }} contre {{ A[2] ~ str(p[1][3]) }} : <b>{{ right }}</b>."
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "already-yet",
+  "label": "already, yet, just",
+  "misconceptions": [
+    {
+      "id": "already-yet-sens",
+      "label": "already, yet et just confondus",
+      "explanation": "Already veut dire « déjà », just « venir de » (à l’instant), yet « déjà » dans une question et « encore » dans une négation (not yet, pas encore). Le sens de la phrase décide."
+    },
+    {
+      "id": "already-yet-place",
+      "label": "yet placé au milieu de la phrase",
+      "explanation": "Already et just se placent entre have et le participe passé (has just left). Yet se place en fin de question ou de phrase négative : Has he left yet? He hasn’t left yet."
+    }
+  ],
+  "params": {
+    "v": "pick([['catch', 'caught', 'caught', 'the thief'], ['eat', 'ate', 'eaten', 'a meat pie'], ['find', 'found', 'found', 'the key'], ['leave', 'left', 'left', 'the station'], ['pay', 'paid', 'paid', 'the cabman'], ['see', 'saw', 'seen', 'a tall man'], ['sell', 'sold', 'sold', 'flowers'], ['send', 'sent', 'sent', 'a telegram'], ['take', 'took', 'taken', 'the last train'], ['write', 'wrote', 'written', 'a letter']])",
+    "s": "pick([['the cabman', 3, 'he'], ['Mrs Hudson', 3, 'she'], ['the baker', 3, 'he'], ['a sailor', 3, 'he'], ['the flower girl', 3, 'she'], ['the night watchman', 3, 'he']])",
+    "k": "int(0, 3)"
+  },
+  "constraints": [
+    "v[3] != s[0]"
+  ],
+  "let": {
+    "right": "k == 0 ? 'just' : (k == 1 ? 'already' : 'yet')",
+    "line": "k == 0 ? ucfirst(s[0]) ~ ' has <span class=\"q-blank\">…</span> ' ~ v[2] ~ ' ' ~ v[3] ~ '.' : (k == 1 ? ucfirst(s[0]) ~ ' has <span class=\"q-blank\">…</span> ' ~ v[2] ~ ' ' ~ v[3] ~ '.' : (k == 2 ? 'Has ' ~ s[0] ~ ' ' ~ v[2] ~ ' ' ~ v[3] ~ ' <span class=\"q-blank\">…</span>?' : ucfirst(s[0]) ~ ' hasn’t ' ~ v[2] ~ ' ' ~ v[3] ~ ' <span class=\"q-blank\">…</span>.'))",
+    "gloss": "k == 0 ? 'vient de (à l’instant)' : (k == 1 ? 'a déjà' : (k == 2 ? 'a-t-il déjà… ? (question)' : 'n’a pas encore'))"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Choisir",
+      "prompt": "Complete. The French meaning is given in brackets.<span class=\"q-line\">“{{ line }}”</span>({{ gloss }})",
+      "answer": {
+        "type": "choice",
+        "value": "right",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "already-yet-sens",
+          "value": "'already'",
+          "when": "k != 1"
+        },
+        {
+          "misconception": "already-yet-sens",
+          "value": "'just'",
+          "when": "k != 0"
+        },
+        {
+          "misconception": "already-yet-place",
+          "value": "'yet'",
+          "when": "k < 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "<b>already</b> (déjà) et <b>just</b> (venir de) se placent entre have et le participe ; <b>yet</b> se place en fin de question ou de phrase négative. Ici : <b>{{ right }}</b>."
+    },
+    {
+      "weight": 1,
+      "label": "Taper",
+      "prompt": "Type already, yet or just. The French meaning is given in brackets.<span class=\"q-line\">“{{ line }}”</span>({{ gloss }})",
+      "answer": {
+        "type": "text",
+        "value": "right"
+      },
+      "wrongs": [
+        {
+          "misconception": "already-yet-sens",
+          "value": "'already'",
+          "when": "k != 1"
+        },
+        {
+          "misconception": "already-yet-sens",
+          "value": "'just'",
+          "when": "k != 0"
+        },
+        {
+          "misconception": "already-yet-place",
+          "value": "'yet'",
+          "when": "k < 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "<b>already</b> (déjà) et <b>just</b> (venir de) se placent entre have et le participe ; <b>yet</b> se place en fin de question ou de phrase négative. Ici : <b>{{ right }}</b>."
+    }
+  ]
+}

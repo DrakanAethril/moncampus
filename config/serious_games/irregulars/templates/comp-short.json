@@ -1,0 +1,103 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "comp-short",
+  "label": "Comparatif des adjectifs courts",
+  "misconceptions": [
+    {
+      "id": "comp-short-more",
+      "label": "More devant un adjectif court",
+      "explanation": "Un adjectif court (une syllabe, ou deux terminées par -y) forme son comparatif avec -er : older, lighter. More est réservé aux adjectifs longs : more expensive."
+    },
+    {
+      "id": "comp-short-orthographe",
+      "label": "Orthographe du comparatif",
+      "explanation": "Deux règles d’orthographe : le y final devient i (heavy → heavier) ; une consonne finale précédée d’une seule voyelle se double (big → bigger)."
+    },
+    {
+      "id": "comp-short-superlatif",
+      "label": "Superlatif à la place du comparatif",
+      "explanation": "Pour comparer deux objets, on emploie le comparatif, -er + than. Le superlatif (the oldest) désigne le premier d’un groupe d’au moins trois."
+    },
+    {
+      "id": "comp-short-lecture",
+      "label": "Comparaison contraire aux données",
+      "explanation": "Relis les étiquettes : la phrase doit dire ce que montrent les mesures. Si le premier objet a la plus petite valeur, c’est le comparatif de l’adjectif contraire qui convient."
+    }
+  ],
+  "params": {
+    "A": "pick([[1, ['old', 'older', 'oldest', 'more old', 'comp-short-more'], ['young', 'younger', 'youngest', 'more young', 'comp-short-more'], ' years old'], [2, ['heavy', 'heavier', 'heaviest', 'heavyer', 'comp-short-orthographe'], ['light', 'lighter', 'lightest', 'more light', 'comp-short-more'], ' kg'], [4, ['tall', 'taller', 'tallest', 'more tall', 'comp-short-more'], ['short', 'shorter', 'shortest', 'more short', 'comp-short-more'], ' cm tall'], [4, ['big', 'bigger', 'biggest', 'biger', 'comp-short-orthographe'], ['small', 'smaller', 'smallest', 'more small', 'comp-short-more'], ' cm high']])",
+    "p": "sample([['the Egyptian vase', 3200, 12, 900, 60, 2], ['the Roman coin', 1900, 0.01, 300, 2, 4], ['the Viking sword', 1100, 3, 1500, 90, 3], ['the Greek statue', 2400, 450, 5000, 180, 2], ['the Chinese scroll', 800, 0.5, 2200, 120, 5], ['the Aztec mask', 600, 2, 3000, 30, 4], ['the medieval helmet', 700, 4, 1200, 35, 1]], 2)"
+  },
+  "constraints": [
+    "p[0][A[0]] != p[1][A[0]]"
+  ],
+  "let": {
+    "more": "p[0][A[0]] > p[1][A[0]]",
+    "F": "more ? A[1] : A[2]",
+    "G": "more ? A[2] : A[1]",
+    "cards": "'<ul class=\"q-cards\">' ~ '<li><b>' ~ ucfirst(replace(p[0][0], 'the ', '')) ~ '</b> — ' ~ str(p[0][A[0]]) ~ A[3] ~ '</li>' ~ '<li><b>' ~ ucfirst(replace(p[1][0], 'the ', '')) ~ '</b> — ' ~ str(p[1][A[0]]) ~ A[3] ~ '</li>' ~ '</ul>'",
+    "line": "ucfirst(p[0][0]) ~ ' is <span class=\"q-blank\">…</span> than ' ~ p[1][0] ~ '.'"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Choisir",
+      "prompt": "Museum labels:{{ cards }}Complete:<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "choice",
+        "value": "F[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "comp-short-more",
+          "value": "F[3]",
+          "when": "F[4] == 'comp-short-more'"
+        },
+        {
+          "misconception": "comp-short-orthographe",
+          "value": "F[3]",
+          "when": "F[4] == 'comp-short-orthographe'"
+        },
+        {
+          "misconception": "comp-short-superlatif",
+          "value": "F[2]"
+        },
+        {
+          "misconception": "comp-short-lecture",
+          "value": "G[1]"
+        }
+      ],
+      "method": "Adjectif court : adjectif + <b>-er</b> + than : <b>{{ F[1] }}</b>. Les étiquettes donnent {{ str(p[0][A[0]]) ~ A[3] }} contre {{ str(p[1][A[0]]) ~ A[3] }}."
+    },
+    {
+      "weight": 1,
+      "label": "Taper",
+      "prompt": "Museum labels:{{ cards }}Type the comparative of « {{ A[1][0] }} » or of « {{ A[2][0] }} », as the labels say:<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "text",
+        "value": "F[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "comp-short-more",
+          "value": "F[3]",
+          "when": "F[4] == 'comp-short-more'"
+        },
+        {
+          "misconception": "comp-short-orthographe",
+          "value": "F[3]",
+          "when": "F[4] == 'comp-short-orthographe'"
+        },
+        {
+          "misconception": "comp-short-superlatif",
+          "value": "F[2]"
+        },
+        {
+          "misconception": "comp-short-lecture",
+          "value": "G[1]"
+        }
+      ],
+      "method": "Adjectif court : adjectif + <b>-er</b> + than : <b>{{ F[1] }}</b>. Les étiquettes donnent {{ str(p[0][A[0]]) ~ A[3] }} contre {{ str(p[1][A[0]]) ~ A[3] }}."
+    }
+  ]
+}

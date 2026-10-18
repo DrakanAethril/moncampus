@@ -1,0 +1,145 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "reseau",
+  "label": "Lire un réseau trophique",
+  "misconceptions": [
+    {
+      "id": "reseau-sens-fleche",
+      "label": "Flèche lue à l’envers",
+      "explanation": "Dans un réseau trophique, la flèche va de l’aliment vers celui qui le mange : elle se lit « est mangé par ». Ce qu’un être vivant mange se trouve donc au départ des flèches qui arrivent sur lui."
+    },
+    {
+      "id": "reseau-lien-absent",
+      "label": "Lien lu entre deux êtres vivants que rien ne relie",
+      "explanation": "Deux êtres vivants ne sont liés que si une flèche va de l’un à l’autre. Suivez les flèches qui partent ou arrivent sur l’être vivant étudié."
+    },
+    {
+      "id": "reseau-tous-liens",
+      "label": "Aliments et prédateurs comptés ensemble",
+      "explanation": "Les flèches qui arrivent sur un être vivant viennent de ses aliments ; celles qui en partent vont vers ceux qui le mangent. Pour compter ses aliments, on ne garde que les flèches qui arrivent."
+    },
+    {
+      "id": "reseau-producteur",
+      "label": "Producteur pris pour un prédateur",
+      "explanation": "Un producteur ne mange aucun être vivant : aucune flèche n’arrive sur lui. Il ne peut pas être à la fois proie et prédateur."
+    },
+    {
+      "id": "reseau-sommet",
+      "label": "Superprédateur pris pour une proie",
+      "explanation": "Le dernier maillon d’un réseau n’est mangé par personne : aucune flèche ne part de lui. Il est prédateur, mais pas proie."
+    }
+  ],
+  "params": {
+    "WEBS": "[{'zone': 'le récif', 'levels': {'algues': 0, 'oursin': 1, 'perroquet': 1, 'baliste': 2, 'merou': 2, 'requin': 3}, 'names': {'algues': 'Algues', 'oursin': 'Oursin', 'perroquet': 'Poisson-perroquet', 'baliste': 'Baliste', 'merou': 'Mérou', 'requin': 'Requin'}, 'def': {'algues': 'les algues', 'oursin': 'l’oursin', 'perroquet': 'le poisson-perroquet', 'baliste': 'le baliste', 'merou': 'le mérou', 'requin': 'le requin'}, 'edges': [['algues', 'oursin'], ['algues', 'perroquet'], ['oursin', 'baliste'], ['perroquet', 'merou'], ['baliste', 'requin'], ['merou', 'requin']]}, {'zone': 'la pleine eau', 'levels': {'phyto': 0, 'copepode': 1, 'krill': 1, 'lanterne': 2, 'calmar': 3, 'baudroie': 3, 'cachalot': 4}, 'names': {'phyto': 'Phytoplancton', 'copepode': 'Copépodes', 'krill': 'Krill', 'lanterne': 'Poisson-lanterne', 'calmar': 'Calmar', 'baudroie': 'Baudroie abyssale', 'cachalot': 'Cachalot'}, 'def': {'phyto': 'le phytoplancton', 'copepode': 'les copépodes', 'krill': 'le krill', 'lanterne': 'le poisson-lanterne', 'calmar': 'le calmar', 'baudroie': 'la baudroie abyssale', 'cachalot': 'le cachalot'}, 'edges': [['phyto', 'copepode'], ['phyto', 'krill'], ['copepode', 'lanterne'], ['krill', 'lanterne'], ['lanterne', 'calmar'], ['lanterne', 'baudroie'], ['calmar', 'cachalot']]}, {'zone': 'la source chaude', 'levels': {'bact': 0, 'crevette': 1, 'moule': 1, 'crabe': 2, 'zoarcide': 3, 'poulpe': 3}, 'names': {'bact': 'Bactéries chimiosynthétiques', 'crevette': 'Crevette Rimicaris', 'moule': 'Moule Bathymodiolus', 'crabe': 'Crabe Bythograea', 'zoarcide': 'Poisson zoarcidé', 'poulpe': 'Poulpe'}, 'def': {'bact': 'les bactéries chimiosynthétiques', 'crevette': 'la crevette Rimicaris', 'moule': 'la moule Bathymodiolus', 'crabe': 'le crabe Bythograea', 'zoarcide': 'le poisson zoarcidé', 'poulpe': 'le poulpe'}, 'edges': [['bact', 'crevette'], ['bact', 'moule'], ['crevette', 'crabe'], ['moule', 'crabe'], ['crabe', 'zoarcide'], ['crabe', 'poulpe']]}]",
+    "w": "pick(WEBS)",
+    "E": "w['edges']",
+    "K": "keys(w['levels'])"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Ce qu’il mange",
+      "params": {
+        "x": "pick(filter(K, 'count(preysOf(E, item)) > 0 and count(predatorsOf(E, item)) > 0'))",
+        "py": "pick(preysOf(E, x))",
+        "pd": "pick(predatorsOf(E, x))",
+        "oth": "filter(K, 'item != x and not has(preysOf(E, x), item) and not has(predatorsOf(E, x), item)')",
+        "ot": "pick(count(oth) > 0 ? oth : [x])"
+      },
+      "prompt": "Réseau observé : {{ w['zone'] }}. Lequel de ces êtres vivants est mangé par {{ w['def'][x] }} ?",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "choice",
+        "value": "w['names'][py]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "reseau-sens-fleche",
+          "value": "w['names'][pd]"
+        },
+        {
+          "misconception": "reseau-lien-absent",
+          "value": "w['names'][ot]",
+          "when": "ot != x"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "La flèche va de l’aliment vers le consommateur : {{ w['names'][py] }} → {{ w['names'][x] }}."
+    },
+    {
+      "difficulty": 2,
+      "label": "Combien d’aliments",
+      "params": {
+        "x": "pick(filter(K, 'count(preysOf(E, item)) > 0'))"
+      },
+      "let": {
+        "np": "count(preysOf(E, x))",
+        "nd": "count(predatorsOf(E, x))"
+      },
+      "prompt": "Réseau observé : {{ w['zone'] }}. Combien d’êtres vivants différents servent de nourriture {{ frA(w['def'][x]) }}, dans ce réseau ?",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "number",
+        "value": "np"
+      },
+      "wrongs": [
+        {
+          "misconception": "reseau-sens-fleche",
+          "value": "nd"
+        },
+        {
+          "misconception": "reseau-tous-liens",
+          "value": "np + nd",
+          "when": "nd > 0"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "On compte les flèches qui arrivent sur {{ w['def'][x] }} : {{ join(map(preysOf(E, x), 'w[\"names\"][item]'), ', ') }}, soit <b>{{ np }}</b>."
+    },
+    {
+      "difficulty": 3,
+      "label": "Proie et prédateur",
+      "params": {
+        "mid": "pick(filter(K, 'count(preysOf(E, item)) > 0 and count(predatorsOf(E, item)) > 0'))",
+        "prod": "pick(filter(K, 'count(preysOf(E, item)) == 0'))",
+        "top": "pick(filter(K, 'count(predatorsOf(E, item)) == 0'))",
+        "three": "shuffle([mid, prod, top])"
+      },
+      "prompt": "Réseau observé : {{ w['zone'] }}. Parmi {{ w['def'][three[0]] }}, {{ w['def'][three[1]] }} et {{ w['def'][three[2]] }}, lequel est à la fois une proie et un prédateur ?",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "choice",
+        "value": "w['names'][mid]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "reseau-producteur",
+          "value": "w['names'][prod]"
+        },
+        {
+          "misconception": "reseau-sommet",
+          "value": "w['names'][top]"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "Des flèches arrivent sur {{ w['def'][mid] }} et en partent aussi : c’est à la fois une proie et un prédateur. Aucune flèche n’arrive sur le producteur, aucune ne part du dernier maillon."
+    }
+  ]
+}

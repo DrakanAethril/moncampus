@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Irregulars</title>
+<!-- The Irregulars, the fourth serious game of Formatool (design/validated/serious-games-irregulars.md).
+     Played in a sandboxed frame with an opaque origin: everything it needs is here or in
+     ../shared/, and it speaks to the platform only through ../shared/sdk.js. -->
+<link rel="stylesheet" href="../shared/fonts.css">
+<link rel="stylesheet" href="game.css">
+</head>
+<body>
+<div class="app" id="app">
+    <p class="loading">Wiggins siffle la bande au coin de Baker Street…</p>
+</div>
+<div id="live" class="visually-hidden" aria-live="polite"></div>
+<div id="overlay"></div>
+<div id="layer"></div>
+<script src="../shared/sdk.js"></script>
+<script src="../shared/avatar.js"></script>
+<script src="../shared/rewards.js"></script>
+<script src="scene.js"></script>
+<script src="casebook.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

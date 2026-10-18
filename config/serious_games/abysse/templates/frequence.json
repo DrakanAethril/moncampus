@@ -1,0 +1,129 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "frequence",
+  "label": "Fréquence d’un allèle",
+  "misconceptions": [
+    {
+      "id": "frequence-rapport",
+      "label": "Rapport de deux effectifs au lieu d’une fréquence",
+      "explanation": "Une fréquence se calcule sur le total : nombre d’allèles étudiés ÷ nombre total d’allèles. Diviser un effectif par l’autre ne donne pas une fréquence."
+    },
+    {
+      "id": "frequence-genotype-allele",
+      "label": "Fréquence d’un génotype prise pour celle d’un allèle",
+      "explanation": "Chaque individu porte deux allèles du gène. On compte les allèles : deux par homozygote, un par hétérozygote, puis on divise par deux fois le nombre d’individus."
+    },
+    {
+      "id": "frequence-heterozygotes",
+      "label": "Hétérozygotes comptés entièrement",
+      "explanation": "Un hétérozygote ne porte qu’un exemplaire de l’allèle étudié sur ses deux allèles. Il compte pour moitié dans la fréquence de cet allèle."
+    }
+  ],
+  "params": {
+    "FT": "[['crevettes', 'R', 'b', 'carapace rouge', 'carapace blanche'], ['crabes', 'S', 'c', 'carapace sombre', 'carapace claire'], ['poissons-lanternes', 'L', 'l', 'luminescents', 'non luminescents'], ['moules', 'E', 'f', 'coquille épaisse', 'coquille fine']]"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Compter les allèles",
+      "params": {
+        "t": "pick(FT)",
+        "a": "int(20, 180)",
+        "b": "int(20, 180)"
+      },
+      "let": {
+        "ans": "round(a / (a + b) * 100, 1)"
+      },
+      "constraints": [
+        "a != b"
+      ],
+      "prompt": "Dans un échantillon de {{ t[0] }}, le séquenceur compte <b>{{ a }}</b> allèles {{ t[1] }} et <b>{{ b }}</b> allèles {{ t[2] }} du même gène. Quelle est la fréquence de l’allèle {{ t[1] }} ? (en %, au dixième)",
+      "answer": {
+        "type": "number",
+        "value": "ans",
+        "tolerance": 0.11,
+        "unit": "%"
+      },
+      "wrongs": [
+        {
+          "misconception": "frequence-rapport",
+          "value": "round(a / b * 100, 1)",
+          "when": "abs(a / b * 100 - ans) > 0.25"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ a }} ÷ ({{ a }} + {{ b }}) × 100 ≈ <b>{{ ans }} %</b> : on divise par le nombre total d’allèles."
+    },
+    {
+      "difficulty": 2,
+      "label": "Depuis les génotypes",
+      "params": {
+        "t": "pick(FT)",
+        "AA": "int(5, 60)",
+        "Aa": "int(5, 60)",
+        "aa": "int(5, 60)"
+      },
+      "let": {
+        "N": "AA + Aa + aa",
+        "ans": "round((2 * AA + Aa) / (2 * N) * 100, 1)"
+      },
+      "prompt": "Une population de {{ t[0] }} compte {{ AA }} individus ({{ t[1] }}//{{ t[1] }}), {{ Aa }} individus ({{ t[1] }}//{{ t[2] }}) et {{ aa }} individus ({{ t[2] }}//{{ t[2] }}). Quelle est la fréquence de l’allèle {{ t[1] }} ? (en %, au dixième)",
+      "answer": {
+        "type": "number",
+        "value": "ans",
+        "tolerance": 0.11,
+        "unit": "%"
+      },
+      "wrongs": [
+        {
+          "misconception": "frequence-genotype-allele",
+          "value": "round(AA / N * 100, 1)",
+          "when": "abs(AA / N * 100 - ans) > 0.25"
+        },
+        {
+          "misconception": "frequence-heterozygotes",
+          "value": "round((AA + Aa) / N * 100, 1)",
+          "when": "abs((AA + Aa) / N * 100 - ans) > 0.25"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Chaque individu porte 2 allèles : (2 × {{ AA }} + {{ Aa }}) ÷ (2 × {{ N }}) × 100 ≈ <b>{{ ans }} %</b>."
+    },
+    {
+      "difficulty": 3,
+      "label": "Depuis des pourcentages",
+      "params": {
+        "t": "pick(FT)",
+        "p": "int(2, 8) / 10"
+      },
+      "let": {
+        "q": "1 - p",
+        "gAA": "round(p * p * 100, 0)",
+        "gAa": "round(2 * p * q * 100, 0)",
+        "gaa": "round(q * q * 100, 0)",
+        "ans": "round(gaa + gAa / 2, 1)"
+      },
+      "prompt": "Dans une population de {{ t[0] }}, on relève <b>{{ gAA }} %</b> d’individus ({{ t[1] }}//{{ t[1] }}), <b>{{ gAa }} %</b> d’individus ({{ t[1] }}//{{ t[2] }}) et <b>{{ gaa }} %</b> d’individus ({{ t[2] }}//{{ t[2] }}). Quelle est la fréquence de l’allèle {{ t[2] }}, en % ?",
+      "answer": {
+        "type": "number",
+        "value": "ans",
+        "tolerance": 0.11,
+        "unit": "%"
+      },
+      "wrongs": [
+        {
+          "misconception": "frequence-genotype-allele",
+          "value": "gaa",
+          "when": "abs(gaa - ans) > 0.25"
+        },
+        {
+          "misconception": "frequence-heterozygotes",
+          "value": "gaa + gAa",
+          "when": "abs(gaa + gAa - ans) > 0.25"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Les ({{ t[2] }}//{{ t[2] }}) portent deux allèles {{ t[2] }}, les hétérozygotes un sur deux : {{ gaa }} + {{ gAa }} ÷ 2 = <b>{{ ans }} %</b>."
+    }
+  ]
+}

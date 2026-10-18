@@ -1,0 +1,102 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "pret-irr",
+  "label": "Prétérit des verbes irréguliers",
+  "misconceptions": [
+    {
+      "id": "pret-irr-regularisation",
+      "label": "Verbe irrégulier régularisé en -ed",
+      "explanation": "Ce verbe est irrégulier : son prétérit ne se forme pas avec -ed, il s’apprend dans la liste (see, saw, seen). « Seed » ou « goed » n’existent pas."
+    },
+    {
+      "id": "pret-irr-participe",
+      "label": "Participe passé à la place du prétérit",
+      "explanation": "Le prétérit est la 2e colonne de la liste des verbes irréguliers, le participe passé la 3e. Seul, sans have, le participe ne fait pas une phrase au passé : on écrit he saw, pas he seen."
+    },
+    {
+      "id": "pret-irr-base",
+      "label": "Base verbale à la place du prétérit",
+      "explanation": "Un marqueur de passé terminé (yesterday, last night, in 1890) appelle le prétérit. La base verbale est la 1re colonne de la liste : ce n’est pas un passé."
+    },
+    {
+      "id": "pret-irr-present",
+      "label": "Présent simple à la place du prétérit",
+      "explanation": "Le -s de la 3e personne est une marque du présent. Au prétérit, la forme est la même à toutes les personnes : he went, they went."
+    }
+  ],
+  "constraints": [
+    "v[3] != s[0]"
+  ],
+  "params": {
+    "v": "pick([['begin', 'began', 'begun', 'the search'], ['break', 'broke', 'broken', 'the window'], ['bring', 'brought', 'brought', 'a lamp'], ['buy', 'bought', 'bought', 'a newspaper'], ['catch', 'caught', 'caught', 'the thief'], ['come', 'came', 'come', 'home late'], ['drink', 'drank', 'drunk', 'a cup of tea'], ['drive', 'drove', 'driven', 'the cab'], ['eat', 'ate', 'eaten', 'a meat pie'], ['fall', 'fell', 'fallen', 'on the ice'], ['find', 'found', 'found', 'the key'], ['forget', 'forgot', 'forgotten', 'the address'], ['give', 'gave', 'given', 'the letter to the inspector'], ['go', 'went', 'gone', 'to the docks'], ['hear', 'heard', 'heard', 'a scream'], ['hide', 'hid', 'hidden', 'the jewels'], ['know', 'knew', 'known', 'the thief'], ['leave', 'left', 'left', 'the station'], ['lose', 'lost', 'lost', 'the key'], ['make', 'made', 'made', 'a mistake'], ['meet', 'met', 'met', 'a stranger'], ['pay', 'paid', 'paid', 'the cabman'], ['ride', 'rode', 'ridden', 'a horse'], ['ring', 'rang', 'rung', 'the bell'], ['run', 'ran', 'run', 'away'], ['say', 'said', 'said', 'nothing'], ['see', 'saw', 'seen', 'a tall man'], ['sell', 'sold', 'sold', 'flowers'], ['send', 'sent', 'sent', 'a telegram'], ['sing', 'sang', 'sung', 'a song'], ['sit', 'sat', 'sat', 'by the fire'], ['speak', 'spoke', 'spoken', 'to the inspector'], ['steal', 'stole', 'stolen', 'a gold watch'], ['take', 'took', 'taken', 'the last train'], ['tell', 'told', 'told', 'the truth'], ['think', 'thought', 'thought', 'about the letter'], ['throw', 'threw', 'thrown', 'a stone'], ['wake', 'woke', 'woken', 'up at dawn'], ['wear', 'wore', 'worn', 'a grey coat'], ['write', 'wrote', 'written', 'a letter']])",
+    "s": "pick([['the cabman', 3, 'he'], ['Mrs Hudson', 3, 'she'], ['the baker', 3, 'he'], ['a sailor', 3, 'he'], ['the flower girl', 3, 'she'], ['the night watchman', 3, 'he'], ['two dockers', 6, 'they'], ['the Smith brothers', 6, 'they'], ['I', 1, 'I'], ['we', 4, 'we'], ['you', 2, 'you']])",
+    "t": "pick(['yesterday', 'last night', 'two hours ago', 'on Tuesday', 'in 1890', 'last week'])"
+  },
+  "let": {
+    "line": "ucfirst(s[0]) ~ ' <span class=\"q-blank\">…</span> (' ~ v[0] ~ ') ' ~ v[3] ~ ' ' ~ t ~ '.'"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Taper le prétérit",
+      "prompt": "Complete the witness statement. Type the verb in the preterite.<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "text",
+        "value": "v[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "pret-irr-regularisation",
+          "value": "v[0] ~ (v[0] matches '/e$/' ? 'd' : 'ed')"
+        },
+        {
+          "misconception": "pret-irr-participe",
+          "value": "v[2]",
+          "when": "v[2] != v[1]"
+        },
+        {
+          "misconception": "pret-irr-base",
+          "value": "v[0]"
+        },
+        {
+          "misconception": "pret-irr-present",
+          "value": "s3(v[0])",
+          "when": "s[1] == 3"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "« {{ v[0] }} » est irrégulier : {{ v[0] }} – <b>{{ v[1] }}</b> – {{ v[2] }}. Le prétérit est la 2e colonne de la liste."
+    },
+    {
+      "weight": 1,
+      "label": "Choisir le prétérit",
+      "prompt": "Complete the witness statement:<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "choice",
+        "value": "v[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "pret-irr-regularisation",
+          "value": "v[0] ~ (v[0] matches '/e$/' ? 'd' : 'ed')"
+        },
+        {
+          "misconception": "pret-irr-participe",
+          "value": "v[2]",
+          "when": "v[2] != v[1]"
+        },
+        {
+          "misconception": "pret-irr-base",
+          "value": "v[0]"
+        },
+        {
+          "misconception": "pret-irr-present",
+          "value": "s3(v[0])",
+          "when": "s[1] == 3"
+        }
+      ],
+      "minWrongs": 3,
+      "method": "« {{ v[0] }} » est irrégulier : {{ v[0] }} – <b>{{ v[1] }}</b> – {{ v[2] }}. Le prétérit est la 2e colonne de la liste."
+    }
+  ]
+}

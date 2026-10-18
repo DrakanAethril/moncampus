@@ -161,7 +161,7 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
         }
 
         $template = $source->current($unit) ?? throw new SeriousGamePlayRefused('unit-unavailable');
-        $session = new SeriousGameSession($player, $game, SeriousGameSessionMode::Series, $this->engine->seriesPlan($template, $manifest->seriesSize(), $game->getAnswerKinds()));
+        $session = new SeriousGameSession($player, $game, SeriousGameSessionMode::Series, $this->engine->seriesPlan($template, $manifest->seriesSize(), $game->getAnswerKinds(), $manifest->seriesTiers()));
         $session->setUnitCode($unit);
         $this->entityManager->persist($session);
         $this->touch($player, $game);
@@ -426,12 +426,20 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
 
     /**
      * For a table to fill, which cells were right and what each one expected - the correction marks
-     * the cells, after the answer, never before.
+     * the cells, after the answer, never before. Items put in order are read the same way, one
+     * place per cell.
      *
      * @return array{cells?: list<bool>, expectedCells?: list<string>}
      */
     private static function cells(GeneratedQuestion $question, ?string $input): array
     {
+        if (Answer\AnswerType::Order === $question->spec->type && \is_array($question->answerValue)) {
+            /** @var list<string> $order */
+            $order = array_values(array_filter($question->answerValue, is_string(...)));
+            $sent = null === $input || Engine\AnswerCorrector::DONT_KNOW === $input ? [] : array_map('trim', explode('|', $input));
+
+            return ['cells' => Answer\OrderChecker::places($sent, $order), 'expectedCells' => $order];
+        }
         if (Answer\AnswerType::Forms !== $question->spec->type || !\is_array($question->answerValue)) {
             return [];
         }

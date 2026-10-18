@@ -37,7 +37,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class SeriousGameController extends AbstractController
 {
     /** The kinds of answer a game may accept, and how the screen names them. */
-    public const array ANSWER_KINDS = ['short' => 'seriousGameAnswerKindShort', 'choice' => 'seriousGameAnswerKindChoice'];
+    public const array ANSWER_KINDS = ['short' => 'seriousGameAnswerKindShort', 'choice' => 'seriousGameAnswerKindChoice', 'order' => 'seriousGameAnswerKindOrder', 'spot' => 'seriousGameAnswerKindSpot'];
 
     #[Route(path: '/settings/serious-games', name: 'app_settings_serious_games', methods: ['GET'])]
     public function index(SeriousGameRepository $games, SeriousGameTemplateRepository $templates): Response
