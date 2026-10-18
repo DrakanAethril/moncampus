@@ -1,0 +1,133 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "phrase",
+  "label": "Mettre le mot au bon cas dans la phrase",
+  "misconceptions": [
+    {
+      "id": "phrase-sujet-cod",
+      "label": "Confondre sujet et COD",
+      "explanation": "Le sujet est au nominatif, le COD à l’accusatif. En latin, c’est la terminaison qui dit qui fait l’action, pas la place du mot."
+    },
+    {
+      "id": "phrase-genitif-datif",
+      "label": "Confondre complément du nom et complément d’attribution",
+      "explanation": "« de » + nom (le jardin du maître) se dit au génitif ; « à » + nom après donner, montrer, envoyer (donner au maître) se dit au datif."
+    },
+    {
+      "id": "phrase-nombre",
+      "label": "Se tromper de nombre",
+      "explanation": "La traduction dit le nombre : « les esclaves » demande un pluriel. Pour un sujet, le verbe aussi le dit : vocat (singulier), vocant (pluriel)."
+    },
+    {
+      "id": "phrase-nominatif",
+      "label": "Laisser le mot au nominatif",
+      "explanation": "Seul le sujet est au nominatif. Un complément prend la terminaison de sa fonction."
+    }
+  ],
+  "params": {
+    "role": "pick(['nom', 'acc', 'acc', 'gen', 'dat'])",
+    "w": "pick([['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis']])",
+    "s": "pick([['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis']])",
+    "o": "pick([['rosa', 'rosae', 'f', 'la rose', 'les roses'], ['epistula', 'epistulae', 'f', 'la lettre', 'les lettres'], ['liber', 'libri', 'm', 'le livre', 'les livres'], ['equus', 'equi', 'm', 'le cheval', 'les chevaux'], ['gladius', 'gladii', 'm', 'l’épée', 'les épées'], ['amphora', 'amphorae', 'f', 'l’amphore', 'les amphores']])",
+    "pv": "pick([['vocat', 'vocant', 'appelle', 'appellent'], ['amat', 'amant', 'aime', 'aiment'], ['videt', 'vident', 'voit', 'voient'], ['laudat', 'laudant', 'loue', 'louent'], ['exspectat', 'exspectant', 'attend', 'attendent'], ['salutat', 'salutant', 'salue', 'saluent'], ['adiuvat', 'adiuvant', 'aide', 'aident']])",
+    "tv": "pick([['amat', 'amant', 'aime', 'aiment'], ['videt', 'vident', 'voit', 'voient'], ['laudat', 'laudant', 'admire', 'admirent'], ['portat', 'portant', 'porte', 'portent'], ['quaerit', 'quaerunt', 'cherche', 'cherchent'], ['exspectat', 'exspectant', 'attend', 'attendent']])",
+    "dv": "pick([['dat', 'dant', 'donne', 'donnent'], ['monstrat', 'monstrant', 'montre', 'montrent'], ['mittit', 'mittunt', 'envoie', 'envoient']])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "let": {
+    "k": "role ~ '.' ~ n",
+    "right": "form(w, k)",
+    "wfr": "n == 'sg' ? w[3] : w[4]",
+    "v": "role == 'acc' ? pv : tv",
+    "sf": "form(s, 'nom.sg')",
+    "ofr": "o[3]",
+    "latin": "role == 'nom' ? '___ ' ~ form(o, 'acc.sg') ~ ' ' ~ (n == 'sg' ? v[0] : v[1]) : (role == 'acc' ? ucfirst(sf) ~ ' ___ ' ~ v[0] : (role == 'gen' ? ucfirst(sf) ~ ' ' ~ form(o, 'acc.sg') ~ ' ___ ' ~ v[0] : ucfirst(sf) ~ ' ___ ' ~ form(o, 'acc.sg') ~ ' ' ~ dv[0]))",
+    "french": "role == 'nom' ? ucfirst(wfr) ~ ' ' ~ (n == 'sg' ? v[2] : v[3]) ~ ' ' ~ o[3] : (role == 'acc' ? ucfirst(s[3]) ~ ' ' ~ v[2] ~ ' ' ~ wfr : (role == 'gen' ? ucfirst(s[3]) ~ ' ' ~ v[2] ~ ' ' ~ o[3] ~ ' ' ~ frDe(wfr) : ucfirst(s[3]) ~ ' ' ~ dv[2] ~ ' ' ~ o[3] ~ ' ' ~ frA(wfr)))",
+    "fn": "role == 'nom' ? 'sujet' : (role == 'acc' ? 'COD' : (role == 'gen' ? 'complément du nom' : 'complément d’attribution'))"
+  },
+  "constraints": [
+    "s[0] != w[0]",
+    "o[0] != w[0]",
+    "role == 'nom' or form(s, 'nom.sg') != right"
+  ],
+  "variants": [
+    {
+      "weight": 3,
+      "label": "Saisie",
+      "prompt": "Complète avec <i>{{ w[0] }}, {{ w[1] }}</i> : <i>{{ latin }}.</i> — « {{ french }}. »",
+      "answer": {
+        "type": "latin",
+        "value": "forms(w, k)"
+      },
+      "wrongs": [
+        {
+          "misconception": "phrase-sujet-cod",
+          "value": "form(w, (role == 'nom' ? 'acc' : 'nom') ~ '.' ~ n)",
+          "when": "role in ['nom', 'acc']"
+        },
+        {
+          "misconception": "phrase-genitif-datif",
+          "value": "form(w, (role == 'gen' ? 'dat' : 'gen') ~ '.' ~ n)",
+          "when": "role in ['gen', 'dat']"
+        },
+        {
+          "misconception": "phrase-nombre",
+          "value": "forms(w, otherNumber(k))"
+        },
+        {
+          "misconception": "phrase-nominatif",
+          "value": "form(w, 'nom.' ~ n)",
+          "when": "role in ['gen', 'dat']"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "« {{ wfr }} » est {{ fn }} : {{ caseName(role) }} {{ numberName(n) }}, <i>{{ right }}</i>.{{ declTable(w, k) }}"
+    },
+    {
+      "weight": 2,
+      "label": "QCM",
+      "prompt": "Quelle forme complète la phrase ? <i>{{ latin }}.</i> — « {{ french }}. »",
+      "answer": {
+        "type": "choice",
+        "value": "right",
+        "display": "'<i>' ~ right ~ '</i>'"
+      },
+      "wrongs": [
+        {
+          "misconception": "phrase-sujet-cod",
+          "value": "form(w, (role == 'nom' ? 'acc' : 'nom') ~ '.' ~ n)",
+          "display": "'<i>' ~ form(w, (role == 'nom' ? 'acc' : 'nom') ~ '.' ~ n) ~ '</i>'",
+          "when": "role in ['nom', 'acc']"
+        },
+        {
+          "misconception": "phrase-genitif-datif",
+          "value": "form(w, (role == 'gen' ? 'dat' : 'gen') ~ '.' ~ n)",
+          "display": "'<i>' ~ form(w, (role == 'gen' ? 'dat' : 'gen') ~ '.' ~ n) ~ '</i>'"
+        },
+        {
+          "misconception": "phrase-nombre",
+          "value": "form(w, otherNumber(k))",
+          "display": "'<i>' ~ form(w, otherNumber(k)) ~ '</i>'"
+        },
+        {
+          "misconception": "phrase-nominatif",
+          "value": "form(w, 'nom.' ~ n)",
+          "display": "'<i>' ~ form(w, 'nom.' ~ n) ~ '</i>'",
+          "when": "role != 'nom'"
+        },
+        {
+          "misconception": "phrase-sujet-cod",
+          "value": "form(w, 'acc.' ~ n)",
+          "display": "'<i>' ~ form(w, 'acc.' ~ n) ~ '</i>'",
+          "when": "role != 'acc'"
+        },
+        {
+          "misconception": "phrase-genitif-datif",
+          "value": "form(w, 'abl.' ~ n)",
+          "display": "'<i>' ~ form(w, 'abl.' ~ n) ~ '</i>'"
+        }
+      ],
+      "method": "« {{ wfr }} » est {{ fn }} : {{ caseName(role) }} {{ numberName(n) }}, <i>{{ right }}</i>.{{ declTable(w, k) }}"
+    }
+  ]
+}

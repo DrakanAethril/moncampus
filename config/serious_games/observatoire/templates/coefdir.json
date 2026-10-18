@@ -1,0 +1,43 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "coefdir",
+  "label": "Coefficient directeur",
+  "misconceptions": [
+    { "id": "cd-inverse", "label": "Inverser Δx et Δy" },
+    { "id": "cd-sign", "label": "Soustraire dans des ordres différents" },
+    { "id": "cd-one-point", "label": "Utiliser les coordonnées d’un seul point" },
+    { "id": "cd-intercept", "label": "Confondre avec l’ordonnée à l’origine" }
+  ],
+  "difficulty": 1,
+  "params": {
+    "xA": "int(-4, 2)",
+    "xB": "xA + int(1, 4)",
+    "m": "pick([-3, -2, -1, 1, 2, 3, 0.5, -0.5])",
+    "yA": "int(-3, 3)",
+    "fig": "chance(0.5)"
+  },
+  "let": {
+    "yB": "yA + m * (xB - xA)",
+    "dx": "xB - xA",
+    "dy": "yB - yA",
+    "p": "yA - m * xA"
+  },
+  "constraints": ["isInt(yB)", "abs(yB) <= 4"],
+  "prompt": "{{ fig ? 'La droite tracée passe par les points A et B. Quel est son coefficient directeur ?' : 'La droite (AB) passe par A(' ~ fmt(xA) ~ ' ; ' ~ fmt(yA) ~ ') et B(' ~ fmt(xB) ~ ' ; ' ~ fmt(yB) ~ '). Quel est son coefficient directeur ?' }}",
+  "figure": {
+    "type": "grid", "x": [-5, 5], "y": [-4, 5], "when": "fig",
+    "items": [
+      { "draw": "line", "m": "m", "p": "p", "color": "blue" },
+      { "draw": "dot", "x": "xA", "y": "yA", "label": "'A'" },
+      { "draw": "dot", "x": "xB", "y": "yB", "label": "'B'" }
+    ]
+  },
+  "answer": { "type": "number", "value": "m", "display": "num(dy, dx)", "text": "fracText(dy, dx)" },
+  "wrongs": [
+    { "misconception": "cd-inverse", "value": "dx / dy", "display": "num(dx, dy)", "when": "dy != 0" },
+    { "misconception": "cd-sign", "value": "-m", "display": "num(-dy, dx)" },
+    { "misconception": "cd-one-point", "value": "yB / xB", "display": "num(yB, xB)", "when": "xB != 0 and abs(yB / xB - m) > 0.000000001" },
+    { "misconception": "cd-intercept", "value": "p", "display": "num(p * 2, 2)", "when": "abs(p - m) > 0.000000001" }
+  ],
+  "method": "<i>m</i> = {{ fracRaw('Δ<i>y</i>', 'Δ<i>x</i>') }} = {{ fracRaw(fmt(yB) ~ ' − ' ~ par(fmt(yA)), fmt(xB) ~ ' − ' ~ par(fmt(xA))) }} = {{ fracRaw(fmt(dy), fmt(dx)) }} = {{ num(dy, dx) }}."
+}

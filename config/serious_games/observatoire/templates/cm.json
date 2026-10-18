@@ -1,0 +1,52 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "cm",
+  "label": "Coefficient multiplicateur",
+  "misconceptions": [
+    { "id": "cm-no-100", "label": "Oublier de diviser le pourcentage par 100" },
+    { "id": "cm-no-one", "label": "Oublier le 1 du coefficient" },
+    { "id": "cm-direction", "label": "Confondre hausse et baisse" },
+    { "id": "cm-read-coef", "label": "Lire le coefficient comme un taux" },
+    { "id": "cm-decimal", "label": "Mal lire la partie décimale du coefficient" }
+  ],
+  "params": {
+    "t": "pick([2, 3, 5, 8, 10, 12, 15, 20, 25, 30, 40, 50, 65, 80])",
+    "up": "chance(0.5)"
+  },
+  "variants": [
+    {
+      "label": "Du taux au coefficient",
+      "weight": 0.62,
+      "difficulty": 1,
+      "let": { "c": "up ? 1 + t / 100 : 1 - t / 100" },
+      "prompt": "{{ up ? 'Augmenter' : 'Diminuer' }} une quantité de {{ t }} % revient à la multiplier par :",
+      "answer": { "type": "number", "value": "c", "display": "fmt(c)" },
+      "wrongs": [
+        { "misconception": "cm-no-100", "value": "up ? 1 + t : 1 - t", "display": "fmt(up ? 1 + t : 1 - t)" },
+        { "misconception": "cm-no-one", "value": "up ? t / 100 : -t / 100", "display": "fmt(up ? t / 100 : -t / 100)" },
+        { "misconception": "cm-direction", "value": "up ? 1 - t / 100 : 1 + t / 100", "display": "fmt(up ? 1 - t / 100 : 1 + t / 100)" }
+      ],
+      "method": "{{ up ? 'Hausse' : 'Baisse' }} de {{ t }} % : coefficient 1 {{ up ? '+' : '−' }} {{ t / 100 }} = {{ c }}."
+    },
+    {
+      "label": "Du coefficient au taux",
+      "weight": 0.38,
+      "difficulty": 2,
+      "let": {
+        "cc": "up ? 1 + t / 100 : 1 - t / 100",
+        "ans": "up ? t : -t",
+        "rc": "round(cc * 100, 6)",
+        "dec": "round((cc - 1) * 10, 6)"
+      },
+      "prompt": "Multiplier une quantité par {{ cc }} revient à une évolution de combien, en % ? (Une baisse s’écrit avec un signe −.)",
+      "answer": { "type": "number", "value": "ans", "display": "signedPct(ans)", "text": "signedPct(ans)", "unit": "%" },
+      "wrongs": [
+        { "misconception": "cm-read-coef", "value": "rc", "display": "signedPct(rc)" },
+        { "misconception": "cm-direction", "value": "-ans", "display": "signedPct(-ans)" },
+        { "misconception": "cm-decimal", "value": "dec", "display": "signedPct(dec)", "when": "up" },
+        { "misconception": "cm-read-coef", "value": "-rc", "display": "signedPct(-rc)", "when": "not up" }
+      ],
+      "method": "{{ cc }} = 1 {{ up ? '+ ' : '− ' }}{{ t / 100 }} : c’est une {{ up ? 'hausse' : 'baisse' }} de {{ t }} %, soit {{ signedPct(ans) }}. Un coefficient {{ up ? 'supérieur' : 'inférieur' }} à 1 traduit une {{ up ? 'hausse' : 'baisse' }}."
+    }
+  ]
+}

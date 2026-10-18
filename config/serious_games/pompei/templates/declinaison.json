@@ -1,0 +1,53 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "declinaison",
+  "label": "Reconnaître la déclinaison d’un nom",
+  "misconceptions": [
+    {
+      "id": "declinaison-nominatif",
+      "label": "Se fier au nominatif au lieu du génitif",
+      "explanation": "Le nominatif trompe : corpus, manus et dominus finissent tous en -us. C’est la terminaison du génitif qui décide : -ae, -i, -is, -us, -ei."
+    },
+    {
+      "id": "declinaison-voisine",
+      "label": "Confondre deux déclinaisons voisines",
+      "explanation": "La 2e et la 4e déclinaisons ont des nominatifs en -us, la 3e et la 5e des nominatifs en -es. Compare les génitifs : domini, manus ; nubis, rei."
+    },
+    {
+      "id": "declinaison-genitif",
+      "label": "Mal lire la terminaison du génitif",
+      "explanation": "Apprends les cinq génitifs par cœur : 1re -ae, 2e -i, 3e -is, 4e -us, 5e -ei. Le génitif singulier est la deuxième forme donnée par le dictionnaire."
+    }
+  ],
+  "params": {
+    "w": "pick([['rosa', 'rosae', 'f', 'la rose', 'les roses'], ['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['aqua', 'aquae', 'f', 'l’eau', 'les eaux'], ['via', 'viae', 'f', 'la route', 'les routes'], ['insula', 'insulae', 'f', 'l’île', 'les îles'], ['silva', 'silvae', 'f', 'la forêt', 'les forêts'], ['villa', 'villae', 'f', 'la villa', 'les villas'], ['porta', 'portae', 'f', 'la porte', 'les portes'], ['columna', 'columnae', 'f', 'la colonne', 'les colonnes'], ['tabula', 'tabulae', 'f', 'la tablette', 'les tablettes'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['terra', 'terrae', 'f', 'la terre', 'les terres'], ['epistula', 'epistulae', 'f', 'la lettre', 'les lettres'], ['amphora', 'amphorae', 'f', 'l’amphore', 'les amphores'], ['sagitta', 'sagittae', 'f', 'la flèche', 'les flèches'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['equus', 'equi', 'm', 'le cheval', 'les chevaux'], ['murus', 'muri', 'm', 'le mur', 'les murs'], ['hortus', 'horti', 'm', 'le jardin', 'les jardins'], ['lupus', 'lupi', 'm', 'le loup', 'les loups'], ['populus', 'populi', 'm', 'le peuple', 'les peuples'], ['ventus', 'venti', 'm', 'le vent', 'les vents'], ['oculus', 'oculi', 'm', 'l’œil', 'les yeux'], ['annus', 'anni', 'm', 'l’année', 'les années'], ['gladius', 'gladii', 'm', 'l’épée', 'les épées'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['stilus', 'stili', 'm', 'le stylet', 'les stylets'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['ager', 'agri', 'm', 'le champ', 'les champs'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['liber', 'libri', 'm', 'le livre', 'les livres'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['culter', 'cultri', 'm', 'le couteau', 'les couteaux'], ['socer', 'soceri', 'm', 'le beau-père', 'les beaux-pères'], ['aper', 'apri', 'm', 'le sanglier', 'les sangliers'], ['templum', 'templi', 'n', 'le temple', 'les temples'], ['bellum', 'belli', 'n', 'la guerre', 'les guerres'], ['donum', 'doni', 'n', 'le cadeau', 'les cadeaux'], ['oppidum', 'oppidi', 'n', 'la place forte', 'les places fortes'], ['verbum', 'verbi', 'n', 'la parole', 'les paroles'], ['forum', 'fori', 'n', 'le forum', 'les forums'], ['periculum', 'periculi', 'n', 'le danger', 'les dangers'], ['consilium', 'consilii', 'n', 'le conseil', 'les conseils'], ['signum', 'signi', 'n', 'le signe', 'les signes'], ['vinum', 'vini', 'n', 'le vin', 'les vins'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['lex', 'legis', 'f', 'la loi', 'les lois'], ['pax', 'pacis', 'f', 'la paix', 'les paix'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['virtus', 'virtutis', 'f', 'le courage', 'les courages'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['labor', 'laboris', 'm', 'le travail', 'les travaux'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['leo', 'leonis', 'm', 'le lion', 'les lions'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['vox', 'vocis', 'f', 'la voix', 'les voix'], ['corpus', 'corporis', 'n', 'le corps', 'les corps'], ['nomen', 'nominis', 'n', 'le nom', 'les noms'], ['tempus', 'temporis', 'n', 'le temps', 'les temps'], ['flumen', 'fluminis', 'n', 'le fleuve', 'les fleuves'], ['caput', 'capitis', 'n', 'la tête', 'les têtes'], ['opus', 'operis', 'n', 'l’ouvrage', 'les ouvrages'], ['carmen', 'carminis', 'n', 'le chant', 'les chants'], ['genus', 'generis', 'n', 'la famille', 'les familles'], ['vulnus', 'vulneris', 'n', 'la blessure', 'les blessures'], ['iter', 'itineris', 'n', 'le chemin', 'les chemins'], ['litus', 'litoris', 'n', 'le rivage', 'les rivages'], ['onus', 'oneris', 'n', 'la charge', 'les charges'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['navis', 'navis', 'f', 'le navire', 'les navires'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis'], ['urbs', 'urbis', 'f', 'la ville', 'les villes'], ['mons', 'montis', 'm', 'la montagne', 'les montagnes'], ['nox', 'noctis', 'f', 'la nuit', 'les nuits'], ['pars', 'partis', 'f', 'la partie', 'les parties'], ['ars', 'artis', 'f', 'l’art', 'les arts'], ['finis', 'finis', 'm', 'la limite', 'les limites'], ['collis', 'collis', 'm', 'la colline', 'les collines'], ['nubes', 'nubis', 'f', 'le nuage', 'les nuages'], ['avis', 'avis', 'f', 'l’oiseau', 'les oiseaux'], ['ignis', 'ignis', 'm', 'le feu', 'les feux'], ['dens', 'dentis', 'm', 'la dent', 'les dents'], ['gens', 'gentis', 'f', 'la famille', 'les familles'], ['fons', 'fontis', 'm', 'la source', 'les sources'], ['mare', 'maris', 'n', 'la mer', 'les mers'], ['animal', 'animalis', 'n', 'l’animal', 'les animaux'], ['exemplar', 'exemplaris', 'n', 'le modèle', 'les modèles'], ['cubile', 'cubilis', 'n', 'le lit', 'les lits'], ['sedile', 'sedilis', 'n', 'le siège', 'les sièges'], ['vectigal', 'vectigalis', 'n', 'l’impôt', 'les impôts'], ['calcar', 'calcaris', 'n', 'l’éperon', 'les éperons'], ['rete', 'retis', 'n', 'le filet', 'les filets'], ['ovile', 'ovilis', 'n', 'la bergerie', 'les bergeries'], ['tribunal', 'tribunalis', 'n', 'la tribune', 'les tribunes'], ['manus', 'manus', 'f', 'la main', 'les mains'], ['exercitus', 'exercitus', 'm', 'l’armée', 'les armées'], ['senatus', 'senatus', 'm', 'le sénat', 'les sénats'], ['fructus', 'fructus', 'm', 'le fruit', 'les fruits'], ['portus', 'portus', 'm', 'le port', 'les ports'], ['impetus', 'impetus', 'm', 'l’attaque', 'les attaques'], ['currus', 'currus', 'm', 'le char', 'les chars'], ['metus', 'metus', 'm', 'la peur', 'les peurs'], ['cursus', 'cursus', 'm', 'la course', 'les courses'], ['spiritus', 'spiritus', 'm', 'le souffle', 'les souffles'], ['exitus', 'exitus', 'm', 'la sortie', 'les sorties'], ['magistratus', 'magistratus', 'm', 'le magistrat', 'les magistrats'], ['cornu', 'cornus', 'n', 'la corne', 'les cornes'], ['genu', 'genus', 'n', 'le genou', 'les genoux'], ['veru', 'verus', 'n', 'la broche', 'les broches'], ['res', 'rei', 'f', 'la chose', 'les choses'], ['dies', 'diei', 'm', 'le jour', 'les jours'], ['spes', 'spei', 'f', 'l’espoir', ''], ['fides', 'fidei', 'f', 'la confiance', ''], ['facies', 'faciei', 'f', 'le visage', ''], ['acies', 'aciei', 'f', 'la ligne de bataille', '']])"
+  },
+  "let": {
+    "d": "decl(w)"
+  },
+  "prompt": "<i>{{ w[0] }}, {{ w[1] }}</i> ({{ w[3] }}) : à quelle déclinaison appartient ce nom ?",
+  "answer": {
+    "type": "choice",
+    "value": "declName(d)"
+  },
+  "wrongs": [
+    {
+      "misconception": "declinaison-nominatif",
+      "value": "declName(declGuess(w[0]))",
+      "when": "declGuess(w[0]) != d"
+    },
+    {
+      "misconception": "declinaison-voisine",
+      "value": "declName([0, 2, 4, 5, 2, 3][d])"
+    },
+    {
+      "misconception": "declinaison-genitif",
+      "value": "declName([0, 3, 5, 2, 3, 2][d])"
+    },
+    {
+      "misconception": "declinaison-genitif",
+      "value": "declName([0, 5, 3, 4, 5, 4][d])"
+    }
+  ],
+  "method": "Le génitif <i>{{ w[1] }}</i> se termine en -{{ ending(w, 'gen.sg') == '' ? w[1] : ending(w, 'gen.sg') }} : {{ declName(d) }}. Génitifs à retenir : 1re -ae, 2e -i, 3e -is, 4e -us, 5e -ei."
+}

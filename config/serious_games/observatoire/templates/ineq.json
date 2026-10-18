@@ -1,0 +1,48 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "ineq",
+  "label": "Inéquation",
+  "misconceptions": [
+    { "id": "ineq-no-flip", "label": "Ne pas changer le sens en divisant par un nombre négatif" },
+    { "id": "ineq-flip-wrong", "label": "Changer le sens sans raison" },
+    { "id": "ineq-move-sign", "label": "Changer une constante de membre sans changer son signe" },
+    { "id": "ineq-bracket", "label": "Confondre inégalité stricte et large" }
+  ],
+  "params": {
+    "a": "nonZero(-6, 6)",
+    "b": "int(-9, 9)",
+    "k": "int(-6, 6)",
+    "bump": "chance(0.25)",
+    "op": "pick(['<', '>', '≤', '≥'])"
+  },
+  "let": {
+    "c": "a * k + b + (bump ? 1 : 0)",
+    "flip": "{'<': '>', '>': '<', '≤': '≥', '≥': '≤'}",
+    "strictSwap": "{'<': '≤', '≤': '<', '>': '≥', '≥': '>'}",
+    "K": "(c - b) / a",
+    "Kd": "frac(c - b, a)",
+    "K2": "(c + b) / a",
+    "K2d": "frac(c + b, a)",
+    "res": "a > 0 ? op : flip[op]",
+    "S": "ivOp(res, K)",
+    "wFlip": "ivOp(flip[res], K)",
+    "wBracket": "ivOp(strictSwap[res], K)",
+    "wMove": "abs(K2 - K) > 1e-9 ? ivOp(res, K2) : ivOp(res, (b - c) / a)",
+    "wMoveD": "abs(K2 - K) > 1e-9 ? K2d : frac(b - c, a)"
+  },
+  "difficulty": "a < 0 ? 3 : 2",
+  "prompt": "Résoudre l’inéquation {{ lin(a, b) }} {{ esc(op) }} {{ fmt(c) }}. Donner l’ensemble des solutions sous forme d’intervalle (par exemple ]−∞ ; 4]).",
+  "answer": {
+    "type": "interval",
+    "value": "S",
+    "display": "'S = ' ~ ivHtml(S, Kd, Kd)",
+    "text": "plain(ivHtml(S, Kd, Kd))"
+  },
+  "wrongs": [
+    { "misconception": "ineq-no-flip", "value": "wFlip", "display": "'S = ' ~ ivHtml(wFlip, Kd, Kd)", "when": "a < 0" },
+    { "misconception": "ineq-flip-wrong", "value": "wFlip", "display": "'S = ' ~ ivHtml(wFlip, Kd, Kd)", "when": "a > 0" },
+    { "misconception": "ineq-bracket", "value": "wBracket", "display": "'S = ' ~ ivHtml(wBracket, Kd, Kd)" },
+    { "misconception": "ineq-move-sign", "value": "wMove", "display": "'S = ' ~ ivHtml(wMove, wMoveD, wMoveD)" }
+  ],
+  "method": "{{ lin(a, 0) }} {{ esc(op) }} {{ fmt(c) }} − {{ par(fmt(b)) }}, puis on divise par {{ fmt(a) }}{{ a < 0 ? ' : diviser par un nombre négatif change le sens de l’inégalité' : '' }}. Donc <i>x</i> {{ esc(res) }} {{ Kd }}."
+}

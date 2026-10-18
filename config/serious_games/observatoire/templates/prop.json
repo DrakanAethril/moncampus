@@ -1,0 +1,48 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "prop",
+  "label": "Proportion",
+  "misconceptions": [
+    { "id": "prop-divide", "label": "Diviser par le pourcentage" },
+    { "id": "prop-complement", "label": "Calculer la part restante" },
+    { "id": "prop-no-100", "label": "Oublier de diviser par 100" },
+    { "id": "prop-count", "label": "Donner l'effectif au lieu de la proportion" },
+    { "id": "prop-decimal", "label": "Oublier de multiplier par 100" },
+    { "id": "prop-inverse", "label": "Diviser l'effectif total par la partie" }
+  ],
+  "params": {
+    "cx": "pick([['lycée', 'élèves', 'sont internes'], ['club de sport', 'adhérents', 'sont licenciés en compétition'], ['concert', 'spectateurs', 'ont moins de 18 ans'], ['village', 'habitants', 'votent par procuration'], ['sondage', 'personnes interrogées', 'répondent « oui »']])"
+  },
+  "variants": [
+    {
+      "label": "Prendre un pourcentage",
+      "weight": 0.5,
+      "difficulty": 1,
+      "params": { "p": "pick([5, 10, 15, 20, 25, 30, 40, 60, 75, 80])", "N": "20 * int(2, 30)" },
+      "constraints": ["isInt(N * p / 100)"],
+      "prompt": "Dans un {{ cx[0] }} de {{ N }} {{ cx[1] }}, {{ p }} % {{ cx[2] }}. Combien {{ de(cx[1]) }} cela représente-t-il ?",
+      "answer": { "type": "number", "value": "N * p / 100", "display": "fmt(N * p / 100)" },
+      "wrongs": [
+        { "misconception": "prop-divide", "value": "N / p", "display": "approx(N / p)" },
+        { "misconception": "prop-complement", "value": "N - N * p / 100", "display": "fmt(N - N * p / 100)" },
+        { "misconception": "prop-no-100", "value": "N * p", "display": "fmt(N * p)" }
+      ],
+      "method": "Prendre {{ p }} % de {{ N }}, c’est multiplier par {{ p / 100 }} : {{ N }} × {{ p / 100 }} = {{ N * p / 100 }}."
+    },
+    {
+      "label": "Calculer une proportion",
+      "weight": 0.5,
+      "difficulty": 1,
+      "params": { "N2": "pick([20, 25, 40, 50, 80, 200, 250, 400, 500])", "k": "int(1, N2 - 1)" },
+      "constraints": ["isInt(k / N2 * 100)"],
+      "prompt": "Dans un {{ cx[0] }}, sur {{ N2 }} {{ cx[1] }}, {{ k }} {{ cx[2] }}. Quelle proportion cela représente-t-il, en pourcentage ?",
+      "answer": { "type": "number", "value": "k / N2 * 100", "display": "pct(k / N2 * 100)", "unit": "%" },
+      "wrongs": [
+        { "misconception": "prop-count", "value": "k", "display": "pct(k)" },
+        { "misconception": "prop-decimal", "value": "k / N2", "display": "pct(round(k / N2, 4))" },
+        { "misconception": "prop-inverse", "value": "N2 / k", "display": "approxPct(N2 / k)" }
+      ],
+      "method": "Proportion = partie ÷ total = {{ fracRaw(k, N2) }} = {{ k / N2 }}, soit {{ pct(k / N2 * 100) }}."
+    }
+  ]
+}

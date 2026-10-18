@@ -1,0 +1,76 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "frac",
+  "label": "Fractions",
+  "misconceptions": [
+    { "id": "frac-add-straight", "label": "Additionner numérateurs et dénominateurs" },
+    { "id": "frac-den-only", "label": "Réduire au même dénominateur sans changer les numérateurs" },
+    { "id": "frac-mul-instead", "label": "Multiplier au lieu d'additionner" },
+    { "id": "frac-sign", "label": "Soustraire dans le mauvais ordre" },
+    { "id": "frac-no-invert", "label": "Multiplier sans inverser la seconde fraction" },
+    { "id": "frac-invert-wrong", "label": "Inverser la première fraction au lieu de la seconde" },
+    { "id": "frac-invert-both", "label": "Inverser les deux fractions" },
+    { "id": "frac-int-both", "label": "Multiplier aussi le dénominateur par l'entier" },
+    { "id": "frac-int-den", "label": "Multiplier le dénominateur au lieu du numérateur" },
+    { "id": "frac-int-add", "label": "Ajouter l'entier au numérateur" }
+  ],
+  "variants": [
+    {
+      "label": "Somme",
+      "weight": 2,
+      "difficulty": 1,
+      "params": { "b": "int(2, 9)", "d": "int(2, 9)", "a": "int(1, b - 1)", "c": "int(1, d - 1)" },
+      "let": { "L": "lcm(b, d)", "N": "a * (L / b) + c * (L / d)" },
+      "constraints": ["d != b", "gcd(a, b) == 1", "gcd(c, d) == 1"],
+      "prompt": "Calculer {{ frac(a, b) }} + {{ frac(c, d) }}.",
+      "answer": { "type": "number", "value": "N / L", "display": "frac(N, L)", "text": "fracText(N, L)" },
+      "wrongs": [
+        { "misconception": "frac-add-straight", "value": "(a + c) / (b + d)", "display": "frac(a + c, b + d)" },
+        { "misconception": "frac-den-only", "value": "(a + c) / L", "display": "fracRaw(a + c, L)" },
+        { "misconception": "frac-mul-instead", "value": "a * c / (b * d)", "display": "frac(a * c, b * d)" }
+      ],
+      "method": "On réduit au même dénominateur {{ L }} : {{ fracRaw(a * L / b, L) }} + {{ fracRaw(c * L / d, L) }} = {{ fracRaw(N, L) }}{{ gcd(N, L) > 1 ? ' = ' ~ frac(N, L) : '' }}. On additionne les numérateurs ; le dénominateur commun ne change pas."
+    },
+    {
+      "label": "Différence",
+      "difficulty": 2,
+      "params": { "b": "int(2, 9)", "d": "int(2, 9)", "a": "int(1, b - 1)", "c": "int(1, d - 1)" },
+      "let": { "L": "lcm(b, d)", "N": "a * (L / b) - c * (L / d)" },
+      "constraints": ["d != b", "gcd(a, b) == 1", "gcd(c, d) == 1"],
+      "prompt": "Calculer {{ frac(a, b) }} − {{ frac(c, d) }}.",
+      "answer": { "type": "number", "value": "N / L", "display": "frac(N, L)", "text": "fracText(N, L)" },
+      "wrongs": [
+        { "misconception": "frac-add-straight", "value": "(a - c) / (b - d)", "display": "frac(a - c, b - d)" },
+        { "misconception": "frac-den-only", "value": "(a - c) / L", "display": "a - c < 0 ? '−' ~ fracRaw(c - a, L) : fracRaw(a - c, L)" },
+        { "misconception": "frac-sign", "value": "-N / L", "display": "frac(-N, L)" }
+      ],
+      "method": "On réduit au même dénominateur {{ L }} : {{ fracRaw(a * L / b, L) }} − {{ fracRaw(c * L / d, L) }} = {{ fracRaw(N, L) }}{{ gcd(N, L) > 1 ? ' = ' ~ frac(N, L) : '' }}. On soustrait les numérateurs ; le dénominateur commun ne change pas."
+    },
+    {
+      "label": "Quotient",
+      "difficulty": 2,
+      "params": { "a": "int(1, 9)", "b": "int(2, 9)", "c": "int(1, 9)", "d": "int(2, 9)" },
+      "prompt": "Calculer {{ frac(a, b) }} ÷ {{ frac(c, d) }}.",
+      "answer": { "type": "number", "value": "a * d / (b * c)", "display": "frac(a * d, b * c)", "text": "fracText(a * d, b * c)" },
+      "wrongs": [
+        { "misconception": "frac-no-invert", "value": "a * c / (b * d)", "display": "frac(a * c, b * d)" },
+        { "misconception": "frac-invert-wrong", "value": "b * c / (a * d)", "display": "frac(b * c, a * d)" },
+        { "misconception": "frac-invert-both", "value": "b * d / (a * c)", "display": "frac(b * d, a * c)" }
+      ],
+      "method": "Diviser par une fraction, c’est multiplier par son inverse : {{ frac(a, b) }} × {{ fracRaw(d, c) }} = {{ fracRaw(a * d, b * c) }}{{ gcd(a * d, b * c) > 1 ? ' = ' ~ frac(a * d, b * c) : '' }}."
+    },
+    {
+      "label": "Entier × fraction",
+      "difficulty": 1,
+      "params": { "k": "int(2, 7)", "b": "int(3, 11)", "a": "int(1, b - 1)" },
+      "prompt": "Calculer {{ k }} × {{ frac(a, b) }}.",
+      "answer": { "type": "number", "value": "k * a / b", "display": "frac(k * a, b)", "text": "fracText(k * a, b)" },
+      "wrongs": [
+        { "misconception": "frac-int-both", "value": "a / b", "display": "fracRaw(k * a, k * b)" },
+        { "misconception": "frac-int-den", "value": "a / (k * b)", "display": "frac(a, k * b)" },
+        { "misconception": "frac-int-add", "value": "(k + a) / b", "display": "frac(k + a, b)" }
+      ],
+      "method": "Un entier multiplie le numérateur seulement : {{ k }} × {{ frac(a, b) }} = {{ fracRaw(k * a, b) }}{{ gcd(k * a, b) > 1 ? ' = ' ~ frac(k * a, b) : '' }}."
+    }
+  ]
+}

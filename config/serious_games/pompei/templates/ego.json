@@ -1,0 +1,65 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "ego",
+  "label": "Pronoms personnels et réfléchi",
+  "misconceptions": [
+    {
+      "id": "ego-personne",
+      "label": "Confondre deux personnes",
+      "explanation": "Ego et nos désignent celui qui parle, tu et vos celui à qui l’on parle. Mihi, me, nobis pour la 1re personne ; tibi, te, vobis pour la 2e."
+    },
+    {
+      "id": "ego-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "Le pluriel des pronoms personnels change complètement de mot : ego devient nos, tu devient vos."
+    },
+    {
+      "id": "ego-cas",
+      "label": "Confondre deux cas",
+      "explanation": "Me est accusatif ou ablatif, mihi est datif, mei est génitif. Récite : ego, me, mei, mihi, me."
+    },
+    {
+      "id": "ego-reflechi",
+      "label": "Employer is au lieu du réfléchi se",
+      "explanation": "Quand le pronom renvoie au sujet de la phrase, on emploie le réfléchi se, sui, sibi, se, et jamais is, ea, id."
+    }
+  ],
+  "params": {
+    "p": "pick([['ego', 'm', 'de la 1re personne (ego, nos)'], ['tu', 'm', 'de la 2e personne (tu, vos)'], ['ego', 'm', 'de la 1re personne (ego, nos)'], ['tu', 'm', 'de la 2e personne (tu, vos)'], ['se', 'm', 'réfléchi (se)']])",
+    "k": "pick(['nom.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])"
+  },
+  "let": {
+    "other": "p[0] == 'ego' ? 'tu' : 'ego'"
+  },
+  "constraints": [
+    "p[0] != 'se' or keyCase(k) != 'nom'"
+  ],
+  "prompt": "Donne le {{ p[0] == 'se' ? 'pronom réfléchi (se, sui, sibi)' : 'pronom personnel ' ~ p[2] }} {{ p[0] == 'se' ? replace(atCase(keyCase(k) ~ '.sg'), ' singulier', '') : atCase(k) }}.",
+  "answer": {
+    "type": "latin",
+    "value": "prons(p[0], 'm', k)"
+  },
+  "wrongs": [
+    {
+      "misconception": "ego-personne",
+      "value": "prons(other, 'm', k)",
+      "when": "p[0] != 'se'"
+    },
+    {
+      "misconception": "ego-nombre",
+      "value": "prons(p[0], 'm', otherNumber(k))",
+      "when": "p[0] != 'se'"
+    },
+    {
+      "misconception": "ego-reflechi",
+      "value": "prons('is', 'm', k)",
+      "when": "p[0] == 'se'"
+    },
+    {
+      "misconception": "ego-cas",
+      "value": "prons(p[0], 'm', withCase(k, keyCase(k) == 'dat' ? 'acc' : confusedCase(keyCase(k))))"
+    }
+  ],
+  "minWrongs": 1,
+  "method": "{{ pronTable(p[0], keyNumber(k), k) }}"
+}

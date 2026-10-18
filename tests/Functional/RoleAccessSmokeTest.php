@@ -20,6 +20,8 @@ use App\Entity\QuizAttemptAnswer;
 use App\Entity\QuizInstance;
 use App\Entity\QuizInstanceQuestion;
 use App\Entity\QuizTemplate;
+use App\Entity\SeriousGame;
+use App\Entity\SeriousGameRoleSetting;
 use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\User;
@@ -1594,5 +1596,54 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             ->getRepository(User::class)
             ->find($targetId);
         self::assertNotNull($reloaded?->getInactiveDate(), 'The administrator, and only the administrator, closes the account.');
+    }
+
+    /**
+     * The serious games (design/validated/serious-games.md §3): a student plays once the module and
+     * the game are lit for their role, and reaches the module **by its address alone** - no link in
+     * their menus. The teachers of the class read the class and its students; another student is
+     * nobody's to read but their own teachers'. A tutor gets nothing anywhere, and the staff reads
+     * no student by name.
+     */
+    public function testSeriousGamesArePlayedByAddressAndReadByTheTeachersOfTheClass(): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $game = (new SeriousGame('observatoire', 'L’Observatoire'))->setPublished(true);
+        $entityManager->persist($game);
+        foreach (['ROLE_STUDENT', 'ROLE_TEACHER'] as $role) {
+            $entityManager->persist(new SeriousGameRoleSetting($game, $role, true));
+        }
+        $stranger = $this->createUser(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_CAMPUS'], 'smoke.stranger');
+        $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.staff');
+        $entityManager->flush();
+
+        $class = '/serious-games/results/'.$this->program->getId().'/observatoire';
+        $studentCard = '/serious-games/results/student/'.$this->student->getId();
+        $strangerCard = '/serious-games/results/student/'.$stranger->getId();
+        $own = ['/serious-games' => 200, '/serious-games/avatar' => 200, '/serious-games/me' => 200, '/serious-games/play/observatoire' => 200];
+
+        $this->assertScreens($this->student, $own + ['/serious-games/play/nope' => 404, '/serious-games/results' => 404, $class => 404, $strangerCard => 404]);
+        $this->assertScreens($this->teacher, $own + ['/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 404]);
+        $this->assertScreens($this->admin, $own + ['/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 200, '/settings/serious-games' => 200]);
+        $this->assertScreens($staff, ['/serious-games' => 404, '/serious-games/results' => 200, $class => 404, $studentCard => 404, '/settings/serious-games' => 404]);
+        $this->assertScreens($this->tutor, array_fill_keys(array_keys($own), 404) + ['/serious-games/results' => 404, $class => 404, $studentCard => 404]);
+        $this->assertScreens($this->teacher, ['/settings/serious-games' => 403]);
+
+        // No link in the student's menus, one in the teacher's (Ressources), read off the home page.
+        $this->client->loginUser($this->student);
+        $this->client->request('GET', '/');
+        self::assertStringNotContainsString('href="/serious-games"', (string) $this->client->getResponse()->getContent());
+        $this->client->loginUser($this->teacher);
+        $this->client->request('GET', '/');
+        self::assertStringContainsString('href="/serious-games"', (string) $this->client->getResponse()->getContent());
+
+        // The game unlit for students: the module no longer exists for them.
+        $entityManager->createQuery('UPDATE App\Entity\SeriousGameRoleSetting s SET s.enabled = false WHERE s.role = :role')->setParameter('role', 'ROLE_STUDENT')->execute();
+        $this->assertScreens($this->student, ['/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
+
+        // The module switched off: nobody but the administrator plays.
+        $this->switchOffEveryRole(Feature::SeriousGames);
+        $this->assertScreens($this->teacher, ['/serious-games' => 404, '/serious-games/results' => 404]);
+        $this->assertScreens($this->admin, ['/serious-games' => 200]);
     }
 }

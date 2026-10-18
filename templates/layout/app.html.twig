@@ -414,7 +414,7 @@
                            every class - a teacher who was not designated has no entry (§4). #}
                         {% set tools_portfolios = feature('portfolio') and (is_staff() or is_portfolio_validator()) %}
                         {% set tools_follow = feature('lesson_log') or feature('student_work') or feature('dossiers') or feature('quiz_library')
-                            or feature('gradebook_entry') or feature('job_search') or tools_ecole_directe or tools_portfolios %}
+                            or feature('gradebook_entry') or feature('job_search') or tools_ecole_directe or tools_portfolios or feature('serious_games') %}
                         {# « Au-delà d'un diplôme » - what happens to a student after the formation.
                            A group of its own rather than an entry under « Suivre les étudiants »:
                            the jobboard is not about following anybody, it is the market the class
@@ -569,6 +569,11 @@
                                     {% if feature('gradebook_entry') %}<a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('job_search') %}<a class="dropdown-item {{ current_route == 'app_tools_job_search' ? 'active' }}" href="{{ path('app_tools_job_search') }}">{{ 'jobSearchTrackingNavLabel'|trans }}</a>{% endif %}
                                     {% if tools_ecole_directe %}<a class="dropdown-item {{ current_route starts with 'app_ecole_directe' ? 'active' }}" href="{{ path('app_ecole_directe') }}">{{ 'ecoleDirecteHeading'|trans }}</a>{% endif %}
+                                    {# « Serious games », the reading of the results
+                                       (design/validated/serious-games.md §3.3): the classes one
+                                       teaches, every class for the administrator, figures without
+                                       names for the staff. Nothing here plays. #}
+                                    {% if feature('serious_games') %}<a class="dropdown-item {{ current_route starts with 'app_serious_games_results' ? 'active' }}" href="{{ path('app_serious_games_results') }}">{{ 'seriousGamesNavLabel'|trans }}</a>{% endif %}
                                     </div>
                                     {% endif %}
                                     {% if tools_beyond %}
@@ -778,6 +783,11 @@
                                                 </div>
                                             </div>
                                         {% endif %}
+                                        {# « Serious games », beside « Gamification » - the two are
+                                           unrelated games, which is why each has its own entry: the
+                                           games, their publication, their answer kinds and their
+                                           question templates (design/validated/serious-games.md §3.3). #}
+                                        <a class="dropdown-item {{ current_route starts with 'app_settings_serious_games' ? 'active' }}" href="{{ path('app_settings_serious_games') }}">{{ 'seriousGamesNavLabel'|trans }}</a>
                                         {# Jobboard, at the foot: the keys handed to the collecting
                                            agent and the manual import. No feature guard, like every
                                            other entry of this menu - no setting may close the screen

@@ -1,0 +1,104 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'seriousGamesNavLabel'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="/serious-games/shared/fonts.css">
+{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'seriousGamesNavLabel'|trans, url: path('app_serious_games')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'seriousGamesNavLabel'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <div class="cm-sg-catalog__links">
+        {% if collects %}
+            <a class="cm-sg-pill" href="{{ path('app_serious_games_me') }}">{{ 'seriousGamePlayerPageHeading'|trans }}</a>
+        {% endif %}
+        {% if readsResults %}
+            <a class="cm-sg-pill" href="{{ path('app_serious_games_results') }}">{{ 'seriousGameMyStudentsResultsAction'|trans }}</a>
+        {% endif %}
+        <a class="cm-sg-pill" href="{{ path('app_serious_games_avatar') }}">
+            <span data-controller="sg-avatar" data-sg-avatar-config-value="{{ avatar_config|json_encode }}" data-sg-avatar-size-value="28"></span>
+            {{ 'seriousGameAvatarHeading'|trans }}
+        </a>
+    </div>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-sg-catalog" data-controller="sg-catalog sg-launch">
+        <aside class="card cm-sg-catalog__filters">
+            <label class="cm-sg-catalog__search">
+                <span class="visually-hidden">{{ 'seriousGameCatalogSearchLabel'|trans }}</span>
+                <input type="search" placeholder="{{ 'seriousGameCatalogSearchLabel'|trans }}" data-sg-catalog-target="search" data-action="sg-catalog#filter">
+            </label>
+            {% for group in [{key: 'subject', label: 'seriousGameCatalogSubjectLabel', values: subjects}, {key: 'level', label: 'seriousGameCatalogLevelLabel', values: levels}] %}
+                <fieldset>
+                    <legend class="cm-sg-catalog__gt">{{ group.label|trans }}</legend>
+                    <div class="cm-sg-catalog__chips">
+                        {% for value in group.values %}
+                            <button type="button" class="cm-sg-chip" aria-pressed="false" data-sg-catalog-target="chip" data-group="{{ group.key }}" data-value="{{ value }}" data-action="sg-catalog#toggle">{{ value }}</button>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+            {% endfor %}
+            <fieldset>
+                <legend class="cm-sg-catalog__gt">{{ 'seriousGameCatalogProgressLabel'|trans }}</legend>
+                <div class="cm-sg-catalog__progress">
+                    {% for status in ['all', 'new', 'progress', 'done'] %}
+                        <button type="button" class="cm-sg-catalog__status" data-status="{{ status }}" aria-pressed="{{ status == 'all' ? 'true' : 'false' }}" data-sg-catalog-target="status" data-action="sg-catalog#status">
+                            {% if status in ['progress', 'done'] %}<span class="cm-sg-dot cm-sg-dot--{{ status }}"></span>{% endif %}
+                            {{ ('seriousGameCatalogStatus' ~ status|capitalize)|trans }}
+                        </button>
+                    {% endfor %}
+                </div>
+            </fieldset>
+            <button type="button" class="cm-sg-catalog__clear" hidden data-sg-catalog-target="clear" data-action="sg-catalog#clear">{{ 'seriousGameCatalogClearAction'|trans }}</button>
+        </aside>
+
+        <section class="cm-sg-catalog__results">
+            <p class="cm-sg-catalog__count" data-sg-catalog-target="count" aria-live="polite">{{ 'seriousGameCatalogCount'|trans({'%count%': cards|length}) }}</p>
+            <div class="cm-sg-catalog__grid">
+                {% for card in cards %}
+                    {% set game = card.game %}
+                    {% set thumb = card.thumbnail %}
+                    <article class="cm-sg-card" data-sg-catalog-target="card"
+                             data-subjects="{{ game.subjects|json_encode }}" data-levels="{{ game.levels|json_encode }}"
+                             data-status="{{ card.status }}" data-text="{{ (game.title ~ ' ' ~ game.pitch)|lower }}">
+                        <a class="cm-sg-card__visual" data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}"
+                           style="background: {{ thumb.background|default('#1B2550') }}; color: {{ thumb.color|default('#D9A441') }}; font-family: {{ thumb.font|default('Georgia, serif') }}; font-style: {{ thumb.style|default('normal') }}; font-weight: {{ thumb.weight|default(600) }};">
+                            <span class="cm-sg-card__title-art">{{ game.title }}</span>
+                            {% if not game.published %}<span class="cm-sg-card__flag">{{ 'seriousGameUnpublishedLabel'|trans }}</span>{% endif %}
+                            {% if card.trophy %}
+                                <span class="cm-sg-card__medal cm-sg-card__medal--{{ card.trophy.finish ? card.trophy.finish.value : 'brass' }}" title="{{ card.trophy.label }}">✦</span>
+                            {% endif %}
+                        </a>
+                        <div class="cm-sg-card__body">
+                            <h2 class="cm-sg-card__title"><a data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ game.title }}</a></h2>
+                            <p class="cm-sg-card__pitch">{{ game.pitch }}</p>
+                            <div class="cm-sg-card__tags">
+                                {% for subject in game.subjects %}<span class="cm-sg-tag cm-sg-tag--subject">{{ subject }}</span>{% endfor %}
+                                {% for level in game.levels %}<span class="cm-sg-tag">{{ level }}</span>{% endfor %}
+                            </div>
+                            <div class="cm-sg-card__foot">
+                                <div class="cm-sg-card__progress">
+                                    {% if card.value > 0 %}
+                                        <span class="cm-sg-bar"><span class="cm-sg-bar__fill cm-sg-bar__fill--{{ card.status }}" style="width: {{ (100 * card.value / card.total)|round }}%"></span></span>
+                                        <span class="cm-sg-card__value">{{ card.value }}/{{ card.total }} {{ game.unitLabel }}</span>
+                                    {% endif %}
+                                </div>
+                                <a class="cm-sg-card__cta" data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ ('seriousGameCta' ~ card.status|capitalize)|trans }}</a>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+                <p class="cm-sg-catalog__empty" hidden data-sg-catalog-target="empty">{{ 'seriousGameCatalogEmpty'|trans }}</p>
+            </div>
+        </section>
+    </div>
+{% endblock %}

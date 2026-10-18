@@ -1,0 +1,86 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "templum",
+  "label": "2e déclinaison, neutres (templum, -i)",
+  "misconceptions": [
+    {
+      "id": "templum-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "Le cas peut être juste et le nombre faux : chaque cas a une terminaison au singulier et une autre au pluriel. Repère d’abord le nombre demandé, puis la ligne du tableau."
+    },
+    {
+      "id": "templum-nominatif",
+      "label": "Laisser le mot au nominatif",
+      "explanation": "Le nominatif n’est que la forme du dictionnaire : un mot latin change de terminaison selon sa fonction. Pars du radical du génitif et ajoute la terminaison du cas demandé."
+    },
+    {
+      "id": "templum-cas",
+      "label": "Confondre deux cas voisins",
+      "explanation": "Certains cas ont des terminaisons proches ou identiques (datif et ablatif pluriels, génitif et datif singuliers de la 1re déclinaison). Récite la ligne entière du tableau pour retrouver la bonne case."
+    },
+    {
+      "id": "templum-neutre",
+      "label": "Oublier la règle du neutre",
+      "explanation": "Un nom neutre a toujours la même forme au nominatif, au vocatif et à l’accusatif ; au pluriel, ces trois cas sont en -a. Templum, templum, templum ; templa, templa, templa."
+    }
+  ],
+  "params": {
+    "w": "pick([['templum', 'templi', 'n', 'le temple', 'les temples'], ['bellum', 'belli', 'n', 'la guerre', 'les guerres'], ['donum', 'doni', 'n', 'le cadeau', 'les cadeaux'], ['oppidum', 'oppidi', 'n', 'la place forte', 'les places fortes'], ['verbum', 'verbi', 'n', 'la parole', 'les paroles'], ['forum', 'fori', 'n', 'le forum', 'les forums'], ['periculum', 'periculi', 'n', 'le danger', 'les dangers'], ['consilium', 'consilii', 'n', 'le conseil', 'les conseils'], ['signum', 'signi', 'n', 'le signe', 'les signes'], ['vinum', 'vini', 'n', 'le vin', 'les vins']])",
+    "k": "pick(['acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "variants": [
+    {
+      "weight": 5,
+      "label": "Une forme",
+      "prompt": "Décline <i>{{ w[0] }}, {{ w[1] }}</i> ({{ (keyNumber(k) == 'sg' ? w[3] : w[4]) }}) {{ atCase(k) }}.",
+      "answer": {
+        "type": "latin",
+        "value": "forms(w, k)"
+      },
+      "wrongs": [
+        {
+          "misconception": "templum-nombre",
+          "value": "forms(w, otherNumber(k))"
+        },
+        {
+          "misconception": "templum-nominatif",
+          "value": "form(w, 'nom.' ~ keyNumber(k))",
+          "when": "keyCase(k) != 'nom' and keyCase(k) != 'voc'"
+        },
+        {
+          "misconception": "templum-neutre",
+          "value": "formAs([w[0], w[1], 'm'], 2, k)"
+        },
+        {
+          "misconception": "templum-cas",
+          "value": "forms(w, withCase(k, confusedCase(keyCase(k))))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ declName(decl(w)) }} : le radical <i>{{ stem(w) }}-</i> se lit sur le génitif <i>{{ w[1] }}</i>. {{ ucfirst(caseLabel(k)) }} : <i>{{ form(w, k) }}</i>.{{ declTable(w, k) }}"
+    },
+    {
+      "weight": 1,
+      "label": "Le tableau",
+      "prompt": "Décline <i>{{ w[0] }}, {{ w[1] }}</i> ({{ (n == 'sg' ? w[3] : w[4]) }}) au {{ numberName(n) }} : les six cas.",
+      "answer": {
+        "type": "forms",
+        "value": "paradigmAlts(w, n)",
+        "labels": "caseNames()"
+      },
+      "wrongs": [
+        {
+          "misconception": "templum-nombre",
+          "value": "paradigm(w, n == 'sg' ? 'pl' : 'sg')"
+        },
+        {
+          "misconception": "templum-neutre",
+          "value": "paradigmAs([w[0], w[1], 'm'], 2, n)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ declName(decl(w)) }}, radical <i>{{ stem(w) }}-</i> (génitif <i>{{ w[1] }}</i>).{{ declTable(w, n == 'sg' ? ['nom.sg', 'voc.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg'] : ['nom.pl', 'voc.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl']) }}"
+    }
+  ]
+}

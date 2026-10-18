@@ -8,6 +8,8 @@ use App\Entity\FeatureRoleSetting;
 use App\Enum\Feature;
 use App\Enum\FeatureFamily;
 use App\Repository\FeatureRoleSettingRepository;
+use App\Repository\SeriousGameRepository;
+use App\Repository\SeriousGameRoleSettingRepository;
 use App\Repository\UserFeatureAccessRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -43,6 +45,8 @@ class FeatureMatrixController extends AbstractController
         private readonly FeatureRoleSettingRepository $roleSettings,
         private readonly UserFeatureAccessRepository $overrides,
         private readonly EntityManagerInterface $entityManager,
+        private readonly SeriousGameRepository $seriousGames,
+        private readonly SeriousGameRoleSettingRepository $seriousGameRoleSettings,
     ) {
     }
 
@@ -82,9 +86,23 @@ class FeatureMatrixController extends AbstractController
             }
         }
 
+        // The « Serious games » block (design/validated/serious-games.md §3.1): one line per
+        // published game, after the families of the enum. Games are data, not cases, so they get
+        // a block of their own rather than rows of the Pédagogie family; an absent pair is off.
+        $gameMatrix = $this->seriousGameRoleSettings->matrix();
+        $seriousGames = [];
+        foreach ($this->seriousGames->findPublished() as $game) {
+            $cells = [];
+            foreach ($roles as $role) {
+                $cells[$role] = $gameMatrix[(int) $game->getId()][$role] ?? false;
+            }
+            $seriousGames[] = ['game' => $game, 'cells' => $cells];
+        }
+
         return $this->render('feature/matrix.html.twig', [
             'roles' => $roles,
             'families' => $families,
+            'seriousGames' => $seriousGames,
         ]);
     }
 

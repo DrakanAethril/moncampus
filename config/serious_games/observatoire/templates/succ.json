@@ -1,0 +1,30 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "succ",
+  "label": "Évolutions successives",
+  "misconceptions": [
+    { "id": "succ-add", "label": "Additionner les taux successifs" },
+    { "id": "succ-coef", "label": "Donner le coefficient global au lieu du taux" },
+    { "id": "succ-mul-rates", "label": "Multiplier les taux entre eux" }
+  ],
+  "params": {
+    "a": "pick([10, 20, 25, 50]) * pick([1, -1])",
+    "b": "pick([10, 20, 25, 50]) * pick([1, -1])"
+  },
+  "let": {
+    "C": "(1 + a / 100) * (1 + b / 100)",
+    "g": "round((C - 1) * 100, 6)",
+    "eva": "(a > 0 ? 'une hausse de ' : 'une baisse de ') ~ abs(a) ~ ' %'",
+    "evb": "(b > 0 ? 'une hausse de ' : 'une baisse de ') ~ abs(b) ~ ' %'"
+  },
+  "constraints": ["isInt(g * 10)"],
+  "difficulty": 2,
+  "prompt": "Un prix subit {{ eva }}, puis {{ evb }}. Quelle est l’évolution globale, en % ?",
+  "answer": { "type": "number", "value": "g", "display": "signedPct(round(g, 6))", "text": "str(g)", "unit": "%" },
+  "wrongs": [
+    { "misconception": "succ-add", "value": "a + b", "display": "signedPct(round(a + b, 6))" },
+    { "misconception": "succ-coef", "value": "C * 100", "display": "pct(round(C * 100, 6))" },
+    { "misconception": "succ-mul-rates", "value": "a * b / 100", "display": "signedPct(round(a * b / 100, 6))" }
+  ],
+  "method": "Les coefficients se multiplient : {{ 1 + a / 100 }} × {{ 1 + b / 100 }} = {{ round(C, 6) }}, donc une évolution de {{ signedPct(round(g, 6)) }}. Les taux, eux, ne s’additionnent pas."
+}

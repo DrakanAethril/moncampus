@@ -14,6 +14,8 @@ use App\Repository\OAuthClientRepository;
 use App\Repository\OAuthTokenRepository;
 use App\Repository\PlatformActivityRepository;
 use App\Repository\QuizAttemptEventRepository;
+use App\Repository\SeriousGameCometRepository;
+use App\Repository\SeriousGameSessionRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -63,12 +65,18 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * page tells the person their progress is followed. Read on the last activity, not on the start: a
  * path somebody is still working through is not old.
  *
+ * **An eighth since the serious games: sessions, answers and comets 24 months after the player's
+ * last activity in the game** (App\Entity\SeriousGameSession - its answers go with it - and
+ * App\Entity\SeriousGameComet; design/validated/serious-games.md §4). They name a student and every
+ * answer they typed. What the player acquired - stars, rewards, avatar - stays as long as the
+ * account: it is theirs, not a record of their attempts.
+ *
  * To be wired to a scheduled task (once a day is more than enough). With no scheduler, the command
  * stays usable by hand; nothing breaks if it never runs, the tables simply grow.
  */
 #[AsCommand(
     name: 'app:purge-platform-activity',
-    description: 'Applique les rétentions de la plateforme : journal, sessions de console, surveillance de quiz, offres du jobboard, secrets OAuth expirés, sessions mobiles mortes, suivis de parcours inactifs.',
+    description: 'Applique les rétentions de la plateforme : journal, sessions de console, surveillance de quiz, offres du jobboard, secrets OAuth expirés, sessions mobiles mortes, suivis de parcours inactifs, séances de serious games inactives.',
 )]
 class PurgePlatformActivityCommand extends Command
 {
@@ -86,6 +94,9 @@ class PurgePlatformActivityCommand extends Command
     /** A learning-path follow-up, read on its last activity. Twenty-four months. */
     private const int LEARNING_PATH_RETENTION_MONTHS = 24;
 
+    /** A serious game's sessions, answers and comets, read on the player's last activity in the game. */
+    private const int SERIOUS_GAME_RETENTION_MONTHS = 24;
+
     public function __construct(
         private readonly PlatformActivityRepository $repository,
         private readonly ConsoleSessionRepository $consoleSessions,
@@ -97,6 +108,8 @@ class PurgePlatformActivityCommand extends Command
         private readonly MobileSessionRepository $mobileSessions,
         private readonly LearningPathEnrollmentRepository $learningPathEnrollments,
         private readonly McpUploadSlotRepository $uploadSlots,
+        private readonly SeriousGameSessionRepository $seriousGameSessions,
+        private readonly SeriousGameCometRepository $seriousGameComets,
     ) {
         parent::__construct();
     }
@@ -195,6 +208,11 @@ class PurgePlatformActivityCommand extends Command
 
         $followUps = $this->learningPathEnrollments->purgeInactiveSince($learningPathThreshold);
         $io->success(\sprintf('%d suivi(s) de parcours inactif(s) depuis le %s supprimé(s).', $followUps, $learningPathThreshold->format('d/m/Y')));
+
+        $seriousGameThreshold = new \DateTimeImmutable(\sprintf('-%d months', self::SERIOUS_GAME_RETENTION_MONTHS));
+        $seriousGameSessions = $this->seriousGameSessions->purgeInactiveSince($seriousGameThreshold);
+        $seriousGameComets = $this->seriousGameComets->purgeInactiveSince($seriousGameThreshold);
+        $io->success(\sprintf('%d séance(s) et %d comète(s) de serious games inactives depuis le %s supprimée(s).', $seriousGameSessions, $seriousGameComets, $seriousGameThreshold->format('d/m/Y')));
 
         return Command::SUCCESS;
     }

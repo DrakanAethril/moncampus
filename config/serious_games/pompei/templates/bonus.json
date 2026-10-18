@@ -1,0 +1,91 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "bonus",
+  "label": "Adjectifs en -us, -a, -um (bonus, pulcher)",
+  "misconceptions": [
+    {
+      "id": "bonus-genre",
+      "label": "Se tromper de genre",
+      "explanation": "Un adjectif a une forme par genre : masculin, féminin, neutre. Repère le genre demandé avant de choisir la colonne du tableau."
+    },
+    {
+      "id": "bonus-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "L’adjectif se met au même nombre que le nom qu’il accompagne. Vérifie la ligne du tableau : singulier ou pluriel."
+    },
+    {
+      "id": "bonus-cas",
+      "label": "Confondre deux cas voisins",
+      "explanation": "L’adjectif se décline exactement comme un nom. Récite la colonne entière pour retrouver la bonne case."
+    },
+    {
+      "id": "bonus-nominatif",
+      "label": "Laisser l’adjectif au nominatif",
+      "explanation": "Comme le nom, l’adjectif change de terminaison selon le cas. Pars du radical (celui du génitif) et ajoute la terminaison demandée."
+    }
+  ],
+  "params": {
+    "a": "pick([['bonus', 'bona', 'bonum', 'boni', 'bon'], ['magnus', 'magna', 'magnum', 'magni', 'grand'], ['parvus', 'parva', 'parvum', 'parvi', 'petit'], ['longus', 'longa', 'longum', 'longi', 'long'], ['altus', 'alta', 'altum', 'alti', 'haut'], ['novus', 'nova', 'novum', 'novi', 'nouveau'], ['laetus', 'laeta', 'laetum', 'laeti', 'joyeux'], ['clarus', 'clara', 'clarum', 'clari', 'célèbre'], ['malus', 'mala', 'malum', 'mali', 'mauvais'], ['Romanus', 'Romana', 'Romanum', 'Romani', 'romain'], ['pulcher', 'pulchra', 'pulchrum', 'pulchri', 'beau'], ['liber', 'libera', 'liberum', 'liberi', 'libre'], ['miser', 'misera', 'miserum', 'miseri', 'malheureux'], ['niger', 'nigra', 'nigrum', 'nigri', 'noir'], ['sacer', 'sacra', 'sacrum', 'sacri', 'sacré'], ['aeger', 'aegra', 'aegrum', 'aegri', 'malade']])",
+    "k": "pick(['nom.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])",
+    "g": "pick(['m', 'f', 'n'])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "let": {
+    "key": "k ~ '.' ~ g",
+    "og": "g == 'f' ? 'm' : 'f'"
+  },
+  "variants": [
+    {
+      "weight": 5,
+      "label": "Une forme",
+      "prompt": "Donne <i>{{ a[0] }}, {{ a[1] }}, {{ a[2] }}</i> ({{ a[4] }}) {{ atCase(key) }}.",
+      "answer": {
+        "type": "latin",
+        "value": "adjs(a, key)"
+      },
+      "wrongs": [
+        {
+          "misconception": "bonus-genre",
+          "value": "adjs(a, k ~ '.' ~ og)"
+        },
+        {
+          "misconception": "bonus-nombre",
+          "value": "adjs(a, otherNumber(key))"
+        },
+        {
+          "misconception": "bonus-nominatif",
+          "value": "adj(a, 'nom.' ~ keyNumber(k) ~ '.' ~ g)",
+          "when": "keyCase(k) != 'nom'"
+        },
+        {
+          "misconception": "bonus-cas",
+          "value": "adjs(a, withCase(key, confusedCase(keyCase(k))))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Bonus, -a, -um se décline comme dominus au masculin, comme rosa au féminin, comme templum au neutre ; radical <i>{{ adjStem(a) }}-</i>.{{ adjTable(a, keyNumber(k), key) }}"
+    },
+    {
+      "weight": 1,
+      "label": "Le tableau",
+      "prompt": "Décline <i>{{ a[0] }}, {{ a[1] }}, {{ a[2] }}</i> ({{ a[4] }}) au {{ genderName(g) }} {{ numberName(n) }} : les six cas.",
+      "answer": {
+        "type": "forms",
+        "value": "adjParadigmAlts(a, g, n)",
+        "labels": "caseNames()"
+      },
+      "wrongs": [
+        {
+          "misconception": "bonus-genre",
+          "value": "adjParadigm(a, og, n)"
+        },
+        {
+          "misconception": "bonus-nombre",
+          "value": "adjParadigm(a, g, n == 'sg' ? 'pl' : 'sg')"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Bonus, -a, -um se décline comme dominus au masculin, comme rosa au féminin, comme templum au neutre ; radical <i>{{ adjStem(a) }}-</i>.{{ adjTable(a, n) }}"
+    }
+  ]
+}

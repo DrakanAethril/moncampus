@@ -1,0 +1,212 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "isoler",
+  "label": "Isoler une variable",
+  "misconceptions": [
+    { "id": "iso-mul", "label": "Multiplier au lieu de diviser" },
+    { "id": "iso-div", "label": "Diviser au lieu de multiplier" },
+    { "id": "iso-inverse", "label": "Diviser à l’envers" },
+    { "id": "iso-subtract", "label": "Soustraire au lieu de diviser" },
+    { "id": "iso-half", "label": "Mal traiter le facteur 2" },
+    { "id": "iso-order", "label": "Diviser avant de soustraire" },
+    { "id": "iso-sign", "label": "Erreur de signe en changeant de membre" }
+  ],
+  "variants": [
+    {
+      "label": "Produit X = A × B",
+      "weight": 6,
+      "difficulty": 1,
+      "params": {
+        "f": "pick([{'X': 'P', 'A': 'U', 'B': 'I', 'ctx': 'puissance électrique'}, {'X': 'U', 'A': 'R', 'B': 'I', 'ctx': 'loi d’Ohm'}, {'X': 'd', 'A': 'v', 'B': 't', 'ctx': 'distance parcourue'}, {'X': 'F', 'A': 'm', 'B': 'a', 'ctx': 'deuxième loi de Newton'}, {'X': 'm', 'A': 'ρ', 'B': 'V', 'ctx': 'masse volumique'}, {'X': 'E', 'A': 'P', 'B': 't', 'ctx': 'énergie consommée'}])",
+        "useA": "chance(0.5)"
+      },
+      "let": {
+        "Xn": "f['X']",
+        "Tn": "useA ? f['A'] : f['B']",
+        "On": "useA ? f['B'] : f['A']",
+        "X": "v(Xn)",
+        "T": "v(Tn)",
+        "O": "v(On)",
+        "ans": "T ~ ' = ' ~ fracRaw(X, O)"
+      },
+      "prompt": "Formule de {{ la(f['ctx']) }} : {{ X }} = {{ v(f['A']) }} × {{ v(f['B']) }}. Exprimer {{ T }} en fonction des autres grandeurs.",
+      "answer": {
+        "type": "formula",
+        "vars": "[f['X'], f['A'], f['B']]",
+        "target": "Tn",
+        "value": "Xn ~ '/' ~ On",
+        "display": "ans",
+        "text": "Tn ~ ' = ' ~ Xn ~ '/' ~ On"
+      },
+      "wrongs": [
+        { "misconception": "iso-mul", "value": "Xn ~ '*' ~ On", "display": "T ~ ' = ' ~ X ~ ' × ' ~ O", "text": "Tn ~ ' = ' ~ Xn ~ '×' ~ On" },
+        { "misconception": "iso-inverse", "value": "On ~ '/' ~ Xn", "display": "T ~ ' = ' ~ fracRaw(O, X)", "text": "Tn ~ ' = ' ~ On ~ '/' ~ Xn" },
+        { "misconception": "iso-subtract", "value": "Xn ~ '-' ~ On", "display": "T ~ ' = ' ~ X ~ ' − ' ~ O", "text": "Tn ~ ' = ' ~ Xn ~ '-' ~ On" }
+      ],
+      "method": "On divise les deux membres par {{ O }} : {{ ans }}."
+    },
+    {
+      "label": "Quotient X = A / B, isoler A",
+      "weight": 1.5,
+      "difficulty": 1,
+      "params": {
+        "f": "pick([{'X': 'v', 'A': 'd', 'B': 't', 'ctx': 'vitesse moyenne'}, {'X': 'C', 'A': 'n', 'B': 'V', 'ctx': 'concentration'}, {'X': 'p', 'A': 'F', 'B': 'S', 'ctx': 'pression'}])"
+      },
+      "let": {
+        "Xn": "f['X']",
+        "An": "f['A']",
+        "Bn": "f['B']",
+        "X": "v(Xn)",
+        "A": "v(An)",
+        "B": "v(Bn)",
+        "ans": "A ~ ' = ' ~ X ~ ' × ' ~ B"
+      },
+      "prompt": "Formule de {{ la(f['ctx']) }} : {{ X }} = {{ fracRaw(A, B) }}. Exprimer {{ A }} en fonction des autres grandeurs.",
+      "answer": {
+        "type": "formula",
+        "vars": "[Xn, An, Bn]",
+        "target": "An",
+        "value": "Xn ~ '*' ~ Bn",
+        "display": "ans",
+        "text": "An ~ ' = ' ~ Xn ~ '×' ~ Bn"
+      },
+      "wrongs": [
+        { "misconception": "iso-div", "value": "Xn ~ '/' ~ Bn", "display": "A ~ ' = ' ~ fracRaw(X, B)", "text": "An ~ ' = ' ~ Xn ~ '/' ~ Bn" },
+        { "misconception": "iso-inverse", "value": "Bn ~ '/' ~ Xn", "display": "A ~ ' = ' ~ fracRaw(B, X)", "text": "An ~ ' = ' ~ Bn ~ '/' ~ Xn" },
+        { "misconception": "iso-subtract", "value": "Xn ~ '+' ~ Bn", "display": "A ~ ' = ' ~ X ~ ' + ' ~ B", "text": "An ~ ' = ' ~ Xn ~ '+' ~ Bn" }
+      ],
+      "method": "On multiplie les deux membres par {{ B }} : {{ ans }}."
+    },
+    {
+      "label": "Quotient X = A / B, isoler B",
+      "weight": 1.5,
+      "difficulty": 1,
+      "params": {
+        "f": "pick([{'X': 'v', 'A': 'd', 'B': 't', 'ctx': 'vitesse moyenne'}, {'X': 'C', 'A': 'n', 'B': 'V', 'ctx': 'concentration'}, {'X': 'p', 'A': 'F', 'B': 'S', 'ctx': 'pression'}])"
+      },
+      "let": {
+        "Xn": "f['X']",
+        "An": "f['A']",
+        "Bn": "f['B']",
+        "X": "v(Xn)",
+        "A": "v(An)",
+        "B": "v(Bn)",
+        "ans": "B ~ ' = ' ~ fracRaw(A, X)"
+      },
+      "prompt": "Formule de {{ la(f['ctx']) }} : {{ X }} = {{ fracRaw(A, B) }}. Exprimer {{ B }} en fonction des autres grandeurs.",
+      "answer": {
+        "type": "formula",
+        "vars": "[Xn, An, Bn]",
+        "target": "Bn",
+        "value": "An ~ '/' ~ Xn",
+        "display": "ans",
+        "text": "Bn ~ ' = ' ~ An ~ '/' ~ Xn"
+      },
+      "wrongs": [
+        { "misconception": "iso-mul", "value": "An ~ '*' ~ Xn", "display": "B ~ ' = ' ~ A ~ ' × ' ~ X", "text": "Bn ~ ' = ' ~ An ~ '×' ~ Xn" },
+        { "misconception": "iso-inverse", "value": "Xn ~ '/' ~ An", "display": "B ~ ' = ' ~ fracRaw(X, A)", "text": "Bn ~ ' = ' ~ Xn ~ '/' ~ An" },
+        { "misconception": "iso-subtract", "value": "An ~ '-' ~ Xn", "display": "B ~ ' = ' ~ A ~ ' − ' ~ X", "text": "Bn ~ ' = ' ~ An ~ '-' ~ Xn" }
+      ],
+      "method": "On multiplie par {{ B }} ({{ X }} × {{ B }} = {{ A }}) puis on divise par {{ X }} : {{ ans }}."
+    },
+    {
+      "label": "Demi-produit 𝒜 = b × h / 2",
+      "weight": 1,
+      "difficulty": 2,
+      "params": { "tA": "chance(0.5)" },
+      "let": {
+        "f": "{'X': '𝒜', 'A': 'b', 'B': 'h', 'ctx': 'aire d’un triangle'}",
+        "Xn": "f['X']",
+        "Tn": "tA ? f['A'] : f['B']",
+        "On": "tA ? f['B'] : f['A']",
+        "X": "v(Xn)",
+        "T": "v(Tn)",
+        "O": "v(On)",
+        "ans": "T ~ ' = ' ~ fracRaw('2' ~ X, O)"
+      },
+      "prompt": "Formule de {{ la(f['ctx']) }} : {{ X }} = {{ fracRaw(v(f['A']) ~ ' × ' ~ v(f['B']), '2') }}. Exprimer {{ T }} en fonction des autres grandeurs.",
+      "answer": {
+        "type": "formula",
+        "vars": "[f['X'], f['A'], f['B']]",
+        "target": "Tn",
+        "value": "'2*' ~ Xn ~ '/' ~ On",
+        "display": "ans",
+        "text": "Tn ~ ' = 2×' ~ Xn ~ '/' ~ On"
+      },
+      "wrongs": [
+        { "misconception": "iso-half", "value": "Xn ~ '/(2*' ~ On ~ ')'", "display": "T ~ ' = ' ~ fracRaw(X, '2' ~ O)", "text": "Tn ~ ' = ' ~ Xn ~ '/(2×' ~ On ~ ')'" },
+        { "misconception": "iso-mul", "value": "Xn ~ '*' ~ On ~ '/2'", "display": "T ~ ' = ' ~ fracRaw(X ~ ' × ' ~ O, '2')", "text": "Tn ~ ' = ' ~ Xn ~ '×' ~ On ~ '/2'" },
+        { "misconception": "iso-inverse", "value": "'2*' ~ On ~ '/' ~ Xn", "display": "T ~ ' = ' ~ fracRaw('2' ~ O, X)", "text": "Tn ~ ' = 2×' ~ On ~ '/' ~ Xn" }
+      ],
+      "method": "On multiplie par 2 : 2{{ X }} = {{ v(f['A']) }} × {{ v(f['B']) }}, puis on divise par {{ O }} : {{ ans }}."
+    },
+    {
+      "label": "Affine X = A + B C, isoler B",
+      "weight": 1,
+      "difficulty": 2,
+      "params": {
+        "f": "pick([{'X': 'v', 'A': 'v₀', 'B': 'a', 'C': 't', 'ctx': 'vitesse en mouvement uniformément accéléré'}, {'X': 'y', 'A': 'p', 'B': 'm', 'C': 'x', 'ctx': 'équation de droite'}])"
+      },
+      "let": {
+        "Xn": "f['X']",
+        "An": "f['A']",
+        "Bn": "f['B']",
+        "Cn": "f['C']",
+        "X": "v(Xn)",
+        "A": "v(An)",
+        "B": "v(Bn)",
+        "C": "v(Cn)",
+        "ans": "B ~ ' = ' ~ fracRaw(X ~ ' − ' ~ A, C)"
+      },
+      "prompt": "Formule de {{ la(f['ctx']) }} : {{ X }} = {{ A }} + {{ B }}{{ C }}. Exprimer {{ B }} en fonction des autres grandeurs.",
+      "answer": {
+        "type": "formula",
+        "vars": "[Xn, An, Bn, Cn]",
+        "target": "Bn",
+        "value": "'(' ~ Xn ~ '-' ~ An ~ ')/' ~ Cn",
+        "display": "ans",
+        "text": "Bn ~ ' = (' ~ Xn ~ '-' ~ An ~ ')/' ~ Cn"
+      },
+      "wrongs": [
+        { "misconception": "iso-order", "value": "Xn ~ '/' ~ Cn ~ '-' ~ An", "display": "B ~ ' = ' ~ fracRaw(X, C) ~ ' − ' ~ A", "text": "Bn ~ ' = ' ~ Xn ~ '/' ~ Cn ~ '-' ~ An" },
+        { "misconception": "iso-sign", "value": "'(' ~ Xn ~ '+' ~ An ~ ')/' ~ Cn", "display": "B ~ ' = ' ~ fracRaw(X ~ ' + ' ~ A, C)", "text": "Bn ~ ' = (' ~ Xn ~ '+' ~ An ~ ')/' ~ Cn" },
+        { "misconception": "iso-mul", "value": "Cn ~ '*(' ~ Xn ~ '-' ~ An ~ ')'", "display": "B ~ ' = ' ~ C ~ '(' ~ X ~ ' − ' ~ A ~ ')'", "text": "Bn ~ ' = ' ~ Cn ~ '×(' ~ Xn ~ '-' ~ An ~ ')'" }
+      ],
+      "method": "On retranche {{ A }} : {{ B }}{{ C }} = {{ X }} − {{ A }}, puis on divise par {{ C }} : {{ ans }}."
+    },
+    {
+      "label": "Affine X = A + B C, isoler A",
+      "weight": 1,
+      "difficulty": 2,
+      "params": {
+        "f": "pick([{'X': 'v', 'A': 'v₀', 'B': 'a', 'C': 't', 'ctx': 'vitesse en mouvement uniformément accéléré'}, {'X': 'y', 'A': 'p', 'B': 'm', 'C': 'x', 'ctx': 'équation de droite'}])"
+      },
+      "let": {
+        "Xn": "f['X']",
+        "An": "f['A']",
+        "Bn": "f['B']",
+        "Cn": "f['C']",
+        "X": "v(Xn)",
+        "A": "v(An)",
+        "B": "v(Bn)",
+        "C": "v(Cn)",
+        "ans": "A ~ ' = ' ~ X ~ ' − ' ~ B ~ C"
+      },
+      "prompt": "Formule de {{ la(f['ctx']) }} : {{ X }} = {{ A }} + {{ B }}{{ C }}. Exprimer {{ A }} en fonction des autres grandeurs.",
+      "answer": {
+        "type": "formula",
+        "vars": "[Xn, An, Bn, Cn]",
+        "target": "An",
+        "value": "Xn ~ '-' ~ Bn ~ '*' ~ Cn",
+        "display": "ans",
+        "text": "An ~ ' = ' ~ Xn ~ '-' ~ Bn ~ '×' ~ Cn"
+      },
+      "wrongs": [
+        { "misconception": "iso-sign", "value": "Xn ~ '+' ~ Bn ~ '*' ~ Cn", "display": "A ~ ' = ' ~ X ~ ' + ' ~ B ~ C", "text": "An ~ ' = ' ~ Xn ~ '+' ~ Bn ~ '×' ~ Cn" },
+        { "misconception": "iso-mul", "value": "Xn ~ '/(' ~ Bn ~ '*' ~ Cn ~ ')'", "display": "A ~ ' = ' ~ fracRaw(X, B ~ C)", "text": "An ~ ' = ' ~ Xn ~ '/(' ~ Bn ~ '×' ~ Cn ~ ')'" },
+        { "misconception": "iso-inverse", "value": "Bn ~ '*' ~ Cn ~ '-' ~ Xn", "display": "A ~ ' = ' ~ B ~ C ~ ' − ' ~ X", "text": "An ~ ' = ' ~ Bn ~ '×' ~ Cn ~ '-' ~ Xn" }
+      ],
+      "method": "On retranche {{ B }}{{ C }} aux deux membres : {{ ans }}."
+    }
+  ]
+}

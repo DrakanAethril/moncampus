@@ -1,0 +1,46 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ game.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'seriousGamesNavLabel'|trans, url: path('app_serious_games')},
+        {label: game.title, url: path('app_serious_games_play', {slug: game.slug})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ game.title }}{% endblock %}
+
+{% block main %}
+    {# The game in a frame with an opaque origin (no allow-same-origin): it reads neither the
+       session nor this page, and speaks to Formatool only through serious_game_host_controller.js.
+       The host bar above it is the platform's, the same for every game: the full screen toggle -
+       a game opens full screen - and, while a timed session runs, the time left. #}
+    <div class="cm-sg-host" data-controller="serious-game-host"
+         data-serious-game-host-src-value="/serious-games/{{ game.slug }}/index.html?v={{ game.version|url_encode }}"
+         data-serious-game-host-api-value="{{ path('app_serious_games_api_user', {slug: game.slug})|replace({'/user': ''}) }}"
+         data-serious-game-host-csrf-value="{{ csrf_token('serious-games') }}"
+         data-serious-game-host-exit-url-value="{{ path('app_serious_games') }}"
+         data-serious-game-host-enter-label-value="{{ 'seriousGameFullscreenEnter'|trans }}"
+         data-serious-game-host-exit-label-value="{{ 'seriousGameFullscreenExit'|trans }}"
+         data-serious-game-host-time-up-label-value="{{ 'seriousGameTimeUp'|trans }}"
+         data-serious-game-host-minutes-left-label-value="{{ 'seriousGameMinutesLeft'|trans }}">
+        <div class="cm-sg-host__bar">
+            <span class="cm-sg-host__title">{{ game.title }}</span>
+            <span class="cm-sg-host__timer" role="timer" data-serious-game-host-target="timer" hidden>
+                <span class="cm-sg-host__timer-label">{{ 'seriousGameTimeLeft'|trans }}</span>
+                <b data-serious-game-host-target="timerValue"></b>
+            </span>
+            <span class="visually-hidden" aria-live="polite" data-serious-game-host-target="announce"></span>
+            <button type="button" class="cm-sg-host__toggle" aria-pressed="false"
+                    data-serious-game-host-target="toggle" data-action="serious-game-host#toggleFullscreen">
+                <twig:ux:icon name="maximize" width="15" height="15" aria-hidden="true"/>
+                <span data-serious-game-host-target="toggleLabel">{{ 'seriousGameFullscreenEnter'|trans }}</span>
+            </button>
+        </div>
+        {# No src here: the relay gives it once it listens (serious_game_host_controller.js). #}
+        <iframe class="cm-sg-host__frame" data-serious-game-host-target="frame"
+                sandbox="allow-scripts"
+                title="{{ game.title }}"></iframe>
+    </div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "med",
+  "label": "Médiane, quartiles",
+  "misconceptions": [
+    { "id": "med-unsorted", "label": "Ne pas ranger la série avant de chercher le milieu" },
+    { "id": "med-mean", "label": "Confondre médiane et moyenne" },
+    { "id": "med-one-central", "label": "Ne garder qu’une des deux valeurs centrales" },
+    { "id": "med-rank", "label": "Se tromper de rang" },
+    { "id": "q-median", "label": "Confondre premier quartile et médiane" },
+    { "id": "q-rank", "label": "Arrondir le rang par défaut" },
+    { "id": "q-q3", "label": "Confondre Q1 et Q3" }
+  ],
+  "notes": "La référence tire N valeurs une à une, N entre 7 et 11 ; ici onze valeurs sont tirées et seules les N premières sont gardées (même loi).",
+  "params": {
+    "N": "int(7, 11)",
+    "drawn": "map(range(1, 11), 'int(2, 20)')",
+    "vals": "slice(drawn, 0, N)"
+  },
+  "let": {
+    "s": "sorted(vals)",
+    "h": "floor(N / 2)",
+    "odd": "N % 2 == 1"
+  },
+  "variants": [
+    {
+      "label": "Médiane",
+      "weight": 0.62,
+      "difficulty": "odd ? 1 : 2",
+      "let": {
+        "md": "median(vals)",
+        "mid": "odd ? vals[h] : (vals[h - 1] + vals[h]) / 2"
+      },
+      "prompt": "Temps de trajet (en minutes) de {{ N }} élèves : {{ join(vals, ' ; ') }}. Quelle est la médiane de cette série ?",
+      "answer": { "type": "number", "value": "md", "display": "fmt(md)", "tolerance": 1e-6 },
+      "wrongs": [
+        { "misconception": "med-unsorted", "value": "mid", "display": "fmt(mid)" },
+        { "misconception": "med-mean", "value": "mean(vals)", "display": "approx(mean(vals))" },
+        { "misconception": "med-one-central", "value": "s[h - 1]", "display": "fmt(s[h - 1])", "when": "not odd" },
+        { "misconception": "med-one-central", "value": "s[h]", "display": "fmt(s[h])", "when": "not odd" },
+        { "misconception": "med-rank", "value": "s[h - 1]", "display": "fmt(s[h - 1])", "when": "odd" },
+        { "misconception": "med-rank", "value": "s[h + 1]", "display": "fmt(s[h + 1])", "when": "odd" }
+      ],
+      "method": "On range la série : {{ join(s, ' ; ') }}. {{ odd ? 'L’effectif ' ~ N ~ ' est impair : la médiane est la valeur de rang ' ~ (h + 1) ~ ', soit ' ~ fmt(md) ~ '.' : 'L’effectif ' ~ N ~ ' est pair : la médiane est la moyenne des valeurs de rangs ' ~ h ~ ' et ' ~ (h + 1) ~ ', soit ' ~ fmt(md) ~ '.' }}"
+    },
+    {
+      "label": "Premier quartile",
+      "weight": 0.38,
+      "difficulty": 3,
+      "let": {
+        "rk": "ceil(N / 4)",
+        "q1": "s[rk - 1]",
+        "q3": "s[ceil(3 * N / 4) - 1]",
+        "md2": "median(vals)",
+        "alt": "N % 4 == 0 ? s[rk] : s[floor(N / 4) - 1]"
+      },
+      "prompt": "Temps de trajet (en minutes) de {{ N }} élèves : {{ join(vals, ' ; ') }}. Quel est le premier quartile Q<sub>1</sub> ?",
+      "answer": { "type": "number", "value": "q1", "display": "fmt(q1)" },
+      "wrongs": [
+        { "misconception": "q-median", "value": "md2", "display": "fmt(md2)", "when": "md2 != q1" },
+        { "misconception": "q-rank", "value": "alt", "display": "fmt(alt)", "when": "alt != q1" },
+        { "misconception": "q-q3", "value": "q3", "display": "fmt(q3)", "when": "q3 != q1" },
+        { "misconception": "q-rank", "value": "s[0]", "display": "fmt(s[0])" }
+      ],
+      "method": "Série rangée : {{ join(s, ' ; ') }}. {{ N }} ÷ 4 = {{ fmt(N / 4) }}, on arrondit à l’entier supérieur : Q<sub>1</sub> est la valeur de rang {{ rk }}, soit {{ fmt(q1) }}."
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "mare",
+  "label": "3e déclinaison, neutres en -e, -al, -ar (mare, animal)",
+  "misconceptions": [
+    {
+      "id": "mare-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "Le cas peut être juste et le nombre faux : chaque cas a une terminaison au singulier et une autre au pluriel. Repère d’abord le nombre demandé, puis la ligne du tableau."
+    },
+    {
+      "id": "mare-nominatif",
+      "label": "Laisser le mot au nominatif",
+      "explanation": "Le nominatif n’est que la forme du dictionnaire : un mot latin change de terminaison selon sa fonction. Pars du radical du génitif et ajoute la terminaison du cas demandé."
+    },
+    {
+      "id": "mare-cas",
+      "label": "Confondre deux cas voisins",
+      "explanation": "Certains cas ont des terminaisons proches ou identiques (datif et ablatif pluriels, génitif et datif singuliers de la 1re déclinaison). Récite la ligne entière du tableau pour retrouver la bonne case."
+    },
+    {
+      "id": "mare-abl",
+      "label": "Ablatif singulier en -e au lieu de -i",
+      "explanation": "Les neutres en -e, -al, -ar sont des thèmes en -i purs : leur ablatif singulier est en -i (mari, animali), comme leur datif."
+    },
+    {
+      "id": "mare-pluriel",
+      "label": "Pluriel en -a au lieu de -ia",
+      "explanation": "Ces neutres font leur nominatif, vocatif et accusatif pluriels en -ia : maria, animalia, exemplaria."
+    },
+    {
+      "id": "mare-gen",
+      "label": "Génitif pluriel en -um au lieu de -ium",
+      "explanation": "Comme tous les thèmes en -i, mare et animal ont un génitif pluriel en -ium : marium, animalium."
+    },
+    {
+      "id": "mare-masculin",
+      "label": "Décliner comme un masculin (marem, mares)",
+      "explanation": "Un neutre n’a jamais d’accusatif en -em ni de pluriel en -es : son accusatif est son nominatif (mare), et son pluriel en -ia (maria)."
+    }
+  ],
+  "params": {
+    "w": "pick([['mare', 'maris', 'n', 'la mer', 'les mers'], ['animal', 'animalis', 'n', 'l’animal', 'les animaux'], ['exemplar', 'exemplaris', 'n', 'le modèle', 'les modèles'], ['cubile', 'cubilis', 'n', 'le lit', 'les lits'], ['sedile', 'sedilis', 'n', 'le siège', 'les sièges'], ['vectigal', 'vectigalis', 'n', 'l’impôt', 'les impôts'], ['calcar', 'calcaris', 'n', 'l’éperon', 'les éperons'], ['rete', 'retis', 'n', 'le filet', 'les filets'], ['ovile', 'ovilis', 'n', 'la bergerie', 'les bergeries'], ['tribunal', 'tribunalis', 'n', 'la tribune', 'les tribunes']])",
+    "k": "pick(['acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "variants": [
+    {
+      "weight": 5,
+      "label": "Une forme",
+      "prompt": "Décline <i>{{ w[0] }}, {{ w[1] }}</i> ({{ (keyNumber(k) == 'sg' ? w[3] : w[4]) }}) {{ atCase(k) }}.",
+      "answer": {
+        "type": "latin",
+        "value": "forms(w, k)"
+      },
+      "wrongs": [
+        {
+          "misconception": "mare-nombre",
+          "value": "forms(w, otherNumber(k))"
+        },
+        {
+          "misconception": "mare-nominatif",
+          "value": "form(w, 'nom.' ~ keyNumber(k))",
+          "when": "keyCase(k) != 'nom' and keyCase(k) != 'voc'"
+        },
+        {
+          "misconception": "mare-abl",
+          "value": "stem(w) ~ 'e'",
+          "when": "k == 'abl.sg'"
+        },
+        {
+          "misconception": "mare-pluriel",
+          "value": "stem(w) ~ 'a'",
+          "when": "k in ['nom.pl', 'voc.pl', 'acc.pl']"
+        },
+        {
+          "misconception": "mare-gen",
+          "value": "stem(w) ~ 'um'",
+          "when": "k == 'gen.pl'"
+        },
+        {
+          "misconception": "mare-masculin",
+          "value": "formAs([w[0], w[1], 'm'], 3, k)"
+        },
+        {
+          "misconception": "mare-cas",
+          "value": "forms(w, withCase(k, confusedCase(keyCase(k))))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ declName(decl(w)) }} : le radical <i>{{ stem(w) }}-</i> se lit sur le génitif <i>{{ w[1] }}</i>. {{ ucfirst(caseLabel(k)) }} : <i>{{ form(w, k) }}</i>.{{ declTable(w, k) }}"
+    },
+    {
+      "weight": 1,
+      "label": "Le tableau",
+      "prompt": "Décline <i>{{ w[0] }}, {{ w[1] }}</i> ({{ (n == 'sg' ? w[3] : w[4]) }}) au {{ numberName(n) }} : les six cas.",
+      "answer": {
+        "type": "forms",
+        "value": "paradigmAlts(w, n)",
+        "labels": "caseNames()"
+      },
+      "wrongs": [
+        {
+          "misconception": "mare-nombre",
+          "value": "paradigm(w, n == 'sg' ? 'pl' : 'sg')"
+        },
+        {
+          "misconception": "mare-masculin",
+          "value": "paradigmAs([w[0], w[1], 'm'], 3, n)"
+        },
+        {
+          "misconception": "mare-pluriel",
+          "value": "map(paradigm(w, n), \"index < 3 ? stem(w) ~ 'a' : (index == 3 ? stem(w) ~ 'um' : item)\")",
+          "when": "n == 'pl'"
+        },
+        {
+          "misconception": "mare-abl",
+          "value": "map(paradigm(w, n), \"index == 5 ? stem(w) ~ 'e' : item\")",
+          "when": "n == 'sg'"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ declName(decl(w)) }}, radical <i>{{ stem(w) }}-</i> (génitif <i>{{ w[1] }}</i>).{{ declTable(w, n == 'sg' ? ['nom.sg', 'voc.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg'] : ['nom.pl', 'voc.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl']) }}"
+    }
+  ]
+}

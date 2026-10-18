@@ -1,0 +1,78 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ template.unitCode }} v{{ template.version }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="/serious-games/shared/fonts.css">
+{% endblock %}
+
+{% block page_breadcrumb %}{% include 'settings/serious_game/_breadcrumb.html.twig' with {extra: [
+    {label: game.title, url: path('app_settings_serious_games_game', {slug: game.slug})},
+    {label: template.definition.label|default(template.unitCode) ~ ' · v' ~ template.version, url: path('app_settings_serious_games_template', {slug: game.slug, unit: template.unitCode, version: template.version})},
+]} %}{% endblock %}
+
+{% block page_title %}{{ template.definition.label|default(template.unitCode) }} · v{{ template.version }}{% endblock %}
+
+{% block main %}
+    {% set report = template.benchReport %}
+    <twig:Cm:ActionBar>
+        <twig:block name="meta">
+            <twig:Cm:Badge :of="template.status"/>
+            {{ template.shippedWithTheGame ? 'seriousGameShippedLabel'|trans : (template.author ? template.author.displayName ?? template.author.username : '') }}
+            {% if template.note %} · {{ template.note }}{% endif %}
+        </twig:block>
+        <form method="post" action="{{ path('app_settings_serious_games_bench', {slug: game.slug, unit: template.unitCode, version: template.version}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('serious-game-template-' ~ template.id) }}">
+            <twig:Cm:Button variant="outline" type="submit">{{ 'seriousGameBenchAction'|trans }}</twig:Cm:Button>
+        </form>
+        {% if template.draft %}
+            <form method="post" action="{{ path('app_settings_serious_games_validate', {slug: game.slug, unit: template.unitCode, version: template.version}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('serious-game-template-' ~ template.id) }}">
+                <twig:Cm:Button variant="primary" type="submit" :disabled="not template.benchGreen">{{ 'seriousGameValidateAction'|trans }}</twig:Cm:Button>
+            </form>
+        {% endif %}
+    </twig:Cm:ActionBar>
+
+    <div class="cm-sg-tpl">
+        <section class="card">
+            {{ component('Cm:Subhead', {title: 'seriousGameBenchColumn'|trans}) }}
+            <div class="card-body">
+                {% if report %}
+                    <p>
+                        {% if template.benchGreen %}<twig:Cm:Badge tone="green">{{ 'seriousGameBenchGreen'|trans }}</twig:Cm:Badge>{% else %}<twig:Cm:Badge tone="red">{{ 'seriousGameBenchRed'|trans }}</twig:Cm:Badge>{% endif %}
+                        {{ 'seriousGameBenchSummary'|trans({'%questions%': report.questions, '%recognised%': report.recognised, '%wrongs%': report.wrongs, '%attempts%': report.maxAttempts, '%date%': report.ranAt|date('d/m/Y H:i')}) }}
+                    </p>
+                    {% for failure in report.failures %}
+                        <div class="small"><code>{{ failure.rule }}</code>{% if failure.seed %} · {{ failure.seed }}{% endif %} — {{ failure.detail }}</div>
+                    {% endfor %}
+                    {% if report.neverSeen is not empty %}<p class="small text-secondary">{{ 'seriousGameBenchNeverSeen'|trans({'%list%': report.neverSeen|join(', ')}) }}</p>{% endif %}
+                {% else %}
+                    <p class="text-secondary">{{ 'seriousGameBenchNone'|trans }}</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="card">
+            {{ component('Cm:Subhead', {title: 'seriousGameSamplesHeading'|trans}) }}
+            <div class="card-body cm-sg-samples">
+                {% for question in samples %}
+                    <article class="cm-sg-sample">
+                        <div class="cm-sg-sample__prompt">{{ question.prompt|raw }}</div>
+                        {% if question.figure %}<div class="cm-sg-sample__figure">{{ question.figure|raw }}</div>{% endif %}
+                        <div><strong>{{ 'seriousGameExpectedAnswer'|trans }}</strong> {{ question.answerDisplay|raw }}</div>
+                        <ul class="cm-sg-sample__wrongs">
+                            {% for wrong in question.wrongs %}<li><code>{{ wrong.text }}</code> — {{ wrong.misconception }}</li>{% endfor %}
+                        </ul>
+                        <div class="cm-sg-sample__method">{{ question.method|raw }}</div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="card">
+            {{ component('Cm:Subhead', {title: 'seriousGameDefinitionHeading'|trans}) }}
+            <pre class="cm-sg-json">{{ template.definitionJson }}</pre>
+        </section>
+    </div>
+{% endblock %}

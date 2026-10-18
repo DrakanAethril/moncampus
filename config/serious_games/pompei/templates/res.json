@@ -1,0 +1,90 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "res",
+  "label": "5e déclinaison (res, rei)",
+  "misconceptions": [
+    {
+      "id": "res-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "Le cas peut être juste et le nombre faux : chaque cas a une terminaison au singulier et une autre au pluriel. Repère d’abord le nombre demandé, puis la ligne du tableau."
+    },
+    {
+      "id": "res-nominatif",
+      "label": "Laisser le mot au nominatif",
+      "explanation": "Le nominatif n’est que la forme du dictionnaire : un mot latin change de terminaison selon sa fonction. Pars du radical du génitif et ajoute la terminaison du cas demandé."
+    },
+    {
+      "id": "res-cas",
+      "label": "Confondre deux cas voisins",
+      "explanation": "Certains cas ont des terminaisons proches ou identiques (datif et ablatif pluriels, génitif et datif singuliers de la 1re déclinaison). Récite la ligne entière du tableau pour retrouver la bonne case."
+    },
+    {
+      "id": "res-decl",
+      "label": "Prendre les terminaisons de la 3e déclinaison",
+      "explanation": "Un génitif en -ei signale la 5e déclinaison : -em, -ei, -ei, -e ; -es, -erum, -ebus. Le nominatif en -es ressemble à la 3e, le génitif tranche."
+    }
+  ],
+  "params": {
+    "w": "pick([['res', 'rei', 'f', 'la chose', 'les choses'], ['dies', 'diei', 'm', 'le jour', 'les jours'], ['res', 'rei', 'f', 'la chose', 'les choses'], ['dies', 'diei', 'm', 'le jour', 'les jours'], ['spes', 'spei', 'f', 'l’espoir', ''], ['fides', 'fidei', 'f', 'la confiance', ''], ['facies', 'faciei', 'f', 'le visage', ''], ['acies', 'aciei', 'f', 'la ligne de bataille', '']])",
+    "k": "pick(['acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "variants": [
+    {
+      "weight": 5,
+      "label": "Une forme",
+      "prompt": "Décline <i>{{ w[0] }}, {{ w[1] }}</i> ({{ (keyNumber(k) == 'sg' ? w[3] : w[4]) }}) {{ atCase(k) }}.",
+      "answer": {
+        "type": "latin",
+        "value": "forms(w, k)"
+      },
+      "wrongs": [
+        {
+          "misconception": "res-nombre",
+          "value": "forms(w, otherNumber(k))"
+        },
+        {
+          "misconception": "res-nominatif",
+          "value": "form(w, 'nom.' ~ keyNumber(k))",
+          "when": "keyCase(k) != 'nom' and keyCase(k) != 'voc'"
+        },
+        {
+          "misconception": "res-decl",
+          "value": "formAs(w, 3, k, 'genitive')"
+        },
+        {
+          "misconception": "res-cas",
+          "value": "forms(w, withCase(k, confusedCase(keyCase(k))))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ declName(decl(w)) }} : le radical <i>{{ stem(w) }}-</i> se lit sur le génitif <i>{{ w[1] }}</i>. {{ ucfirst(caseLabel(k)) }} : <i>{{ form(w, k) }}</i>.{{ declTable(w, k) }}"
+    },
+    {
+      "weight": 1,
+      "label": "Le tableau",
+      "prompt": "Décline <i>{{ w[0] }}, {{ w[1] }}</i> ({{ (n == 'sg' ? w[3] : w[4]) }}) au {{ numberName(n) }} : les six cas.",
+      "answer": {
+        "type": "forms",
+        "value": "paradigmAlts(w, n)",
+        "labels": "caseNames()"
+      },
+      "wrongs": [
+        {
+          "misconception": "res-nombre",
+          "value": "paradigm(w, n == 'sg' ? 'pl' : 'sg')"
+        },
+        {
+          "misconception": "res-decl",
+          "value": "paradigmAs(w, 3, n, 'genitive')"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ declName(decl(w)) }}, radical <i>{{ stem(w) }}-</i> (génitif <i>{{ w[1] }}</i>).{{ declTable(w, n == 'sg' ? ['nom.sg', 'voc.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg'] : ['nom.pl', 'voc.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl']) }}"
+    }
+  ],
+  "constraints": [
+    "w[4] != '' or keyNumber(k) == 'sg'",
+    "w[4] != '' or n == 'sg'"
+  ]
+}

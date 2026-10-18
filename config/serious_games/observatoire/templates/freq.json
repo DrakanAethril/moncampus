@@ -1,0 +1,37 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "freq",
+  "label": "Fréquence",
+  "misconceptions": [
+    { "id": "freq-count", "label": "Donner l’effectif au lieu de la fréquence" },
+    { "id": "freq-decimal", "label": "Oublier de multiplier par 100" },
+    { "id": "freq-rest", "label": "Diviser par le reste de l’effectif" },
+    { "id": "freq-cumul", "label": "Prendre la fréquence cumulée" }
+  ],
+  "difficulty": 1,
+  "params": {
+    "N": "pick([20, 25, 50])",
+    "e0": "int(1, max(1, floor(N / 2)))",
+    "e1": "int(1, max(1, floor((N - e0) / 2)))",
+    "e2": "int(1, max(1, floor((N - e0 - e1) / 2)))",
+    "e3": "int(1, max(1, floor((N - e0 - e1 - e2) / 2)))",
+    "j": "int(1, 4)"
+  },
+  "let": {
+    "left": "N - e0 - e1 - e2 - e3",
+    "eff": "[e0, e1, e2, e3, left]",
+    "n": "eff[j]",
+    "f": "n / N * 100",
+    "cum": "sum(slice(eff, 0, j + 1)) / N * 100"
+  },
+  "constraints": ["left >= 1"],
+  "prompt": "Dans une classe de {{ N }} élèves, on a relevé le nombre de frères et sœurs.{{ table([['Frères et sœurs', 0, 1, 2, 3, 4], concat(['Effectif'], eff)]) }}Quelle est la fréquence de la valeur {{ j }}, en % ?",
+  "answer": { "type": "number", "value": "f", "display": "pct(f)", "unit": "%" },
+  "wrongs": [
+    { "misconception": "freq-count", "value": "n", "display": "pct(n)" },
+    { "misconception": "freq-decimal", "value": "n / N", "display": "pct(round(n / N, 4))" },
+    { "misconception": "freq-rest", "value": "n / (N - n) * 100", "display": "approxPct(n / (N - n) * 100)" },
+    { "misconception": "freq-cumul", "value": "cum", "display": "pct(cum)" }
+  ],
+  "method": "Fréquence = effectif de la valeur ÷ effectif total = {{ fracRaw(n, N) }} = {{ fmt(n / N) }}, soit {{ pct(f) }}."
+}

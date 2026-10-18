@@ -1,0 +1,41 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'seriousGameAvatarHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'seriousGamesNavLabel'|trans, url: path('app_serious_games')},
+        {label: 'seriousGameAvatarHeading'|trans, url: path('app_serious_games_avatar')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'seriousGameAvatarHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {# The editor is drawn by sg_avatar_editor_controller.js from the shared module's catalogue
+       (public/serious-games/shared/avatar.js) - the one drawing of the avatar, shared with the games. #}
+    <div class="cm-sg-ed" data-controller="sg-avatar-editor"
+         data-sg-avatar-editor-config-value="{{ config|json_encode }}"
+         data-sg-avatar-editor-saved-value="{{ saved ? 'true' : 'false' }}"
+         data-sg-avatar-editor-pins-value="{{ pins|json_encode }}"
+         data-sg-avatar-editor-collects-value="{{ collects ? 'true' : 'false' }}"
+         data-sg-avatar-editor-url-value="{{ path('app_serious_games_avatar_save') }}"
+         data-sg-avatar-editor-csrf-value="{{ csrf_token('serious-games') }}"
+         data-sg-avatar-editor-save-label-value="{{ 'seriousGameAvatarSaveAction'|trans }}"
+         data-sg-avatar-editor-saved-label-value="{{ 'seriousGameAvatarSavedLabel'|trans }}"
+         data-sg-avatar-editor-error-label-value="{{ 'seriousGameAvatarSaveError'|trans }}">
+        <div class="card cm-sg-ed__left">
+            <div class="cm-sg-ed__preview" data-sg-avatar-editor-target="preview" aria-live="polite"></div>
+            <div class="cm-sg-ed__row">
+                <button type="button" class="cm-sg-ed__btn" data-action="sg-avatar-editor#randomize">{{ 'seriousGameAvatarRandomAction'|trans }}</button>
+                <button type="button" class="cm-sg-ed__btn" data-action="sg-avatar-editor#reset">{{ 'seriousGameAvatarResetAction'|trans }}</button>
+            </div>
+            <button type="button" class="cm-sg-ed__save" data-sg-avatar-editor-target="save" data-action="sg-avatar-editor#save">{{ 'seriousGameAvatarSaveAction'|trans }}</button>
+            <p class="cm-sg-ed__note">{{ 'seriousGameAvatarScopeNote'|trans }}</p>
+        </div>
+        <div class="card cm-sg-ed__right">
+            <div class="cm-sg-ed__cats" role="tablist" data-sg-avatar-editor-target="tabs"></div>
+            <div class="cm-sg-ed__groups" data-sg-avatar-editor-target="groups"></div>
+        </div>
+    </div>
+{% endblock %}

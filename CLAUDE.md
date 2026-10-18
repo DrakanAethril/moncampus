@@ -93,6 +93,8 @@ asked — made the second run throw « A lock is already in place ».
 | `app:rncp:fetch` | **Scheduled every minute.** Serves the « Récupérer chez France compétences » requests of the portfolio's Référentiels tab: finds the day's `export-fiches-rncp-v4-1-*.zip` through the data.gouv.fr API (no URL written down), downloads it once into `var/rncp/`, streams through it (`XMLReader` over `zip://`) and writes the fiche into the `RncpImport`. Nothing requested, nothing downloaded. A network failure is « En échec » on screen, never a non-zero exit. `--file=` reads a local export |
 | `app:rncp:check` | **Scheduled Mondays 05:30.** Rereads each référentiel's RNCP fiche - still active, end of registration, a fiche that now replaces it - into `Referential::$rncpWatch`; the Référentiels screen turns a change into a banner, logged at *warning*. Never rewrites a référentiel: a new fiche is a new version |
 | `app:class-board:photo` | **Scheduled every hour at :07.** The virtual board's photograph of the day (« Photo », the default background): the first pass of the day draws a photograph from Wikimedia Commons' featured nature categories (`App\Service\ClassBoard\CommonsNaturePhotos`; `CommonsPhoto::fromImageInfo()` is the whole rule - camera EXIF, 4:3 to 2:1, CC0/PD/BY/BY-SA), copies it into the uploads bucket and records it (`ClassBoardPhoto`), the others only clean: bytes deleted two days after their day, rows kept so nothing repeats within two years. A Commons that does not answer is a *warning*, never a non-zero exit. `--replace` draws another one for today |
+| `app:serious-games:sync` | **Run once after a deploy that adds a serious game or a template, never scheduled.** Creates or updates each game of `config/serious_games/*/game.yaml` (unpublished on creation) and installs the templates the database lacks as version 1, validated, after a bench of 200 seeds - a red bench refuses the template. Never overwrites a version written in the database; `--refresh` rewrites a shipped version still current and never served. See `docs/production.md` |
+| `app:serious-games:bench` | **Diagnostic, not scheduled.** The bench of a game's question templates (1000 seeds by default): answer accepted typed and displayed, every wrong value recognised as its own typical error, no NaN, determinism, series without duplicates, comets. `--files` reads the repository without a database, `--draft` the latest drafts, `--save` stores the reports - which is what makes a draft validatable |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
 ## Runtime architecture (Docker layer)
@@ -259,6 +261,58 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `app:game:close-month` is the scheduled task that closes one. The six level thresholds are
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
+- **Serious games** (`/serious-games`) — `SeriousGame*` entities, `src/SeriousGame/`,
+  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; two games built,
+  **L'Observatoire** (automatismes de 1re) and **Les Tablettes de Pompéi** (déclinaisons latines,
+  4e-2nde, `design/validated/serious-games-pompei.md`). **In the margin of Formatool**: it shares the sign-in
+  and « the teachers of my classes read my results », nothing else - no work, no reminder, no
+  mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus
+  one line per game in the « Serious games » block of Paramètres › Fonctionnalités
+  (`SeriousGameRoleSetting`), **by role only**; `SeriousGameRules` is the whole « qui joue, qui lit »
+  (read by `SeriousGameVoter`): a student's results are read by them, by every teacher of one of
+  their **active** classes (history included - asked now, not at the time of play, and never
+  through `isProgramTeacher()`, which lets staff in) and by administrators; staff read figures
+  without names; tutors and externals nothing. **No link in a student's menus** - they open the
+  address. Rules the code holds:
+  - **The server generates and corrects.** Questions come from declarative JSON templates
+    (`moncampus-gabarit/1`, `App\SeriousGame\Template\TemplateInterpreter`, ExpressionLanguage
+    over `TemplateFunctions` - no PHP, so an administrator rewrites them with Claude through the
+    connector), one seed per question and per student; a question is its seed and its template
+    **version**, never its statement, which is how a teacher replays « la question vue ». The game
+    never receives an answer before it is given, and the final test no correction before its end.
+    A template version is stored as **text** (`SeriousGameTemplate::$definition`): MySQL reorders
+    a JSON column's keys, and `params` are drawn in the order written.
+  - **Templates are versioned, never rewritten once validated**; a draft serves nobody until its
+    bench is green and it is validated (`SeriousGameTemplates`, the one door of the screen and the
+    connector). `app:serious-games:sync` installs the shipped ones; `TemplateBench` is what makes a
+    version validatable (CI runs 200 seeds per template, `ObservatoireTemplatesTest`,
+    `PompeiTemplatesTest`).
+  - **A game is its manifest** (`config/serious_games/{slug}/game.yaml`, read by
+    `SeriousGameManifest`): chapters and units, series, final test, comets, grades, rewards - and
+    its own **`words`**, which Formatool's screens use for it (`serious_game_words()`: a star is
+    « allumée », a tablet « tracée »; a comet is a « lézarde » in Pompéi). Never write a game's
+    vocabulary into a translation key.
+  - **Two kinds of answer**: `short` (typed) and `choice` (a QCM), from the answer type of each
+    variant (`AnswerType::kind()`); a game accepts the kinds an administrator ticks. A question of a
+    refused kind is never planned (`QuestionEngine`), a unit with no servable variant is hidden. A
+    QCM's propositions are the answer and its typical wrong answers, shuffled by the seed - a
+    proposition that is also right (an ambiguous Latin form) must be excluded by its `when`.
+  - **The Latin is a grammar, not a word list**: `App\SeriousGame\Latin\LatinMorphology` declines
+    nouns, adjectives and pronouns from their dictionary entry (the templates hold the lexicon);
+    the game's Bibliothèque (`public/serious-games/pompei/library.js`) is a dump of it, and
+    `PompeiLibraryTest` fails when the two drift apart.
+  - **Nothing depends on time or absence** (`AcquisitionRules`): a unit lights at 6/12, its
+    brightness is its best series and never goes down; a comet is an error made twice among the
+    last 30 answers; only the final test is timed (extra time from `AccommodationResolver`).
+  - The game is a static package (`public/serious-games/{slug}/`) in an `<iframe sandbox="allow-scripts">`
+    - an opaque origin - talking to its host page by `postMessage`
+    (`serious_game_host_controller.js` relays to `GameApiController`, and gives the frame its
+    address only once it listens). The host bar is the platform's, for every game: a game **opens
+    full screen** (`sg_launch_controller.js` asks the browser on the « Jouer » click, the host
+    covers the window otherwise) with a toggle, and shows **the time left** whenever a session
+    carries a deadline, read against `serverTime`. The avatar and the reward
+    drawings are one JavaScript module each, shared by the platform and the games
+    (`public/serious-games/shared/`); students only collect.
 - **Bibliothèque de fichiers et partages** — `FileLibraryNode`, one table for folders and files.
   The library is **personal**: `owner` is the access model, not a scope to widen later
   (`FileLibraryVoter`). `path` holds the ancestors' ids (`/12/48/`) so a subtree is one `LIKE`.
@@ -515,7 +569,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     (`app:purge-platform-activity`). Connector tools `path_list`, `path_get`, `path_create`,
     `path_set_steps` (a whole list, kept steps kept, refused if it would drop a step people worked
     on) and `path_publish`.
-- **Accès aux fonctionnalités** — `App\Enum\Feature` (60 cases) + `#[RequiresFeature]` +
+- **Accès aux fonctionnalités** — `App\Enum\Feature` (61 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
   exceptions named in `Feature::defaultRoles()` (`student_work`, `shared_documents`, `wiki` for
@@ -778,10 +832,10 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 33 of them: Assignment, AudienceTargetable,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 35 of them: Assignment, AudienceTargetable, ClassBoard,
 DocumentationArticle, Dossier, EcfBooklet, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
 GuestConsole, InternshipTutorLink, LearningPath, LessonLog, MessageThread, OnlineCourse, Portfolio, Progression, ProxmoxHost, QuizFolder,
-QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, TeacherDossier, Ticket,
+QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SeriousGame, SignupList, Survey, SurveyFolder, TeacherDossier, Ticket,
 Wall, Wiki, WordCloud).
 New per-object rules belong in a Voter, not inline in a controller.
 
