@@ -41,7 +41,7 @@ final readonly class SeriousGameTemplateBenchTool implements McpTool
         return [
             'type' => 'object',
             'properties' => [
-                'game' => ['type' => 'string', 'description' => 'Identifiant du jeu (« observatoire » par défaut).'],
+                'game' => ['type' => 'string', 'description' => 'Identifiant du jeu : « observatoire » (par défaut) ou « pompei ».'],
                 'unit' => ['type' => 'string'],
                 'version' => ['type' => 'integer', 'description' => 'Numéro de version ; la version courante si absent.'],
                 'seeds' => ['type' => 'integer', 'minimum' => 1, 'maximum' => SeriousGameTemplates::MAX_SEEDS],

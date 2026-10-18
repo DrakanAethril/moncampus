@@ -17,6 +17,7 @@
 {% block page_title %}{{ game.title }} · {{ program.shortName }}{% endblock %}
 
 {% block main %}
+    {% set words = serious_game_words(game) %}
     {% set kpis = reading.kpis %}
     {% set rows = reading.rows|filter(r => filter == 'all' or (filter == 'dim' and r.dim) or (filter == 'inactive' and r.inactive)) %}
     {% if order == 'activity' %}{% set rows = rows|sort((a, b) => (b.lastPlayedAt ? b.lastPlayedAt|date('U') : 0) <=> (a.lastPlayedAt ? a.lastPlayedAt|date('U') : 0)) %}{% endif %}
@@ -26,13 +27,13 @@
 
     <div class="cm-sg-kpis">
         <div><b>{{ kpis.playedThisWeek }}</b><span>{{ 'seriousGameKpiPlayedWeek'|trans }}</span></div>
-        <div><b>{{ kpis.medianLit }}</b><span>{{ 'seriousGameKpiMedianLit'|trans({'%unit%': game.unitLabel}) }}</span></div>
+        <div><b>{{ kpis.medianLit }}</b><span>{{ 'seriousGameKpiMedianLit'|trans({'%unit%': game.unitLabel, '%lit%': words.litPlural}) }}</span></div>
         <div><b>{{ kpis.seriesThisWeek }}</b><span>{{ 'seriousGameKpiSeriesWeek'|trans }}</span></div>
-        <div><b>{{ kpis.cometsInView }}</b><span>{{ 'seriousGameKpiComets'|trans }}</span></div>
+        <div><b>{{ kpis.cometsInView }}</b><span>{{ 'seriousGameKpiComets'|trans({'%comets%': words.comets, '%inView%': words.cometInView}) }}</span></div>
     </div>
 
     <form method="get" class="cm-sg-filters card" data-controller="auto-submit">
-        <label>{{ 'seriousGameFilterChapter'|trans }}
+        <label>{{ words.chapter|capitalize }}
             <select name="chapter" class="form-select" data-action="auto-submit#submit">
                 <option value="">{{ 'seriousGameFilterAll'|trans }}</option>
                 {% for c in reading.chapters %}<option value="{{ c.code }}" {{ chapter == c.code ? 'selected' }}>{{ c.label }}</option>{% endfor %}
@@ -41,7 +42,7 @@
         <label>{{ 'seriousGameFilterStudents'|trans }}
             <select name="students" class="form-select" data-action="auto-submit#submit">
                 <option value="" {{ filter == 'all' ? 'selected' }}>{{ 'seriousGameFilterAllStudents'|trans }}</option>
-                <option value="dim" {{ filter == 'dim' ? 'selected' }}>{{ 'seriousGameFilterDim'|trans }}</option>
+                <option value="dim" {{ filter == 'dim' ? 'selected' }}>{{ words.dim }}</option>
                 <option value="inactive" {{ filter == 'inactive' ? 'selected' }}>{{ 'seriousGameFilterInactive'|trans }}</option>
             </select>
         </label>
@@ -53,8 +54,8 @@
         </label>
         <noscript><button type="submit" class="cm-action--positive">{{ 'submitSaveAction'|trans }}</button></noscript>
         <div class="cm-sg-legend" aria-hidden="true">
-            <span class="cm-sg-cell cm-sg-cell--blazing"></span>{{ 'seriousGameLegendLit'|trans }}
-            <span class="cm-sg-cell cm-sg-cell--tried"></span>{{ 'seriousGameUnitTried'|trans }}
+            <span class="cm-sg-cell cm-sg-cell--blazing"></span>{{ 'seriousGameLegendLit'|trans({'%lit%': words.lit, '%level%': words.level}) }}
+            <span class="cm-sg-cell cm-sg-cell--tried"></span>{{ 'seriousGameUnitTried'|trans({'%lit%': words.lit}) }}
             <span class="cm-sg-cell cm-sg-cell--never"></span>{{ 'seriousGameUnitNever'|trans }}
         </div>
     </form>
@@ -86,7 +87,7 @@
                             </th>
                             {% for c in chapters %}{% for unit in c.units %}
                                 {% set state = row.cells[unit.code] %}
-                                <td class="cm-sg-hm__c"><span class="cm-sg-cell cm-sg-cell--{{ state }}" title="{{ unit.label }} — {{ state in ['tried', 'never'] ? ('seriousGameUnit' ~ state|capitalize)|trans : ('seriousGameBrightness' ~ state|capitalize)|trans }}"></span></td>
+                                <td class="cm-sg-hm__c"><span class="cm-sg-cell cm-sg-cell--{{ state }}" title="{{ unit.label }} — {{ state in ['tried', 'never'] ? ('seriousGameUnit' ~ state|capitalize)|trans({'%lit%': words.lit}) : words.brightness[state]|capitalize }}"></span></td>
                             {% endfor %}{% endfor %}
                             <td class="cm-sg-hm__total">{{ row.lit }}</td>
                         </tr>
@@ -96,7 +97,7 @@
                 </tbody>
                 <tfoot>
                     <tr class="cm-sg-hm__pct">
-                        <th>{{ 'seriousGameShareLit'|trans }}</th>
+                        <th>{{ 'seriousGameShareLit'|trans({'%lit%': words.lit}) }}</th>
                         {% for c in chapters %}{% for unit in c.units %}<td>{{ (reading.byUnit[unit.code].share * 100)|round }}</td>{% endfor %}{% endfor %}
                         <td></td>
                     </tr>
@@ -107,7 +108,7 @@
 
     <div class="cm-sg-results__columns">
         <section class="card">
-            {{ component('Cm:Subhead', {title: 'seriousGameSynthesisHeading'|trans, hint: 'seriousGameSynthesisHint'|trans}) }}
+            {{ component('Cm:Subhead', {title: 'seriousGameSynthesisHeading'|trans({'%skill%': words.skill}), hint: 'seriousGameSynthesisHint'|trans({'%lit%': words.lit})}) }}
             <ul class="cm-sg-synthesis">
                 {% for line in reading.synthesis %}
                     <li>

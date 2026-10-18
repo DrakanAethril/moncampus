@@ -17,8 +17,11 @@
   'use strict';
   var A = {};
   var uid = 0;
-  // The pins a student can wear (one per finished game) - only L'Observatoire's for now.
-  var PINS = [{ id: 'pin-etoile', name: 'Épinglette Étoile', color: '#1B2550', glyph: '✦' }];
+  // The pins a student can wear (one per finished game).
+  var PINS = [
+    { id: 'pin-etoile', name: 'Épinglette Étoile', color: '#1B2550', glyph: '✦' },
+    { id: 'pin-cave-canem', name: 'Épinglette Cave canem', color: '#9E2B25', glyph: 'C' }
+  ];
   A.PINS = PINS;
 
   A.SKIN = [['#F6D7C3', '#DDB49A'], ['#EBC09C', '#CC9A72'], ['#D69E73', '#B47D56'], ['#B57A4E', '#935F38'], ['#8A5534', '#6B4027'], ['#5E3A24', '#46291A']];
@@ -138,6 +141,13 @@
     observatoire: { label: 'Lampe frontale rouge', svg: function () {
       return el('path', sx({ d: 'M44 82 Q100 58 156 82', stroke: '#2E3448', strokeWidth: 6 })) + el('rect', { x: 89, y: 56, width: 22, height: 15, rx: 4, fill: '#2E3448' }) +
         el('circle', { cx: 100, cy: 63.5, r: 10, fill: '#E2564A', opacity: .25 }) + el('circle', { cx: 100, cy: 63.5, r: 4.5, fill: '#F07A6E' });
+    } },
+    // Les Tablettes de Pompéi: the apprentice's stylus, slipped behind the ear (no wreath - a
+    // costume puts nothing on the head that would read as one's own headwear).
+    pompei: { label: 'Stylet derrière l’oreille', svg: function () {
+      return el('path', sx({ d: 'M70 44 L50 108', stroke: '#8C6A2E', strokeWidth: 6.5 })) + el('path', sx({ d: 'M70 44 L50 108', stroke: '#D9A441', strokeWidth: 4 })) +
+        el('path', { d: 'M64.5 36 L76.5 39.5 L72.8 47.2 L66 45.2 Z', fill: '#D9A441', stroke: '#8C6A2E', strokeWidth: 1.2, strokeLinejoin: 'round' }) +
+        el('circle', { cx: 49.6, cy: 109.4, r: 1.6, fill: '#5E4520' });
     } }
   };
 

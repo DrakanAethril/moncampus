@@ -6,8 +6,9 @@ namespace App\SeriousGame\Answer;
 
 /**
  * The types of answer a question template may ask (design/validated/serious-games.md §5.2), each
- * with its checker in AnswerCheckers. Every one of them is a **short** answer - typed, never
- * chosen: L'Observatoire accepts no other kind since the épreuve dropped its QCM.
+ * with its checker in AnswerCheckers. Each belongs to a **kind** - `short` (typed) or `choice`
+ * (chosen among propositions) - and a game accepts the kinds an administrator ticks for it:
+ * L'Observatoire only `short`, since the épreuve dropped its QCM; Les Tablettes de Pompéi both.
  */
 enum AnswerType: string
 {
@@ -31,11 +32,20 @@ enum AnswerType: string
     case Formula = 'formula';
     /** A word or a short text, compared without case nor surrounding spaces. */
     case Text = 'text';
+    /** A Latin form, compared without case, macrons, j or v; a value may list several accepted forms. */
+    case Latin = 'latin';
+    /** A table of Latin forms to fill, one field per label (the six cases of a number). */
+    case Forms = 'forms';
+    /** One proposition chosen among the answer and the question's typical wrong answers (a QCM). */
+    case Choice = 'choice';
 
-    /** The kind of answer this type is - only `short` for now (§1.3). */
+    public const string KIND_SHORT = 'short';
+    public const string KIND_CHOICE = 'choice';
+
+    /** The kind of answer this type is (§1.3): chosen among propositions, or typed. */
     public function kind(): string
     {
-        return 'short';
+        return self::Choice === $this ? self::KIND_CHOICE : self::KIND_SHORT;
     }
 
     /** Shown to the student under the field: what to type. */

@@ -1,0 +1,139 @@
+# Les Tablettes de Pompéi: the declensions of Latin, 4e-2nde - the second serious game.
+#
+# Read by `app:serious-games:sync`, like L'Observatoire's manifest. Everything the server decides
+# is read from here - the rooms and their tablets, the series, the Lararium, the cracks, the
+# rewards - so the game's static package (public/serious-games/pompei/) holds nothing but its
+# display. `words` names the game's own vocabulary, which Formatool's screens use for this game
+# (a tablet is « tracée », not « allumée »; a repeated error is a « lézarde », not a « comète »).
+slug: pompei
+title: "Les Tablettes de Pompéi"
+pitch: "Tracer les plans d'une villa de Pompéi, tablette après tablette. Les déclinaisons latines, du nominatif au relatif."
+subjects: [Latin]
+levels: [4e, 3e, 2nde]
+unit_label: tablettes
+# QCM and typed answers: a unit whose template asks only a kind the administrator unticks is hidden.
+answer_kinds: [short, choice]
+version: 1.0.0
+published: false
+
+words:
+  unit: [tablette, tablettes]
+  chapter: [pièce, pièces]
+  # the state of a unit once its best series reaches lit_at, and the word for its level
+  lit: [tracée, tracées]
+  unlit: [vierge, vierges]
+  level: niveau
+  skill: notion
+  dim_filter: Tracés à reprendre
+  brightness:
+    discrete: [ébauchée, ébauchées]
+    clear: [nette, nettes]
+    bright: [gravée, gravées]
+    blazing: [dorée, dorées]
+  comet: [lézarde, lézardes]
+  comet_solved: réparée
+  comet_in_view: à réparer
+  chapter_done: bâtie
+
+series:
+  size: 12
+  # A tablet is traced at 6/12; its level is its best series: 6 ébauchée, 8 nette, 10 gravée, 12 dorée.
+  lit_at: 6
+
+final:
+  code: lararium
+  label: Le Lararium
+  size: 12
+  time_limit_seconds: 1200
+  # two inscriptions from each of the six rooms, shuffled
+  per_chapter: [2, 2, 2, 2, 2, 2]
+
+comet:
+  # The same typical error twice among the player's last 30 answers opens a crack in a wall.
+  window: 30
+  repeat: 2
+  questions: 3
+  solved_at: 2
+
+grades:
+  - [0, "Apprenti·e"]
+  - [7, "Dessinateur·rice"]
+  - [14, "Métreur·euse"]
+  - [21, "Maître·sse d'œuvre adjoint·e"]
+  - [28, "Architecte"]
+
+chapters:
+  - code: atrium
+    label: L'Atrium
+    topic: 1re et 2e déclinaisons
+    units:
+      - { code: rosa, label: "1re déclinaison (rosa)" }
+      - { code: dominus, label: "2e déclinaison en -us (dominus)" }
+      - { code: puer, label: "2e déclinaison en -er (puer, ager)" }
+      - { code: templum, label: "Neutres de la 2e (templum)" }
+      - { code: analyse-1-2, label: "Analyser une forme (1re, 2e)" }
+      - { code: tableau, label: "Le tableau complet (1re, 2e)" }
+  - code: tablinum
+    label: Le Tablinum
+    topic: 3e déclinaison
+    units:
+      - { code: rex, label: "Masculins et féminins (rex, regis)" }
+      - { code: corpus, label: "Neutres (corpus, corporis)" }
+      - { code: civis, label: "Génitif pluriel en -ium (civis, urbs)" }
+      - { code: mare, label: "Neutres en -e, -al, -ar (mare)" }
+      - { code: analyse-3, label: "Analyser une forme (3e)" }
+  - code: triclinium
+    label: Le Triclinium
+    topic: 4e et 5e déclinaisons
+    units:
+      - { code: manus, label: "4e déclinaison (manus)" }
+      - { code: cornu, label: "Neutres de la 4e (cornu)" }
+      - { code: res, label: "5e déclinaison (res, dies)" }
+      - { code: declinaison, label: "Reconnaître la déclinaison" }
+  - code: peristylium
+    label: Le Péristyle
+    topic: Adjectifs et accord
+    units:
+      - { code: bonus, label: "Adjectifs en -us, -a, -um" }
+      - { code: fortis, label: "Adjectifs de la 2e classe (fortis)" }
+      - { code: accord, label: "Accorder l'adjectif" }
+      - { code: groupe, label: "Décliner nom + adjectif" }
+  - code: thermae
+    label: Les Thermes
+    topic: Pronoms
+    units:
+      - { code: is, label: "is, ea, id" }
+      - { code: hic, label: "hic, haec, hoc" }
+      - { code: ille, label: "ille, illa, illud" }
+      - { code: qui, label: "Le relatif qui, quae, quod" }
+      - { code: ego, label: "Pronoms personnels, réfléchi" }
+  - code: hortus
+    label: L'Hortus
+    topic: Cas et fonctions
+    units:
+      - { code: fonction, label: "La fonction d'un mot" }
+      - { code: cas, label: "À chaque fonction son cas" }
+      - { code: prepositions, label: "Prépositions et cas" }
+      - { code: phrase, label: "Le bon cas dans la phrase" }
+
+rewards:
+  # The collection piece: brass once every tablet is traced, silver at 10/12 in the Lararium, gold at 12/12.
+  trophy:
+    code: groma
+    label: La Groma
+    lore: "L'instrument des arpenteurs romains, que Caius Vibius Rufus confie à qui a tracé toute la villa."
+    silver_at: 10
+    gold_at: 12
+  # Given with the trophy, worn on the avatar.
+  pin:
+    code: pin-cave-canem
+    label: Épinglette Cave canem
+  # One card per room built, and the Lararium's card once it was played to the end.
+  cards: true
+
+thumbnail:
+  background: "linear-gradient(180deg, #E9CFA3 0 14%, #C9923E 14% 16%, #9E2B25 16% 78%, #2E1D14 78% 100%)"
+  font: "'Cormorant Garamond', Georgia, serif"
+  style: normal
+  weight: 600
+  color: "#EFE3CB"

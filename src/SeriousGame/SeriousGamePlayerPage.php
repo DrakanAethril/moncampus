@@ -121,9 +121,14 @@ final readonly class SeriousGamePlayerPage
         $units = $progress['units'];
         $final = $progress['final'];
         $played = array_sum(array_column($units, 'series')) > 0;
+        $words = $manifest->words();
+        $vocabulary = [
+            '%unitWord%' => $words['unit'], '%unitWords%' => $words['units'], '%chapterWords%' => $words['chapters'],
+            '%lit%' => $words['lit'], '%litPlural%' => $words['litPlural'], '%unlit%' => $words['unlit'], '%unlitPlural%' => $words['unlitPlural'],
+        ];
 
         if (!$played && null === $final['best']) {
-            return ['key' => 'seriousGameStatementNew', 'params' => ['%chapters%' => \count($manifest->chapters()), '%total%' => $progress['total']], 'finish' => null];
+            return ['key' => 'seriousGameStatementNew', 'params' => ['%chapters%' => \count($manifest->chapters()), '%total%' => $progress['total']] + $vocabulary, 'finish' => null];
         }
 
         if (null !== $final['best']) {
@@ -141,7 +146,7 @@ final readonly class SeriousGamePlayerPage
             return ['key' => 'seriousGameStatementFinalOpen', 'params' => ['%final%' => $final['label']], 'finish' => null];
         }
 
-        // The unlit stars of the most advanced constellation that is not complete.
+        // The unlit units of the most advanced chapter that is not complete.
         $best = null;
         foreach ($progress['chapters'] as $chapter) {
             if ($chapter['lit'] < $chapter['total'] && (null === $best || $chapter['lit'] / max(1, $chapter['total']) > $best['lit'] / max(1, $best['total']))) {
@@ -156,7 +161,7 @@ final readonly class SeriousGamePlayerPage
             '%inChapter%' => \count($inBest),
             '%chapter%' => null === $best ? '' : $best['label'],
             '%units%' => implode(', ', array_column($inBest, 'label')),
-        ], 'finish' => null];
+        ] + $vocabulary, 'finish' => null];
     }
 
     /** @return array<string, mixed> */
@@ -174,7 +179,7 @@ final readonly class SeriousGamePlayerPage
     }
 
     /**
-     * The showcase of L'Observatoire's pieces - every slot, held or silhouetted.
+     * The showcase, one shelf per game - every slot, held or silhouetted.
      *
      * @param array<string, SeriousGameRewardGrant> $held
      *

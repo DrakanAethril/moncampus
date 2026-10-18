@@ -1,0 +1,105 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "cas",
+  "label": "À chaque fonction son cas",
+  "misconceptions": [
+    {
+      "id": "cas-sujet-cod",
+      "label": "Confondre nominatif et accusatif",
+      "explanation": "Le sujet se met au nominatif, le COD à l’accusatif. Cherche qui fait l’action : c’est le sujet."
+    },
+    {
+      "id": "cas-genitif-datif",
+      "label": "Confondre génitif et datif",
+      "explanation": "« de » + nom qui complète un nom → génitif ; « à » + nom après donner, montrer, envoyer → datif."
+    },
+    {
+      "id": "cas-datif-ablatif",
+      "label": "Traduire « à » ou « avec » par le mauvais cas",
+      "explanation": "Le destinataire (« à qui ? ») se met au datif ; le moyen (« avec quoi ? », « de quoi ? ») se met à l’ablatif, sans préposition."
+    },
+    {
+      "id": "cas-vocatif",
+      "label": "Confondre vocatif et nominatif",
+      "explanation": "On met au vocatif la personne à qui l’on parle (« Ô maître, … ») : domine, et non dominus."
+    },
+    {
+      "id": "cas-autre",
+      "label": "Choisir un cas sans rapport avec la fonction",
+      "explanation": "Retiens le tableau des fonctions : sujet → nominatif, apostrophe → vocatif, COD → accusatif, complément du nom → génitif, attribution → datif, moyen → ablatif."
+    }
+  ],
+  "params": {
+    "role": "pick(['nom', 'acc', 'gen', 'dat', 'abl', 'voc'])",
+    "s": "pick([['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis']])",
+    "w": "pick([['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis']])",
+    "o": "pick([['rosa', 'rosae', 'f', 'la rose', 'les roses'], ['epistula', 'epistulae', 'f', 'la lettre', 'les lettres'], ['liber', 'libri', 'm', 'le livre', 'les livres'], ['equus', 'equi', 'm', 'le cheval', 'les chevaux'], ['gladius', 'gladii', 'm', 'l’épée', 'les épées'], ['amphora', 'amphorae', 'f', 'l’amphore', 'les amphores']])",
+    "pv": "pick([['vocat', 'vocant', 'appelle', 'appellent'], ['amat', 'amant', 'aime', 'aiment'], ['videt', 'vident', 'voit', 'voient'], ['laudat', 'laudant', 'loue', 'louent'], ['exspectat', 'exspectant', 'attend', 'attendent'], ['salutat', 'salutant', 'salue', 'saluent'], ['adiuvat', 'adiuvant', 'aide', 'aident']])",
+    "tv": "pick([['amat', 'amant', 'aime', 'aiment'], ['videt', 'vident', 'voit', 'voient'], ['laudat', 'laudant', 'admire', 'admirent'], ['portat', 'portant', 'porte', 'portent'], ['quaerit', 'quaerunt', 'cherche', 'cherchent'], ['exspectat', 'exspectant', 'attend', 'attendent']])",
+    "dv": "pick([['dat', 'dant', 'donne', 'donnent'], ['monstrat', 'monstrant', 'montre', 'montrent'], ['mittit', 'mittunt', 'envoie', 'envoient']])",
+    "n": "pick(['sg', 'pl'])",
+    "ins": "pick([['Le soldat frappe l’ennemi', 'avec son épée'], ['Le poète écrit des vers', 'avec un stylet'], ['Le paysan laboure le champ', 'avec une charrue'], ['Le chasseur blesse le loup', 'avec une flèche'], ['La servante porte l’eau', 'dans une amphore'], ['Le maître montre la route', 'de la main'], ['Les enfants ornent l’autel', 'avec des fleurs'], ['Le marchand pèse le blé', 'avec une balance']])"
+  },
+  "let": {
+    "v": "role == 'acc' ? pv : tv",
+    "wfr": "n == 'sg' ? w[3] : w[4]",
+    "sentence": "role == 'nom' ? ucfirst(wfr) ~ ' ' ~ (n == 'sg' ? v[2] : v[3]) ~ ' ' ~ o[3] : (role == 'acc' ? ucfirst(s[3]) ~ ' ' ~ v[2] ~ ' ' ~ wfr : (role == 'gen' ? ucfirst(s[3]) ~ ' ' ~ v[2] ~ ' ' ~ o[3] ~ ' ' ~ frDe(wfr) : (role == 'dat' ? ucfirst(s[3]) ~ ' ' ~ dv[2] ~ ' ' ~ o[3] ~ ' ' ~ frA(wfr) : (role == 'abl' ? ins[0] ~ ' ' ~ ins[1] : 'Ô ' ~ replace(replace(replace(w[3], 'le ', ''), 'la ', ''), 'l’', '') ~ ', viens vite'))))",
+    "group": "role == 'nom' ? wfr : (role == 'acc' ? wfr : (role == 'gen' ? frDe(wfr) : (role == 'dat' ? frA(wfr) : (role == 'abl' ? ins[1] : 'Ô ' ~ replace(replace(replace(w[3], 'le ', ''), 'la ', ''), 'l’', '')))))"
+  },
+  "constraints": [
+    "s[0] != w[0]"
+  ],
+  "prompt": "« {{ sentence }}. » En latin, à quel cas se met « {{ group }} » ?",
+  "answer": {
+    "type": "choice",
+    "value": "caseName(role)"
+  },
+  "wrongs": [
+    {
+      "misconception": "cas-sujet-cod",
+      "value": "caseName(role == 'nom' ? 'acc' : 'nom')",
+      "when": "role in ['nom', 'acc']"
+    },
+    {
+      "misconception": "cas-genitif-datif",
+      "value": "caseName(role == 'gen' ? 'dat' : 'gen')",
+      "when": "role in ['gen', 'dat']"
+    },
+    {
+      "misconception": "cas-datif-ablatif",
+      "value": "caseName(role == 'abl' ? 'dat' : 'abl')",
+      "when": "role in ['dat', 'abl']"
+    },
+    {
+      "misconception": "cas-vocatif",
+      "value": "caseName('nom')",
+      "when": "role == 'voc'"
+    },
+    {
+      "misconception": "cas-vocatif",
+      "value": "caseName('voc')",
+      "when": "role == 'nom'"
+    },
+    {
+      "misconception": "cas-autre",
+      "value": "caseName('acc')",
+      "when": "role in ['gen', 'dat', 'abl', 'voc']"
+    },
+    {
+      "misconception": "cas-autre",
+      "value": "caseName('gen')",
+      "when": "role in ['acc', 'abl']"
+    },
+    {
+      "misconception": "cas-autre",
+      "value": "caseName('dat')",
+      "when": "role in ['nom', 'acc', 'voc']"
+    },
+    {
+      "misconception": "cas-autre",
+      "value": "caseName('abl')",
+      "when": "role in ['nom', 'gen']"
+    }
+  ],
+  "method": "« {{ group }} » est {{ role == 'nom' ? 'sujet' : (role == 'acc' ? 'COD' : (role == 'gen' ? 'complément du nom' : (role == 'dat' ? 'complément d’attribution' : (role == 'abl' ? 'complément de moyen' : 'en apostrophe')))) }} : {{ caseName(role) }}. Sujet → nominatif ; apostrophe → vocatif ; COD → accusatif ; complément du nom → génitif ; attribution → datif ; moyen → ablatif."
+}

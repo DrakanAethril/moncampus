@@ -1,0 +1,116 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "prepositions",
+  "label": "Prépositions et cas",
+  "misconceptions": [
+    {
+      "id": "prepositions-cas",
+      "label": "Confondre préposition à l’accusatif et à l’ablatif",
+      "explanation": "Chaque préposition gouverne un cas : ad, per, ante, post, apud, propter + accusatif ; cum, sine, ex, ab, de, pro + ablatif. In et sub changent : accusatif s’il y a mouvement, ablatif sinon."
+    },
+    {
+      "id": "prepositions-nominatif",
+      "label": "Laisser le nom au nominatif",
+      "explanation": "Après une préposition, le nom n’est jamais au nominatif : il prend le cas que la préposition gouverne."
+    },
+    {
+      "id": "prepositions-genitif",
+      "label": "Traduire « de » par un génitif",
+      "explanation": "Le « de » français ne fait pas toujours un génitif : « loin de la ville » se dit procul ab urbe, à l’ablatif. Seul le complément du nom (« la porte de la villa ») est au génitif."
+    },
+    {
+      "id": "prepositions-nombre",
+      "label": "Se tromper de nombre",
+      "explanation": "Le nombre se lit dans la traduction française : « les » demande un pluriel."
+    }
+  ],
+  "params": {
+    "p": "pick([['cum', 'abl', 'avec', '', 'p'], ['sine', 'abl', 'sans', '', 'p'], ['ex', 'abl', 'hors', 'de', 'l'], ['ab', 'abl', 'loin', 'de', 'l'], ['de', 'abl', 'au sujet', 'de', 'p'], ['pro', 'abl', 'pour', '', 'p'], ['sub', 'abl', 'sous', '', 'l'], ['ad', 'acc', 'vers', '', 'l'], ['per', 'acc', 'à travers', '', 'l'], ['ante', 'acc', 'devant', '', 'l'], ['post', 'acc', 'derrière', '', 'l'], ['apud', 'acc', 'chez', '', 'p'], ['contra', 'acc', 'contre', '', 'p'], ['propter', 'acc', 'à cause', 'de', 'p'], ['inter', 'acc', 'parmi', '', 'p'], ['circum', 'acc', 'autour', 'de', 'l'], ['trans', 'acc', 'au-delà', 'de', 'l'], ['in', 'abl', 'dans (on y est)', '', 'l'], ['in', 'acc', 'dans (on y entre)', '', 'l']])",
+    "wp": "pick([['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis']])",
+    "wl": "pick([['villa', 'villae', 'f', 'la villa', 'les villas'], ['silva', 'silvae', 'f', 'la forêt', 'les forêts'], ['insula', 'insulae', 'f', 'l’île', 'les îles'], ['via', 'viae', 'f', 'la route', 'les routes'], ['porta', 'portae', 'f', 'la porte', 'les portes'], ['hortus', 'horti', 'm', 'le jardin', 'les jardins'], ['murus', 'muri', 'm', 'le mur', 'les murs'], ['ager', 'agri', 'm', 'le champ', 'les champs'], ['templum', 'templi', 'n', 'le temple', 'les temples'], ['forum', 'fori', 'n', 'le forum', 'les forums'], ['oppidum', 'oppidi', 'n', 'la place forte', 'les places fortes'], ['urbs', 'urbis', 'f', 'la ville', 'les villes'], ['mons', 'montis', 'm', 'la montagne', 'les montagnes'], ['navis', 'navis', 'f', 'le navire', 'les navires'], ['collis', 'collis', 'm', 'la colline', 'les collines'], ['mare', 'maris', 'n', 'la mer', 'les mers'], ['flumen', 'fluminis', 'n', 'le fleuve', 'les fleuves'], ['portus', 'portus', 'm', 'le port', 'les ports']])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "let": {
+    "w": "p[4] == 'p' ? wp : wl",
+    "k": "p[1] ~ '.' ~ n",
+    "ok": "(p[1] == 'acc' ? 'abl' : 'acc') ~ '.' ~ n",
+    "g": "n == 'sg' ? w[3] : w[4]",
+    "fr": "p[3] == 'de' ? p[2] ~ ' ' ~ frDe(n == 'sg' ? w[3] : w[4]) : p[2] ~ ' ' ~ (n == 'sg' ? w[3] : w[4])",
+    "right": "form(w, k)"
+  },
+  "variants": [
+    {
+      "weight": 3,
+      "label": "Saisie",
+      "prompt": "Traduis en latin : « {{ fr }} ». Préposition <i>{{ p[0] }}</i> ; nom <i>{{ w[0] }}, {{ w[1] }}</i>.",
+      "answer": {
+        "type": "latin",
+        "value": "[p[0] ~ ' ' ~ right, right]",
+        "display": "'<i>' ~ p[0] ~ ' ' ~ right ~ '</i>'",
+        "text": "p[0] ~ ' ' ~ right"
+      },
+      "wrongs": [
+        {
+          "misconception": "prepositions-cas",
+          "value": "[p[0] ~ ' ' ~ form(w, ok), form(w, ok)]",
+          "display": "'<i>' ~ p[0] ~ ' ' ~ form(w, ok) ~ '</i>'",
+          "text": "p[0] ~ ' ' ~ form(w, ok)"
+        },
+        {
+          "misconception": "prepositions-genitif",
+          "value": "[p[0] ~ ' ' ~ form(w, 'gen.' ~ n), form(w, 'gen.' ~ n)]",
+          "display": "'<i>' ~ p[0] ~ ' ' ~ form(w, 'gen.' ~ n) ~ '</i>'",
+          "text": "p[0] ~ ' ' ~ form(w, 'gen.' ~ n)",
+          "when": "p[3] == 'de'"
+        },
+        {
+          "misconception": "prepositions-nominatif",
+          "value": "[p[0] ~ ' ' ~ form(w, 'nom.' ~ n), form(w, 'nom.' ~ n)]",
+          "display": "'<i>' ~ p[0] ~ ' ' ~ form(w, 'nom.' ~ n) ~ '</i>'",
+          "text": "p[0] ~ ' ' ~ form(w, 'nom.' ~ n)"
+        },
+        {
+          "misconception": "prepositions-nombre",
+          "value": "[p[0] ~ ' ' ~ form(w, otherNumber(k)), form(w, otherNumber(k))]",
+          "display": "'<i>' ~ p[0] ~ ' ' ~ form(w, otherNumber(k)) ~ '</i>'",
+          "text": "p[0] ~ ' ' ~ form(w, otherNumber(k))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "<i>{{ p[0] }}</i> se construit avec l’{{ caseName(p[1]) }} : <i>{{ p[0] }} {{ right }}</i>.{{ declTable(w, k) }}"
+    },
+    {
+      "weight": 2,
+      "label": "QCM",
+      "prompt": "Comment dit-on « {{ fr }} » ? (<i>{{ w[0] }}, {{ w[1] }}</i>)",
+      "answer": {
+        "type": "choice",
+        "value": "p[0] ~ ' ' ~ right",
+        "display": "'<i>' ~ p[0] ~ ' ' ~ right ~ '</i>'"
+      },
+      "wrongs": [
+        {
+          "misconception": "prepositions-cas",
+          "value": "p[0] ~ ' ' ~ form(w, ok)",
+          "display": "'<i>' ~ p[0] ~ ' ' ~ form(w, ok) ~ '</i>'"
+        },
+        {
+          "misconception": "prepositions-genitif",
+          "value": "p[0] ~ ' ' ~ form(w, 'gen.' ~ n)",
+          "display": "'<i>' ~ p[0] ~ ' ' ~ form(w, 'gen.' ~ n) ~ '</i>'"
+        },
+        {
+          "misconception": "prepositions-nominatif",
+          "value": "p[0] ~ ' ' ~ form(w, 'nom.' ~ n)",
+          "display": "'<i>' ~ p[0] ~ ' ' ~ form(w, 'nom.' ~ n) ~ '</i>'"
+        },
+        {
+          "misconception": "prepositions-nombre",
+          "value": "p[0] ~ ' ' ~ form(w, otherNumber(k))",
+          "display": "'<i>' ~ p[0] ~ ' ' ~ form(w, otherNumber(k)) ~ '</i>'"
+        }
+      ],
+      "method": "<i>{{ p[0] }}</i> se construit avec l’{{ caseName(p[1]) }} : <i>{{ p[0] }} {{ right }}</i>.{{ declTable(w, k) }}"
+    }
+  ]
+}

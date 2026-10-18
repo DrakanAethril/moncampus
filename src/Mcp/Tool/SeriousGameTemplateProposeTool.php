@@ -43,7 +43,7 @@ final readonly class SeriousGameTemplateProposeTool implements McpTool
         return [
             'type' => 'object',
             'properties' => [
-                'game' => ['type' => 'string', 'description' => 'Identifiant du jeu (« observatoire » par défaut).'],
+                'game' => ['type' => 'string', 'description' => 'Identifiant du jeu : « observatoire » (par défaut) ou « pompei ».'],
                 'unit' => ['type' => 'string', 'description' => 'Identifiant de l\'unité ; il doit être aussi celui du champ « unit » de la définition.'],
                 'definition' => ['description' => 'Le gabarit complet (objet JSON, ou texte JSON).'],
                 'note' => ['type' => 'string', 'description' => 'Ce qui change par rapport à la version courante, en une phrase (lu par les administrateurs).'],

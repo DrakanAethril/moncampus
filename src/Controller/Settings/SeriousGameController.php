@@ -15,6 +15,7 @@ use App\SeriousGame\SeriousGameHealth;
 use App\SeriousGame\SeriousGameManifest;
 use App\SeriousGame\SeriousGameTemplates;
 use App\SeriousGame\Template\TemplateBench;
+use App\SeriousGame\Template\TemplateDefinition;
 use App\Service\QueryValue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -51,7 +52,7 @@ class SeriousGameController extends AbstractController
                 'game' => $game,
                 'units' => \count($manifest->units()),
                 'installed' => \count($current),
-                'hidden' => \count(array_filter($current, static fn (SeriousGameTemplate $t): bool => !$game->acceptsAnswerKind(self::kindOf($t)))),
+                'hidden' => \count(array_filter($current, static fn (SeriousGameTemplate $t): bool => !self::servable($game, $t))),
             ];
         }
 
@@ -115,7 +116,7 @@ class SeriousGameController extends AbstractController
                     'current' => $current,
                     'drafts' => array_values(array_filter($list, static fn (SeriousGameTemplate $t): bool => $t->isDraft())),
                     'versions' => $list,
-                    'hidden' => null !== $current && !$game->acceptsAnswerKind(self::kindOf($current)),
+                    'hidden' => null !== $current && !self::servable($game, $current),
                 ];
             }
             $chapters[] = ['chapter' => $chapter, 'units' => $units];
@@ -173,11 +174,10 @@ class SeriousGameController extends AbstractController
         return $this->redirectToRoute('app_settings_serious_games_template', ['slug' => $slug, 'unit' => $unit, 'version' => $version]);
     }
 
-    private static function kindOf(SeriousGameTemplate $template): string
+    /** Whether a template asks at least one kind of answer the game accepts - else its unit is hidden. */
+    private static function servable(SeriousGame $game, SeriousGameTemplate $template): bool
     {
-        $kind = $template->getDefinition()['kind'] ?? 'short';
-
-        return \is_string($kind) ? $kind : 'short';
+        return (new TemplateDefinition($template->getUnitCode(), $template->getVersion(), $template->getDefinition()))->servableWith($game->getAnswerKinds());
     }
 
     private function managedGame(SeriousGameRepository $games, string $slug): SeriousGame

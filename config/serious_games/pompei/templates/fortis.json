@@ -1,0 +1,129 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "fortis",
+  "label": "Adjectifs de la 2e classe (fortis, ingens)",
+  "misconceptions": [
+    {
+      "id": "fortis-genre",
+      "label": "Se tromper de genre",
+      "explanation": "Un adjectif a une forme par genre : masculin, féminin, neutre. Repère le genre demandé avant de choisir la colonne du tableau."
+    },
+    {
+      "id": "fortis-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "L’adjectif se met au même nombre que le nom qu’il accompagne. Vérifie la ligne du tableau : singulier ou pluriel."
+    },
+    {
+      "id": "fortis-cas",
+      "label": "Confondre deux cas voisins",
+      "explanation": "L’adjectif se décline exactement comme un nom. Récite la colonne entière pour retrouver la bonne case."
+    },
+    {
+      "id": "fortis-nominatif",
+      "label": "Laisser l’adjectif au nominatif",
+      "explanation": "Comme le nom, l’adjectif change de terminaison selon le cas. Pars du radical (celui du génitif) et ajoute la terminaison demandée."
+    },
+    {
+      "id": "fortis-classe",
+      "label": "Décliner comme bonus, -a, -um",
+      "explanation": "Fortis, ingens, felix suivent la 3e déclinaison, pas la 2e et la 1re : fortem, fortis, forti ; jamais fortum ni fortam."
+    },
+    {
+      "id": "fortis-abl",
+      "label": "Ablatif singulier en -e au lieu de -i",
+      "explanation": "Les adjectifs de la 2e classe ont leur ablatif singulier en -i, à tous les genres : forti, ingenti, felici."
+    },
+    {
+      "id": "fortis-ium",
+      "label": "Génitif pluriel en -um au lieu de -ium",
+      "explanation": "Les adjectifs de la 2e classe sont des thèmes en -i : génitif pluriel en -ium (fortium), neutre pluriel en -ia (fortia)."
+    }
+  ],
+  "params": {
+    "a": "pick([['fortis', 'fortis', 'forte', 'fortis', 'courageux'], ['brevis', 'brevis', 'breve', 'brevis', 'court'], ['facilis', 'facilis', 'facile', 'facilis', 'facile'], ['gravis', 'gravis', 'grave', 'gravis', 'lourd'], ['omnis', 'omnis', 'omne', 'omnis', 'tout'], ['tristis', 'tristis', 'triste', 'tristis', 'triste'], ['dulcis', 'dulcis', 'dulce', 'dulcis', 'doux'], ['nobilis', 'nobilis', 'nobile', 'nobilis', 'noble'], ['utilis', 'utilis', 'utile', 'utilis', 'utile'], ['acer', 'acris', 'acre', 'acris', 'vif'], ['ingens', 'ingens', 'ingens', 'ingentis', 'immense'], ['felix', 'felix', 'felix', 'felicis', 'heureux'], ['prudens', 'prudens', 'prudens', 'prudentis', 'prudent'], ['sapiens', 'sapiens', 'sapiens', 'sapientis', 'sage'], ['audax', 'audax', 'audax', 'audacis', 'audacieux'], ['velox', 'velox', 'velox', 'velocis', 'rapide']])",
+    "k": "pick(['nom.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])",
+    "g": "pick(['m', 'f', 'n'])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "let": {
+    "key": "k ~ '.' ~ g",
+    "og": "g == 'f' ? 'm' : 'f'"
+  },
+  "variants": [
+    {
+      "weight": 5,
+      "label": "Une forme",
+      "prompt": "Donne <i>{{ a[0] }}, {{ a[1] }}, {{ a[2] }}</i> ({{ a[4] }}) {{ atCase(key) }}.",
+      "answer": {
+        "type": "latin",
+        "value": "adjs(a, key)"
+      },
+      "wrongs": [
+        {
+          "misconception": "fortis-genre",
+          "value": "adjs(a, k ~ '.' ~ og)"
+        },
+        {
+          "misconception": "fortis-nombre",
+          "value": "adjs(a, otherNumber(key))"
+        },
+        {
+          "misconception": "fortis-nominatif",
+          "value": "adj(a, 'nom.' ~ keyNumber(k) ~ '.' ~ g)",
+          "when": "keyCase(k) != 'nom'"
+        },
+        {
+          "misconception": "fortis-classe",
+          "value": "formAs([a[0], a[3], g == 'n' ? 'n' : 'm'], g == 'f' ? 1 : 2, k)"
+        },
+        {
+          "misconception": "fortis-abl",
+          "value": "adjStem(a) ~ 'e'",
+          "when": "k == 'abl.sg'"
+        },
+        {
+          "misconception": "fortis-ium",
+          "value": "adjStem(a) ~ 'um'",
+          "when": "k == 'gen.pl'"
+        },
+        {
+          "misconception": "fortis-ium",
+          "value": "adjStem(a) ~ 'a'",
+          "when": "g == 'n' and k in ['nom.pl', 'acc.pl']"
+        },
+        {
+          "misconception": "fortis-cas",
+          "value": "adjs(a, withCase(key, confusedCase(keyCase(k))))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Les adjectifs de la 2e classe suivent la 3e déclinaison, thème en -i : ablatif singulier en -i, génitif pluriel en -ium, neutre pluriel en -ia. Radical <i>{{ adjStem(a) }}-</i>.{{ adjTable(a, keyNumber(k), key) }}"
+    },
+    {
+      "weight": 1,
+      "label": "Le tableau",
+      "prompt": "Décline <i>{{ a[0] }}, {{ a[1] }}, {{ a[2] }}</i> ({{ a[4] }}) au {{ genderName(g) }} {{ numberName(n) }} : les six cas.",
+      "answer": {
+        "type": "forms",
+        "value": "adjParadigmAlts(a, g, n)",
+        "labels": "caseNames()"
+      },
+      "wrongs": [
+        {
+          "misconception": "fortis-genre",
+          "value": "adjParadigm(a, og, n)"
+        },
+        {
+          "misconception": "fortis-nombre",
+          "value": "adjParadigm(a, g, n == 'sg' ? 'pl' : 'sg')"
+        },
+        {
+          "misconception": "fortis-classe",
+          "value": "paradigmAs([a[0], a[3], g == 'n' ? 'n' : 'm'], g == 'f' ? 1 : 2, n)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Les adjectifs de la 2e classe suivent la 3e déclinaison, thème en -i : ablatif singulier en -i, génitif pluriel en -ium, neutre pluriel en -ia. Radical <i>{{ adjStem(a) }}-</i>.{{ adjTable(a, n) }}"
+    }
+  ]
+}

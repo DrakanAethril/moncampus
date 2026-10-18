@@ -23,6 +23,9 @@ final class AnswerCheckers
             AnswerType::Scientific => new ScientificChecker(),
             AnswerType::Formula => new FormulaChecker(),
             AnswerType::Text => new TextChecker(),
+            AnswerType::Latin => new LatinChecker(),
+            AnswerType::Forms => new FormsChecker(),
+            AnswerType::Choice => new ChoiceChecker(),
         };
     }
 }

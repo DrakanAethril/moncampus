@@ -87,6 +87,24 @@ class AnswerCheckersTest extends TestCase
         // text
         yield 'text ignores case' => [AnswerType::Text, 'Paris', ' paris ', true];
         yield 'text differs' => [AnswerType::Text, 'Paris', 'Lyon', false];
+        // latin
+        yield 'latin form' => [AnswerType::Latin, 'rosam', 'rosam', true];
+        yield 'latin with macrons' => [AnswerType::Latin, 'rosa', 'rosā', true];
+        yield 'latin capital' => [AnswerType::Latin, 'domini', ' Domini ', true];
+        yield 'latin j for i' => [AnswerType::Latin, 'cuius', 'cujus', true];
+        yield 'latin alternative' => [AnswerType::Latin, ['cives', 'civis'], 'civis', true];
+        yield 'latin wrong ending' => [AnswerType::Latin, 'rosam', 'rosum', false];
+        yield 'latin with a digit' => [AnswerType::Latin, 'rosam', 'rosam2', false];
+        // forms (a table to fill)
+        yield 'table in fields' => [AnswerType::Forms, ['rosa', 'rosa', 'rosam'], 'rosa|rosa|rosām', true, ['labels' => ['N', 'V', 'Acc']]];
+        yield 'table on one line' => [AnswerType::Forms, ['rosa', 'rosa', 'rosam'], 'rosa ; rosa ; rosam', true, ['labels' => ['N', 'V', 'Acc']]];
+        yield 'table with an alternative' => [AnswerType::Forms, ['cives', ['cives', 'civis']], 'cives · civis', true, ['labels' => ['N', 'Acc']]];
+        yield 'table one cell wrong' => [AnswerType::Forms, ['rosa', 'rosa', 'rosam'], 'rosa|rosa|rosum', false, ['labels' => ['N', 'V', 'Acc']]];
+        yield 'table one cell missing' => [AnswerType::Forms, ['rosa', 'rosa', 'rosam'], 'rosa|rosa', false, ['labels' => ['N', 'V', 'Acc']]];
+        // choice
+        yield 'choice' => [AnswerType::Choice, 'génitif singulier', 'génitif singulier', true];
+        yield 'choice without accents' => [AnswerType::Choice, 'génitif singulier', 'Genitif singulier', true];
+        yield 'another choice' => [AnswerType::Choice, 'génitif singulier', 'datif singulier', false];
     }
 
     /** @param array<string, mixed> $options */

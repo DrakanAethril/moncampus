@@ -81,23 +81,27 @@ final class QuestionEngine
     {
         return array_values(array_filter(
             $manifest->unitCodes(),
-            static fn (string $unit): bool => null !== ($template = $source->current($unit)) && \in_array($template->kind(), $answerKinds, true),
+            static fn (string $unit): bool => null !== ($template = $source->current($unit)) && $template->servableWith($answerKinds),
         ));
     }
 
     /**
-     * $size questions on one unit, none twice.
+     * $size questions on one unit, none twice, each of a kind the game accepts - a template that
+     * mixes QCM and typed answers serves only its typed ones to a game that accepts no QCM.
+     *
+     * @param list<string>|null $kinds the kinds of answer the game accepts; null for every kind
      *
      * @return list<PlannedQuestion>
      */
-    public function seriesPlan(TemplateDefinition $template, int $size): array
+    public function seriesPlan(TemplateDefinition $template, int $size, ?array $kinds = null): array
     {
         $plan = [];
         $seen = [];
         for ($draw = 0; \count($plan) < $size && $draw < self::MAX_DRAWS; ++$draw) {
             $seed = $this->newSeed();
-            $identity = $this->generate($template, $seed)->identity();
-            if (isset($seen[$identity])) {
+            $question = $this->generate($template, $seed);
+            $identity = $question->identity();
+            if (isset($seen[$identity]) || !self::accepts($question, $kinds)) {
                 continue;
             }
             $seen[$identity] = true;
@@ -112,11 +116,12 @@ final class QuestionEngine
      * distribution (3 + 3 + 2 + 2 + 2, shuffled between chapters), one question each, the whole
      * shuffled.
      *
-     * @param list<string> $servable the units that may be served
+     * @param list<string>      $servable the units that may be served
+     * @param list<string>|null $kinds    the kinds of answer the game accepts; null for every kind
      *
      * @return list<PlannedQuestion>
      */
-    public function finalPlan(SeriousGameManifest $manifest, TemplateSource $source, array $servable): array
+    public function finalPlan(SeriousGameManifest $manifest, TemplateSource $source, array $servable, ?array $kinds = null): array
     {
         $random = new SeededRandom($this->newSeed(), 'final');
         $counts = $random->shuffle($manifest->finalPerChapter());
@@ -131,8 +136,15 @@ final class QuestionEngine
         $plan = [];
         foreach ($random->shuffle($units) as $unit) {
             $template = $source->current($unit);
-            if (null !== $template) {
-                $plan[] = ['unit' => $unit, 'version' => $template->version, 'seed' => $this->newSeed()];
+            if (null === $template) {
+                continue;
+            }
+            for ($draw = 0; $draw < self::MAX_DRAWS; ++$draw) {
+                $seed = $this->newSeed();
+                if (self::accepts($this->generate($template, $seed), $kinds)) {
+                    $plan[] = ['unit' => $unit, 'version' => $template->version, 'seed' => $seed];
+                    break;
+                }
             }
         }
 
@@ -143,9 +155,11 @@ final class QuestionEngine
      * $size questions of the unit a typical error belongs to, each one able to show that very
      * error - or, for an error read from the shape of an answer, plain questions of the unit.
      *
+     * @param list<string>|null $kinds the kinds of answer the game accepts; null for every kind
+     *
      * @return list<PlannedQuestion>
      */
-    public function cometPlan(TemplateDefinition $template, string $misconception, int $size): array
+    public function cometPlan(TemplateDefinition $template, string $misconception, int $size, ?array $kinds = null): array
     {
         $plan = [];
         $seen = [];
@@ -153,7 +167,7 @@ final class QuestionEngine
         for ($draw = 0; \count($plan) < $size && $draw < 2 * self::MAX_DRAWS; ++$draw) {
             $seed = $this->newSeed();
             $question = $this->generate($template, $seed);
-            if (isset($seen[$question->identity()])) {
+            if (isset($seen[$question->identity()]) || !self::accepts($question, $kinds)) {
                 continue;
             }
             $seen[$question->identity()] = true;
@@ -166,6 +180,12 @@ final class QuestionEngine
         }
 
         return [...$plan, ...\array_slice($fallback, 0, $size - \count($plan))];
+    }
+
+    /** @param list<string>|null $kinds */
+    private static function accepts(GeneratedQuestion $question, ?array $kinds): bool
+    {
+        return null === $kinds || \in_array($question->kind, $kinds, true);
     }
 
     /**

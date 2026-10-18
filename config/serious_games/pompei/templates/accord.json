@@ -1,0 +1,102 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "accord",
+  "label": "Accorder l’adjectif avec le nom",
+  "misconceptions": [
+    {
+      "id": "accord-terminaison",
+      "label": "Recopier la terminaison du nom",
+      "explanation": "L’adjectif s’accorde en genre, en nombre et en cas, pas en terminaison : nautam bonum, regem bonum, manum bonam. Il garde sa propre déclinaison."
+    },
+    {
+      "id": "accord-genre",
+      "label": "Oublier le genre du nom",
+      "explanation": "Le genre se lit dans le dictionnaire, pas sur la terminaison : nauta et agricola sont masculins, manus est féminin. L’adjectif prend ce genre-là."
+    },
+    {
+      "id": "accord-nombre",
+      "label": "Se tromper de nombre",
+      "explanation": "L’adjectif se met au même nombre que le nom : un nom au pluriel, un adjectif au pluriel."
+    },
+    {
+      "id": "accord-cas",
+      "label": "Se tromper de cas",
+      "explanation": "L’adjectif se met au même cas que le nom qu’il accompagne. Analyse d’abord le nom, puis cherche la même case dans le tableau de l’adjectif."
+    }
+  ],
+  "params": {
+    "w": "pick([['rosa', 'rosae', 'f', 'la rose', 'les roses'], ['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['aqua', 'aquae', 'f', 'l’eau', 'les eaux'], ['via', 'viae', 'f', 'la route', 'les routes'], ['insula', 'insulae', 'f', 'l’île', 'les îles'], ['silva', 'silvae', 'f', 'la forêt', 'les forêts'], ['villa', 'villae', 'f', 'la villa', 'les villas'], ['porta', 'portae', 'f', 'la porte', 'les portes'], ['columna', 'columnae', 'f', 'la colonne', 'les colonnes'], ['tabula', 'tabulae', 'f', 'la tablette', 'les tablettes'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['terra', 'terrae', 'f', 'la terre', 'les terres'], ['epistula', 'epistulae', 'f', 'la lettre', 'les lettres'], ['amphora', 'amphorae', 'f', 'l’amphore', 'les amphores'], ['sagitta', 'sagittae', 'f', 'la flèche', 'les flèches'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['equus', 'equi', 'm', 'le cheval', 'les chevaux'], ['murus', 'muri', 'm', 'le mur', 'les murs'], ['hortus', 'horti', 'm', 'le jardin', 'les jardins'], ['lupus', 'lupi', 'm', 'le loup', 'les loups'], ['populus', 'populi', 'm', 'le peuple', 'les peuples'], ['templum', 'templi', 'n', 'le temple', 'les temples'], ['bellum', 'belli', 'n', 'la guerre', 'les guerres'], ['donum', 'doni', 'n', 'le cadeau', 'les cadeaux'], ['oppidum', 'oppidi', 'n', 'la place forte', 'les places fortes'], ['verbum', 'verbi', 'n', 'la parole', 'les paroles'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['lex', 'legis', 'f', 'la loi', 'les lois'], ['pax', 'pacis', 'f', 'la paix', 'les paix'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['virtus', 'virtutis', 'f', 'le courage', 'les courages'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['labor', 'laboris', 'm', 'le travail', 'les travaux'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['leo', 'leonis', 'm', 'le lion', 'les lions'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['vox', 'vocis', 'f', 'la voix', 'les voix'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['navis', 'navis', 'f', 'le navire', 'les navires'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis'], ['urbs', 'urbis', 'f', 'la ville', 'les villes'], ['mons', 'montis', 'm', 'la montagne', 'les montagnes'], ['nox', 'noctis', 'f', 'la nuit', 'les nuits'], ['pars', 'partis', 'f', 'la partie', 'les parties'], ['ars', 'artis', 'f', 'l’art', 'les arts'], ['manus', 'manus', 'f', 'la main', 'les mains'], ['exercitus', 'exercitus', 'm', 'l’armée', 'les armées'], ['senatus', 'senatus', 'm', 'le sénat', 'les sénats'], ['fructus', 'fructus', 'm', 'le fruit', 'les fruits'], ['portus', 'portus', 'm', 'le port', 'les ports'], ['res', 'rei', 'f', 'la chose', 'les choses'], ['dies', 'diei', 'm', 'le jour', 'les jours']])",
+    "a": "pick([['bonus', 'bona', 'bonum', 'boni', 'bon'], ['magnus', 'magna', 'magnum', 'magni', 'grand'], ['parvus', 'parva', 'parvum', 'parvi', 'petit'], ['longus', 'longa', 'longum', 'longi', 'long'], ['altus', 'alta', 'altum', 'alti', 'haut'], ['novus', 'nova', 'novum', 'novi', 'nouveau'], ['laetus', 'laeta', 'laetum', 'laeti', 'joyeux'], ['clarus', 'clara', 'clarum', 'clari', 'célèbre'], ['malus', 'mala', 'malum', 'mali', 'mauvais'], ['Romanus', 'Romana', 'Romanum', 'Romani', 'romain'], ['pulcher', 'pulchra', 'pulchrum', 'pulchri', 'beau'], ['liber', 'libera', 'liberum', 'liberi', 'libre'], ['miser', 'misera', 'miserum', 'miseri', 'malheureux'], ['niger', 'nigra', 'nigrum', 'nigri', 'noir'], ['sacer', 'sacra', 'sacrum', 'sacri', 'sacré'], ['aeger', 'aegra', 'aegrum', 'aegri', 'malade'], ['fortis', 'fortis', 'forte', 'fortis', 'courageux'], ['brevis', 'brevis', 'breve', 'brevis', 'court'], ['facilis', 'facilis', 'facile', 'facilis', 'facile'], ['gravis', 'gravis', 'grave', 'gravis', 'lourd'], ['omnis', 'omnis', 'omne', 'omnis', 'tout'], ['tristis', 'tristis', 'triste', 'tristis', 'triste'], ['dulcis', 'dulcis', 'dulce', 'dulcis', 'doux'], ['nobilis', 'nobilis', 'nobile', 'nobilis', 'noble'], ['utilis', 'utilis', 'utile', 'utilis', 'utile'], ['acer', 'acris', 'acre', 'acris', 'vif'], ['ingens', 'ingens', 'ingens', 'ingentis', 'immense'], ['felix', 'felix', 'felix', 'felicis', 'heureux'], ['prudens', 'prudens', 'prudens', 'prudentis', 'prudent'], ['sapiens', 'sapiens', 'sapiens', 'sapientis', 'sage'], ['audax', 'audax', 'audax', 'audacis', 'audacieux'], ['velox', 'velox', 'velox', 'velocis', 'rapide']])",
+    "k": "pick(['nom.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])"
+  },
+  "let": {
+    "key": "k ~ '.' ~ w[2]",
+    "f": "form(w, k)",
+    "og": "w[2] == 'f' ? 'm' : 'f'"
+  },
+  "variants": [
+    {
+      "weight": 3,
+      "label": "Saisie",
+      "prompt": "Accorde <i>{{ a[0] }}, {{ a[1] }}, {{ a[2] }}</i> ({{ a[4] }}) avec <i>{{ f }}</i> ({{ w[0] }}, {{ w[1] }}, {{ genderName(w[2]) }}), ici {{ atCase(k) }}.",
+      "answer": {
+        "type": "latin",
+        "value": "adjs(a, key)"
+      },
+      "wrongs": [
+        {
+          "misconception": "accord-terminaison",
+          "value": "adjStem(a) ~ ending(w, k)",
+          "when": "ending(w, k) != ''"
+        },
+        {
+          "misconception": "accord-genre",
+          "value": "adjs(a, k ~ '.' ~ og)"
+        },
+        {
+          "misconception": "accord-nombre",
+          "value": "adjs(a, otherNumber(key))"
+        },
+        {
+          "misconception": "accord-cas",
+          "value": "adjs(a, withCase(key, confusedCase(keyCase(k))))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "<i>{{ f }}</i> est {{ genderName(w[2]) }}, {{ caseLabel(k) }} : l’adjectif prend le même genre, le même nombre et le même cas — <i>{{ adj(a, key) }}</i>.{{ adjTable(a, keyNumber(k), key) }}"
+    },
+    {
+      "weight": 2,
+      "label": "QCM",
+      "prompt": "Quelle forme de <i>{{ a[0] }}, {{ a[1] }}, {{ a[2] }}</i> ({{ a[4] }}) s’accorde avec <i>{{ f }}</i> ({{ w[0] }}, {{ w[1] }}, {{ genderName(w[2]) }}), ici {{ atCase(k) }} ?",
+      "answer": {
+        "type": "choice",
+        "value": "adj(a, key)"
+      },
+      "wrongs": [
+        {
+          "misconception": "accord-terminaison",
+          "value": "adjStem(a) ~ ending(w, k)",
+          "when": "ending(w, k) != ''"
+        },
+        {
+          "misconception": "accord-genre",
+          "value": "adj(a, k ~ '.' ~ og)"
+        },
+        {
+          "misconception": "accord-nombre",
+          "value": "adj(a, otherNumber(key))"
+        },
+        {
+          "misconception": "accord-cas",
+          "value": "adj(a, withCase(key, confusedCase(keyCase(k))))"
+        },
+        {
+          "misconception": "accord-cas",
+          "value": "adj(a, withCase(key, keyCase(k) == 'gen' ? 'acc' : 'gen'))"
+        }
+      ],
+      "method": "<i>{{ f }}</i> est {{ genderName(w[2]) }}, {{ caseLabel(k) }} : l’adjectif prend le même genre, le même nombre et le même cas — <i>{{ adj(a, key) }}</i>.{{ adjTable(a, keyNumber(k), key) }}"
+    }
+  ]
+}

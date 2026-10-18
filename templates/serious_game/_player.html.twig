@@ -17,6 +17,7 @@
     {% for row in games %}
         {% set game = row.game %}
         {% set progress = row.progress %}
+        {% set words = serious_game_words(game) %}
         <section class="card cm-sg-player__game">
             <div class="cm-sg-player__game-head">
                 <div>
@@ -39,7 +40,7 @@
                         <ul class="cm-sg-stars">
                             {% for unit in progress.units|filter(u => u.chapter == chapter.code) %}
                                 <li class="cm-sg-star cm-sg-star--{{ unit.brightness ?? (unit.series > 0 ? 'tried' : 'never') }} {{ unit.hidden ? 'is-hidden' }}"
-                                    title="{{ unit.label }} — {{ unit.brightness ? ('seriousGameBrightness' ~ unit.brightness|capitalize)|trans : (unit.series > 0 ? 'seriousGameUnitTried'|trans : 'seriousGameUnitNever'|trans) }}{{ unit.best is not null ? ' · ' ~ 'seriousGameBestSeries'|trans({'%best%': unit.best}) }}">
+                                    title="{{ unit.label }} — {{ unit.brightness ? words.brightness[unit.brightness]|capitalize : (unit.series > 0 ? 'seriousGameUnitTried'|trans({'%lit%': words.lit}) : 'seriousGameUnitNever'|trans) }}{{ unit.best is not null ? ' · ' ~ 'seriousGameBestSeries'|trans({'%best%': unit.best}) }}">
                                     <span class="cm-sg-star__dot" aria-hidden="true"></span>
                                     <span class="cm-sg-star__label">{{ unit.label }}</span>
                                 </li>
@@ -59,7 +60,7 @@
                             {% for party in row.history %}
                                 <li>
                                     <span class="cm-sg-history__date">{{ party.endedAt|date('d/m') }}</span>
-                                    <span class="cm-sg-history__what">{{ party.mode == 'series' ? party.unit : (party.mode == 'final' ? progress.final.label : 'seriousGameCometStudyLabel'|trans({'%unit%': party.unit})) }}</span>
+                                    <span class="cm-sg-history__what">{{ party.mode == 'series' ? party.unit : (party.mode == 'final' ? progress.final.label : 'seriousGameCometStudyLabel'|trans({'%comet%': words.comet|capitalize, '%unit%': party.unit})) }}</span>
                                     <span class="cm-sg-history__score">{{ party.score }}/{{ party.size }}</span>
                                 </li>
                             {% endfor %}
@@ -67,16 +68,16 @@
                     {% endif %}
                 </div>
                 <div>
-                    <h3 class="cm-sg-player__h3">{{ 'seriousGameCometsHeading'|trans }}</h3>
+                    <h3 class="cm-sg-player__h3">{{ words.comets|capitalize }}</h3>
                     {% if row.comets is empty %}
-                        <p class="text-secondary">{{ 'seriousGameNoComet'|trans }}</p>
+                        <p class="text-secondary">{{ 'seriousGameNoComet'|trans({'%comet%': words.comet}) }}</p>
                     {% else %}
                         <ul class="cm-sg-comets">
                             {% for comet in row.comets %}
                                 <li>
                                     <strong>{{ comet.label }}</strong>
                                     <span class="text-secondary">· {{ comet.unit }}</span>
-                                    {% if comet.state == 'solved' %}<twig:Cm:Badge tone="green">{{ 'seriousGameCometSolved'|trans }}</twig:Cm:Badge>{% else %}<twig:Cm:Badge tone="gold">{{ 'seriousGameCometInView'|trans }}</twig:Cm:Badge>{% endif %}
+                                    {% if comet.state == 'solved' %}<twig:Cm:Badge tone="green">{{ words.cometSolved|capitalize }}</twig:Cm:Badge>{% else %}<twig:Cm:Badge tone="gold">{{ words.cometInView|capitalize }}</twig:Cm:Badge>{% endif %}
                                 </li>
                             {% endfor %}
                         </ul>
@@ -90,6 +91,7 @@
         <section class="card cm-sg-showcase" id="vitrine">
             {{ component('Cm:Subhead', {title: 'seriousGameShowcaseHeading'|trans, hint: 'seriousGameShowcaseHint'|trans}) }}
             {% for shelf in showcase %}
+                {% if showcase|length > 1 %}<h3 class="cm-sg-player__h3 cm-sg-showcase__game">{{ shelf.game.title }}</h3>{% endif %}
                 <div class="cm-sg-showcase__shelf">
                     {% for piece in shelf.pieces|filter(p => p.kind != 'pin') %}
                         <figure class="cm-sg-piece {{ piece.held ? '' : 'is-locked' }}">

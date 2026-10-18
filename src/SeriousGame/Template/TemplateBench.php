@@ -223,6 +223,6 @@ final class TemplateBench
             'answer' => $question->answerText,
             'wrongs' => array_map(static fn (array $w): array => ['misconception' => $w['misconception'], 'input' => $w['text']], $question->wrongs),
             'method' => MathFormat::plain($question->method),
-        ];
+        ] + ([] === $question->choices ? [] : ['choices' => array_column($question->choices, 'value')]);
     }
 }

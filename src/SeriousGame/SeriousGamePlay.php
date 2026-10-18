@@ -161,7 +161,7 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
         }
 
         $template = $source->current($unit) ?? throw new SeriousGamePlayRefused('unit-unavailable');
-        $session = new SeriousGameSession($player, $game, SeriousGameSessionMode::Series, $this->engine->seriesPlan($template, $manifest->seriesSize()));
+        $session = new SeriousGameSession($player, $game, SeriousGameSessionMode::Series, $this->engine->seriesPlan($template, $manifest->seriesSize(), $game->getAnswerKinds()));
         $session->setUnitCode($unit);
         $this->entityManager->persist($session);
         $this->touch($player, $game);
@@ -182,7 +182,7 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
             throw new SeriousGamePlayRefused('final-locked');
         }
 
-        $session = new SeriousGameSession($player, $game, SeriousGameSessionMode::Final, $this->engine->finalPlan($manifest, $source, $servable));
+        $session = new SeriousGameSession($player, $game, SeriousGameSessionMode::Final, $this->engine->finalPlan($manifest, $source, $servable, $game->getAnswerKinds()));
         $session->setTimeLimitSeconds($this->finalTimeLimit($player, $manifest));
         $this->entityManager->persist($session);
         $this->touch($player, $game);
@@ -198,7 +198,7 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
         $manifest = self::manifest($game);
         $template = $this->source($game)->current($comet->getUnitCode()) ?? throw new SeriousGamePlayRefused('unit-unavailable');
 
-        $plan = $this->engine->cometPlan($template, $misconception, $manifest->cometQuestions());
+        $plan = $this->engine->cometPlan($template, $misconception, $manifest->cometQuestions(), $game->getAnswerKinds());
         $session = new SeriousGameSession($player, $game, SeriousGameSessionMode::Comet, $plan);
         $session->setUnitCode($comet->getUnitCode());
         $session->setMisconception($misconception);
@@ -421,6 +421,27 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
             'unit_label' => $question->spec->unit,
             'method' => $question->method,
             'input' => self::stored($input),
+        ] + self::cells($question, $input);
+    }
+
+    /**
+     * For a table to fill, which cells were right and what each one expected - the correction marks
+     * the cells, after the answer, never before.
+     *
+     * @return array{cells?: list<bool>, expectedCells?: list<string>}
+     */
+    private static function cells(GeneratedQuestion $question, ?string $input): array
+    {
+        if (Answer\AnswerType::Forms !== $question->spec->type || !\is_array($question->answerValue)) {
+            return [];
+        }
+        /** @var list<list<string>> $expected */
+        $expected = array_values(array_filter($question->answerValue, is_array(...)));
+        $typed = null === $input || Engine\AnswerCorrector::DONT_KNOW === $input ? [] : array_map('trim', explode('|', $input));
+
+        return [
+            'cells' => Answer\FormsChecker::cells($typed, $expected),
+            'expectedCells' => array_map(static fn (array $alternatives): string => (string) ($alternatives[0] ?? ''), $expected),
         ];
     }
 
@@ -450,7 +471,9 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
                 'misconceptionLabel' => null === $answer?->getMisconception() ? null : $template?->misconceptionLabel((string) $answer->getMisconception()),
                 'expected' => $question->answerDisplay,
                 'method' => $question->method,
-            ];
+                'answerType' => $question->spec->type->value,
+                'labels' => $question->spec->labels,
+            ] + self::cells($question, $answer?->getInput());
         }
 
         return $review;
