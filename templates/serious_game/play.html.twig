@@ -12,5 +12,17 @@
 {% block page_title %}{{ game.title }}{% endblock %}
 
 {% block main %}
-    <div class="card"><div class="card-body"></div></div>
+    {# The game in a frame with an opaque origin (no allow-same-origin): it reads neither the
+       session nor this page, and speaks to Formatool only through serious_game_host_controller.js.
+       It is played full width, keyboard included; « Quitter » inside it comes back here. #}
+    <div class="cm-sg-host" data-controller="serious-game-host"
+         data-serious-game-host-api-value="{{ path('app_serious_games_api_user', {slug: game.slug})|replace({'/user': ''}) }}"
+         data-serious-game-host-csrf-value="{{ csrf_token('serious-games') }}"
+         data-serious-game-host-exit-url-value="{{ path('app_serious_games') }}">
+        <iframe class="cm-sg-host__frame" data-serious-game-host-target="frame"
+                src="/serious-games/{{ game.slug }}/index.html?v={{ game.version|url_encode }}"
+                sandbox="allow-scripts"
+                title="{{ game.title }}"
+                allow="fullscreen"></iframe>
+    </div>
 {% endblock %}
