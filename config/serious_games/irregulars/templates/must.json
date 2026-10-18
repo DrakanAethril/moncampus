@@ -1,0 +1,103 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "must",
+  "label": "must, mustn’t, don’t have to",
+  "misconceptions": [
+    {
+      "id": "must-mustnt-donthave",
+      "label": "mustn’t et don’t have to confondus",
+      "explanation": "Mustn’t exprime une interdiction (il ne faut pas) ; don’t have to, une absence d’obligation (on n’est pas obligé, mais on peut). Les deux se traduisent mal par « ne pas devoir » : demande-toi si c’est interdit ou seulement inutile."
+    },
+    {
+      "id": "must-obligation",
+      "label": "Obligation mal identifiée",
+      "explanation": "Must exprime une obligation (il faut) ; can, une possibilité ou une permission. Relis l’affiche : impose-t-elle quelque chose, l’interdit-elle, ou le laisse-t-elle libre ?"
+    }
+  ],
+  "params": {
+    "r": "pick([['show their ticket at the gate', 0, 'Tickets are checked at the gate.'], ['keep their luggage with them', 0, 'Unattended luggage will be removed.'], ['wait behind the barrier', 0, 'The barrier opens only when the train has stopped.'], ['buy a ticket for their dog', 0, 'Dogs travel with a paid ticket.'], ['give their name to the guard', 0, 'The guard writes down the name of every passenger on the night train.'], ['smoke in the waiting room', 1, 'Smoking is forbidden in the waiting room.'], ['cross the tracks', 1, 'Crossing the tracks is strictly forbidden.'], ['open the doors before the train stops', 1, 'Opening the doors of a moving train is forbidden.'], ['lean out of the windows', 1, 'Leaning out of the windows is forbidden.'], ['run on the stairs', 1, 'Running on the stairs is forbidden.'], ['leave bicycles on the platform', 1, 'Bicycles are not allowed on the platform.'], ['buy their ticket in advance', 2, 'Tickets are also sold on the train.'], ['carry their own bags', 2, 'Porters are available on every platform.'], ['wear a hat', 2, 'There is no dress code at Paddington.'], ['arrive an hour early', 2, 'Trains leave on time: ten minutes is enough.'], ['book a seat', 2, 'Seats are free on every train.'], ['show their ticket to the porters', 2, 'Porters do not check tickets.']])"
+  },
+  "let": {
+    "L": "['must', 'mustn’t', 'don’t have to']",
+    "how": "['Obligation → <b>must</b>.', 'Interdiction → <b>mustn’t</b>.', 'Absence d’obligation (on peut, mais ce n’est pas nécessaire) → <b>don’t have to</b>.']"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Choisir",
+      "prompt": "Station notice: <i>{{ r[2] }}</i><span class=\"q-line\">“Passengers <span class=\"q-blank\">…</span> {{ r[0] }}.”</span>",
+      "answer": {
+        "type": "choice",
+        "value": "L[r[1]]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "must-mustnt-donthave",
+          "value": "r[1] == 1 ? 'don’t have to' : 'mustn’t'",
+          "when": "r[1] != 0"
+        },
+        {
+          "misconception": "must-obligation",
+          "value": "'must'",
+          "when": "r[1] != 0"
+        },
+        {
+          "misconception": "must-obligation",
+          "value": "'mustn’t'",
+          "when": "r[1] == 0"
+        },
+        {
+          "misconception": "must-obligation",
+          "value": "'don’t have to'",
+          "when": "r[1] == 0"
+        },
+        {
+          "misconception": "must-obligation",
+          "value": "'can'",
+          "when": "r[1] == 1"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ how[r[1]] }}"
+    },
+    {
+      "weight": 1,
+      "label": "Taper",
+      "prompt": "Station notice: <i>{{ r[2] }}</i> Type must, mustn’t or don’t have to:<span class=\"q-line\">“Passengers <span class=\"q-blank\">…</span> {{ r[0] }}.”</span>",
+      "answer": {
+        "type": "text",
+        "value": "[['must'], ['mustn’t', 'must not'], ['don’t have to', 'do not have to']][r[1]]"
+      },
+      "wrongs": [
+        {
+          "misconception": "must-mustnt-donthave",
+          "value": "r[1] == 1 ? 'don’t have to' : 'mustn’t'",
+          "when": "r[1] != 0"
+        },
+        {
+          "misconception": "must-obligation",
+          "value": "'must'",
+          "when": "r[1] != 0"
+        },
+        {
+          "misconception": "must-obligation",
+          "value": "'mustn’t'",
+          "when": "r[1] == 0"
+        },
+        {
+          "misconception": "must-obligation",
+          "value": "'don’t have to'",
+          "when": "r[1] == 0"
+        },
+        {
+          "misconception": "must-obligation",
+          "value": "'can'",
+          "when": "r[1] == 1"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ how[r[1]] }}"
+    }
+  ]
+}

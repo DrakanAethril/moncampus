@@ -40,7 +40,7 @@ final readonly class SeriousGameTemplateGetTool implements McpTool
         return [
             'type' => 'object',
             'properties' => [
-                'game' => ['type' => 'string', 'description' => 'Identifiant du jeu : « observatoire » (par défaut) ou « pompei ».'],
+                'game' => ['type' => 'string', 'description' => 'Identifiant du jeu : « observatoire » (par défaut), « pompei », « abysse » ou « irregulars ».'],
                 'unit' => ['type' => 'string', 'description' => 'Identifiant de l\'unité (serious_game_template_list), par exemple « taux ».'],
                 'version' => ['type' => 'integer', 'description' => 'Numéro de version ; la version courante si absent.'],
             ],

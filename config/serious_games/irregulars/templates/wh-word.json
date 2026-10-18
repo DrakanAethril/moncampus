@@ -1,0 +1,120 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "wh-word",
+  "label": "Le bon mot interrogatif",
+  "misconceptions": [
+    {
+      "id": "wh-word-mot",
+      "label": "Mauvais mot interrogatif",
+      "explanation": "Le mot interrogatif dépend de l’information demandée : une personne (Who), une chose (What), un lieu (Where), un moment (When), une cause (Why), une manière (How), un prix (How much). Repère la nature de la partie surlignée avant de choisir."
+    }
+  ],
+  "params": {
+    "s": "pick([['the cabman', 3, 'he'], ['Mrs Hudson', 3, 'she'], ['the baker', 3, 'he'], ['a sailor', 3, 'he'], ['the flower girl', 3, 'she'], ['the night watchman', 3, 'he']])",
+    "a": "pick([['a tall man in a grey coat', 'Who', 'saw'], ['a black bag', 'What', 'saw'], ['outside the Lyceum Theatre', 'Where', 'saw'], ['at midnight', 'When', 'saw'], ['because he was frightened', 'Why', 'ran'], ['by cab', 'How', 'went'], ['three shillings', 'How much', 'paid']])",
+    "w": "pick(['a tall man in a grey coat', 'a black bag'])",
+    "sh": "shuffle(['Who', 'What', 'Where', 'When', 'Why', 'How', 'How much'])",
+    "pl": "pick(['outside the Lyceum Theatre', 'near the docks', 'on Baker Street'])",
+    "tm": "pick(['at midnight', 'last night', 'at nine o’clock'])"
+  },
+  "let": {
+    "text": "a[1] in ['Who', 'What'] ? ucfirst(s[0]) ~ ' saw <mark>' ~ a[0] ~ '</mark> ' ~ pl ~ '.' : (a[1] == 'Where' ? ucfirst(s[0]) ~ ' saw ' ~ w ~ ' <mark>' ~ a[0] ~ '</mark> ' ~ tm ~ '.' : (a[1] == 'When' ? ucfirst(s[0]) ~ ' saw ' ~ w ~ ' ' ~ pl ~ ' <mark>' ~ a[0] ~ '</mark>.' : (a[1] == 'Why' ? ucfirst(s[0]) ~ ' ran away ' ~ pl ~ ' <mark>' ~ (s[2] == 'she' ? 'because she was frightened' : a[0]) ~ '</mark>.' : (a[1] == 'How' ? ucfirst(s[0]) ~ ' went home <mark>' ~ a[0] ~ '</mark> ' ~ tm ~ '.' : ucfirst(s[0]) ~ ' paid <mark>' ~ a[0] ~ '</mark> for the information.'))))",
+    "how": "{'Who': 'Une personne → <b>Who</b>.', 'What': 'Une chose → <b>What</b>.', 'Where': 'Un lieu → <b>Where</b>.', 'When': 'Un moment → <b>When</b>.', 'Why': 'Une cause (because…) → <b>Why</b>.', 'How': 'Une manière, un moyen → <b>How</b>.', 'How much': 'Un prix, une quantité → <b>How much</b>.'}"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Choisir",
+      "prompt": "The witness said:<span class=\"q-line\">“{{ text }}”</span>Which word starts the question about the highlighted part?",
+      "answer": {
+        "type": "choice",
+        "value": "a[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[0]",
+          "when": "sh[0] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[1]",
+          "when": "sh[1] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[2]",
+          "when": "sh[2] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[3]",
+          "when": "sh[3] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[4]",
+          "when": "sh[4] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[5]",
+          "when": "sh[5] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[6]",
+          "when": "sh[6] != a[1]"
+        }
+      ],
+      "method": "{{ how[a[1]] }}"
+    },
+    {
+      "weight": 1,
+      "label": "Taper",
+      "prompt": "The witness said:<span class=\"q-line\">“{{ text }}”</span>Type the question word that asks about the highlighted part.",
+      "answer": {
+        "type": "text",
+        "value": "a[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[0]",
+          "when": "sh[0] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[1]",
+          "when": "sh[1] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[2]",
+          "when": "sh[2] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[3]",
+          "when": "sh[3] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[4]",
+          "when": "sh[4] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[5]",
+          "when": "sh[5] != a[1]"
+        },
+        {
+          "misconception": "wh-word-mot",
+          "value": "sh[6]",
+          "when": "sh[6] != a[1]"
+        }
+      ],
+      "method": "{{ how[a[1]] }}"
+    }
+  ]
+}

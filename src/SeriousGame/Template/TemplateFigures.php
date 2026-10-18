@@ -10,7 +10,10 @@ use App\SeriousGame\Math\MathFormat;
  * The figures a template declares (design/validated/serious-games.md §5.2, `figure`), drawn as SVG
  * on the server: a sheet of squared paper on the astronomer's desk.
  *
- * Two kinds, ported from the reference's `Fig()` and its weighted tree:
+ * Station Abysse adds three, ported from its conception's generators: `chart` (measurements as
+ * broken lines), `web` (a food web) and `cladogram` (a tree of kinship of four species).
+ *
+ * The first two, ported from the reference's `Fig()` and its weighted tree:
  *
  * - `grid` - a squared repère from x[0] to x[1] and y[0] to y[1], graduated, with items drawn on it:
  *   `curve` (a broken line through points), `smooth` (a smooth curve through turning points,
@@ -28,6 +31,19 @@ final class TemplateFigures
     private const string GRID = '#DCCFB2';
     private const string AXIS = '#2B3A6B';
     private const array COLORS = ['ink' => '#B5444A', 'red' => '#B5444A', 'blue' => '#2F6FB0', 'axis' => '#2B3A6B'];
+
+    public const array TYPES = ['grid', 'tree', 'chart', 'web', 'cladogram'];
+
+    /** The keys each figure other than a grid reads (a grid's are its items'). */
+    public const array KEYS = [
+        'tree' => ['p', 'q', 'q2'],
+        'chart' => ['x', 'y', 'xstep', 'ystep', 'xlabel', 'ylabel', 'series'],
+        'web' => ['levels', 'names', 'edges', 'caption'],
+        'cladogram' => ['leaves', 'first', 'second'],
+    ];
+
+    /** The colours a chart's series may take, by name. */
+    private const array SERIES_COLORS = ['blue' => '#2F6FB0', 'orange' => '#C9702B', 'green' => '#3E8E5E', 'red' => '#B5444A', 'violet' => '#7A5AA0', 'teal' => '#167784'];
 
     /** The items a grid draws, and the keys each one reads. */
     public const array GRID_ITEMS = [
@@ -48,7 +64,10 @@ final class TemplateFigures
         return match ($figure['type'] ?? null) {
             'grid' => self::grid($figure),
             'tree' => self::tree(self::float($figure['p'] ?? 0), self::float($figure['q'] ?? 0), self::float($figure['q2'] ?? 0)),
-            default => throw new TemplateFormatException('figure.type', 'figure inconnue (attendu : grid, tree)'),
+            'chart' => self::chart($figure),
+            'web' => self::web($figure),
+            'cladogram' => self::cladogram($figure),
+            default => throw new TemplateFormatException('figure.type', 'figure inconnue (attendu : '.implode(', ', self::TYPES).')'),
         };
     }
 
@@ -200,6 +219,159 @@ final class TemplateFigures
         $text(192, 152, MathFormat::fmt(MathFormat::round(1 - $q2, 2)), false);
 
         return '<svg class="sgm-fig" viewBox="0 0 '.$width.' '.$height.'" width="'.$width.'" height="'.$height.'" role="img" aria-label="Arbre pondéré">'.implode('', $s).'</svg>';
+    }
+
+    /**
+     * A chart of measurements (Station Abysse's bioreactor, an enzyme, five populations drifting):
+     * axes from x[0] to x[1] and y[0] to y[1] graduated every xstep / ystep, their labels, and
+     * `series` - each {name, color, points} - drawn as broken lines, named in a legend.
+     *
+     * @param array<string, mixed> $figure
+     */
+    private static function chart(array $figure): string
+    {
+        [$x0, $x1] = self::pair($figure['x'] ?? [0, 10]);
+        [$y0, $y1] = self::pair($figure['y'] ?? [0, 10]);
+        $xstep = self::float($figure['xstep'] ?? ($x1 - $x0) / 5);
+        $ystep = self::float($figure['ystep'] ?? ($y1 - $y0) / 5);
+        if ($x1 <= $x0 || $y1 <= $y0 || $xstep <= 0 || $ystep <= 0) {
+            throw new TemplateFormatException('figure', 'un graphique a des axes croissants et des pas positifs');
+        }
+        $width = 440;
+        $height = 250;
+        [$left, $top, $right, $bottom] = [52, 16, 16, 42];
+        $pw = $width - $left - $right;
+        $ph = $height - $top - $bottom;
+        $n = static fn (float $v): string => MathFormat::plainNumber(MathFormat::round($v, 2));
+        $X = static fn (float $x): float => $left + ($x - $x0) / ($x1 - $x0) * $pw;
+        $Y = static fn (float $y): float => $top + $ph - (max($y0, min($y1, $y)) - $y0) / ($y1 - $y0) * $ph;
+        $mono = static fn (float $x, float $y, string $t, string $anchor = 'middle'): string => '<text x="'.$n($x).'" y="'.$n($y).'" font-family="IBM Plex Mono, monospace" font-size="10" fill="'.self::AXIS.'" text-anchor="'.$anchor.'">'.htmlspecialchars($t).'</text>';
+
+        $out = ['<rect width="'.$width.'" height="'.$height.'" rx="6" fill="'.self::PAPER.'"/>'];
+        for ($k = 0; $x0 + $k * $xstep <= $x1 + 1e-9; ++$k) {
+            $x = $x0 + $k * $xstep;
+            $out[] = '<line x1="'.$n($X($x)).'" y1="'.$top.'" x2="'.$n($X($x)).'" y2="'.($top + $ph).'" stroke="'.self::GRID.'" stroke-width="1"/>';
+            $out[] = $mono($X($x), $top + $ph + 14, MathFormat::fmt(MathFormat::round($x, 6)));
+        }
+        for ($k = 0; $y0 + $k * $ystep <= $y1 + 1e-9; ++$k) {
+            $y = $y0 + $k * $ystep;
+            $out[] = '<line x1="'.$left.'" y1="'.$n($Y($y)).'" x2="'.($left + $pw).'" y2="'.$n($Y($y)).'" stroke="'.self::GRID.'" stroke-width="1"/>';
+            $out[] = $mono($left - 6, $Y($y) + 3.5, MathFormat::fmt(MathFormat::round($y, 6)), 'end');
+        }
+        $out[] = '<line x1="'.$left.'" y1="'.($top + $ph).'" x2="'.($left + $pw).'" y2="'.($top + $ph).'" stroke="'.self::AXIS.'" stroke-width="1.6"/>';
+        $out[] = '<line x1="'.$left.'" y1="'.$top.'" x2="'.$left.'" y2="'.($top + $ph).'" stroke="'.self::AXIS.'" stroke-width="1.6"/>';
+        $out[] = $mono($left + $pw / 2, $height - 8, self::text($figure['xlabel'] ?? ''));
+        $out[] = '<text x="14" y="'.$n($top + $ph / 2).'" font-family="IBM Plex Mono, monospace" font-size="10" fill="'.self::AXIS.'" text-anchor="middle" transform="rotate(-90 14 '.$n($top + $ph / 2).')">'.htmlspecialchars(self::text($figure['ylabel'] ?? '')).'</text>';
+
+        $legend = 0;
+        foreach (\is_array($figure['series'] ?? null) ? array_values($figure['series']) : [] as $i => $series) {
+            if (!\is_array($series)) {
+                throw new TemplateFormatException('figure.series', 'une série s’écrit { name, color, points }');
+            }
+            $color = self::SERIES_COLORS[\is_string($series['color'] ?? null) ? $series['color'] : ''] ?? array_values(self::SERIES_COLORS)[$i % \count(self::SERIES_COLORS)];
+            $points = self::points($series['points'] ?? []);
+            $out[] = '<polyline fill="none" stroke="'.$color.'" stroke-width="2.2" stroke-linejoin="round" points="'.implode(' ', array_map(static fn (array $p): string => $n($X($p[0])).','.$n($Y($p[1])), $points)).'"/>';
+            $name = self::text($series['name'] ?? '');
+            if ('' !== $name) {
+                $out[] = '<text x="'.($left + $pw - 6).'" y="'.($top + 14 + 14 * $legend++).'" font-family="IBM Plex Mono, monospace" font-size="10.5" font-weight="600" fill="'.$color.'" text-anchor="end">'.htmlspecialchars($name).'</text>';
+            }
+        }
+
+        return '<svg class="sgm-fig" viewBox="0 0 '.$width.' '.$height.'" width="'.$width.'" height="'.$height.'" role="img" aria-label="Graphique">'.implode('', $out).'</svg>';
+    }
+
+    /**
+     * A food web: `levels` gives each organism's trophic level (0 for a producer), `names` its
+     * name, `edges` the arrows [food, eater] - read « est mangé par », as the caption says.
+     *
+     * @param array<string, mixed> $figure
+     */
+    private static function web(array $figure): string
+    {
+        $levels = \is_array($figure['levels'] ?? null) ? $figure['levels'] : [];
+        $names = \is_array($figure['names'] ?? null) ? $figure['names'] : [];
+        $edges = \is_array($figure['edges'] ?? null) ? $figure['edges'] : [];
+        $rows = [];
+        foreach ($levels as $key => $level) {
+            $rows[(int) self::float($level)][] = (string) $key;
+        }
+        if ([] === $rows) {
+            throw new TemplateFormatException('figure.levels', 'un réseau trophique nomme ses êtres vivants et leur niveau');
+        }
+        ksort($rows);
+        $max = max(array_keys($rows));
+        $width = 440;
+        $height = 64 + $max * 62;
+        $position = [];
+        foreach ($rows as $level => $keys) {
+            foreach ($keys as $i => $key) {
+                $position[$key] = [220 + ($i - (\count($keys) - 1) / 2) * 148, $height - 40 - $level * 62];
+            }
+        }
+        $n = static fn (float $v): string => MathFormat::plainNumber(MathFormat::round($v, 1));
+
+        $out = ['<rect width="'.$width.'" height="'.$height.'" rx="6" fill="'.self::PAPER.'"/>',
+            '<defs><marker id="sgm-web-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="'.self::AXIS.'"/></marker></defs>'];
+        foreach ($edges as $edge) {
+            if (!\is_array($edge) || 2 !== \count($edge)) {
+                throw new TemplateFormatException('figure.edges', 'une flèche s’écrit [aliment, consommateur]');
+            }
+            [$from, $to] = array_map(static fn (mixed $k): string => \is_string($k) ? $k : '', array_values($edge));
+            if (!isset($position[$from], $position[$to])) {
+                throw new TemplateFormatException('figure.edges', 'flèche vers un être vivant absent du réseau');
+            }
+            [$ax, $ay] = $position[$from];
+            [$bx, $by] = $position[$to];
+            $d = sqrt(($bx - $ax) ** 2 + ($by - $ay) ** 2) ?: 1.0;
+            [$ux, $uy] = [($bx - $ax) / $d, ($by - $ay) / $d];
+            $out[] = '<line x1="'.$n($ax + $ux * 16).'" y1="'.$n($ay + $uy * 16).'" x2="'.$n($bx - $ux * 17).'" y2="'.$n($by - $uy * 17).'" stroke="'.self::AXIS.'" stroke-width="1.6" marker-end="url(#sgm-web-arrow)"/>';
+        }
+        foreach ($position as $key => [$x, $y]) {
+            $producer = 0 === (int) self::float($levels[$key]);
+            $out[] = '<rect x="'.$n($x - 68).'" y="'.$n($y - 13).'" width="136" height="26" rx="13" fill="'.($producer ? '#3E8E5E' : '#167784').'"/>';
+            $out[] = '<text x="'.$n($x).'" y="'.$n($y + 4.5).'" font-family="IBM Plex Sans, Source Sans 3, sans-serif" font-size="11.5" fill="#FFFFFF" text-anchor="middle">'.htmlspecialchars(self::text($names[$key] ?? $key)).'</text>';
+        }
+        $out[] = '<text x="10" y="'.($height - 8).'" font-family="IBM Plex Mono, monospace" font-size="10" fill="'.self::AXIS.'">'.htmlspecialchars(self::text($figure['caption'] ?? '→ signifie « est mangé par »')).'</text>';
+
+        return '<svg class="sgm-fig" viewBox="0 0 '.$width.' '.$height.'" width="'.$width.'" height="'.$height.'" role="img" aria-label="Réseau trophique">'.implode('', $out).'</svg>';
+    }
+
+    /**
+     * A tree of kinship for four species: `leaves` [outgroup, C, A, B] - A and B the closest
+     * relatives -, `first` the characters gained on the stem below C, `second` those gained below
+     * A and B, each marked by a tick.
+     *
+     * @param array<string, mixed> $figure
+     */
+    private static function cladogram(array $figure): string
+    {
+        $leaves = \is_array($figure['leaves'] ?? null) ? array_values($figure['leaves']) : [];
+        if (4 !== \count($leaves)) {
+            throw new TemplateFormatException('figure.leaves', 'un arbre de parenté porte quatre espèces');
+        }
+        $leafX = [50, 150, 250, 350];
+        $nodes = [[80, 186], [168, 126], [260, 70]];
+        $stroke = ' stroke="'.self::AXIS.'" stroke-width="2.5"';
+        $out = ['<rect width="400" height="226" rx="6" fill="'.self::PAPER.'"/>',
+            '<line x1="40" y1="210" x2="'.$nodes[2][0].'" y2="'.$nodes[2][1].'"'.$stroke.'/>',
+            '<line x1="'.$nodes[0][0].'" y1="'.$nodes[0][1].'" x2="'.$leafX[0].'" y2="38"'.$stroke.'/>',
+            '<line x1="'.$nodes[1][0].'" y1="'.$nodes[1][1].'" x2="'.$leafX[1].'" y2="38"'.$stroke.'/>',
+            '<line x1="'.$nodes[2][0].'" y1="'.$nodes[2][1].'" x2="'.$leafX[2].'" y2="38"'.$stroke.'/>',
+            '<line x1="'.$nodes[2][0].'" y1="'.$nodes[2][1].'" x2="'.$leafX[3].'" y2="38"'.$stroke.'/>'];
+        foreach ($leaves as $i => $leaf) {
+            $out[] = '<text x="'.$leafX[$i].'" y="26" font-family="IBM Plex Sans, Source Sans 3, sans-serif" font-size="12.5" font-weight="600" fill="'.self::AXIS.'" text-anchor="middle">'.htmlspecialchars(self::text($leaf)).'</text>';
+        }
+        $tick = static function (array $a, array $b, mixed $labels) use (&$out): void {
+            [$mx, $my] = [($a[0] + $b[0]) / 2, ($a[1] + $b[1]) / 2];
+            $out[] = '<line x1="'.($mx - 7).'" y1="'.($my - 7).'" x2="'.($mx + 7).'" y2="'.($my + 7).'" stroke="#B5444A" stroke-width="3"/>';
+            foreach (\is_array($labels) ? array_values($labels) : [] as $k => $label) {
+                $out[] = '<text x="'.($mx + 14).'" y="'.($my + 14 + $k * 13).'" font-family="IBM Plex Sans, Source Sans 3, sans-serif" font-size="11" fill="'.self::AXIS.'">'.htmlspecialchars(self::text($label)).'</text>';
+            }
+        };
+        $tick($nodes[0], $nodes[1], $figure['first'] ?? []);
+        $tick($nodes[1], $nodes[2], $figure['second'] ?? []);
+
+        return '<svg class="sgm-fig" viewBox="0 0 400 226" width="400" height="226" role="img" aria-label="Arbre de parenté">'.implode('', $out).'</svg>';
     }
 
     private static function label(float $x, float $y, string $text, ?string $sub, string $color): string

@@ -1,0 +1,135 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "pret-reg",
+  "label": "Prétérit des verbes réguliers",
+  "misconceptions": [
+    {
+      "id": "pret-reg-doublement",
+      "label": "Consonne finale non doublée",
+      "explanation": "Un verbe court terminé par consonne-voyelle-consonne double sa dernière consonne avant -ed : stop, stopped ; rob, robbed. Sans doublement, on lirait un autre son (« stoped » se prononcerait comme « stoaped »)."
+    },
+    {
+      "id": "pret-reg-y-ied",
+      "label": "Règle y → ied oubliée",
+      "explanation": "Après une consonne, le y final devient i devant -ed : carry, carried ; try, tried. Le y ne reste que derrière une voyelle (play, played)."
+    },
+    {
+      "id": "pret-reg-y-voyelle",
+      "label": "y → ied appliqué après une voyelle",
+      "explanation": "Le y ne se transforme qu’après une consonne. Derrière une voyelle, on ajoute simplement -ed : stay, stayed ; play, played."
+    },
+    {
+      "id": "pret-reg-e-final",
+      "label": "-ed ajouté après un e final",
+      "explanation": "Un verbe qui se termine déjà par -e ne prend que -d : arrive, arrived ; close, closed. On n’écrit jamais deux e."
+    },
+    {
+      "id": "pret-reg-base",
+      "label": "Base verbale à la place du prétérit",
+      "explanation": "Un marqueur comme yesterday ou last night situe l’action dans un passé terminé : le verbe se met au prétérit. La base verbale seule ne dit pas que c’est passé."
+    },
+    {
+      "id": "pret-reg-present",
+      "label": "Présent simple à la place du prétérit",
+      "explanation": "Le -s de la 3e personne appartient au présent simple. Avec yesterday ou last night, le verbe prend la marque du passé, -ed, à toutes les personnes."
+    }
+  ],
+  "params": {
+    "v": "pick([['walk', ['walked'], null, null, 'to the docks'], ['open', ['opened'], null, null, 'the door'], ['knock', ['knocked'], null, null, 'at the door'], ['shout', ['shouted'], null, null, 'for help'], ['look', ['looked'], null, null, 'at the clock'], ['clean', ['cleaned'], null, null, 'the windows'], ['arrive', ['arrived'], 'arriveed', 'e', 'at the station'], ['close', ['closed'], 'closeed', 'e', 'the shop'], ['notice', ['noticed'], 'noticeed', 'e', 'a strange smell'], ['escape', ['escaped'], 'escapeed', 'e', 'through the window'], ['stop', ['stopped'], 'stoped', 'dbl', 'near the bridge'], ['drop', ['dropped'], 'droped', 'dbl', 'the lamp'], ['rob', ['robbed'], 'robed', 'dbl', 'the jeweller'], ['grab', ['grabbed'], 'grabed', 'dbl', 'the bag'], ['plan', ['planned'], 'planed', 'dbl', 'the robbery'], ['travel', ['travelled', 'traveled'], null, null, 'to Brighton'], ['carry', ['carried'], 'carryed', 'y', 'a heavy box'], ['hurry', ['hurried'], 'hurryed', 'y', 'home'], ['cry', ['cried'], 'cryed', 'y', 'for help'], ['try', ['tried'], 'tryed', 'y', 'the door'], ['stay', ['stayed'], 'staied', 'vy', 'at the inn'], ['play', ['played'], 'plaied', 'vy', 'cards']])",
+    "s": "pick([['the cabman', 3, 'he'], ['Mrs Hudson', 3, 'she'], ['the baker', 3, 'he'], ['a sailor', 3, 'he'], ['the flower girl', 3, 'she'], ['the night watchman', 3, 'he'], ['two dockers', 6, 'they'], ['the Smith brothers', 6, 'they'], ['I', 1, 'I'], ['we', 4, 'we'], ['you', 2, 'you']])",
+    "t": "pick(['yesterday', 'last night', 'two hours ago', 'on Tuesday'])"
+  },
+  "let": {
+    "rule": "{'e': 'Le verbe se termine par -e : on ajoute seulement -d.', 'dbl': 'Consonne-voyelle-consonne : on double la dernière consonne avant -ed.', 'y': 'Consonne + y : le y devient -ied.', 'vy': 'Voyelle + y : on ajoute simplement -ed.'}",
+    "line": "ucfirst(t) ~ ', ' ~ s[0] ~ ' <span class=\"q-blank\">…</span> (' ~ v[0] ~ ') ' ~ v[4] ~ '.'"
+  },
+  "variants": [
+    {
+      "weight": 2,
+      "label": "Taper le prétérit",
+      "difficulty": "v[3] ? 2 : 1",
+      "prompt": "Complete the witness statement. Type the verb in the preterite.<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "text",
+        "value": "v[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "pret-reg-e-final",
+          "value": "v[2]",
+          "when": "v[3] == 'e'"
+        },
+        {
+          "misconception": "pret-reg-doublement",
+          "value": "v[2]",
+          "when": "v[3] == 'dbl'"
+        },
+        {
+          "misconception": "pret-reg-y-ied",
+          "value": "v[2]",
+          "when": "v[3] == 'y'"
+        },
+        {
+          "misconception": "pret-reg-y-voyelle",
+          "value": "v[2]",
+          "when": "v[3] == 'vy'"
+        },
+        {
+          "misconception": "pret-reg-base",
+          "value": "v[0]"
+        },
+        {
+          "misconception": "pret-reg-present",
+          "value": "s3(v[0])",
+          "when": "s[1] == 3"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "« {{ t }} » situe l’action dans un passé terminé : prétérit, <b>{{ v[1][0] }}</b>. {{ v[3] ? rule[v[3]] : 'On ajoute -ed.' }}"
+    },
+    {
+      "weight": 1,
+      "label": "Choisir le prétérit",
+      "difficulty": "v[3] ? 2 : 1",
+      "prompt": "Complete the witness statement:<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "choice",
+        "value": "v[1][0]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "pret-reg-e-final",
+          "value": "v[2]",
+          "when": "v[3] == 'e'"
+        },
+        {
+          "misconception": "pret-reg-doublement",
+          "value": "v[2]",
+          "when": "v[3] == 'dbl'"
+        },
+        {
+          "misconception": "pret-reg-y-ied",
+          "value": "v[2]",
+          "when": "v[3] == 'y'"
+        },
+        {
+          "misconception": "pret-reg-y-voyelle",
+          "value": "v[2]",
+          "when": "v[3] == 'vy'"
+        },
+        {
+          "misconception": "pret-reg-base",
+          "value": "v[0]"
+        },
+        {
+          "misconception": "pret-reg-present",
+          "value": "s3(v[0])",
+          "when": "s[1] == 3"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "« {{ t }} » situe l’action dans un passé terminé : prétérit, <b>{{ v[1][0] }}</b>. {{ v[3] ? rule[v[3]] : 'On ajoute -ed.' }}"
+    }
+  ]
+}

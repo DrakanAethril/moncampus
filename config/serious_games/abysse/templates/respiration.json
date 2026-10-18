@@ -1,0 +1,124 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "respiration",
+  "label": "Bilan de la respiration",
+  "misconceptions": [
+    {
+      "id": "respiration-reactif-produit",
+      "label": "Réactif pris pour un produit",
+      "explanation": "La respiration consomme deux réactifs, le glucose et le dioxygène, et rejette deux produits, le dioxyde de carbone et l’eau. Placez chacun du bon côté de la flèche."
+    },
+    {
+      "id": "respiration-inversion",
+      "label": "Respiration et photosynthèse confondues",
+      "explanation": "La photosynthèse utilise la lumière et produit du dioxygène ; la respiration consomme du dioxygène et libère de l’énergie, de jour comme de nuit. Les deux bilans sont inverses l’un de l’autre."
+    },
+    {
+      "id": "respiration-fermentation",
+      "label": "Respiration confondue avec la fermentation",
+      "explanation": "La fermentation se passe sans dioxygène et produit de l’éthanol (ou de l’acide lactique). La respiration utilise le dioxygène et ne produit que du dioxyde de carbone et de l’eau."
+    }
+  ],
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Une phrase",
+      "params": {
+        "c": "pick([['Lors de la respiration, la cellule consomme du glucose et du ___.', 'dioxygène', 'in'], ['Lors de la respiration, la cellule consomme du dioxygène et du ___.', 'glucose', 'in'], ['Lors de la respiration, la cellule rejette de l’eau et du ___.', 'dioxyde de carbone', 'out'], ['Lors de la respiration, la cellule rejette du dioxyde de carbone et de l’___.', 'eau', 'out']])"
+      },
+      "let": {
+        "line": "replace(c[0], '___', '<span class=\"q-blank\">…</span>')",
+        "same": "[filter(['dioxygène', 'glucose'], 'item != c[1]')[0], filter(['dioxyde de carbone', 'eau'], 'item != c[1]')[0]][c[2] == 'in' ? 0 : 1]",
+        "other": "[filter(['dioxygène', 'glucose'], 'item != c[1]')[0], filter(['dioxyde de carbone', 'eau'], 'item != c[1]')[0]][c[2] == 'in' ? 1 : 0]"
+      },
+      "prompt": "Complétez :<br><span class=\"q-line\">{{ line }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "c[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "respiration-reactif-produit",
+          "value": "other"
+        },
+        {
+          "misconception": "respiration-inversion",
+          "value": "'lumière'"
+        },
+        {
+          "misconception": "respiration-fermentation",
+          "value": "'éthanol'"
+        },
+        {
+          "misconception": "respiration-reactif-produit",
+          "value": "same"
+        }
+      ],
+      "method": "Respiration : glucose + dioxygène → dioxyde de carbone + eau, avec libération d’énergie."
+    },
+    {
+      "difficulty": 2,
+      "label": "Le bilan",
+      "params": {
+        "c": "pick([['glucose + ___ → dioxyde de carbone + eau', 'dioxygène', 'in'], ['___ + dioxygène → dioxyde de carbone + eau', 'glucose', 'in'], ['glucose + dioxygène → ___ + eau', 'dioxyde de carbone', 'out'], ['glucose + dioxygène → dioxyde de carbone + ___', 'eau', 'out']])"
+      },
+      "let": {
+        "line": "replace(c[0], '___', '<span class=\"q-blank\">…</span>')",
+        "same": "[filter(['dioxygène', 'glucose'], 'item != c[1]')[0], filter(['dioxyde de carbone', 'eau'], 'item != c[1]')[0]][c[2] == 'in' ? 0 : 1]",
+        "other": "[filter(['dioxygène', 'glucose'], 'item != c[1]')[0], filter(['dioxyde de carbone', 'eau'], 'item != c[1]')[0]][c[2] == 'in' ? 1 : 0]"
+      },
+      "prompt": "Complétez le bilan de la respiration :<br><span class=\"q-line\">{{ line }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "c[1]"
+      },
+      "wrongs": [
+        {
+          "misconception": "respiration-reactif-produit",
+          "value": "other"
+        },
+        {
+          "misconception": "respiration-inversion",
+          "value": "'lumière'"
+        },
+        {
+          "misconception": "respiration-fermentation",
+          "value": "'éthanol'"
+        },
+        {
+          "misconception": "respiration-reactif-produit",
+          "value": "same"
+        }
+      ],
+      "method": "Respiration : glucose + dioxygène → dioxyde de carbone + eau, avec libération d’énergie."
+    },
+    {
+      "difficulty": 3,
+      "label": "Une mesure",
+      "params": {
+        "o": "pick(['des levures', 'des crevettes Rimicaris', 'des poissons-lanternes', 'des bactéries aérobies', 'des cellules de moule', 'des copépodes'])",
+        "lit": "chance(0.5)"
+      },
+      "prompt": "Dans une enceinte fermée {{ lit ? 'éclairée' : 'à l’obscurité' }}, on place {{ o }} dans une eau glucosée et oxygénée. Comment évoluent les teneurs en dioxygène et en dioxyde de carbone ?",
+      "answer": {
+        "type": "choice",
+        "value": "'Le dioxygène diminue, le dioxyde de carbone augmente'"
+      },
+      "wrongs": [
+        {
+          "misconception": "respiration-inversion",
+          "value": "'Le dioxygène augmente, le dioxyde de carbone diminue'"
+        },
+        {
+          "misconception": "respiration-reactif-produit",
+          "value": "'Les deux augmentent'"
+        },
+        {
+          "misconception": "respiration-fermentation",
+          "value": "'Le dioxygène ne change pas, de l’éthanol apparaît'"
+        }
+      ],
+      "method": "Ces êtres vivants n’ont pas de chlorophylle : à la lumière comme à l’obscurité, ils respirent. Ils consomment du dioxygène et rejettent du dioxyde de carbone."
+    }
+  ]
+}

@@ -9,7 +9,8 @@ use App\SeriousGame\Template\TemplateFormatException;
 /**
  * What a template says about the answer it expects, beside its value: the type, the tolerance of a
  * number, the unit shown after the field, the shape a polynomial must take, whether an interval's
- * brackets matter, the letters of a formula, the fields of a table to fill (`labels`) and the
+ * brackets matter, the letters of a formula, the fields of a table to fill or the words of a line
+ * to correct (`labels`) and the
  * number of propositions of a QCM (`choices`, the answer included).
  */
 final readonly class AnswerSpec
@@ -66,6 +67,9 @@ final readonly class AnswerSpec
         }
         if (AnswerType::Forms === $type && \count($labels) < 2) {
             throw new TemplateFormatException('answer.labels', 'un tableau à compléter nomme ses cases (« labels », au moins deux)');
+        }
+        if (AnswerType::Spot === $type && \count($labels) < 2) {
+            throw new TemplateFormatException('answer.labels', 'une phrase à corriger donne ses mots (« labels », au moins deux)');
         }
 
         $choices = $data['choices'] ?? self::DEFAULT_CHOICES;

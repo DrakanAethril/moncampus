@@ -1,0 +1,194 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "bioreacteur",
+  "label": "Respiration, fermentation ou photosynthèse ?",
+  "misconceptions": [
+    {
+      "id": "bioreacteur-ethanol",
+      "label": "Fermentation reconnue sans éthanol produit",
+      "explanation": "La fermentation se reconnaît à ce qu’elle produit : de l’éthanol, sans dioxygène. Si aucun éthanol n’apparaît, ce n’est pas une fermentation."
+    },
+    {
+      "id": "bioreacteur-sans-o2",
+      "label": "Respiration supposée possible sans dioxygène",
+      "explanation": "La respiration consomme du dioxygène. Quand le milieu en est privé et que de l’éthanol apparaît, les cellules fermentent."
+    },
+    {
+      "id": "bioreacteur-sens",
+      "label": "Hausse et baisse du dioxygène confondues",
+      "explanation": "Lisez le sens de la courbe du dioxygène : il diminue quand des cellules respirent, il augmente quand elles font la photosynthèse. Repérez la valeur au début et à la fin."
+    }
+  ],
+  "params": {
+    "L": "['Respiration', 'Fermentation', 'Photosynthèse']",
+    "c": "int(0, 2)",
+    "o0": "int(70, 90) / 10",
+    "nz": "map(range(0, 20), 'gauss()')",
+    "nz2": "map(range(0, 20), 'gauss()')"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Une description",
+      "params": {
+        "txt": "pick([['Des levures, dans un milieu glucosé bien oxygéné, consomment du dioxygène et rejettent du dioxyde de carbone.', 'Des bactéries aérobies des sédiments font baisser la teneur en dioxygène de l’eau, sans rien produire d’autre que du dioxyde de carbone.', 'Des crevettes placées dans une eau oxygénée y font baisser le dioxygène.'], ['Des levures, privées de dioxygène dans un milieu glucosé, produisent de l’éthanol et du dioxyde de carbone.', 'Dans une cuve sans dioxygène, des levures transforment le glucose en éthanol.', 'Privées de dioxygène, des bactéries des sédiments dégradent le glucose et rejettent de l’éthanol.'], ['Des chlorelles éclairées, dans un milieu riche en dioxyde de carbone, font monter la teneur en dioxygène.', 'Des diatomées éclairées absorbent du dioxyde de carbone et rejettent du dioxygène.', 'Sous une lampe, une culture d’algues vertes enrichit l’eau en dioxygène.']][c])"
+      },
+      "prompt": "Quel métabolisme cette observation du carnet décrit-elle ?<br><span class=\"q-line\">{{ txt }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "L[c]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "bioreacteur-ethanol",
+          "value": "L[1]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "bioreacteur-sens",
+          "value": "L[2]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "bioreacteur-sans-o2",
+          "value": "L[0]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "bioreacteur-sens",
+          "value": "L[2]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "bioreacteur-sens",
+          "value": "L[0]",
+          "when": "c == 2"
+        },
+        {
+          "misconception": "bioreacteur-ethanol",
+          "value": "L[1]",
+          "when": "c == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ['Le dioxygène diminue et aucun éthanol n’apparaît : c’est une respiration.', 'Sans dioxygène, de l’éthanol est produit : c’est une fermentation.', 'Le dioxygène augmente à la lumière : c’est la photosynthèse.'][c] }}"
+    },
+    {
+      "difficulty": 2,
+      "label": "Courbes et conditions",
+      "let": {
+        "p1": "map(range(0, 20), 'c == 0 ? [item, o0 - item * (o0 - 2) / 20 + 0.08 * nz[item]] : (c == 1 ? [item, 0.15 + abs(0.08 * nz[item])] : [item, o0 * 0.6 + item * 0.12 + 0.08 * nz[item]])')",
+        "p2": "map(range(0, 20), 'c == 1 ? [item, item * 0.35 + abs(0.05 * nz2[item])] : [item, 0]')"
+      },
+      "figure": {
+        "type": "chart",
+        "x": "[0, 20]",
+        "y": "[0, 10]",
+        "xstep": 5,
+        "ystep": 2,
+        "xlabel": "'Temps (min)'",
+        "ylabel": "'Concentration'",
+        "series": "[{'name': 'Dioxygène (mg/L)', 'color': 'blue', 'points': p1}, {'name': 'Éthanol (mmol/L)', 'color': 'orange', 'points': p2}]"
+      },
+      "prompt": "Le bioréacteur de la station enregistre ces mesures. <span class=\"q-line\">{{ ['Levures dans un milieu glucosé, bien oxygéné.', 'Levures dans un milieu glucosé, privé de dioxygène.', 'Chlorelles éclairées dans un milieu riche en CO₂.'][c] }}</span>Quel métabolisme observe-t-on ?",
+      "answer": {
+        "type": "choice",
+        "value": "L[c]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "bioreacteur-ethanol",
+          "value": "L[1]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "bioreacteur-sens",
+          "value": "L[2]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "bioreacteur-sans-o2",
+          "value": "L[0]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "bioreacteur-sens",
+          "value": "L[2]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "bioreacteur-sens",
+          "value": "L[0]",
+          "when": "c == 2"
+        },
+        {
+          "misconception": "bioreacteur-ethanol",
+          "value": "L[1]",
+          "when": "c == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ['Le dioxygène diminue et aucun éthanol n’apparaît : c’est une respiration.', 'Sans dioxygène, de l’éthanol est produit : c’est une fermentation.', 'Le dioxygène augmente à la lumière : c’est la photosynthèse.'][c] }}"
+    },
+    {
+      "difficulty": 3,
+      "label": "Courbes seules",
+      "let": {
+        "p1": "map(range(0, 20), 'c == 0 ? [item, o0 - item * (o0 - 2) / 20 + 0.08 * nz[item]] : (c == 1 ? [item, 0.15 + abs(0.08 * nz[item])] : [item, o0 * 0.6 + item * 0.12 + 0.08 * nz[item]])')",
+        "p2": "map(range(0, 20), 'c == 1 ? [item, item * 0.35 + abs(0.05 * nz2[item])] : [item, 0]')"
+      },
+      "figure": {
+        "type": "chart",
+        "x": "[0, 20]",
+        "y": "[0, 10]",
+        "xstep": 5,
+        "ystep": 2,
+        "xlabel": "'Temps (min)'",
+        "ylabel": "'Concentration'",
+        "series": "[{'name': 'Dioxygène (mg/L)', 'color': 'blue', 'points': p1}, {'name': 'Éthanol (mmol/L)', 'color': 'orange', 'points': p2}]"
+      },
+      "prompt": "Le bioréacteur enregistre ces mesures dans une culture dont l’étiquette s’est effacée. D’après les seules courbes, quel métabolisme observe-t-on ?",
+      "answer": {
+        "type": "choice",
+        "value": "L[c]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "bioreacteur-ethanol",
+          "value": "L[1]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "bioreacteur-sens",
+          "value": "L[2]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "bioreacteur-sans-o2",
+          "value": "L[0]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "bioreacteur-sens",
+          "value": "L[2]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "bioreacteur-sens",
+          "value": "L[0]",
+          "when": "c == 2"
+        },
+        {
+          "misconception": "bioreacteur-ethanol",
+          "value": "L[1]",
+          "when": "c == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ['Le dioxygène diminue et aucun éthanol n’apparaît : c’est une respiration.', 'Sans dioxygène, de l’éthanol est produit : c’est une fermentation.', 'Le dioxygène augmente à la lumière : c’est la photosynthèse.'][c] }}"
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "complementaire",
+  "label": "Brin complémentaire",
+  "misconceptions": [
+    {
+      "id": "complementaire-copie",
+      "label": "Brin recopié au lieu d’être complété",
+      "explanation": "Le brin complémentaire n’est pas une copie : en face de chaque base on écrit sa partenaire. A s’apparie avec T, C avec G."
+    },
+    {
+      "id": "complementaire-uracile",
+      "label": "Uracile écrite dans un brin d’ADN",
+      "explanation": "L’uracile (U) n’existe que dans l’ARN. Dans l’ADN, A s’apparie toujours avec T."
+    },
+    {
+      "id": "complementaire-sens",
+      "label": "Brin complémentaire écrit à l’envers",
+      "explanation": "On écrit chaque base en face de sa partenaire, dans le même ordre que le brin lu. Relire le brin de droite à gauche donne une autre séquence."
+    }
+  ],
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Neuf bases",
+      "params": {
+        "s": "dna(9)"
+      },
+      "let": {
+        "c": "complement(s)"
+      },
+      "constraints": [
+        "has(chars(s), 'A') and has(chars(s), 'T') and has(chars(s), 'C') and has(chars(s), 'G')"
+      ],
+      "prompt": "Le séquenceur de la station a lu ce brin d’ADN :<br>{{ seq(s) }}Écrivez le brin complémentaire.",
+      "answer": {
+        "type": "sequence",
+        "value": "c",
+        "display": "seq(c)"
+      },
+      "wrongs": [
+        {
+          "misconception": "complementaire-copie",
+          "value": "s"
+        },
+        {
+          "misconception": "complementaire-uracile",
+          "value": "replace(c, 'T', 'U')"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Les bases s’apparient deux à deux : A avec T, C avec G. En face de {{ seq(s) }} on écrit {{ seq(c) }}."
+    },
+    {
+      "difficulty": 2,
+      "label": "Douze à quinze bases",
+      "params": {
+        "s": "dna(pick([12, 15]))"
+      },
+      "let": {
+        "c": "complement(s)"
+      },
+      "constraints": [
+        "has(chars(s), 'A') and has(chars(s), 'T') and has(chars(s), 'C') and has(chars(s), 'G')"
+      ],
+      "prompt": "Le séquenceur de la station a lu ce brin d’ADN :<br>{{ seq(s) }}Écrivez le brin complémentaire, base par base, de gauche à droite.",
+      "answer": {
+        "type": "sequence",
+        "value": "c",
+        "display": "seq(c)"
+      },
+      "wrongs": [
+        {
+          "misconception": "complementaire-copie",
+          "value": "s"
+        },
+        {
+          "misconception": "complementaire-uracile",
+          "value": "replace(c, 'T', 'U')"
+        },
+        {
+          "misconception": "complementaire-sens",
+          "value": "strReverse(c)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Les bases s’apparient deux à deux : A avec T, C avec G. En face de {{ seq(s) }} on écrit {{ seq(c) }}."
+    },
+    {
+      "difficulty": 3,
+      "label": "Un long fragment",
+      "params": {
+        "s": "dna(pick([18, 21]))"
+      },
+      "let": {
+        "c": "complement(s)"
+      },
+      "constraints": [
+        "has(chars(s), 'A') and has(chars(s), 'T') and has(chars(s), 'C') and has(chars(s), 'G')"
+      ],
+      "prompt": "Le séquenceur de la station a lu ce brin d’ADN :<br>{{ seq(s) }}Écrivez le brin complémentaire, base par base, de gauche à droite.",
+      "answer": {
+        "type": "sequence",
+        "value": "c",
+        "display": "seq(c)"
+      },
+      "wrongs": [
+        {
+          "misconception": "complementaire-copie",
+          "value": "s"
+        },
+        {
+          "misconception": "complementaire-uracile",
+          "value": "replace(c, 'T', 'U')"
+        },
+        {
+          "misconception": "complementaire-sens",
+          "value": "strReverse(c)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Les bases s’apparient deux à deux : A avec T, C avec G. En face de {{ seq(s) }} on écrit {{ seq(c) }}."
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "relation",
+  "label": "Type de relation",
+  "misconceptions": [
+    {
+      "id": "relation-benefice",
+      "label": "Bénéfice des partenaires mal évalué",
+      "explanation": "Demandez-vous ce que chaque partenaire gagne ou perd. Les deux gagnent : mutualisme ; l’un gagne aux dépens de l’autre, qui survit : parasitisme ; l’un tue l’autre pour le manger : prédation."
+    },
+    {
+      "id": "relation-parasite-predateur",
+      "label": "Parasitisme confondu avec la prédation",
+      "explanation": "Le prédateur tue sa proie pour la manger ; le parasite vit sur son hôte, ou dedans, et s’en nourrit sans le tuer tout de suite. Regardez si l’hôte reste en vie."
+    },
+    {
+      "id": "relation-competition",
+      "label": "Compétition confondue avec une autre relation",
+      "explanation": "Dans une compétition, aucun des deux ne mange l’autre : ils recherchent la même ressource limitée (nourriture, place, lumière). Cherchez la ressource que les deux veulent."
+    }
+  ],
+  "params": {
+    "REL": "[['Prédation', 'Le cachalot plonge à 1 000 m pour capturer des calmars.', 1], ['Prédation', 'L’étoile de mer ouvre les moules et digère leur chair.', 1], ['Prédation', 'Le requin de récif capture des balistes.', 1], ['Mutualisme', 'Le poisson-clown vit protégé entre les tentacules de l’anémone, qu’il défend contre les poissons qui la broutent.', 1], ['Compétition', 'Deux espèces de poissons-perroquets broutent les mêmes algues sur le même récif.', 1], ['Parasitisme', 'Un ver vit dans l’intestin d’un poisson et absorbe une partie de sa nourriture.', 1], ['Parasitisme', 'Un copépode fixé sur les branchies d’un poisson se nourrit de son sang.', 2], ['Parasitisme', 'La lamproie marine se fixe sur un poisson vivant et se nourrit de son sang.', 2], ['Prédation', 'La baudroie attire le poisson-lanterne avec son leurre lumineux et l’avale.', 2], ['Mutualisme', 'Une crevette nettoyeuse débarrasse le mérou de ses parasites, qu’elle mange.', 2], ['Compétition', 'Les coraux et les algues se disputent la lumière et la place sur le récif.', 2], ['Mutualisme', 'Le corail abrite dans ses cellules des algues microscopiques qui lui fournissent des sucres ; il leur offre un abri et du dioxyde de carbone.', 2], ['Mutualisme', 'Le ver Riftia n’a pas de tube digestif : il héberge des bactéries qui le nourrissent, et leur fournit les gaz de la source.', 3], ['Mutualisme', 'La moule Bathymodiolus abrite dans ses branchies des bactéries qui fabriquent sa nourriture.', 3], ['Parasitisme', 'Un isopode remplace la langue d’un poisson et prélève sa nourriture au passage.', 3], ['Compétition', 'Deux espèces de crabes se disputent les mêmes moules autour de la source.', 3], ['Compétition', 'Les crevettes Rimicaris se pressent contre la cheminée pour occuper les places les plus chaudes, au détriment de celles d’une autre espèce.', 3], ['Prédation', 'Le poulpe des sources chaudes chasse les crabes Bythograea entre les cheminées.', 3]]"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Exemples familiers",
+      "params": {
+        "o": "pick(filter(REL, 'item[2] == 1'))"
+      },
+      "prompt": "Quelle relation entre êtres vivants le carnet décrit-il ?<br><span class=\"q-line\">{{ o[1] }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "o[0]"
+      },
+      "wrongs": [
+        {
+          "misconception": "relation-benefice",
+          "value": "'Parasitisme'",
+          "when": "o[0] == 'Mutualisme'"
+        },
+        {
+          "misconception": "relation-benefice",
+          "value": "'Prédation'",
+          "when": "o[0] == 'Mutualisme'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Compétition'",
+          "when": "o[0] == 'Mutualisme'"
+        },
+        {
+          "misconception": "relation-benefice",
+          "value": "'Mutualisme'",
+          "when": "o[0] == 'Parasitisme'"
+        },
+        {
+          "misconception": "relation-parasite-predateur",
+          "value": "'Prédation'",
+          "when": "o[0] == 'Parasitisme'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Compétition'",
+          "when": "o[0] == 'Parasitisme'"
+        },
+        {
+          "misconception": "relation-benefice",
+          "value": "'Mutualisme'",
+          "when": "o[0] == 'Prédation'"
+        },
+        {
+          "misconception": "relation-parasite-predateur",
+          "value": "'Parasitisme'",
+          "when": "o[0] == 'Prédation'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Compétition'",
+          "when": "o[0] == 'Prédation'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Mutualisme'",
+          "when": "o[0] == 'Compétition'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Parasitisme'",
+          "when": "o[0] == 'Compétition'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Prédation'",
+          "when": "o[0] == 'Compétition'"
+        }
+      ],
+      "method": "{{ {'Mutualisme': 'Les deux partenaires en tirent un bénéfice : c’est un mutualisme.', 'Parasitisme': 'L’un vit aux dépens de l’autre, sans le tuer tout de suite : c’est du parasitisme.', 'Prédation': 'L’un capture et mange l’autre : c’est une prédation.', 'Compétition': 'Les deux recherchent la même ressource, limitée : c’est une compétition.'}[o[0]] }}"
+    },
+    {
+      "difficulty": 2,
+      "label": "Exemples du récif",
+      "params": {
+        "o": "pick(filter(REL, 'item[2] == 2'))"
+      },
+      "prompt": "Quelle relation entre êtres vivants le carnet décrit-il ?<br><span class=\"q-line\">{{ o[1] }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "o[0]"
+      },
+      "wrongs": [
+        {
+          "misconception": "relation-benefice",
+          "value": "'Parasitisme'",
+          "when": "o[0] == 'Mutualisme'"
+        },
+        {
+          "misconception": "relation-benefice",
+          "value": "'Prédation'",
+          "when": "o[0] == 'Mutualisme'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Compétition'",
+          "when": "o[0] == 'Mutualisme'"
+        },
+        {
+          "misconception": "relation-benefice",
+          "value": "'Mutualisme'",
+          "when": "o[0] == 'Parasitisme'"
+        },
+        {
+          "misconception": "relation-parasite-predateur",
+          "value": "'Prédation'",
+          "when": "o[0] == 'Parasitisme'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Compétition'",
+          "when": "o[0] == 'Parasitisme'"
+        },
+        {
+          "misconception": "relation-benefice",
+          "value": "'Mutualisme'",
+          "when": "o[0] == 'Prédation'"
+        },
+        {
+          "misconception": "relation-parasite-predateur",
+          "value": "'Parasitisme'",
+          "when": "o[0] == 'Prédation'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Compétition'",
+          "when": "o[0] == 'Prédation'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Mutualisme'",
+          "when": "o[0] == 'Compétition'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Parasitisme'",
+          "when": "o[0] == 'Compétition'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Prédation'",
+          "when": "o[0] == 'Compétition'"
+        }
+      ],
+      "method": "{{ {'Mutualisme': 'Les deux partenaires en tirent un bénéfice : c’est un mutualisme.', 'Parasitisme': 'L’un vit aux dépens de l’autre, sans le tuer tout de suite : c’est du parasitisme.', 'Prédation': 'L’un capture et mange l’autre : c’est une prédation.', 'Compétition': 'Les deux recherchent la même ressource, limitée : c’est une compétition.'}[o[0]] }}"
+    },
+    {
+      "difficulty": 3,
+      "label": "Exemples des abysses",
+      "params": {
+        "o": "pick(filter(REL, 'item[2] == 3'))"
+      },
+      "prompt": "Quelle relation entre êtres vivants le carnet décrit-il ?<br><span class=\"q-line\">{{ o[1] }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "o[0]"
+      },
+      "wrongs": [
+        {
+          "misconception": "relation-benefice",
+          "value": "'Parasitisme'",
+          "when": "o[0] == 'Mutualisme'"
+        },
+        {
+          "misconception": "relation-benefice",
+          "value": "'Prédation'",
+          "when": "o[0] == 'Mutualisme'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Compétition'",
+          "when": "o[0] == 'Mutualisme'"
+        },
+        {
+          "misconception": "relation-benefice",
+          "value": "'Mutualisme'",
+          "when": "o[0] == 'Parasitisme'"
+        },
+        {
+          "misconception": "relation-parasite-predateur",
+          "value": "'Prédation'",
+          "when": "o[0] == 'Parasitisme'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Compétition'",
+          "when": "o[0] == 'Parasitisme'"
+        },
+        {
+          "misconception": "relation-benefice",
+          "value": "'Mutualisme'",
+          "when": "o[0] == 'Prédation'"
+        },
+        {
+          "misconception": "relation-parasite-predateur",
+          "value": "'Parasitisme'",
+          "when": "o[0] == 'Prédation'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Compétition'",
+          "when": "o[0] == 'Prédation'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Mutualisme'",
+          "when": "o[0] == 'Compétition'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Parasitisme'",
+          "when": "o[0] == 'Compétition'"
+        },
+        {
+          "misconception": "relation-competition",
+          "value": "'Prédation'",
+          "when": "o[0] == 'Compétition'"
+        }
+      ],
+      "method": "{{ {'Mutualisme': 'Les deux partenaires en tirent un bénéfice : c’est un mutualisme.', 'Parasitisme': 'L’un vit aux dépens de l’autre, sans le tuer tout de suite : c’est du parasitisme.', 'Prédation': 'L’un capture et mange l’autre : c’est une prédation.', 'Compétition': 'Les deux recherchent la même ressource, limitée : c’est une compétition.'}[o[0]] }}"
+    }
+  ]
+}

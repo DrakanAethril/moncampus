@@ -1,0 +1,139 @@
+# Station Abysse: SVT, 2nde-1re - the third serious game (design/validated/serious-games-abysse.md).
+#
+# Read by `app:serious-games:sync`, like the other manifests. Everything the server decides is read
+# from here - the zones and their species, the dive in three depths, the ascent, the anomalies, the
+# rewards - so the game's static package (public/serious-games/abysse/) holds nothing but its
+# display. `words` names the game's own vocabulary, which Formatool's screens use for this game.
+slug: abysse
+title: "Station Abysse"
+pitch: "À 3 000 mètres de fond, cataloguer le vivant avant la remontée du bathyscaphe. ADN, métabolisme, écosystèmes, évolution."
+subjects: [SVT]
+levels: [2nde, 1re]
+unit_label: espèces
+# Typed answers, QCM and food chains to put in order.
+answer_kinds: [short, choice, order]
+version: 1.0.0
+published: false
+
+words:
+  unit: [espèce, espèces]
+  chapter: [zone, zones]
+  lit: [cataloguée, cataloguées]
+  unlit: [à cataloguer, à cataloguer]
+  level: croquis
+  skill: compétence
+  dim_filter: Croquis à reprendre
+  brightness:
+    discrete: [esquissée, esquissées]
+    clear: [annotée, annotées]
+    bright: [coloriée, coloriées]
+    blazing: [encadrée, encadrées]
+  comet: [anomalie, anomalies]
+  comet_solved: identifiée
+  comet_in_view: à identifier
+  chapter_done: explorée
+
+series:
+  size: 12
+  # A dive descends in three depths: 4 observations at 200 m (difficulty 1), 4 at 1 000 m (2), 4 at
+  # 3 000 m (3).
+  tiers: [4, 4, 4]
+  # A species is catalogued at 6/12; its sketch is its best dive: 6 esquissée, 8 annotée,
+  # 10 coloriée, 12 encadrée.
+  lit_at: 6
+
+final:
+  code: remontee
+  label: La Remontée
+  size: 12
+  time_limit_seconds: 1200
+  # three observations from two zones, two from the three others, shuffled
+  per_chapter: [3, 3, 2, 2, 2]
+
+comet:
+  # The same typical error twice among the player's last 30 answers: an anomaly on the sonar.
+  window: 30
+  repeat: 2
+  questions: 3
+  solved_at: 2
+
+grades:
+  - [0, "Biologiste embarqué·e"]
+  - [8, "Plongeur·se scientifique"]
+  - [15, "Biologiste de plongée"]
+  - [23, "Chef·fe de mission"]
+  - [30, "Océanographe"]
+
+chapters:
+  - code: recif
+    label: Le Récif
+    topic: Biodiversité et classification
+    units:
+      - { code: caracteres, label: "Caractères partagés" }
+      - { code: cladogramme, label: "Lire un arbre de parenté" }
+      - { code: echelles, label: "Les trois échelles de la biodiversité" }
+      - { code: capture, label: "Estimer un effectif (capture-recapture)" }
+      - { code: proportion, label: "Proportion d'une espèce dans un relevé" }
+      - { code: criteres, label: "Ce qui ne sert pas à classer" }
+  - code: fosse
+    label: La Fosse
+    topic: ADN et expression génétique
+    units:
+      - { code: complementaire, label: "Brin complémentaire" }
+      - { code: chargaff, label: "Proportions des bases" }
+      - { code: transcription, label: "De l'ADN à l'ARN messager" }
+      - { code: traduction, label: "Traduire avec le code génétique" }
+      - { code: cadre, label: "Longueur d'une protéine" }
+      - { code: mutation, label: "Effet d'une mutation" }
+  - code: sources
+    label: Les Sources chaudes
+    topic: Métabolisme cellulaire
+    units:
+      - { code: trophie, label: "Autotrophe ou hétérotrophe" }
+      - { code: respiration, label: "Bilan de la respiration" }
+      - { code: photosynthese, label: "Bilan de la photosynthèse" }
+      - { code: bioreacteur, label: "Respiration, fermentation ou photosynthèse ?" }
+      - { code: enzyme, label: "Optimum d'une enzyme" }
+      - { code: grandeurs, label: "Ordres de grandeur du vivant" }
+  - code: plateau
+    label: Le Plateau
+    topic: Écosystèmes et réseaux trophiques
+    units:
+      - { code: reseau, label: "Lire un réseau trophique" }
+      - { code: niveau, label: "Niveau trophique" }
+      - { code: disparition, label: "Si une espèce disparaît…" }
+      - { code: rendement, label: "Transfert d'énergie" }
+      - { code: relation, label: "Type de relation" }
+      - { code: chaine, label: "Construire une chaîne alimentaire" }
+  - code: dorsale
+    label: La Dorsale
+    topic: Évolution et sélection
+    units:
+      - { code: frequence, label: "Fréquence d'un allèle" }
+      - { code: selection, label: "Prévoir l'effet d'une sélection" }
+      - { code: derive, label: "Dérive ou sélection ?" }
+      - { code: hasard, label: "Mutations et adaptation" }
+      - { code: espece, label: "Deux populations, une espèce ?" }
+      - { code: genotype, label: "Du génotype au phénotype" }
+
+rewards:
+  # The collection piece: brass once every species is catalogued, silver at 10/12 on the ascent, gold at 12/12.
+  trophy:
+    code: nautile
+    label: Le Nautile
+    lore: "Coquille spiralée remontée du dernier plongeon, la pièce maîtresse du carnet de la station. La commandante Ysé Marin la remet à qui a rempli le carnet."
+    silver_at: 10
+    gold_at: 12
+  # Given with the trophy, worn on the avatar.
+  pin:
+    code: pin-vague
+    label: Épinglette Abysse
+  # One card per zone explored, and the ascent's card once it was played to the end.
+  cards: true
+
+thumbnail:
+  background: "radial-gradient(120% 100% at 50% 0%, #0F4C5C 0%, #072B36 55%, #031319 100%)"
+  font: "'Chakra Petch', 'Trebuchet MS', sans-serif"
+  style: normal
+  weight: 600
+  color: "#7FF5E3"

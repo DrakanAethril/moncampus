@@ -30,6 +30,32 @@ class QuestionEngineTest extends TestCase
         self::assertSame(['u1'], array_values(array_unique(array_column($plan, 'unit'))));
     }
 
+    public function testATieredSeriesClimbsThroughItsDifficulties(): void
+    {
+        $definition = new TemplateDefinition('tiers', 1, [
+            'format' => 'moncampus-gabarit/1',
+            'unit' => 'tiers',
+            'label' => 'Paliers',
+            'misconceptions' => [['id' => 't-add', 'label' => 'Additionner']],
+            'params' => ['a' => 'int(2, 60)', 'b' => 'int(2, 60)'],
+            'variants' => array_map(static fn (int $level): array => [
+                'difficulty' => $level,
+                'prompt' => 'Niveau '.$level.' : {{ a }} × {{ b }}',
+                'answer' => ['type' => 'number', 'value' => 'a * b'],
+                'wrongs' => [['misconception' => 't-add', 'value' => 'a + b']],
+                'minWrongs' => 1,
+                'method' => '{{ a * b }}.',
+            ], [1, 2, 3]),
+        ]);
+        $engine = $this->engine();
+        $levels = array_map(static fn (array $p): int => $engine->generate($definition, $p['seed'])->difficulty, $engine->seriesPlan($definition, 12, null, [4, 4, 4]));
+
+        self::assertSame([1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3], $levels);
+
+        // a template with one difficulty only lends it to every tier
+        self::assertCount(12, $engine->seriesPlan($this->definition('u1'), 12, null, [4, 4, 4]));
+    }
+
     public function testTheFinalTestTakesItsShareFromEachChapter(): void
     {
         $manifest = $this->manifest();

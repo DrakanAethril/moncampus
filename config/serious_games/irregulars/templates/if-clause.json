@@ -1,0 +1,117 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "if-clause",
+  "label": "Phrases en if (1er conditionnel)",
+  "misconceptions": [
+    {
+      "id": "if-clause-will-apres-if",
+      "label": "will dans la subordonnée en if",
+      "explanation": "Après if, on emploie le présent, même pour parler de l’avenir : If the train is late… Will se place dans la principale : we will miss the meeting."
+    },
+    {
+      "id": "if-clause-concordance",
+      "label": "would dans une condition au présent",
+      "explanation": "Une condition réelle au présent (If it rains) appelle will dans la principale. Would s’emploie avec une condition imaginaire au prétérit (If it rained, …would…)."
+    },
+    {
+      "id": "if-clause-base",
+      "label": "Verbe conjugué après will",
+      "explanation": "Will est suivi de la base verbale, sans -s, même à la 3e personne : the cab will wait, pas the cab will waits."
+    },
+    {
+      "id": "if-clause-hypercorrection",
+      "label": "Une faute vue dans une phrase correcte",
+      "explanation": "If + présent, puis will + base verbale : c’est la forme juste du 1er conditionnel. Avant de corriger, vérifie le temps après if, puis le verbe après will."
+    }
+  ],
+  "params": {
+    "c": "pick([['the train', 'is', 'be', 'late', 'we', 'miss the meeting'], ['it', 'rains', 'rain', '', 'the cab', 'wait outside'], ['the thief', 'comes', 'come', 'back', 'we', 'catch him'], ['you', 'run', 'run', '', 'you', 'get the last train'], ['the inspector', 'arrives', 'arrive', 'early', 'the thief', 'hide in the cab'], ['Mrs Hudson', 'finds', 'find', 'the letter', 'she', 'send a telegram'], ['the fog', 'gets', 'get', 'thicker', 'the boats', 'stay in the docks'], ['we', 'hurry', 'hurry', '', 'we', 'catch the thief'], ['the baker', 'sees', 'see', 'the man in grey', 'he', 'call the police'], ['you', 'pay', 'pay', 'the cabman', 'he', 'take you to Baker Street'], ['the guard', 'opens', 'open', 'the gate', 'the passengers', 'get on the train'], ['Wiggins', 'whistles', 'whistle', 'twice', 'the boys', 'run to the station']])",
+    "k": "pick(['ok', 'ok', 'ok', 'ok', 'will', 'will', 'will', 'would', 'would', 'would', 'would'])"
+  },
+  "let": {
+    "ifPart": "'If ' ~ c[0] ~ ' ' ~ (k == 'will' ? 'will ' ~ c[2] : c[1]) ~ (c[3] ? ' ' ~ c[3] : '') ~ ','",
+    "line": "ifPart ~ ' ' ~ c[4] ~ ' ' ~ (k == 'would' ? 'would' : 'will') ~ ' ' ~ c[5] ~ '.'",
+    "pos": "k == 'ok' ? -1 : (k == 'will' ? 1 + count(words(c[0])) : count(words(ifPart)) + count(words(c[4])))",
+    "right": "'If ' ~ c[0] ~ ' ' ~ c[1] ~ (c[3] ? ' ' ~ c[3] : '') ~ ', ' ~ c[4] ~ ' will ' ~ c[5] ~ '.'",
+    "mv": "words(c[5])[0]",
+    "mtail": "substr(c[5], len(words(c[5])[0]))",
+    "third": "c[4] in ['he', 'she', 'the cab', 'the thief']"
+  },
+  "variants": [
+    {
+      "weight": 3,
+      "label": "Repérer la faute",
+      "difficulty": 2,
+      "prompt": "Read the note found at Paddington. Click the wrong word, or confirm the sentence is correct.<span class=\"q-line\">“{{ line }}”</span>",
+      "answer": {
+        "type": "spot",
+        "value": "pos",
+        "labels": "words(line)",
+        "display": "k == 'ok' ? 'La phrase est correcte.' : (k == 'will' ? '<s>will ' ~ c[2] ~ '</s> → <b>' ~ c[1] ~ '</b>' : '<s>would</s> → <b>will</b>')"
+      },
+      "wrongs": [
+        {
+          "misconception": "if-clause-will-apres-if",
+          "value": "-1",
+          "when": "k == 'will'"
+        },
+        {
+          "misconception": "if-clause-concordance",
+          "value": "-1",
+          "when": "k == 'would'"
+        },
+        {
+          "misconception": "if-clause-hypercorrection",
+          "value": "-2",
+          "display": "'Une faute signalée dans une phrase correcte'"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Condition réelle : <b>If + présent</b>, puis <b>will + base verbale</b> dans la principale : {{ right }} Jamais will après if."
+    },
+    {
+      "weight": 1,
+      "label": "Le verbe après if",
+      "prompt": "Complete:<span class=\"q-line\">“If {{ c[0] }} <span class=\"q-blank\">…</span>{{ c[3] ? ' ' ~ c[3] : '' }}, {{ c[4] }} will {{ c[5] }}.”</span>({{ c[2] }})",
+      "answer": {
+        "type": "choice",
+        "value": "c[1]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "if-clause-will-apres-if",
+          "value": "'will ' ~ c[2]"
+        },
+        {
+          "misconception": "if-clause-concordance",
+          "value": "'would ' ~ c[2]"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "Après if, le <b>présent</b> : If {{ c[0] }} <b>{{ c[1] }}</b>… Will se place dans la principale."
+    },
+    {
+      "weight": 1,
+      "label": "Le verbe principal",
+      "prompt": "Complete:<span class=\"q-line\">“If {{ c[0] }} {{ c[1] }}{{ c[3] ? ' ' ~ c[3] : '' }}, {{ c[4] }} <span class=\"q-blank\">…</span>{{ mtail }}.”</span>({{ mv }})",
+      "answer": {
+        "type": "choice",
+        "value": "'will ' ~ mv",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "if-clause-concordance",
+          "value": "'would ' ~ mv"
+        },
+        {
+          "misconception": "if-clause-base",
+          "value": "'will ' ~ s3(mv)"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "Dans la principale, <b>will + base verbale</b> : {{ c[4] }} will {{ c[5] }}."
+    }
+  ]
+}

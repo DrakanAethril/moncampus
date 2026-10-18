@@ -1,0 +1,110 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "hasard",
+  "label": "Mutations et adaptation",
+  "misconceptions": [
+    {
+      "id": "hasard-finalisme",
+      "label": "Mutation « pour s’adapter »",
+      "explanation": "Les mutations se produisent au hasard, sans but : elles ne surviennent pas parce que l’organisme en aurait besoin. Le milieu ne les provoque pas, il trie les individus qui les portent déjà."
+    },
+    {
+      "id": "hasard-lamarck",
+      "label": "Organe façonné par l’usage, puis transmis",
+      "explanation": "Un organe qu’un individu utilise beaucoup ou peu ne modifie pas ses allèles. Seules les mutations de l’ADN des cellules reproductrices se transmettent aux descendants."
+    },
+    {
+      "id": "hasard-acquis",
+      "label": "Caractère acquis au cours de la vie jugé héréditaire",
+      "explanation": "Ce qu’un individu acquiert pendant sa vie (une habitude, une force) ne change pas son ADN. Ses descendants ne reçoivent que les allèles qu’il portait déjà."
+    }
+  ],
+  "params": {
+    "HT": "[['les poissons des grottes sous-marines', 'sont aveugles'], ['les isopodes géants des abysses', 'mesurent jusqu’à 40 cm'], ['de nombreux poissons des abysses', 'produisent leur propre lumière'], ['les crevettes des sources chaudes', 'supportent des eaux à plus de 30 °C'], ['les crevettes Rimicaris', 'portent sur le dos un organe sensible à la faible lueur des sources'], ['de nombreux poissons des abysses', 'ont une bouche immense']]",
+    "AGENTS": "[['un antibiotique', 'L’antibiotique'], ['un virus bactériophage', 'Le virus'], ['une eau à 80 °C', 'L’eau à 80 °C'], ['du cuivre dissous', 'Le cuivre dissous']]"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Expliquer une adaptation",
+      "params": {
+        "T": "pick(HT)"
+      },
+      "prompt": "Aujourd’hui, {{ T[0] }} {{ T[1] }}. Quelle explication est scientifiquement correcte ?",
+      "answer": {
+        "type": "choice",
+        "value": "'Des mutations apparues au hasard ont donné ce caractère à certains individus, qui l’ont transmis plus souvent dans ce milieu'"
+      },
+      "wrongs": [
+        {
+          "misconception": "hasard-finalisme",
+          "value": "'Les individus ont muté pour s’adapter à leur milieu'"
+        },
+        {
+          "misconception": "hasard-acquis",
+          "value": "'Chaque individu a acquis ce caractère au cours de sa vie, puis l’a transmis à ses petits'"
+        },
+        {
+          "misconception": "hasard-lamarck",
+          "value": "'Le caractère s’est développé à force d’être utilisé, puis s’est transmis'"
+        }
+      ],
+      "method": "Les mutations se produisent au hasard, sans « but ». Le milieu ne les provoque pas : il trie, en favorisant la reproduction des porteurs."
+    },
+    {
+      "difficulty": 2,
+      "label": "Une affirmation juste",
+      "params": {
+        "T": "pick(HT)"
+      },
+      "prompt": "Le carnet note que {{ T[0] }} {{ T[1] }}. Laquelle de ces affirmations sur les mutations est juste ?",
+      "answer": {
+        "type": "choice",
+        "value": "'Une mutation apparaît au hasard, qu’elle soit utile, nuisible ou sans effet'"
+      },
+      "wrongs": [
+        {
+          "misconception": "hasard-finalisme",
+          "value": "'Une mutation apparaît quand l’organisme en a besoin'"
+        },
+        {
+          "misconception": "hasard-lamarck",
+          "value": "'Un organe qui ne sert plus disparaît peu à peu chez l’individu, et ses petits en héritent'"
+        },
+        {
+          "misconception": "hasard-acquis",
+          "value": "'Un caractère acquis au cours de la vie se transmet aux descendants'"
+        }
+      ],
+      "method": "Une mutation est une modification accidentelle de l’ADN. Elle survient au hasard ; c’est ensuite le milieu qui favorise, ou non, la reproduction de ceux qui la portent."
+    },
+    {
+      "difficulty": 3,
+      "label": "Une expérience",
+      "params": {
+        "a": "pick(AGENTS)",
+        "o": "pick(['des bactéries des sources', 'des bactéries des sédiments'])"
+      },
+      "prompt": "Le laboratoire cultive {{ o }} sans jamais les exposer à {{ a[0] }}. Exposées ensuite à {{ a[0] }}, quelques colonies survivent. On retrouve chez elles des mutations déjà présentes dans des cultures qui n’y ont jamais été exposées. Que conclure ?",
+      "answer": {
+        "type": "choice",
+        "value": "'Les mutations existaient avant l’exposition : l’exposition a seulement trié les bactéries qui les portaient'"
+      },
+      "wrongs": [
+        {
+          "misconception": "hasard-finalisme",
+          "value": "a[1] ~ ' a provoqué ces mutations pour que les bactéries survivent'"
+        },
+        {
+          "misconception": "hasard-acquis",
+          "value": "'Les bactéries se sont habituées, puis ont transmis cette habitude à leurs descendantes'"
+        },
+        {
+          "misconception": "hasard-lamarck",
+          "value": "'Les bactéries ont renforcé leur paroi en s’en servant, et leurs descendantes en ont hérité'"
+        }
+      ],
+      "method": "Les mutations étaient là avant l’exposition, puisqu’on les trouve dans des cultures jamais exposées. {{ a[1] }} ne les a pas créées : il a seulement éliminé les bactéries qui ne les portaient pas."
+    }
+  ]
+}

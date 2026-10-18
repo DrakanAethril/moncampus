@@ -1,0 +1,265 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "mutation",
+  "label": "Effet d’une mutation",
+  "misconceptions": [
+    {
+      "id": "mutation-toujours-nocive",
+      "label": "Substitution jugée toujours nocive",
+      "explanation": "Plusieurs codons codent le même acide aminé : une substitution peut ne rien changer à la protéine. Lisez l’acide aminé avant et après la mutation."
+    },
+    {
+      "id": "mutation-code-mal-lu",
+      "label": "Codon mal lu dans le code génétique",
+      "explanation": "Pour juger l’effet d’une substitution, on lit dans le code génétique l’acide aminé du codon avant, puis après la mutation. On compare ensuite les deux."
+    },
+    {
+      "id": "mutation-decalage",
+      "label": "Substitution prise pour un décalage du cadre de lecture",
+      "explanation": "Une substitution remplace un nucléotide par un autre : le nombre de nucléotides ne change pas, le cadre de lecture non plus. Seul le codon touché peut changer."
+    },
+    {
+      "id": "mutation-stop-ignore",
+      "label": "Codon stop lu comme un acide aminé",
+      "explanation": "UAA, UAG et UGA ne codent aucun acide aminé : ils arrêtent la traduction. Une substitution qui crée l’un d’eux raccourcit la protéine."
+    },
+    {
+      "id": "mutation-effet-local",
+      "label": "Effet d’une insertion ou d’une délétion limité à un codon",
+      "explanation": "Ajouter ou retirer un nucléotide décale tous les codons qui suivent : la lecture trois par trois ne retombe plus sur les mêmes codons. Toute la suite de la protéine peut changer."
+    }
+  ],
+  "params": {
+    "E": "{'silencieuse': 'Silencieuse : même acide aminé', 'faux-sens': 'Faux-sens : un acide aminé changé', 'non-sens': 'Non-sens : la protéine est raccourcie', 'decalage': 'Décalage du cadre de lecture'}"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Un codon",
+      "params": {
+        "c0": "senseCodons(1)",
+        "k": "int(0, 2)",
+        "dd": "senseCodons(2)",
+        "nb": "pick(without(['U', 'C', 'A', 'G'], [substr(c0, k, 1)]))",
+        "c1": "substr(c0, 0, k) ~ nb ~ substr(c0, k + 1)"
+      },
+      "let": {
+        "a0": "aminoAcid(c0)",
+        "a1": "aminoAcid(c1)",
+        "eff": "a1 == 'Stop' ? 'non-sens' : (a1 == a0 ? 'silencieuse' : 'faux-sens')",
+        "tab": "table(concat([['Codon', 'Acide aminé']], map(sortBy(unique(concat([c0, c1], map(range(0, floor(len(dd) / 3) - 1), 'substr(dd, item * 3, 3)'))), 'item'), '[item, aminoAcid(item)]')), true)"
+      },
+      "prompt": "Une substitution change le codon <b>{{ c0 }}</b> en <b>{{ c1 }}</b>. Quel est son effet sur la protéine ? (extrait du code génétique){{ tab }}",
+      "answer": {
+        "type": "choice",
+        "value": "E[eff]"
+      },
+      "wrongs": [
+        {
+          "misconception": "mutation-toujours-nocive",
+          "value": "E['faux-sens']",
+          "when": "eff == 'silencieuse'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['non-sens']",
+          "when": "eff == 'silencieuse'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['silencieuse']",
+          "when": "eff == 'faux-sens'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['non-sens']",
+          "when": "eff == 'faux-sens'"
+        },
+        {
+          "misconception": "mutation-stop-ignore",
+          "value": "E['faux-sens']",
+          "when": "eff == 'non-sens'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['silencieuse']",
+          "when": "eff == 'non-sens'"
+        },
+        {
+          "misconception": "mutation-decalage",
+          "value": "E['decalage']"
+        }
+      ],
+      "method": "Le codon {{ c0 }} ({{ a0 }}) devient {{ c1 }} ({{ a1 }}) : {{ {'silencieuse': 'même acide aminé, la mutation est silencieuse', 'faux-sens': 'un autre acide aminé, la mutation est faux-sens', 'non-sens': 'un codon stop, la protéine s’arrête là : la mutation est non-sens'}[eff] }}."
+    },
+    {
+      "difficulty": 2,
+      "label": "Dans un ARNm",
+      "weight": 2,
+      "params": {
+        "m": "'AUG' ~ senseCodons(3)",
+        "pos": "int(3, 11)",
+        "nb": "pick(without(['U', 'C', 'A', 'G'], [substr(m, pos, 1)]))",
+        "dd": "senseCodons(2)"
+      },
+      "let": {
+        "mm": "substr(m, 0, pos) ~ nb ~ substr(m, pos + 1)",
+        "ci": "floor(pos / 3) * 3",
+        "c0": "substr(m, ci, 3)",
+        "c1": "substr(mm, ci, 3)",
+        "a0": "aminoAcid(c0)",
+        "a1": "aminoAcid(c1)",
+        "eff": "a1 == 'Stop' ? 'non-sens' : (a1 == a0 ? 'silencieuse' : 'faux-sens')",
+        "before": "'<span class=\"q-seq\">' ~ groups(substr(m, 0, ci)) ~ ' ' ~ substr(m, ci, pos - ci) ~ '<span class=\"q-mut\">' ~ substr(m, pos, 1) ~ '</span>' ~ substr(m, pos + 1, ci + 2 - pos) ~ ' ' ~ groups(substr(m, ci + 3)) ~ '</span>'",
+        "after": "'<span class=\"q-seq\">' ~ groups(substr(mm, 0, ci)) ~ ' ' ~ substr(mm, ci, pos - ci) ~ '<span class=\"q-mut\">' ~ substr(mm, pos, 1) ~ '</span>' ~ substr(mm, pos + 1, ci + 2 - pos) ~ ' ' ~ groups(substr(mm, ci + 3)) ~ '</span>'",
+        "tab": "table(concat([['Codon', 'Acide aminé']], map(sortBy(unique(concat([c0, c1], map(range(0, floor(len(dd) / 3) - 1), 'substr(dd, item * 3, 3)'))), 'item'), '[item, aminoAcid(item)]')), true)"
+      },
+      "prompt": "Une substitution touche le nucléotide n° {{ pos + 1 }} de cet ARN messager.<br>Avant : {{ before }}Après : {{ after }}Quel est son effet sur la protéine ? (extrait du code génétique){{ tab }}",
+      "answer": {
+        "type": "choice",
+        "value": "E[eff]"
+      },
+      "wrongs": [
+        {
+          "misconception": "mutation-toujours-nocive",
+          "value": "E['faux-sens']",
+          "when": "eff == 'silencieuse'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['non-sens']",
+          "when": "eff == 'silencieuse'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['silencieuse']",
+          "when": "eff == 'faux-sens'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['non-sens']",
+          "when": "eff == 'faux-sens'"
+        },
+        {
+          "misconception": "mutation-stop-ignore",
+          "value": "E['faux-sens']",
+          "when": "eff == 'non-sens'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['silencieuse']",
+          "when": "eff == 'non-sens'"
+        },
+        {
+          "misconception": "mutation-decalage",
+          "value": "E['decalage']"
+        }
+      ],
+      "method": "Le codon {{ c0 }} ({{ a0 }}) devient {{ c1 }} ({{ a1 }}) : {{ {'silencieuse': 'même acide aminé, la mutation est silencieuse', 'faux-sens': 'un autre acide aminé, la mutation est faux-sens', 'non-sens': 'un codon stop, la protéine s’arrête là : la mutation est non-sens'}[eff] }}."
+    },
+    {
+      "difficulty": 2,
+      "label": "Un codon stop apparaît",
+      "weight": 1,
+      "params": {
+        "stop": "pick(['UAA', 'UAG', 'UGA'])",
+        "k": "int(0, 2)",
+        "b": "pick(['U', 'C', 'A', 'G'])",
+        "dd": "senseCodons(2)",
+        "m": "'AUG' ~ senseCodons(1) ~ substr(stop, 0, k) ~ b ~ substr(stop, k + 1) ~ senseCodons(1)",
+        "pos": "6 + k",
+        "nb": "substr(stop, k, 1)"
+      },
+      "let": {
+        "mm": "substr(m, 0, pos) ~ nb ~ substr(m, pos + 1)",
+        "ci": "floor(pos / 3) * 3",
+        "c0": "substr(m, ci, 3)",
+        "c1": "substr(mm, ci, 3)",
+        "a0": "aminoAcid(c0)",
+        "a1": "aminoAcid(c1)",
+        "eff": "a1 == 'Stop' ? 'non-sens' : (a1 == a0 ? 'silencieuse' : 'faux-sens')",
+        "before": "'<span class=\"q-seq\">' ~ groups(substr(m, 0, ci)) ~ ' ' ~ substr(m, ci, pos - ci) ~ '<span class=\"q-mut\">' ~ substr(m, pos, 1) ~ '</span>' ~ substr(m, pos + 1, ci + 2 - pos) ~ ' ' ~ groups(substr(m, ci + 3)) ~ '</span>'",
+        "after": "'<span class=\"q-seq\">' ~ groups(substr(mm, 0, ci)) ~ ' ' ~ substr(mm, ci, pos - ci) ~ '<span class=\"q-mut\">' ~ substr(mm, pos, 1) ~ '</span>' ~ substr(mm, pos + 1, ci + 2 - pos) ~ ' ' ~ groups(substr(mm, ci + 3)) ~ '</span>'",
+        "tab": "table(concat([['Codon', 'Acide aminé']], map(sortBy(unique(concat([c0, c1], map(range(0, floor(len(dd) / 3) - 1), 'substr(dd, item * 3, 3)'))), 'item'), '[item, aminoAcid(item)]')), true)"
+      },
+      "prompt": "Une substitution touche le nucléotide n° {{ pos + 1 }} de cet ARN messager.<br>Avant : {{ before }}Après : {{ after }}Quel est son effet sur la protéine ? (extrait du code génétique){{ tab }}",
+      "answer": {
+        "type": "choice",
+        "value": "E[eff]"
+      },
+      "wrongs": [
+        {
+          "misconception": "mutation-toujours-nocive",
+          "value": "E['faux-sens']",
+          "when": "eff == 'silencieuse'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['non-sens']",
+          "when": "eff == 'silencieuse'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['silencieuse']",
+          "when": "eff == 'faux-sens'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['non-sens']",
+          "when": "eff == 'faux-sens'"
+        },
+        {
+          "misconception": "mutation-stop-ignore",
+          "value": "E['faux-sens']",
+          "when": "eff == 'non-sens'"
+        },
+        {
+          "misconception": "mutation-code-mal-lu",
+          "value": "E['silencieuse']",
+          "when": "eff == 'non-sens'"
+        },
+        {
+          "misconception": "mutation-decalage",
+          "value": "E['decalage']"
+        }
+      ],
+      "method": "Le codon {{ c0 }} ({{ a0 }}) devient {{ c1 }} ({{ a1 }}) : {{ {'silencieuse': 'même acide aminé, la mutation est silencieuse', 'faux-sens': 'un autre acide aminé, la mutation est faux-sens', 'non-sens': 'un codon stop, la protéine s’arrête là : la mutation est non-sens'}[eff] }}.",
+      "constraints": [
+        "b != substr(stop, k, 1)",
+        "aminoAcid(substr(m, 6, 3)) != 'Stop'"
+      ]
+    },
+    {
+      "difficulty": 3,
+      "label": "Insertion ou délétion",
+      "params": {
+        "m": "'AUG' ~ senseCodons(4)",
+        "ins": "chance(0.5)",
+        "pos": "int(4, 10)",
+        "b": "pick(['U', 'C', 'A', 'G'])"
+      },
+      "let": {
+        "mm": "ins ? substr(m, 0, pos) ~ b ~ substr(m, pos) : substr(m, 0, pos) ~ substr(m, pos + 1)",
+        "eff": "'decalage'"
+      },
+      "prompt": "{{ ins ? 'Un nucléotide est inséré après le nucléotide n° ' ~ pos : 'Le nucléotide n° ' ~ (pos + 1) ~ ' est supprimé' }} dans cet ARN messager.<br>Avant : {{ seq(m) }}Après : {{ seq(mm) }}Quel est son effet sur la protéine ?",
+      "answer": {
+        "type": "choice",
+        "value": "E['decalage']",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "mutation-effet-local",
+          "value": "E['faux-sens']"
+        },
+        {
+          "misconception": "mutation-effet-local",
+          "value": "E['silencieuse']"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ins ? 'Un nucléotide ajouté' : 'Un nucléotide retiré' }} décale la lecture trois par trois : tous les codons qui suivent changent. C’est un décalage du cadre de lecture."
+    }
+  ]
+}

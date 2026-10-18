@@ -1,0 +1,201 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "derive",
+  "label": "Dérive ou sélection ?",
+  "misconceptions": [
+    {
+      "id": "derive-selection",
+      "label": "Dérive et sélection confondues",
+      "explanation": "La sélection fait évoluer toutes les populations dans le même sens, celui de l’allèle avantageux. La dérive, due au hasard, fait diverger les populations, d’autant plus qu’elles sont petites."
+    },
+    {
+      "id": "derive-absence",
+      "label": "Variations dues au hasard ignorées",
+      "explanation": "Même sans aucun avantage, la fréquence d’un allèle change par le seul hasard des naissances, surtout dans une petite population. Une fréquence qui change au hasard, c’est une évolution : la dérive."
+    },
+    {
+      "id": "derive-effectif",
+      "label": "Dérive attendue dans une très grande population",
+      "explanation": "La dérive est d’autant plus forte que la population est petite. Dans une population de plusieurs milliers d’individus, sans avantage, la fréquence d’un allèle reste presque constante."
+    }
+  ],
+  "params": {
+    "L": "['Dérive génétique', 'Sélection naturelle', 'Pas d’évolution notable']",
+    "c": "int(0, 2)",
+    "Ns": "[pick([10, 12, 16, 20]), pick([600, 800, 1000]), pick([2000, 3000, 5000])]",
+    "N": "Ns[c]",
+    "s": "[0, 0.12, 0][c]",
+    "p0": "[0.5, 0.08, 0.5][c]"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Un récit",
+      "params": {
+        "txt": "pick([['Dans une petite population de 15 crabes isolée sur une cheminée, la fréquence d’un allèle sans effet sur la survie monte, descend, puis l’allèle disparaît, par le seul hasard des naissances.', 'Sur un îlot de sources, 20 gastéropodes seulement fondent une population ; quelques générations plus tard, un allèle rare chez leurs ancêtres est devenu majoritaire, sans aucun avantage.', 'Dans dix petites populations de crevettes isolées, la fréquence d’un même allèle neutre part de 50 % et finit à des valeurs toutes différentes.'], ['Dans une grande population de crabes, l’allèle d’une carapace sombre, moins visible pour le poulpe, devient plus fréquent génération après génération.', 'Chez des gastéropodes exposés à un crabe broyeur, l’allèle d’une coquille épaisse progresse dans toutes les populations étudiées.', 'Dans plusieurs grandes populations de bactéries, un allèle de résistance à la chaleur se répand partout près des sources les plus chaudes.'], ['Dans une population de deux millions de copépodes, la fréquence d’un allèle sans effet reste voisine de 50 % pendant des siècles.', 'Dans une très grande population de krill, un allèle neutre garde à peu près la même fréquence de génération en génération.', 'Chez des millions de poissons-lanternes, la fréquence d’un allèle sans effet sur la survie ne varie presque pas en cinquante générations.']][c])"
+      },
+      "prompt": "Quel mécanisme cette observation du carnet décrit-elle ?<br><span class=\"q-line\">{{ txt }}</span>",
+      "answer": {
+        "type": "choice",
+        "value": "L[c]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "derive-selection",
+          "value": "L[1]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "derive-absence",
+          "value": "L[2]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "derive-selection",
+          "value": "L[0]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "derive-absence",
+          "value": "L[2]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "derive-effectif",
+          "value": "L[0]",
+          "when": "c == 2"
+        },
+        {
+          "misconception": "derive-selection",
+          "value": "L[1]",
+          "when": "c == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ['Petites populations, trajectoires qui divergent au hasard, certaines jusqu’à 0 ou 1 : c’est la dérive génétique.', 'Toutes les populations évoluent dans le même sens : l’allèle confère un avantage, c’est la sélection naturelle.', 'Grandes populations sans avantage : la fréquence varie très peu, il n’y a pas d’évolution notable.'][c] }}"
+    },
+    {
+      "difficulty": 2,
+      "label": "Courbes et effectif",
+      "params": {
+        "r1": "drift(N, s, p0, 40)",
+        "r2": "drift(N, s, p0, 40)",
+        "r3": "drift(N, s, p0, 40)",
+        "r4": "drift(N, s, p0, 40)",
+        "r5": "drift(N, s, p0, 40)"
+      },
+      "figure": {
+        "type": "chart",
+        "x": "[0, 40]",
+        "y": "[0, 1]",
+        "xstep": 10,
+        "ystep": 0.25,
+        "xlabel": "'Générations'",
+        "ylabel": "'Fréquence de l’allèle'",
+        "series": "[{'name': '', 'color': 'blue', 'points': r1}, {'name': '', 'color': 'orange', 'points': r2}, {'name': '', 'color': 'green', 'points': r3}, {'name': '', 'color': 'red', 'points': r4}, {'name': '', 'color': 'violet', 'points': r5}]"
+      },
+      "prompt": "Cinq populations de <b>{{ N }} individus</b> chacune, suivies pendant 40 générations. Quel mécanisme ces courbes montrent-elles ?",
+      "answer": {
+        "type": "choice",
+        "value": "L[c]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "derive-selection",
+          "value": "L[1]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "derive-absence",
+          "value": "L[2]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "derive-selection",
+          "value": "L[0]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "derive-absence",
+          "value": "L[2]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "derive-effectif",
+          "value": "L[0]",
+          "when": "c == 2"
+        },
+        {
+          "misconception": "derive-selection",
+          "value": "L[1]",
+          "when": "c == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ['Petites populations, trajectoires qui divergent au hasard, certaines jusqu’à 0 ou 1 : c’est la dérive génétique.', 'Toutes les populations évoluent dans le même sens : l’allèle confère un avantage, c’est la sélection naturelle.', 'Grandes populations sans avantage : la fréquence varie très peu, il n’y a pas d’évolution notable.'][c] }}"
+    },
+    {
+      "difficulty": 3,
+      "label": "Courbes seules",
+      "params": {
+        "r1": "drift(N, s, p0, 40)",
+        "r2": "drift(N, s, p0, 40)",
+        "r3": "drift(N, s, p0, 40)",
+        "r4": "drift(N, s, p0, 40)",
+        "r5": "drift(N, s, p0, 40)"
+      },
+      "figure": {
+        "type": "chart",
+        "x": "[0, 40]",
+        "y": "[0, 1]",
+        "xstep": 10,
+        "ystep": 0.25,
+        "xlabel": "'Générations'",
+        "ylabel": "'Fréquence de l’allèle'",
+        "series": "[{'name': '', 'color': 'blue', 'points': r1}, {'name': '', 'color': 'orange', 'points': r2}, {'name': '', 'color': 'green', 'points': r3}, {'name': '', 'color': 'red', 'points': r4}, {'name': '', 'color': 'violet', 'points': r5}]"
+      },
+      "prompt": "Cinq populations de même effectif, suivies pendant 40 générations ; l’effectif n’a pas été noté. D’après la seule allure des courbes, quel mécanisme montrent-elles ?",
+      "answer": {
+        "type": "choice",
+        "value": "L[c]",
+        "choices": 3
+      },
+      "wrongs": [
+        {
+          "misconception": "derive-selection",
+          "value": "L[1]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "derive-absence",
+          "value": "L[2]",
+          "when": "c == 0"
+        },
+        {
+          "misconception": "derive-selection",
+          "value": "L[0]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "derive-absence",
+          "value": "L[2]",
+          "when": "c == 1"
+        },
+        {
+          "misconception": "derive-effectif",
+          "value": "L[0]",
+          "when": "c == 2"
+        },
+        {
+          "misconception": "derive-selection",
+          "value": "L[1]",
+          "when": "c == 2"
+        }
+      ],
+      "minWrongs": 2,
+      "method": "{{ ['Petites populations, trajectoires qui divergent au hasard, certaines jusqu’à 0 ou 1 : c’est la dérive génétique.', 'Toutes les populations évoluent dans le même sens : l’allèle confère un avantage, c’est la sélection naturelle.', 'Grandes populations sans avantage : la fréquence varie très peu, il n’y a pas d’évolution notable.'][c] }}"
+    }
+  ]
+}

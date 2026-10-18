@@ -1,0 +1,127 @@
+# The Irregulars: English, 4e-3e - the fourth serious game (design/validated/serious-games-irregulars.md).
+#
+# Read by `app:serious-games:sync`, like the other manifests. Everything the server decides is read
+# from here - the places and their cases, the final case, the false leads, the rewards - so the
+# game's static package (public/serious-games/irregulars/) holds nothing but its display. `words`
+# names the game's own vocabulary, which Formatool's screens use for this game.
+slug: irregulars
+title: "The Irregulars"
+pitch: "Londres, 1895. Interroger les témoins de Baker Street et démêler leurs récits : prétérit, present perfect, questions, comparatifs, modaux."
+subjects: [Anglais]
+levels: [4e, 3e]
+unit_label: affaires
+# Typed answers, QCM, words to put in order and the wrong word of a statement to point at.
+answer_kinds: [short, choice, order, spot]
+version: 1.0.0
+published: false
+
+words:
+  unit: [affaire, affaires]
+  chapter: [lieu, lieux]
+  lit: [résolue, résolues]
+  unlit: [non résolue, non résolues]
+  level: mention
+  skill: point de grammaire
+  dim_filter: Affaires à reprendre
+  brightness:
+    discrete: [résolue de justesse, résolues de justesse]
+    clear: [résolue, résolues]
+    bright: [brillamment résolue, brillamment résolues]
+    blazing: [élémentaire, élémentaires]
+  comet: [fausse piste, fausses pistes]
+  comet_solved: levée
+  comet_in_view: à lever
+  chapter_done: bouclé
+
+series:
+  size: 12
+  # A case is solved at 6 clues out of 12; its mention is its best investigation: 6 de justesse,
+  # 8 résolue, 10 brillamment, 12 élémentaire.
+  lit_at: 6
+
+final:
+  code: final-case
+  label: The Final Case
+  size: 12
+  time_limit_seconds: 1200
+  # three statements from two places, two from the three others, shuffled
+  per_chapter: [3, 3, 2, 2, 2]
+
+comet:
+  # The same typical error twice among the player's last 30 answers: a false lead, a red thread on
+  # the board.
+  window: 30
+  repeat: 2
+  questions: 3
+  solved_at: 2
+
+grades:
+  - [0, "Irregular"]
+  - [5, "Street detective"]
+  - [10, "Baker Street regular"]
+  - [15, "Inspector's informer"]
+  - [20, "Consulting detective"]
+
+chapters:
+  - code: docks
+    label: The Docks
+    topic: Le prétérit
+    units:
+      - { code: pret-reg, label: "Prétérit des verbes réguliers" }
+      - { code: pret-irr, label: "Prétérit des verbes irréguliers" }
+      - { code: pret-neg, label: "Prétérit à la forme négative" }
+      - { code: pret-question, label: "Question au prétérit" }
+  - code: market
+    label: Covent Garden
+    topic: Le present perfect
+    units:
+      - { code: pp-form, label: "Forme du present perfect" }
+      - { code: pp-preterit, label: "Present perfect ou prétérit" }
+      - { code: for-since, label: "for, since, ago" }
+      - { code: already-yet, label: "already, yet, just" }
+  - code: theatre
+    label: The Lyceum
+    topic: Questions et auxiliaires
+    units:
+      - { code: wh-word, label: "Le bon mot interrogatif" }
+      - { code: aux, label: "Le bon auxiliaire" }
+      - { code: short-answer, label: "Réponses courtes" }
+      - { code: question-order, label: "Construire une question" }
+  - code: museum
+    label: The Museum
+    topic: Comparatifs et superlatifs
+    units:
+      - { code: comp-short, label: "Comparatif des adjectifs courts" }
+      - { code: comp-long, label: "Comparatif des adjectifs longs" }
+      - { code: comp-irr, label: "good, bad : comparatifs irréguliers" }
+      - { code: as-as, label: "as … as, not as … as" }
+  - code: station
+    label: Paddington
+    topic: Modaux et futur
+    units:
+      - { code: must, label: "must, mustn't, don't have to" }
+      - { code: can-could, label: "can, could, will be able to" }
+      - { code: will-going, label: "will ou be going to" }
+      - { code: if-clause, label: "Phrases en if (1er conditionnel)" }
+
+rewards:
+  # The collection piece: brass once every case is solved, silver at 10/12 in the final case, gold at 12/12.
+  trophy:
+    code: loupe
+    label: La Loupe
+    lore: "Celle du détective lui-même, offerte au gamin des rues qui a résolu la dernière affaire sans lui."
+    silver_at: 10
+    gold_at: 12
+  # Given with the trophy, worn on the avatar.
+  pin:
+    code: pin-loupe
+    label: Épinglette Loupe
+  # One card per place whose cases are all solved, and the final case's card once it was played to the end.
+  cards: true
+
+thumbnail:
+  background: "linear-gradient(180deg, #1F3A2E 0%, #142820 100%)"
+  font: "'Libre Caslon Display', Georgia, serif"
+  style: normal
+  weight: 400
+  color: "#E9D8A6"

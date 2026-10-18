@@ -1,0 +1,180 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "proportion",
+  "label": "Proportion d’une espèce dans un relevé",
+  "misconceptions": [
+    {
+      "id": "proportion-total",
+      "label": "Proportion calculée sur la mauvaise somme",
+      "explanation": "Une proportion se calcule sur le total de tous les individus observés, l’espèce étudiée comprise. Additionnez d’abord toute la ligne du relevé."
+    },
+    {
+      "id": "proportion-effectif",
+      "label": "Effectif donné au lieu d’une proportion",
+      "explanation": "L’effectif compte des individus ; la proportion le compare au total. On divise l’effectif par le total, puis on multiplie par 100 pour l’exprimer en %."
+    },
+    {
+      "id": "proportion-un-seul",
+      "label": "Une seule espèce comptée au lieu des deux",
+      "explanation": "Quand on demande la proportion de deux espèces réunies, on additionne leurs effectifs avant de diviser par le total. Relisez la question pour savoir quels individus compter."
+    },
+    {
+      "id": "proportion-moyenne",
+      "label": "Moyenne des proportions au lieu de la proportion de l’ensemble",
+      "explanation": "Deux plongées de tailles différentes ne pèsent pas autant : on ne fait pas la moyenne de leurs pourcentages. On additionne les effectifs des deux plongées, puis on divise par le total des deux."
+    },
+    {
+      "id": "proportion-une-plongee",
+      "label": "Une seule plongée prise en compte",
+      "explanation": "La question porte sur l’ensemble des deux plongées : on réunit leurs effectifs et leurs totaux. Une seule plongée ne répond pas à la question."
+    }
+  ],
+  "params": {
+    "FISH": "[['Mérou', 'mérous'], ['Poisson-perroquet', 'poissons-perroquets'], ['Baliste', 'balistes'], ['Poisson-clown', 'poissons-clowns'], ['Murène', 'murènes'], ['Labre', 'labres'], ['Poisson-chirurgien', 'poissons-chirurgiens']]"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Une espèce",
+      "params": {
+        "f": "sample(FISH, 4)",
+        "tot": "pick([40, 50, 80, 100, 120, 200])",
+        "c0": "int(1, floor(tot / 4 * 1.6))",
+        "c1": "int(1, floor(tot / 4 * 1.6))",
+        "c2": "int(1, floor(tot / 4 * 1.6))",
+        "j": "int(0, 3)"
+      },
+      "let": {
+        "c3": "tot - c0 - c1 - c2",
+        "cs": "[c0, c1, c2, c3]",
+        "ans": "round(cs[j] / tot * 100, 1)",
+        "tab": "table([map(f, 'item[0]'), cs], true)"
+      },
+      "constraints": [
+        "c3 >= 1"
+      ],
+      "prompt": "Relevé d’une plongée sur le récif :{{ tab }}Quelle proportion des poissons observés sont des <b>{{ f[j][1] }}</b> ? (en %, au dixième)",
+      "answer": {
+        "type": "number",
+        "value": "ans",
+        "tolerance": 0.11,
+        "unit": "%"
+      },
+      "wrongs": [
+        {
+          "misconception": "proportion-total",
+          "value": "round(cs[j] / (tot - cs[j]) * 100, 1)",
+          "when": "abs(cs[j] / (tot - cs[j]) * 100 - ans) > 0.25"
+        },
+        {
+          "misconception": "proportion-effectif",
+          "value": "cs[j]",
+          "when": "abs(cs[j] - ans) > 0.25"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ cs[j] }} ÷ {{ tot }} × 100 ≈ <b>{{ ans }} %</b> : on divise par le total des poissons observés ({{ join(cs, ' + ') }} = {{ tot }})."
+    },
+    {
+      "difficulty": 2,
+      "label": "Deux espèces réunies",
+      "params": {
+        "f": "sample(FISH, 5)",
+        "tot": "pick([50, 80, 100, 120, 150, 200])",
+        "c0": "int(1, floor(tot / 5 * 1.6))",
+        "c1": "int(1, floor(tot / 5 * 1.6))",
+        "c2": "int(1, floor(tot / 5 * 1.6))",
+        "c3": "int(1, floor(tot / 5 * 1.6))",
+        "jj": "sample([0, 1, 2, 3, 4], 2)"
+      },
+      "let": {
+        "c4": "tot - c0 - c1 - c2 - c3",
+        "cs": "[c0, c1, c2, c3, c4]",
+        "two": "cs[jj[0]] + cs[jj[1]]",
+        "ans": "round(two / tot * 100, 1)",
+        "tab": "table([map(f, 'item[0]'), cs], true)"
+      },
+      "constraints": [
+        "c4 >= 1"
+      ],
+      "prompt": "Relevé d’une plongée sur le récif :{{ tab }}Quelle proportion des poissons observés sont des <b>{{ f[jj[0]][1] }}</b> ou des <b>{{ f[jj[1]][1] }}</b> ? (en %, au dixième)",
+      "answer": {
+        "type": "number",
+        "value": "ans",
+        "tolerance": 0.11,
+        "unit": "%"
+      },
+      "wrongs": [
+        {
+          "misconception": "proportion-un-seul",
+          "value": "round(cs[jj[0]] / tot * 100, 1)",
+          "when": "abs(cs[jj[0]] / tot * 100 - ans) > 0.25"
+        },
+        {
+          "misconception": "proportion-effectif",
+          "value": "two",
+          "when": "abs(two - ans) > 0.25"
+        },
+        {
+          "misconception": "proportion-total",
+          "value": "round(two / (tot - two) * 100, 1)",
+          "when": "abs(two / (tot - two) * 100 - ans) > 0.25"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "({{ cs[jj[0]] }} + {{ cs[jj[1]] }}) ÷ {{ tot }} × 100 ≈ <b>{{ ans }} %</b> : on additionne les deux espèces, puis on divise par le total ({{ tot }})."
+    },
+    {
+      "difficulty": 3,
+      "label": "Deux plongées",
+      "params": {
+        "f": "sample(FISH, 3)",
+        "ta": "pick([40, 50, 80, 100])",
+        "tb": "pick([20, 60, 120, 150, 200])",
+        "a0": "int(2, floor(ta / 2))",
+        "a1": "int(1, floor(ta / 3))",
+        "b0": "int(2, floor(tb / 2))",
+        "b1": "int(1, floor(tb / 3))"
+      },
+      "let": {
+        "a2": "ta - a0 - a1",
+        "b2": "tb - b0 - b1",
+        "ans": "round((a0 + b0) / (ta + tb) * 100, 1)",
+        "mean": "(a0 / ta + b0 / tb) * 50",
+        "tab": "table([concat([''], map(f, 'item[0]'), ['Total']), ['Plongée 1', a0, a1, a2, ta], ['Plongée 2', b0, b1, b2, tb]], true)"
+      },
+      "constraints": [
+        "a2 >= 1",
+        "b2 >= 1",
+        "ta != tb",
+        "abs(mean - (a0 + b0) / (ta + tb) * 100) > 0.6"
+      ],
+      "prompt": "Relevés de deux plongées sur le récif :{{ tab }}Sur l’ensemble des deux plongées, quelle proportion des poissons observés sont des <b>{{ f[0][1] }}</b> ? (en %, au dixième)",
+      "answer": {
+        "type": "number",
+        "value": "ans",
+        "tolerance": 0.11,
+        "unit": "%"
+      },
+      "wrongs": [
+        {
+          "misconception": "proportion-moyenne",
+          "value": "round(mean, 1)",
+          "when": "abs(mean - ans) > 0.25"
+        },
+        {
+          "misconception": "proportion-une-plongee",
+          "value": "round(a0 / ta * 100, 1)",
+          "when": "abs(a0 / ta * 100 - ans) > 0.25"
+        },
+        {
+          "misconception": "proportion-effectif",
+          "value": "a0 + b0",
+          "when": "abs(a0 + b0 - ans) > 0.25"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "On réunit les deux plongées : ({{ a0 }} + {{ b0 }}) ÷ ({{ ta }} + {{ tb }}) × 100 ≈ <b>{{ ans }} %</b>. La moyenne des deux pourcentages donnerait autant de poids à une petite plongée qu’à une grande."
+    }
+  ]
+}

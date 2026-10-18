@@ -1,0 +1,117 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "chaine",
+  "label": "Construire une chaîne alimentaire",
+  "misconceptions": [
+    {
+      "id": "chaine-ordre-inverse",
+      "label": "Chaîne remise à l’envers",
+      "explanation": "Une chaîne alimentaire commence par un producteur et suit les flèches « est mangé par » jusqu’au dernier consommateur. Le producteur se place en premier."
+    },
+    {
+      "id": "chaine-maillons",
+      "label": "Deux maillons intermédiaires inversés",
+      "explanation": "Chaque maillon mange celui qui le précède. Vérifiez, flèche par flèche, que chaque être vivant se nourrit bien du précédent."
+    }
+  ],
+  "params": {
+    "WEBS": "[{'zone': 'le récif', 'levels': {'algues': 0, 'oursin': 1, 'perroquet': 1, 'baliste': 2, 'merou': 2, 'requin': 3}, 'names': {'algues': 'Algues', 'oursin': 'Oursin', 'perroquet': 'Poisson-perroquet', 'baliste': 'Baliste', 'merou': 'Mérou', 'requin': 'Requin'}, 'def': {'algues': 'les algues', 'oursin': 'l’oursin', 'perroquet': 'le poisson-perroquet', 'baliste': 'le baliste', 'merou': 'le mérou', 'requin': 'le requin'}, 'edges': [['algues', 'oursin'], ['algues', 'perroquet'], ['oursin', 'baliste'], ['perroquet', 'merou'], ['baliste', 'requin'], ['merou', 'requin']]}, {'zone': 'la pleine eau', 'levels': {'phyto': 0, 'copepode': 1, 'krill': 1, 'lanterne': 2, 'calmar': 3, 'baudroie': 3, 'cachalot': 4}, 'names': {'phyto': 'Phytoplancton', 'copepode': 'Copépodes', 'krill': 'Krill', 'lanterne': 'Poisson-lanterne', 'calmar': 'Calmar', 'baudroie': 'Baudroie abyssale', 'cachalot': 'Cachalot'}, 'def': {'phyto': 'le phytoplancton', 'copepode': 'les copépodes', 'krill': 'le krill', 'lanterne': 'le poisson-lanterne', 'calmar': 'le calmar', 'baudroie': 'la baudroie abyssale', 'cachalot': 'le cachalot'}, 'edges': [['phyto', 'copepode'], ['phyto', 'krill'], ['copepode', 'lanterne'], ['krill', 'lanterne'], ['lanterne', 'calmar'], ['lanterne', 'baudroie'], ['calmar', 'cachalot']]}, {'zone': 'la source chaude', 'levels': {'bact': 0, 'crevette': 1, 'moule': 1, 'crabe': 2, 'zoarcide': 3, 'poulpe': 3}, 'names': {'bact': 'Bactéries chimiosynthétiques', 'crevette': 'Crevette Rimicaris', 'moule': 'Moule Bathymodiolus', 'crabe': 'Crabe Bythograea', 'zoarcide': 'Poisson zoarcidé', 'poulpe': 'Poulpe'}, 'def': {'bact': 'les bactéries chimiosynthétiques', 'crevette': 'la crevette Rimicaris', 'moule': 'la moule Bathymodiolus', 'crabe': 'le crabe Bythograea', 'zoarcide': 'le poisson zoarcidé', 'poulpe': 'le poulpe'}, 'edges': [['bact', 'crevette'], ['bact', 'moule'], ['crevette', 'crabe'], ['moule', 'crabe'], ['crabe', 'zoarcide'], ['crabe', 'poulpe']]}]",
+    "w": "pick(WEBS)",
+    "E": "w['edges']",
+    "K": "keys(w['levels'])"
+  },
+  "variants": [
+    {
+      "difficulty": 1,
+      "label": "Trois maillons",
+      "params": {
+        "path": "slice(chainFrom(E, pick(filter(K, 'w[\"levels\"][item] == 0'))), 0, 3)"
+      },
+      "let": {
+        "n": "map(path, 'w[\"names\"][item]')"
+      },
+      "prompt": "Rangez ces êtres vivants ({{ w['zone'] }}) du producteur au dernier consommateur.",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "order",
+        "value": "n"
+      },
+      "wrongs": [
+        {
+          "misconception": "chaine-ordre-inverse",
+          "value": "reversed(n)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ join(n, ' → ') }} : chaque flèche signifie « est mangé par »."
+    },
+    {
+      "difficulty": 2,
+      "label": "Toute la chaîne",
+      "params": {
+        "path": "chainFrom(E, pick(filter(K, 'w[\"levels\"][item] == 0')))"
+      },
+      "let": {
+        "n": "map(path, 'w[\"names\"][item]')"
+      },
+      "prompt": "Rangez ces êtres vivants ({{ w['zone'] }}) du producteur au dernier consommateur.",
+      "figure": {
+        "type": "web",
+        "levels": "w['levels']",
+        "names": "w['names']",
+        "edges": "E"
+      },
+      "answer": {
+        "type": "order",
+        "value": "n"
+      },
+      "wrongs": [
+        {
+          "misconception": "chaine-ordre-inverse",
+          "value": "reversed(n)"
+        },
+        {
+          "misconception": "chaine-maillons",
+          "value": "concat([n[0], n[2], n[1]], slice(n, 3))",
+          "when": "count(n) >= 4"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ join(n, ' → ') }} : chaque flèche signifie « est mangé par »."
+    },
+    {
+      "difficulty": 3,
+      "label": "D’après le carnet",
+      "params": {
+        "path": "chainFrom(E, pick(filter(K, 'w[\"levels\"][item] == 0')))",
+        "notes": "shuffle(map(range(1, count(path) - 1), 'ucfirst(w[\"def\"][path[item]]) ~ (substr(w[\"def\"][path[item]], 0, 4) == \"les \" ? \" se nourrissent \" : \" se nourrit \") ~ frDe(w[\"def\"][path[item - 1]]) ~ \".\"'))"
+      },
+      "let": {
+        "n": "map(path, 'w[\"names\"][item]')"
+      },
+      "prompt": "Le carnet a noté ces observations ({{ w['zone'] }}), dans le désordre :<br><span class=\"q-line\">{{ join(notes, '<br>') }}</span>Rangez ces êtres vivants du producteur au dernier consommateur.",
+      "answer": {
+        "type": "order",
+        "value": "n"
+      },
+      "wrongs": [
+        {
+          "misconception": "chaine-ordre-inverse",
+          "value": "reversed(n)"
+        },
+        {
+          "misconception": "chaine-maillons",
+          "value": "concat([n[0], n[2], n[1]], slice(n, 3))",
+          "when": "count(n) >= 4"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "On part du producteur, qui ne se nourrit d’aucun autre être vivant, puis on place après chacun celui qui le mange : {{ join(n, ' → ') }}."
+    }
+  ]
+}

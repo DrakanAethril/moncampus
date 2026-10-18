@@ -47,6 +47,12 @@ framework:
                     strong: []
                     br: []
                     table: [class]
+                    # Station Abysse's and The Irregulars' statements: the curator's labels, the
+                    # highlighted part of a witness's statement, a struck-out word.
+                    ul: [class]
+                    li: []
+                    mark: []
+                    s: []
                     # The HTML5 parser inserts a <tbody> of its own: without it, every row of a
                     # statistics table was dropped with it, and the statement lost its data.
                     tbody: []
