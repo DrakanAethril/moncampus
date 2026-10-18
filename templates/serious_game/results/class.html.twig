@@ -1,6 +1,11 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ game.title }} — {{ program.shortName }}{% endblock %}
+{% block title %}{{ game.title }} · {{ program.shortName }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="/serious-games/shared/fonts.css">
+{% endblock %}
 
 {% block page_breadcrumb %}
     {{ component('Cm:Breadcrumb', {segments: [
@@ -9,8 +14,115 @@
     ]}) }}
 {% endblock %}
 
-{% block page_title %}{{ game.title }} — {{ program.shortName }}{% endblock %}
+{% block page_title %}{{ game.title }} · {{ program.shortName }}{% endblock %}
 
 {% block main %}
-    <div class="card"><div class="card-body"></div></div>
+    {% set kpis = reading.kpis %}
+    {% set rows = reading.rows|filter(r => filter == 'all' or (filter == 'dim' and r.dim) or (filter == 'inactive' and r.inactive)) %}
+    {% if order == 'activity' %}{% set rows = rows|sort((a, b) => (b.lastPlayedAt ? b.lastPlayedAt|date('U') : 0) <=> (a.lastPlayedAt ? a.lastPlayedAt|date('U') : 0)) %}{% endif %}
+    {% set chapters = reading.chapters|filter(c => chapter == '' or c.code == chapter) %}
+
+    <p class="cm-sg-results__readers">{{ 'seriousGameClassReaders'|trans({'%count%': kpis.students, '%class%': program.shortName}) }}</p>
+
+    <div class="cm-sg-kpis">
+        <div><b>{{ kpis.playedThisWeek }}</b><span>{{ 'seriousGameKpiPlayedWeek'|trans }}</span></div>
+        <div><b>{{ kpis.medianLit }}</b><span>{{ 'seriousGameKpiMedianLit'|trans({'%unit%': game.unitLabel}) }}</span></div>
+        <div><b>{{ kpis.seriesThisWeek }}</b><span>{{ 'seriousGameKpiSeriesWeek'|trans }}</span></div>
+        <div><b>{{ kpis.cometsInView }}</b><span>{{ 'seriousGameKpiComets'|trans }}</span></div>
+    </div>
+
+    <form method="get" class="cm-sg-filters card" data-controller="auto-submit">
+        <label>{{ 'seriousGameFilterChapter'|trans }}
+            <select name="chapter" class="form-select" data-action="auto-submit#submit">
+                <option value="">{{ 'seriousGameFilterAll'|trans }}</option>
+                {% for c in reading.chapters %}<option value="{{ c.code }}" {{ chapter == c.code ? 'selected' }}>{{ c.label }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>{{ 'seriousGameFilterStudents'|trans }}
+            <select name="students" class="form-select" data-action="auto-submit#submit">
+                <option value="" {{ filter == 'all' ? 'selected' }}>{{ 'seriousGameFilterAllStudents'|trans }}</option>
+                <option value="dim" {{ filter == 'dim' ? 'selected' }}>{{ 'seriousGameFilterDim'|trans }}</option>
+                <option value="inactive" {{ filter == 'inactive' ? 'selected' }}>{{ 'seriousGameFilterInactive'|trans }}</option>
+            </select>
+        </label>
+        <label>{{ 'seriousGameFilterOrder'|trans }}
+            <select name="order" class="form-select" data-action="auto-submit#submit">
+                <option value="name" {{ order == 'name' ? 'selected' }}>{{ 'seriousGameOrderName'|trans }}</option>
+                <option value="activity" {{ order == 'activity' ? 'selected' }}>{{ 'seriousGameOrderActivity'|trans }}</option>
+            </select>
+        </label>
+        <noscript><button type="submit" class="cm-action--positive">{{ 'submitSaveAction'|trans }}</button></noscript>
+        <div class="cm-sg-legend" aria-hidden="true">
+            <span class="cm-sg-cell cm-sg-cell--blazing"></span>{{ 'seriousGameLegendLit'|trans }}
+            <span class="cm-sg-cell cm-sg-cell--tried"></span>{{ 'seriousGameUnitTried'|trans }}
+            <span class="cm-sg-cell cm-sg-cell--never"></span>{{ 'seriousGameUnitNever'|trans }}
+        </div>
+    </form>
+
+    <section class="card cm-sg-map">
+        <div class="table-responsive">
+            <table class="cm-sg-hm">
+                <thead>
+                    <tr class="cm-sg-hm__cons">
+                        <th></th>
+                        {% for c in chapters %}<th colspan="{{ c.units|length }}">{{ c.label }}</th>{% endfor %}
+                        <th></th>
+                    </tr>
+                    <tr class="cm-sg-hm__nums">
+                        <th class="cm-sg-hm__who">{{ 'seriousGameResultsStudentColumn'|trans }}</th>
+                        {% for c in chapters %}{% for unit in c.units %}<th title="{{ unit.label }}" scope="col"><span class="visually-hidden">{{ unit.label }}</span><span aria-hidden="true">{{ loop.index }}</span></th>{% endfor %}{% endfor %}
+                        <th>{{ game.unitLabel }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <th scope="row" class="cm-sg-hm__who">
+                                <a href="{{ path('app_serious_games_results_student', {user: row.student.id}) }}">
+                                    {% if row.avatar %}<span data-controller="sg-avatar" data-sg-avatar-config-value="{{ row.avatar.config|json_encode }}" data-sg-avatar-size-value="22"></span>{% endif %}
+                                    {{ row.student.lastname }} {{ row.student.firstname }}
+                                </a>
+                                <small title="{{ 'seriousGameLastActivity'|trans }}">{{ row.lastPlayedAt ? 'seriousGameLastActivityOn'|trans({'%date%': row.lastPlayedAt|date('d/m')}) : '—' }}</small>
+                            </th>
+                            {% for c in chapters %}{% for unit in c.units %}
+                                {% set state = row.cells[unit.code] %}
+                                <td class="cm-sg-hm__c"><span class="cm-sg-cell cm-sg-cell--{{ state }}" title="{{ unit.label }} — {{ state in ['tried', 'never'] ? ('seriousGameUnit' ~ state|capitalize)|trans : ('seriousGameBrightness' ~ state|capitalize)|trans }}"></span></td>
+                            {% endfor %}{% endfor %}
+                            <td class="cm-sg-hm__total">{{ row.lit }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="40" class="text-secondary">{{ 'seriousGameNoStudentMatches'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="cm-sg-hm__pct">
+                        <th>{{ 'seriousGameShareLit'|trans }}</th>
+                        {% for c in chapters %}{% for unit in c.units %}<td>{{ (reading.byUnit[unit.code].share * 100)|round }}</td>{% endfor %}{% endfor %}
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <div class="cm-sg-results__columns">
+        <section class="card">
+            {{ component('Cm:Subhead', {title: 'seriousGameSynthesisHeading'|trans, hint: 'seriousGameSynthesisHint'|trans}) }}
+            <ul class="cm-sg-synthesis">
+                {% for line in reading.synthesis %}
+                    <li>
+                        <span class="cm-sg-synthesis__name">{{ line.unit.label }}</span>
+                        <span class="cm-sg-synthesis__bar" title="{{ line.lit }} / {{ line.tried }} / {{ line.never }}">
+                            <span class="is-lit" style="flex: {{ line.lit }}"></span><span class="is-tried" style="flex: {{ line.tried }}"></span><span class="is-never" style="flex: {{ line.never }}"></span>
+                        </span>
+                        <span class="cm-sg-synthesis__pct">{{ (line.share * 100)|round }} %</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+        <section class="card">
+            {{ component('Cm:Subhead', {title: 'seriousGameErrorsHeading'|trans, hint: 'seriousGameDontKnowHint'|trans({'%answers%': reading.errors.dontKnow, '%students%': reading.errors.dontKnowStudents})}) }}
+            {% include 'serious_game/results/_errors.html.twig' with {errors: reading.errors.rows} %}
+        </section>
+    </div>
 {% endblock %}

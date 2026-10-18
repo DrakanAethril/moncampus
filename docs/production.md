@@ -440,6 +440,9 @@ What to know:
   days on.** An expired secret opens nothing; it is kept a month so that a replayed refresh token
   is still recognised - and answered by revoking its connection. Clients are registered by anybody
   on the internet, by specification; the ones somebody actually connected stay, with their grants.
+- **The serious games' sessions, answers and comets, 24 months after the player's last activity in
+  the game** (`SeriousGameProgress::$lastPlayedAt`). They name a student and every answer they typed.
+  What the player acquired - stars, collection pieces, avatar - stays as long as the account.
 
 **Volume is not the argument.** A transcript measures a couple of kibibytes in practice, and a year
 of them would be a handful of megabytes. The argument is that the journal at
@@ -514,6 +517,29 @@ meanwhile the boards keep the last photograph, and with none at all, the CC0 one
 application (`assets/images/class-board/`, credited in NOTICE). The server must reach
 `commons.wikimedia.org` and `thumb.wikimedia.org` over HTTPS; classroom browsers never call Wikimedia,
 they read the copy from the CDN.
+
+## Installing the serious games (after a deploy that adds one)
+
+The serious games (design/validated/serious-games.md) are data: `config/serious_games/{slug}/game.yaml`
+describes a game, `templates/*.json` its question templates, and `public/serious-games/{slug}/` its
+static package. After a deploy that adds a game or a template, run once:
+
+```console
+docker compose -f compose.yaml -f compose.prod.yaml exec php bin/console app:serious-games:sync
+```
+
+It creates or updates the game - **unpublished**, its answer kinds set on creation only - and
+installs every template the database does not hold yet as version 1, validated, « livré avec le
+jeu », after a bench of 200 seeds per template (a red bench refuses the template and the command
+exits non-zero). It never overwrites a version written in the database; `--refresh` rewrites a
+shipped version only while it is still current and has served no question.
+
+Then an administrator publishes the game in Paramètres › Serious games, lights the module
+(`serious_games`) and the game's line for the roles wanted in Paramètres › Fonctionnalités, and
+gives the students the address `/serious-games` - there is no link in their menus, by decision.
+
+`app:serious-games:bench observatoire` (1000 seeds, `--unit=`, `--files` to read the repository,
+`--save` to store the reports) is a diagnostic, never scheduled.
 
 ## Opening the Claude connector
 

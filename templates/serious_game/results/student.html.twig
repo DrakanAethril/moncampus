@@ -2,6 +2,11 @@
 
 {% block title %}{{ player.displayName ?? player.username }}{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="/serious-games/shared/fonts.css">
+{% endblock %}
+
 {% block page_breadcrumb %}
     {{ component('Cm:Breadcrumb', {segments: [
         {label: 'seriousGameResultsHeading'|trans, url: path('app_serious_games_results')},
@@ -12,5 +17,32 @@
 {% block page_title %}{{ player.displayName ?? player.username }}{% endblock %}
 
 {% block main %}
-    <div class="card"><div class="card-body"></div></div>
+    {% include 'serious_game/_player.html.twig' %}
+
+    {% for detail in details %}
+        {% if detail.answers is not empty %}
+            <div class="cm-sg-results__columns">
+                <section class="card">
+                    {{ component('Cm:Subhead', {title: 'seriousGameStudentErrorsHeading'|trans({'%game%': detail.game.title}), hint: 'seriousGameDontKnowHint'|trans({'%answers%': detail.errors.dontKnow, '%students%': detail.errors.dontKnowStudents})}) }}
+                    {% include 'serious_game/results/_errors.html.twig' with {errors: detail.errors.rows} %}
+                </section>
+                <section class="card">
+                    {{ component('Cm:Subhead', {title: 'seriousGameStudentAnswersHeading'|trans}) }}
+                    <ul class="cm-sg-answers">
+                        {% for row in detail.answers %}
+                            {% set answer = row.answer %}
+                            <li>
+                                <span class="cm-sg-history__date">{{ answer.answeredAt|date('d/m') }}</span>
+                                <span>{{ row.unitName }}</span>
+                                {% if answer.ok %}<twig:Cm:Badge tone="green">{{ 'seriousGameAnswerRight'|trans }}</twig:Cm:Badge>
+                                {% elseif answer.dontKnow %}<twig:Cm:Badge tone="gray">{{ 'seriousGameDontKnowLabel'|trans }}</twig:Cm:Badge>
+                                {% else %}<twig:Cm:Badge tone="red">{{ row.misconceptionLabel ?? 'seriousGameAnswerWrong'|trans }}</twig:Cm:Badge>{% endif %}
+                                <a href="{{ path('app_serious_games_results_replay', {user: player.id, answer: answer.id}) }}">{{ 'seriousGameReplayAction'|trans }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            </div>
+        {% endif %}
+    {% endfor %}
 {% endblock %}

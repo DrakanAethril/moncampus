@@ -11,5 +11,61 @@
 {% block page_title %}{{ 'seriousGameResultsHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <div class="card"><div class="card-body"></div></div>
+    <div class="cm-sg-results">
+        {% if classes is not empty or is_granted('ROLE_TEACHER') %}
+            <section class="card">
+                {{ component('Cm:Subhead', {title: (is_granted('ROLE_ADMIN') ? 'seriousGameResultsAllClasses' : 'seriousGameResultsMyClasses')|trans, hint: 'seriousGameResultsClassesHint'|trans}) }}
+                {% if classes is empty %}
+                    <div class="card-body"><p class="text-secondary mb-0">{{ 'seriousGameResultsNoClass'|trans }}</p></div>
+                {% else %}
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table">
+                            <thead><tr><th>{{ 'seriousGameResultsClassColumn'|trans }}</th><th>{{ 'seriousGameResultsStudentsColumn'|trans }}</th>{% for game in games %}<th>{{ game.title }}</th>{% endfor %}</tr></thead>
+                            <tbody>
+                                {% for program in classes %}
+                                    <tr>
+                                        <td><strong>{{ program.shortName }}</strong> <span class="text-secondary small">{{ program.name }}</span></td>
+                                        <td>{{ program.students|length }}</td>
+                                        {% for game in games %}
+                                            <td><a href="{{ path('app_serious_games_results_class', {program: program.id, slug: game.slug}) }}">{{ 'seriousGameResultsOpenClass'|trans }}</a></td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        {% for block in aggregates %}
+            <section class="card">
+                {{ component('Cm:Subhead', {title: 'seriousGameResultsAggregatesHeading'|trans({'%game%': block.game.title}), hint: 'seriousGameResultsAggregatesHint'|trans}) }}
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead><tr>
+                            <th>{{ 'seriousGameResultsClassColumn'|trans }}</th>
+                            <th>{{ 'seriousGameResultsStudentsColumn'|trans }}</th>
+                            <th>{{ 'seriousGameResultsPlayersColumn'|trans }}</th>
+                            <th>{{ 'seriousGameResultsMedianColumn'|trans({'%unit%': block.game.unitLabel}) }}</th>
+                            <th>{{ 'seriousGameResultsWeekColumn'|trans }}</th>
+                            <th>{{ 'seriousGameResultsFinalsColumn'|trans }}</th>
+                        </tr></thead>
+                        <tbody>
+                            {% for row in block.rows %}
+                                <tr>
+                                    <td>{{ row.program.shortName }}</td>
+                                    <td>{{ row.students }}</td>
+                                    <td>{{ row.players }}</td>
+                                    <td>{{ row.medianLit }} / {{ block.game.unitsTotal }}</td>
+                                    <td>{{ row.seriesThisWeek }}</td>
+                                    <td>{{ row.finals }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endfor %}
+    </div>
 {% endblock %}
