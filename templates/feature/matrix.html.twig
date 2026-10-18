@@ -84,5 +84,57 @@
                 </div>
             </div>
         {% endfor %}
+
+        {# The « Serious games » block (design/validated/serious-games.md §3.1): one line per
+           published game, each lit per role beside the module's own line above (Pédagogie ›
+           « Serious games »). A game is playable for a role only when both are ticked. #}
+        {% if seriousGames is not empty %}
+            <div class="cm-featmatrix">
+                <h2 class="cm-featmatrix__family">{{ 'seriousGameMatrixFamilyLabel'|trans }}</h2>
+                {% for row in seriousGames %}
+                    <form method="post" action="{{ path('app_features_serious_game_save', {slug: row.game.slug}) }}" id="serious-game-form-{{ row.game.slug }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('serious-game-matrix-' ~ row.game.slug) }}">
+                    </form>
+                {% endfor %}
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table cm-featmatrix__table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'seriousGameMatrixColumnLabel'|trans }}</th>
+                                {% for role in roles %}
+                                    <th class="cm-featmatrix__role">{{ role|replace({'ROLE_': ''}) }}</th>
+                                {% endfor %}
+                                <th class="cm-featmatrix__overrides"></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in seriousGames %}
+                                <tr id="serious-game-{{ row.game.slug }}">
+                                    <td>
+                                        <div>{{ row.game.title }}</div>
+                                        <div class="cm-featmatrix__key">{{ row.game.slug }}</div>
+                                        <div class="cm-featmatrix__note">{{ 'seriousGameMatrixNote'|trans({'%module%': 'featureSeriousGamesLabel'|trans}) }}</div>
+                                    </td>
+                                    {% for role in roles %}
+                                        <td class="cm-featmatrix__cell">
+                                            <input class="form-check-input" type="checkbox"
+                                                   form="serious-game-form-{{ row.game.slug }}"
+                                                   name="roles[{{ role }}]" value="1"
+                                                   {{ row.cells[role] ? 'checked' }}
+                                                   aria-label="{{ row.game.title }} — {{ role }}">
+                                        </td>
+                                    {% endfor %}
+                                    <td class="cm-featmatrix__overrides"><span class="text-secondary">—</span></td>
+                                    <td class="cm-actions">
+                                        <button type="submit" form="serious-game-form-{{ row.game.slug }}" class="cm-action--positive">{{ 'submitSaveAction'|trans }}</button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'seriousGamesNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'seriousGamesNavLabel'|trans, url: path('app_serious_games')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'seriousGamesNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {% for game in games %}
+                <p><a href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ game.title }}</a></p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
