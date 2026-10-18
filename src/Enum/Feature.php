@@ -56,6 +56,7 @@ enum Feature: string
     case Portfolio = 'portfolio';
     case OnlineCourses = 'online_courses';
     case LearningPaths = 'learning_paths';
+    case SeriousGames = 'serious_games';
 
     // --- Scolarité ---------------------------------------------------------------------------
 
@@ -141,7 +142,7 @@ enum Feature: string
             self::Video, self::Audio, self::FileLibrary, self::SharedDocuments,
             self::ContentSharing, self::Wiki, self::Documentation, self::Surveys,
             self::ClassTools, self::WordCloud, self::Walls, self::TsfReferential, self::Game,
-            self::Dossiers, self::Portfolio, self::OnlineCourses, self::LearningPaths => FeatureFamily::Pedagogy,
+            self::Dossiers, self::Portfolio, self::OnlineCourses, self::LearningPaths, self::SeriousGames => FeatureFamily::Pedagogy,
 
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
@@ -220,6 +221,7 @@ enum Feature: string
             self::Portfolio => 'featurePortfolioLabel',
             self::OnlineCourses => 'featureOnlineCoursesLabel',
             self::LearningPaths => 'featureLearningPathsLabel',
+            self::SeriousGames => 'featureSeriousGamesLabel',
             self::Timetable => 'featureTimetableLabel',
             self::TimetableSettings => 'featureTimetableSettingsLabel',
             self::EvaluationPlanning => 'featureEvaluationPlanningLabel',
@@ -401,6 +403,10 @@ enum Feature: string
             // **and** teacher - the intervenant's own screens (the home banner, « Mes dossiers
             // administratifs ») sit behind the same switch as the administration's, so a dossier
             // published while ROLE_TEACHER is unlit is one its holder cannot see yet.
+
+            // The serious games (design/validated/serious-games.md §3.1) are named by no role either:
+            // the module is lit here, and each game is lit beside it, per role, in the « Serious
+            // games » block of the same screen (SeriousGameRoleSetting). Both have to be on.
 
             // The ECF booklet (design/validated/ecf-booklet.md) is read by the administration on the
             // alternance follow-up and written by administrators alone - App\Security\Voter\EcfBookletVoter

@@ -1,0 +1,15 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'seriousGameResultsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'seriousGameResultsHeading'|trans, url: path('app_serious_games_results')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'seriousGameResultsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card"><div class="card-body"></div></div>
+{% endblock %}

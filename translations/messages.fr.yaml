@@ -11475,3 +11475,22 @@ platformEmailVariableSender: "Le nom de l'expéditeur"
 platformEmailVariableSubject: "L'objet du message"
 platformEmailVariableBody: 'Le texte du message'
 platformEmailVariableSignature: "La signature de l'expéditeur, s'il en a une"
+# Serious games (design/validated/serious-games.md)
+featureSeriousGamesLabel: 'Serious games'
+seriousGamesNavLabel: 'Serious games'
+seriousGameMatrixFamilyLabel: 'Serious games'
+seriousGameMatrixColumnLabel: 'Jeu'
+seriousGameMatrixNote: "Jouable pour un profil quand « %module% » et cette ligne sont cochés tous les deux."
+seriousGameAvatarHeading: 'Mon avatar'
+seriousGamePlayerPageHeading: 'Ma page joueur'
+seriousGameResultsHeading: 'Résultats des serious games'
+seriousGameTemplateStatusDraft: 'Brouillon'
+seriousGameTemplateStatusValidated: 'Validé'
+seriousGameTemplateStatusSuperseded: 'Remplacé'
+seriousGameBrightnessDiscrete: 'Discrète'
+seriousGameBrightnessClear: 'Nette'
+seriousGameBrightnessBright: 'Brillante'
+seriousGameBrightnessBlazing: 'Éclatante'
+seriousGameFinishBrass: 'Laiton'
+seriousGameFinishSilver: 'Argent'
+seriousGameFinishGold: 'Or'

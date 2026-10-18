@@ -1,0 +1,16 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'seriousGamesNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
+        {label: 'seriousGamesNavLabel'|trans, url: path('app_settings_serious_games')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'seriousGamesNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card"><div class="card-body"></div></div>
+{% endblock %}

@@ -17,7 +17,8 @@
     or (is_pure_student and (current_route starts with 'app_company_search' or current_route starts with 'app_enterprise_pool'))
     or (is_pure_student and current_route starts with 'app_program_quiz_')
     or (is_pure_student and current_route starts with 'app_wall')
-    or current_route starts with 'app_wall_students' or app.request.attributes.get('wall_supervised') %}
+    or current_route starts with 'app_wall_students' or app.request.attributes.get('wall_supervised')
+    or (not is_pure_student and current_route in ['app_serious_games', 'app_serious_games_avatar', 'app_serious_games_me', 'app_serious_games_play']) %}
 {# Each entry's condition is read once into a variable, and the same variables decide both whether
    the entry renders and whether the dropdown renders at all. Written the other way round - a
    summary boolean beside the conditions it summarises - the two drift the first time an entry is
@@ -47,6 +48,10 @@
    too, which is where a correction is read back. #}
 {% set resources_quiz_programs = is_pure_student ? student_nav_quiz_programs() : [] %}
 {% set resources_documentation = feature('documentation') %}
+{# « Serious games » for the adults a game is lit for (design/validated/serious-games.md §3.3):
+   **never for a pure student**, who opens the address /serious-games the establishment hands out -
+   the access rule is the same, only the link is absent (§1.12). #}
+{% set resources_serious_games = not is_pure_student and feature('serious_games') and serious_games_playable() %}
 {% set resources_apps = is_granted('ROLE_ADMIN') %}
 {# « Jobboard », student-only here: every other profile reads it from Outils >
    « Au-delà d'un diplôme ». Two doors rather than one because they are two different gestures - a
@@ -65,7 +70,7 @@
 {% set resources_dossiers = is_granted('ROLE_STUDENT') and not is_staff() and feature('dossiers') and has_dossiers(app.user) %}
 {% if resources_shared_documents or resources_dossiers or resources_my_vms or resources_school_mail or resources_job_applications
     or resources_wiki or resources_walls or resources_student_walls or resources_course_space or resources_quiz_programs is not empty or resources_documentation or resources_apps
-    or resources_jobboard or resources_company_search %}
+    or resources_jobboard or resources_company_search or resources_serious_games %}
 <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
     <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
         <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
@@ -151,6 +156,9 @@
         {% endif %}
         {% if resources_documentation %}
             <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>
+        {% endif %}
+        {% if resources_serious_games %}
+            <a class="dropdown-item {{ current_route in ['app_serious_games', 'app_serious_games_avatar', 'app_serious_games_me', 'app_serious_games_play'] ? 'active' }}" href="{{ path('app_serious_games') }}">{{ 'seriousGamesNavLabel'|trans }}</a>
         {% endif %}
         {# The two app-download entries keep the ROLE_ADMIN gate they were given by explicit product
            request. #}
