@@ -1,0 +1,13 @@
+Vendored web fonts of the serious games
+=======================================
+
+The .woff2 files in this directory are the `latin` and `latin-ext` subsets of two families, as
+served by Google Fonts and copied here so that no pupil's browser asks a third party for them:
+
+- Cormorant Garamond (Christian Thalmann, Catharsis Fonts) - a variable font: one file covers the
+  weights 500 and 600 of each style.
+- IBM Plex Mono (IBM Corp.) - weights 400, 500 and 600.
+
+Both are licensed under the SIL Open Font License, Version 1.1 (https://openfontlicense.org).
+The OFL is permissive and imposes nothing on the AGPL licensing of the application; the fonts must
+not be sold on their own and keep their reserved font names.

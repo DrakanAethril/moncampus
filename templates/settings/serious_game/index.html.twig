@@ -2,15 +2,72 @@
 
 {% block title %}{{ 'seriousGamesNavLabel'|trans }}{% endblock %}
 
-{% block page_breadcrumb %}
-    {{ component('Cm:Breadcrumb', {segments: [
-        {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
-        {label: 'seriousGamesNavLabel'|trans, url: path('app_settings_serious_games')},
-    ]}) }}
-{% endblock %}
+{% block page_breadcrumb %}{% include 'settings/serious_game/_breadcrumb.html.twig' %}{% endblock %}
 
 {% block page_title %}{{ 'seriousGamesNavLabel'|trans }}{% endblock %}
 
 {% block main %}
-    <div class="card"><div class="card-body"></div></div>
+    <div class="card">
+        <div class="cm-card-note">{{ 'seriousGameSettingsHelp'|trans({'%matrix%': 'featureMatrixPageHeading'|trans}) }}</div>
+        {% if rows is empty %}
+            <div class="card-body"><p class="text-secondary mb-0">{{ 'seriousGameSettingsNoGame'|trans }}</p></div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'seriousGameMatrixColumnLabel'|trans }}</th>
+                            <th>{{ 'seriousGameSettingsTagsColumn'|trans }}</th>
+                            <th>{{ 'seriousGameSettingsVersionColumn'|trans }}</th>
+                            <th>{{ 'seriousGameSettingsKindsColumn'|trans }}</th>
+                            <th>{{ 'seriousGameSettingsTemplatesColumn'|trans }}</th>
+                            <th>{{ 'seriousGameSettingsPublishedColumn'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            {% set game = row.game %}
+                            <tr>
+                                <td>
+                                    <a href="{{ path('app_settings_serious_games_game', {slug: game.slug}) }}"><strong>{{ game.title }}</strong></a>
+                                    <div class="text-secondary small">{{ game.slug }}</div>
+                                </td>
+                                <td>{{ game.subjects|join(', ') }} · {{ game.levels|join(', ') }}</td>
+                                <td>{{ game.version }}</td>
+                                <td>
+                                    <form method="post" action="{{ path('app_settings_serious_games_kinds', {slug: game.slug}) }}" class="cm-sg-kinds">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('serious-game-kinds-' ~ game.slug) }}">
+                                        {% for kind, label in kinds %}
+                                            <label class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="kinds[{{ kind }}]" value="1" {{ game.acceptsAnswerKind(kind) ? 'checked' }}>
+                                                <span class="form-check-label">{{ label|trans }}</span>
+                                            </label>
+                                        {% endfor %}
+                                        <button type="submit" class="cm-action--positive">{{ 'submitSaveAction'|trans }}</button>
+                                    </form>
+                                </td>
+                                <td>
+                                    <a href="{{ path('app_settings_serious_games_game', {slug: game.slug}) }}">{{ 'seriousGameSettingsTemplatesCount'|trans({'%installed%': row.installed, '%units%': row.units}) }}</a>
+                                    {% if row.hidden > 0 %}<div><twig:Cm:Badge tone="gold">{{ 'seriousGameSettingsHiddenUnits'|trans({'%count%': row.hidden}) }}</twig:Cm:Badge></div>{% endif %}
+                                </td>
+                                <td>
+                                    <form method="post" action="{{ path('app_settings_serious_games_publish', {slug: game.slug}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('serious-game-publish-' ~ game.slug) }}">
+                                        <input type="hidden" name="published" value="{{ game.published ? '0' : '1' }}">
+                                        {% if game.published %}
+                                            <twig:Cm:Badge tone="green">{{ 'seriousGamePublishedLabel'|trans }}</twig:Cm:Badge>
+                                            <button type="submit" class="cm-action--neutral">{{ 'seriousGameUnpublishAction'|trans }}</button>
+                                        {% else %}
+                                            <twig:Cm:Badge tone="gray">{{ 'seriousGameUnpublishedLabel'|trans }}</twig:Cm:Badge>
+                                            <button type="submit" class="cm-action--positive">{{ 'seriousGamePublishAction'|trans }}</button>
+                                        {% endif %}
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
 {% endblock %}

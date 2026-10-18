@@ -88,6 +88,16 @@
 	redir /campus-app /campus-app/ 308
 	rewrite /campus-app/ /campus-app/index.html
 
+	# The serious games' static packages (public/serious-games/{slug}/, design/validated/serious-games.md
+	# §6.1) and their shared modules: played in a sandboxed frame of /serious-games/play/{slug}, they
+	# keep their file names across versions, so every fetch revalidates. The game folder is a
+	# directory, not a `file` to @phpRoute below - without the rewrite it would reach Symfony, whose
+	# /serious-games/… routes are the module's screens.
+	@seriousGameFiles path /serious-games/shared/* /serious-games/observatoire/*
+	header @seriousGameFiles ?Cache-Control "no-cache"
+	redir /serious-games/observatoire /serious-games/observatoire/ 308
+	rewrite /serious-games/observatoire/ /serious-games/observatoire/index.html
+
 	# The Claude connector's upload addresses (App\Controller\McpUploadController) take one file as
 	# a raw PUT body, sent with `curl --data-binary` - which labels it
 	# application/x-www-form-urlencoded unless told otherwise. Symfony's Request::createFromGlobals()

@@ -1,0 +1,70 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ game.title }}{% endblock %}
+
+{% block page_breadcrumb %}{% include 'settings/serious_game/_breadcrumb.html.twig' with {extra: [{label: game.title, url: path('app_settings_serious_games_game', {slug: game.slug})}]} %}{% endblock %}
+
+{% block page_title %}{{ game.title }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="cm-card-note">{{ 'seriousGameTemplatesHelp'|trans }}</div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table cm-sg-templates">
+                <thead>
+                    <tr>
+                        <th>{{ 'seriousGameUnitColumn'|trans }}</th>
+                        <th>{{ 'seriousGameCurrentVersionColumn'|trans }}</th>
+                        <th>{{ 'seriousGameBenchColumn'|trans }}</th>
+                        <th>{{ 'seriousGameDraftsColumn'|trans }}</th>
+                        <th>{{ 'seriousGameHealthColumn'|trans }}</th>
+                    </tr>
+                </thead>
+                {% for block in chapters %}
+                    <tbody>
+                        <tr class="cm-sg-templates__chapter"><th colspan="5">{{ block.chapter.label }} <span class="text-secondary">· {{ block.chapter.topic }}</span></th></tr>
+                        {% for row in block.units %}
+                            {% set current = row.current %}
+                            <tr>
+                                <td>
+                                    <strong>{{ row.unit.label }}</strong>
+                                    <div class="text-secondary small">{{ row.unit.code }}</div>
+                                    {% if row.hidden %}<twig:Cm:Badge tone="gold">{{ 'seriousGameUnitUnavailable'|trans }}</twig:Cm:Badge>{% endif %}
+                                </td>
+                                <td>
+                                    {% if current %}
+                                        <a href="{{ path('app_settings_serious_games_template', {slug: game.slug, unit: row.unit.code, version: current.version}) }}">v{{ current.version }}</a>
+                                        <twig:Cm:Badge :of="current.status"/>
+                                        <div class="text-secondary small">{{ current.shippedWithTheGame ? 'seriousGameShippedLabel'|trans : (current.author ? current.author.displayName ?? current.author.username : '') }}</div>
+                                    {% else %}
+                                        <twig:Cm:Badge tone="red">{{ 'seriousGameNoTemplate'|trans }}</twig:Cm:Badge>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if current and current.benchReport %}
+                                        {% if current.benchGreen %}<twig:Cm:Badge tone="green">{{ 'seriousGameBenchGreen'|trans }}</twig:Cm:Badge>{% else %}<twig:Cm:Badge tone="red">{{ 'seriousGameBenchRed'|trans }}</twig:Cm:Badge>{% endif %}
+                                        <div class="text-secondary small">{{ current.benchReport.ranAt|date('d/m/Y H:i') }}</div>
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td>
+                                    {% for draft in row.drafts %}
+                                        <a href="{{ path('app_settings_serious_games_template', {slug: game.slug, unit: row.unit.code, version: draft.version}) }}">v{{ draft.version }}</a>
+                                        {% if draft.benchGreen %}<twig:Cm:Badge tone="green">{{ 'seriousGameBenchGreen'|trans }}</twig:Cm:Badge>{% else %}<twig:Cm:Badge tone="red">{{ 'seriousGameBenchRed'|trans }}</twig:Cm:Badge>{% endif %}
+                                    {% else %}—{% endfor %}
+                                </td>
+                                <td>
+                                    {% set unitHealth = health[row.unit.code]|default({}) %}
+                                    {% for version, h in unitHealth %}
+                                        <div class="small">v{{ version }} · {{ h.rate is null ? '—' : (h.rate * 100)|round ~ ' %' }} <span class="text-secondary">({{ 'seriousGameHealthAnswers'|trans({'%count%': h.answered}) }})</span>
+                                            {% if h.flag %}<twig:Cm:Badge tone="red">{{ h.flag|trans }}</twig:Cm:Badge>{% endif %}
+                                        </div>
+                                    {% else %}<span class="text-secondary">{{ 'seriousGameHealthNone'|trans }}</span>{% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+{% endblock %}
