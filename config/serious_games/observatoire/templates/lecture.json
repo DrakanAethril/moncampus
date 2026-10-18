@@ -1,0 +1,36 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "lecture",
+  "label": "Lecture graphique",
+  "misconceptions": [
+    { "id": "lect-shift", "label": "Lire une graduation à côté" },
+    { "id": "lect-axis", "label": "Confondre image et antécédent" },
+    { "id": "lect-sign", "label": "Erreur de signe à la lecture" }
+  ],
+  "difficulty": 1,
+  "params": { "pts": "walk(-5, 5, -3, 4, 2)", "k": "int(-3, 3)" },
+  "let": {
+    "y": "pts[k + 5][1]",
+    "yl": "pts[k + 4][1]",
+    "yr": "pts[k + 6][1]",
+    "ante": "map(filter(pts, 'item[1] == k and item[0] != k'), 'item[0]')",
+    "named": "(yl != y ? 1 : 0) + (yr != y and yr != yl ? 1 : 0) + (count(ante) > 0 and ante[0] != y ? 1 : 0) + (y != 0 ? 1 : 0)"
+  },
+  "prompt": "Voici la courbe représentative d’une fonction <i>f</i>. Lire <i>f</i>({{ k }}).",
+  "figure": {
+    "type": "grid", "x": [-5, 5], "y": [-4, 5],
+    "items": [
+      { "draw": "curve", "points": "pts" },
+      { "draw": "label", "x": 4.3, "y": "pts[10][1] + 0.5", "text": "'𝒞'", "sub": "'f'" }
+    ]
+  },
+  "answer": { "type": "number", "value": "y" },
+  "wrongs": [
+    { "misconception": "lect-shift", "value": "yl", "when": "yl != y" },
+    { "misconception": "lect-shift", "value": "yr", "when": "yr != y and yr != yl" },
+    { "misconception": "lect-axis", "value": "count(ante) > 0 ? ante[0] : null", "when": "count(ante) > 0 and ante[0] != y" },
+    { "misconception": "lect-sign", "value": "-y", "when": "y != 0" },
+    { "misconception": "lect-shift", "value": "y + (y > 0 ? -1 : 1) * 2", "when": "named < 3" }
+  ],
+  "method": "On part de {{ k }} sur l’axe des abscisses, on monte (ou descend) jusqu’à la courbe, puis on lit l’ordonnée : <i>f</i>({{ k }}) = {{ y }}."
+}

@@ -1,0 +1,24 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "eq1",
+  "label": "Équation du 1er degré",
+  "misconceptions": [
+    { "id": "eq-move-sign", "label": "Changer un terme en x de membre sans changer son signe" },
+    { "id": "eq-const-sign", "label": "Changer une constante de membre sans changer son signe" },
+    { "id": "eq-divide-inverse", "label": "Diviser à l’envers" },
+    { "id": "eq-subtract", "label": "Soustraire le coefficient au lieu de diviser" }
+  ],
+  "params": { "s": "int(-6, 6)", "a": "nonZero(-5, 7)", "c": "int(-4, 5)", "b": "int(-9, 9)" },
+  "let": { "d": "(a - c) * s + b", "A": "a - c", "D": "d - b" },
+  "constraints": ["c != a", "abs(d) <= 30"],
+  "difficulty": "c == 0 ? 1 : 2",
+  "prompt": "Résoudre l’équation {{ lin(a, b) }} = {{ c == 0 ? fmt(d) : lin(c, d) }}. <i>x</i> = ?",
+  "answer": { "type": "number", "value": "s", "display": "fmt(s)" },
+  "wrongs": [
+    { "misconception": "eq-move-sign", "value": "D / (a + c)", "display": "num(D, a + c)", "when": "a + c != 0" },
+    { "misconception": "eq-const-sign", "value": "(d + b) / A", "display": "num(d + b, A)" },
+    { "misconception": "eq-divide-inverse", "value": "A / D", "display": "num(A, D)", "when": "D != 0" },
+    { "misconception": "eq-subtract", "value": "D - A", "display": "fmt(D - A)" }
+  ],
+  "method": "On regroupe les x d’un côté, les nombres de l’autre : {{ poly([A, 0]) }} = {{ fmt(D) }}, donc <i>x</i> = {{ fracRaw(fmt(D), fmt(A)) }} = {{ fmt(s) }}."
+}

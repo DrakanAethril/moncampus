@@ -1,0 +1,42 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "variations",
+  "label": "Sens de variation",
+  "misconceptions": [
+    { "id": "var-axis", "label": "Lire l’intervalle sur l’axe des ordonnées" },
+    { "id": "var-confuse", "label": "Confondre croissante et décroissante" },
+    { "id": "var-partial", "label": "Ne garder qu’une partie de l’intervalle" }
+  ],
+  "difficulty": 1,
+  "params": {
+    "x1": "int(-3, -1)",
+    "x2": "int(0, 2)",
+    "up": "chance(0.5)",
+    "y0": "up ? int(-3, 0) : int(2, 4)",
+    "y1": "up ? int(2, 4) : int(-3, 0)",
+    "y2": "up ? int(-3, 0) : int(2, 4)",
+    "y3": "up ? int(2, 4) : int(-3, 0)"
+  },
+  "let": {
+    "pts": "[[-5, y0], [x1, y1], [x2, y2], [5, y3]]",
+    "askUp": "not up",
+    "yLo": "min(y1, y2)",
+    "yHi": "max(y1, y2)"
+  },
+  "prompt": "Sur quel intervalle la fonction <i>f</i> représentée est-elle {{ askUp ? 'croissante' : 'décroissante' }} ? (par exemple [−2 ; 1])",
+  "figure": {
+    "type": "grid", "x": [-5, 5], "y": [-4, 5],
+    "items": [
+      { "draw": "smooth", "points": "pts" },
+      { "draw": "label", "x": 4.2, "y": "y3 + 0.6", "text": "'𝒞'", "sub": "'f'" }
+    ]
+  },
+  "answer": { "type": "interval", "value": "iv(x1, x2, true, true)", "anyClosure": true },
+  "wrongs": [
+    { "misconception": "var-axis", "value": "iv(yLo, yHi, true, true)" },
+    { "misconception": "var-confuse", "value": "iv(-5, x1, true, true)" },
+    { "misconception": "var-confuse", "value": "iv(x2, 5, true, true)" },
+    { "misconception": "var-partial", "value": "iv(x1 + 1, x2, true, true)", "when": "x2 - x1 >= 2" }
+  ],
+  "method": "On suit la courbe de gauche à droite : elle {{ askUp ? 'monte' : 'descend' }} entre <i>x</i> = {{ x1 }} et <i>x</i> = {{ x2 }}. Un intervalle de variation se lit toujours sur l’axe des abscisses."
+}

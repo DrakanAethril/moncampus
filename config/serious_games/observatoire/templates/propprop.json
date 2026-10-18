@@ -1,0 +1,28 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "propprop",
+  "label": "Proportion de proportion",
+  "misconceptions": [
+    { "id": "pp-add", "label": "Additionner les proportions" },
+    { "id": "pp-sub", "label": "Soustraire les proportions" },
+    { "id": "pp-no-100", "label": "Oublier de diviser par 100" },
+    { "id": "pp-second", "label": "Ne garder que la seconde proportion" }
+  ],
+  "params": {
+    "p1": "pick([20, 25, 30, 40, 50, 60, 75, 80])",
+    "p2": "pick([10, 20, 25, 30, 40, 50, 60, 75])",
+    "cx": "pick([['des élèves pratiquent un sport', 'font de la natation', 'des élèves font de la natation'], ['des abonnés lisent le journal en ligne', 'le lisent sur téléphone', 'des abonnés lisent sur téléphone'], ['des clients paient par carte', 'paient sans contact', 'des clients paient sans contact'], ['des candidats sont admis', 'le sont avec mention', 'des candidats ont une mention']])"
+  },
+  "let": { "res": "p1 * p2 / 100" },
+  "constraints": ["isInt(res * 2)"],
+  "difficulty": 2,
+  "prompt": "{{ p1 }} % {{ cx[0] }} ; parmi eux, {{ p2 }} % {{ cx[1] }}. Quelle proportion {{ cx[2] }} ?",
+  "answer": { "type": "number", "value": "res", "display": "pct(res)", "unit": "%" },
+  "wrongs": [
+    { "misconception": "pp-add", "value": "p1 + p2", "display": "pct(p1 + p2)" },
+    { "misconception": "pp-sub", "value": "abs(p1 - p2)", "display": "pct(abs(p1 - p2))" },
+    { "misconception": "pp-no-100", "value": "p1 * p2", "display": "pct(p1 * p2)" },
+    { "misconception": "pp-second", "value": "p2", "display": "pct(p2)" }
+  ],
+  "method": "Une proportion de proportion se multiplie : {{ p1 / 100 }} × {{ p2 / 100 }} = {{ res / 100 }}, soit {{ pct(res) }} de l’ensemble."
+}

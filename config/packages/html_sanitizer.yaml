@@ -30,6 +30,30 @@ framework:
             # apply as inline text-align/margin, not the legacy align attribute), and
             # table/col/td/th for the table plugin's own width/border/cell-background styling.
             # Anything else (script, event handler attributes, ...) is still dropped by default.
+            # The statements, methods and answers of the serious games' questions
+            # (design/validated/serious-games.md §5.2): what App\SeriousGame\Math\MathFormat writes
+            # and nothing more - stacked fractions (span.fr), exponents, indices, italics, the small
+            # tables of a statistics question. The figures are SVG drawn by the server from numbers,
+            # never from text, and do not pass here.
+            app.serious_game_statement:
+                max_input_length: -1
+                allow_elements:
+                    span: [class]
+                    sup: []
+                    sub: []
+                    i: []
+                    b: []
+                    em: []
+                    strong: []
+                    br: []
+                    table: [class]
+                    # The HTML5 parser inserts a <tbody> of its own: without it, every row of a
+                    # statistics table was dropped with it, and the statement lost its data.
+                    tbody: []
+                    tr: []
+                    th: []
+                    td: []
+
             app.message_body:
                 allow_safe_elements: true
                 max_input_length: -1

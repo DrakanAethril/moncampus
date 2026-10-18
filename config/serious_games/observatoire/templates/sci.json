@@ -1,0 +1,77 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "sci",
+  "label": "Écriture scientifique",
+  "misconceptions": [
+    { "id": "sci-sign", "label": "Signe de l'exposant inversé" },
+    { "id": "sci-off-by-one", "label": "Décalage d'un rang en comptant les chiffres" },
+    { "id": "sci-mantissa", "label": "Mantisse hors de [1 ; 10[" },
+    { "id": "sci-mul-exp", "label": "Multiplier les exposants" },
+    { "id": "sci-add-mant", "label": "Additionner les mantisses" },
+    { "id": "sci-sub-exp", "label": "Soustraire les exposants" }
+  ],
+  "variants": [
+    {
+      "label": "Décimal vers scientifique",
+      "params": {
+        "dd": "pick([1.2, 2.5, 3.2, 4.5, 6.4, 7.5, 8.1, 9.3, 1.8, 2.7, 5.6])",
+        "k": "pick([-6, -5, -4, -3, -2, 3, 4, 5, 6])"
+      },
+      "let": { "val": "round(dd * 10 ** k, 12)", "dec": "fmt(val)" },
+      "difficulty": "k < 0 ? 2 : 1",
+      "prompt": "Écrire {{ dec }} en notation scientifique. Écrire a × 10^n, avec 1 ≤ a &lt; 10.",
+      "answer": { "type": "scientific", "value": "sciNumber(dd, k)", "display": "sci(dd, k)", "text": "sciText(dd, k)", "shapeMisconception": "sci-mantissa" },
+      "wrongs": [
+        { "misconception": "sci-sign", "value": "sciNumber(dd, -k)", "display": "sci(dd, -k)", "text": "sciText(dd, -k)" },
+        { "misconception": "sci-off-by-one", "value": "sciNumber(dd, k - 1)", "display": "sci(dd, k - 1)", "text": "sciText(dd, k - 1)" },
+        { "misconception": "sci-mantissa", "value": "sciNumber(round(dd * 10, 6), k - 1)", "display": "sci(round(dd * 10, 6), k - 1)", "text": "sciText(round(dd * 10, 6), k - 1)" }
+      ],
+      "method": "Notation scientifique : a × 10<sup>n</sup> avec 1 ≤ a &lt; 10. Ici a = {{ dd }} et la virgule s’est déplacée de {{ abs(k) }} rangs {{ k < 0 ? 'vers la droite, donc n = ' ~ fmt(k) : 'vers la gauche, donc n = ' ~ k }}."
+    },
+    {
+      "label": "Scientifique vers décimal",
+      "params": {
+        "dd": "pick([1.2, 2.5, 3.2, 4.5, 6.4, 7.5, 8.1, 9.3, 1.8, 2.7, 5.6])",
+        "k": "pick([-6, -5, -4, -3, -2, 3, 4, 5, 6])"
+      },
+      "let": {
+        "val": "round(dd * 10 ** k, 12)",
+        "dec": "fmt(val)",
+        "v1": "round(dd * 10 ** (k + 1), 12)",
+        "v2": "round(dd * 10 ** (k - 1), 12)",
+        "v3": "round(dd * 10 ** (-k), 12)"
+      },
+      "difficulty": 1,
+      "prompt": "Écrire {{ sci(dd, k) }} en écriture décimale.",
+      "answer": { "type": "number", "value": "val", "display": "dec", "text": "dec", "tolerance": "abs(val) / 1000000000" },
+      "wrongs": [
+        { "misconception": "sci-off-by-one", "value": "v1", "display": "fmt(v1)" },
+        { "misconception": "sci-off-by-one", "value": "v2", "display": "fmt(v2)" },
+        { "misconception": "sci-sign", "value": "v3", "display": "fmt(v3)" }
+      ],
+      "method": "Multiplier par {{ pow('10', k) }}, c’est déplacer la virgule de {{ abs(k) }} rangs vers la {{ k < 0 ? 'gauche' : 'droite' }} : {{ dd }} devient {{ dec }}."
+    },
+    {
+      "label": "Produit",
+      "params": {
+        "pair": "pick([[2, 3], [2, 4], [1.5, 4], [2.5, 3], [1.2, 5], [3, 3], [2, 2.5], [1.5, 6], [4, 2]])",
+        "m": "nonZero(-6, 7)",
+        "n0": "nonZero(-6, 7)"
+      },
+      "let": {
+        "p": "round(pair[0] * pair[1], 6)",
+        "n": "m * n0 == m + n0 ? (n0 + 1 == 0 ? 2 : n0 + 1) : n0",
+        "sm": "round(pair[0] + pair[1], 6)"
+      },
+      "difficulty": 2,
+      "prompt": "Donner en notation scientifique le produit ({{ sci(pair[0], m) }}) × ({{ sci(pair[1], n) }}). Écrire a × 10^n, avec 1 ≤ a &lt; 10.",
+      "answer": { "type": "scientific", "value": "sciNumber(p, m + n)", "display": "sci(p, m + n)", "text": "sciText(p, m + n)", "shapeMisconception": "sci-mantissa" },
+      "wrongs": [
+        { "misconception": "sci-mul-exp", "value": "sciNumber(p, m * n)", "display": "sci(p, m * n)", "text": "sciText(p, m * n)" },
+        { "misconception": "sci-add-mant", "value": "sciNumber(sm, m + n)", "display": "sci(sm, m + n)", "text": "sciText(sm, m + n)" },
+        { "misconception": "sci-sub-exp", "value": "sciNumber(p, m - n)", "display": "sci(p, m - n)", "text": "sciText(p, m - n)" }
+      ],
+      "method": "On multiplie les mantisses entre elles ({{ pair[0] }} × {{ pair[1] }} = {{ p }}) et on additionne les exposants ({{ m }} + {{ n < 0 ? '(' ~ fmt(n) ~ ')' : n }} = {{ m + n }})."
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "dev",
+  "label": "Développer",
+  "misconceptions": [
+    { "id": "dev-cross", "label": "Oublier les produits croisés" },
+    { "id": "dev-xx", "label": "Écrire x × x = 2x" },
+    { "id": "dev-sign", "label": "Erreur de signe sur le produit des constantes" },
+    { "id": "dev-minus-first", "label": "Ne distribuer le − que sur le premier terme" },
+    { "id": "dev-first-only", "label": "Ne multiplier que le premier terme de la parenthèse" },
+    { "id": "dev-minus-ignored", "label": "Ignorer le signe − devant la parenthèse" }
+  ],
+  "variants": [
+    {
+      "label": "Produit de deux binômes",
+      "weight": 0.6,
+      "difficulty": 2,
+      "params": { "a": "int(1, 3)", "b": "nonZero(-6, 6)", "c": "int(1, 3)", "d": "nonZero(-6, 6)" },
+      "let": {
+        "co": "[a * c, a * d + b * c, b * d]",
+        "w1": "[a * c, 0, b * d]",
+        "w2": "[0, 2 * a * c + a * d + b * c, b * d]",
+        "w3": "[a * c, a * d + b * c, -b * d]"
+      },
+      "prompt": "Développer et réduire {{ par(lin(a, b)) }}{{ par(lin(c, d)) }}.",
+      "answer": { "type": "polynomial", "form": "developed", "value": "polyValue(co)", "display": "poly(co)", "text": "poly(co, true)" },
+      "wrongs": [
+        { "misconception": "dev-cross", "value": "polyValue(w1)", "display": "poly(w1)" },
+        { "misconception": "dev-xx", "value": "polyValue(w2)", "display": "poly(w2)" },
+        { "misconception": "dev-sign", "value": "polyValue(w3)", "display": "poly(w3)" }
+      ],
+      "method": "Chaque terme de la première parenthèse multiplie chaque terme de la seconde : {{ poly([a * c, 0, 0]) }} + {{ par(poly([a * d, 0])) }} + {{ par(poly([b * c, 0])) }} + {{ par(fmt(b * d)) }} = {{ poly(co) }}."
+    },
+    {
+      "label": "Différence de deux produits",
+      "weight": 0.4,
+      "difficulty": 2,
+      "params": { "k": "int(2, 5)", "m": "int(2, 5)", "p": "nonZero(-5, 5)", "q": "int(1, 3)", "s": "nonZero(-7, 7)", "t": "int(1, 3)" },
+      "let": {
+        "A": "k * p - m * t",
+        "Bc": "k * q - m * s",
+        "co2": "[A, Bc]",
+        "e1": "[k * p - m * t, k * q + m * s]",
+        "e2": "[k * p - m * t, q - m * s]",
+        "e3": "[k * p + m * t, k * q + m * s]"
+      },
+      "constraints": ["A != 0", "Bc != 0"],
+      "prompt": "Développer et réduire {{ k }}{{ par(lin(p, q)) }} − {{ m }}{{ par(lin(t, s)) }}.",
+      "answer": { "type": "polynomial", "form": "developed", "value": "polyValue(co2)", "display": "poly(co2)", "text": "poly(co2, true)" },
+      "wrongs": [
+        { "misconception": "dev-minus-first", "value": "polyValue(e1)", "display": "poly(e1)" },
+        { "misconception": "dev-first-only", "value": "polyValue(e2)", "display": "poly(e2)" },
+        { "misconception": "dev-minus-ignored", "value": "polyValue(e3)", "display": "poly(e3)" }
+      ],
+      "method": "{{ k }}{{ par(lin(p, q)) }} = {{ poly([k * p, k * q]) }} et −{{ m }}{{ par(lin(t, s)) }} = {{ poly([-m * t, -m * s]) }} : le − change le signe des deux termes. Total : {{ poly(co2) }}."
+    }
+  ]
+}

@@ -44,9 +44,12 @@ class SeriousGameTemplate
     #[ORM\Column(name: 'status', length: 20, enumType: SeriousGameTemplateStatus::class)]
     private SeriousGameTemplateStatus $status = SeriousGameTemplateStatus::Draft;
 
-    /** @var array<string, mixed> */
-    #[ORM\Column(name: 'definition', type: Types::JSON)]
-    private array $definition;
+    /**
+     * The document **as written**, in a text column rather than a JSON one: MySQL reorders the keys
+     * of a JSON object, and the `params` of a template are drawn in the order they are written.
+     */
+    #[ORM\Column(name: 'definition', type: Types::TEXT)]
+    private string $definition;
 
     #[ORM\Column(name: 'note', type: Types::TEXT, nullable: true)]
     private ?string $note = null;
@@ -77,7 +80,7 @@ class SeriousGameTemplate
         $this->game = $game;
         $this->unitCode = $unitCode;
         $this->version = $version;
-        $this->definition = $definition;
+        $this->definition = self::encode($definition);
         $this->author = $author;
         $this->createdAt = new \DateTimeImmutable();
     }
@@ -122,7 +125,22 @@ class SeriousGameTemplate
     /** @return array<string, mixed> */
     public function getDefinition(): array
     {
+        $document = json_decode($this->definition, true, 512, \JSON_THROW_ON_ERROR);
+
+        /* @var array<string, mixed> */
+        return \is_array($document) ? $document : [];
+    }
+
+    /** The document as it was written, for the connector and the administration screen. */
+    public function getDefinitionJson(): string
+    {
         return $this->definition;
+    }
+
+    /** @param array<string, mixed> $definition */
+    private static function encode(array $definition): string
+    {
+        return json_encode($definition, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -137,7 +155,7 @@ class SeriousGameTemplate
             throw new \LogicException('Only a draft template is rewritten.');
         }
 
-        $this->definition = $definition;
+        $this->definition = self::encode($definition);
         $this->benchReport = null;
 
         return $this;
@@ -155,7 +173,7 @@ class SeriousGameTemplate
             throw new \LogicException('Only a template shipped with the game is refreshed.');
         }
 
-        $this->definition = $definition;
+        $this->definition = self::encode($definition);
 
         return $this;
     }

@@ -1,0 +1,55 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "prio",
+  "label": "Priorités opératoires",
+  "misconceptions": [
+    { "id": "prio-left-right", "label": "Calculer de gauche à droite sans les priorités" },
+    { "id": "prio-minus-all", "label": "Appliquer le signe − à tout ce qui suit" },
+    { "id": "prio-add-first", "label": "Effectuer l'addition avant la multiplication" },
+    { "id": "prio-neg-square", "label": "Lire −n² comme (−n)²" },
+    { "id": "prio-square-double", "label": "Confondre carré et double" },
+    { "id": "prio-square-all", "label": "Appliquer le carré à tout le produit" },
+    { "id": "prio-square-terms", "label": "Élever chaque terme de la parenthèse au carré" }
+  ],
+  "variants": [
+    {
+      "label": "Multiplication au milieu",
+      "difficulty": 1,
+      "params": { "a": "int(8, 30)", "b": "int(2, 9)", "c": "int(2, 9)", "d": "int(1, 12)" },
+      "prompt": "Calculer {{ a }} − {{ b }} × {{ c }} + {{ d }}.",
+      "answer": { "type": "number", "value": "a - b * c + d", "display": "fmt(a - b * c + d)" },
+      "wrongs": [
+        { "misconception": "prio-left-right", "value": "(a - b) * c + d", "display": "fmt((a - b) * c + d)" },
+        { "misconception": "prio-minus-all", "value": "a - b * c - d", "display": "fmt(a - b * c - d)" },
+        { "misconception": "prio-add-first", "value": "a - b * (c + d)", "display": "fmt(a - b * (c + d))" }
+      ],
+      "method": "La multiplication passe avant : {{ b }} × {{ c }} = {{ b * c }}, puis de gauche à droite : {{ a }} − {{ b * c }} + {{ d }} = {{ a - b * c + d }}."
+    },
+    {
+      "label": "Opposé d’un carré",
+      "difficulty": 2,
+      "params": { "n": "int(2, 7)", "b": "int(2, 9)", "c": "int(2, 9)" },
+      "prompt": "Calculer −{{ n }}² + {{ b }} × {{ c }}.",
+      "answer": { "type": "number", "value": "-n * n + b * c", "display": "fmt(-n * n + b * c)" },
+      "wrongs": [
+        { "misconception": "prio-neg-square", "value": "n * n + b * c", "display": "fmt(n * n + b * c)" },
+        { "misconception": "prio-left-right", "value": "(-n * n + b) * c", "display": "fmt((-n * n + b) * c)" },
+        { "misconception": "prio-square-double", "value": "-2 * n + b * c", "display": "fmt(-2 * n + b * c)" }
+      ],
+      "method": "−{{ n }}² = −({{ n }}²) = −{{ n * n }} : le carré ne porte que sur {{ n }}. Puis {{ b }} × {{ c }} = {{ b * c }}, donc −{{ n * n }} + {{ b * c }} = {{ -n * n + b * c }}."
+    },
+    {
+      "label": "Carré d’une parenthèse",
+      "difficulty": 2,
+      "params": { "a": "int(2, 5)", "b": "int(4, 9)", "c": "int(1, b - 1)" },
+      "prompt": "Calculer {{ a }} × ({{ b }} − {{ c }})².",
+      "answer": { "type": "number", "value": "a * (b - c) * (b - c)", "display": "fmt(a * (b - c) * (b - c))" },
+      "wrongs": [
+        { "misconception": "prio-square-all", "value": "(a * (b - c)) ** 2", "display": "fmt((a * (b - c)) ** 2)" },
+        { "misconception": "prio-square-terms", "value": "a * (b * b - c * c)", "display": "fmt(a * (b * b - c * c))" },
+        { "misconception": "prio-square-double", "value": "a * (b - c) * 2", "display": "fmt(a * (b - c) * 2)" }
+      ],
+      "method": "Parenthèse d’abord : {{ b }} − {{ c }} = {{ b - c }}, puis le carré : {{ b - c }}² = {{ (b - c) * (b - c) }}, enfin × {{ a }} : {{ a * (b - c) * (b - c) }}."
+    }
+  ]
+}

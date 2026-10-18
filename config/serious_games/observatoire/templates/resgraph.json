@@ -1,0 +1,45 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "resgraph",
+  "label": "Résolution graphique",
+  "misconceptions": [
+    { "id": "rg-missing", "label": "Oublier une solution" },
+    { "id": "rg-image", "label": "Calculer l’image de k au lieu de résoudre" },
+    { "id": "rg-extra", "label": "Ajouter un point où la courbe ne coupe pas la droite" },
+    { "id": "rg-axis", "label": "Donner les ordonnées au lieu des abscisses" }
+  ],
+  "difficulty": 2,
+  "params": {
+    "k": "int(-1, 2)",
+    "nS": "int(1, 3)",
+    "drawn": "sorted(sample([-4, -3, -2, -1, 0, 1, 2, 3, 4], nS))",
+    "pts": "crossings(drawn, k, -5, 5, -4, 5, 0.75)"
+  },
+  "let": {
+    "S": "map(filter(pts, 'item[1] == k'), 'item[0]')",
+    "fk": "pts[k + 5][1]",
+    "near": "filter(pts, 'abs(item[1] - k) == 1 and not has(S, item[0]) and abs(item[0]) < 5')"
+  },
+  "constraints": [
+    "not any(slice(pts, 0, 10), '(item[1] - k) * (pts[index + 1][1] - k) < 0')",
+    "count(S) >= 1",
+    "count(S) <= 3",
+    "not has(S, -5) and not has(S, 5)"
+  ],
+  "prompt": "À l’aide de la courbe de <i>f</i>, résoudre graphiquement <i>f</i>(<i>x</i>) = {{ k }}.",
+  "figure": {
+    "type": "grid", "x": [-5, 5], "y": [-4, 5],
+    "items": [
+      { "draw": "curve", "points": "pts" },
+      { "draw": "hline", "k": "k", "label": "'y=' ~ fmt(k)" }
+    ]
+  },
+  "answer": { "type": "set", "value": "S", "display": "setHtml(S)", "text": "setText(S)" },
+  "wrongs": [
+    { "misconception": "rg-missing", "value": "slice(S, 1)", "when": "count(S) >= 2" },
+    { "misconception": "rg-image", "value": "[fk]", "when": "not (count(S) == 1 and S[0] == fk)" },
+    { "misconception": "rg-extra", "value": "count(near) > 0 ? append(S, near[0][0]) : null", "when": "count(near) > 0" },
+    { "misconception": "rg-axis", "value": "[k]", "when": "not (count(S) == 1 and S[0] == k)" }
+  ],
+  "method": "On trace la droite horizontale <i>y</i> = {{ k }} et on lit les abscisses de tous ses points d’intersection avec la courbe : {{ setHtml(S) }}."
+}

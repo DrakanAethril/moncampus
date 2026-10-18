@@ -1,0 +1,26 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "taux",
+  "label": "Taux d'évolution",
+  "misconceptions": [
+    { "id": "taux-arrival", "label": "Diviser par la valeur d'arrivée" },
+    { "id": "taux-absolute", "label": "Confondre variation absolue et taux" },
+    { "id": "taux-coef", "label": "Confondre coefficient multiplicateur et taux" }
+  ],
+  "params": {
+    "V0": "pick([20, 40, 50, 60, 80, 120, 150, 200, 250, 400, 500])",
+    "t": "pick([5, 10, 15, 20, 25, 30, 40, 50, 60, 75]) * pick([1, 1, -1])",
+    "cx": "pick([['Un article passe de ', ' € à ', ' €'], ['Une commune passe de ', ' à ', ' habitants'], ['Un abonnement passe de ', ' € à ', ' €'], ['Une chaîne passe de ', ' à ', ' abonnés']])"
+  },
+  "let": { "V1": "V0 * (1 + t / 100)" },
+  "constraints": ["isInt(V1)"],
+  "difficulty": "t < 0 ? 2 : 1",
+  "prompt": "{{ cx[0] }}{{ V0 }}{{ cx[1] }}{{ V1 }}{{ cx[2] }}. Quel est le taux d’évolution, en % ?",
+  "answer": { "type": "number", "value": "t", "display": "signedApproxPct(t)", "text": "str(t)", "unit": "%", "tolerance": 0.06 },
+  "wrongs": [
+    { "misconception": "taux-arrival", "value": "(V1 - V0) / V1 * 100", "display": "signedApproxPct((V1 - V0) / V1 * 100)" },
+    { "misconception": "taux-absolute", "value": "V1 - V0", "display": "signedApproxPct(V1 - V0)" },
+    { "misconception": "taux-coef", "value": "V1 / V0 * 100", "display": "approxPct(V1 / V0 * 100)" }
+  ],
+  "method": "Taux = (arrivée − départ) ÷ départ = {{ fracRaw(fmt(V1) ~ ' − ' ~ fmt(V0), fmt(V0)) }} = {{ t / 100 }}, soit {{ signedApproxPct(t) }}. On divise toujours par la valeur de départ."
+}
