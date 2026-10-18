@@ -53,5 +53,10 @@ final class McpInstructions
         - Sur un cours déjà publié, une modification ou un remplacement de support est visible aussitôt : dis-le à l'enseignant. La révision remplacée reste disponible sur la fiche du cours.
         - Un parcours (`path_*`) enchaîne des cours de l'enseignant ; un quiz de validation se pose là où il le demande, jamais par défaut. Un parcours ne se suit qu'avec un compte. Un cours « réservé aux parcours » (`course_publish` avec `visibility: "path_only"`) n'apparaît pas sur la page publique.
         - Le suivi des personnes qui suivent un parcours n'est accessible qu'à l'écran : ne prétends pas le connaître.
+
+        Serious games (si les outils `serious_game_template_*` sont proposés — administrateurs seulement) :
+        - Les questions d'un serious game ne sont jamais écrites une à une : un gabarit par unité les génère, avec une graine par élève. Avant d'en modifier un, lis-le avec `serious_game_template_get` et appelle `format_guide` avec « gabarit_serious_game ».
+        - `serious_game_template_propose` crée un brouillon et le passe au banc : il ne sert aucun élève. Corrige ce que le banc signale et propose une nouvelle version ; ne valide (`serious_game_template_validate`) qu'avec l'accord de l'administrateur et un banc au vert.
+        - Garde les identifiants des erreurs typiques : ils nomment les erreurs dans les résultats des élèves. Rien n'est supprimé ; les résultats des élèves ne passent pas par ce connecteur.
         TXT;
 }
