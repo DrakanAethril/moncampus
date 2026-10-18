@@ -290,7 +290,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     last 30 answers; only the final test is timed (extra time from `AccommodationResolver`).
   - The game is a static package (`public/serious-games/{slug}/`) in an `<iframe sandbox="allow-scripts">`
     - an opaque origin - talking to its host page by `postMessage`
-    (`serious_game_host_controller.js` relays to `GameApiController`). The avatar and the reward
+    (`serious_game_host_controller.js` relays to `GameApiController`, and gives the frame its
+    address only once it listens). The host bar is the platform's, for every game: a game **opens
+    full screen** (`sg_launch_controller.js` asks the browser on the « Jouer » click, the host
+    covers the window otherwise) with a toggle, and shows **the time left** whenever a session
+    carries a deadline, read against `serverTime`. The avatar and the reward
     drawings are one JavaScript module each, shared by the platform and the games
     (`public/serious-games/shared/`); students only collect.
 - **Bibliothèque de fichiers et partages** — `FileLibraryNode`, one table for folders and files.

@@ -28,7 +28,7 @@
                     </p>
                 </div>
                 {% if row.canPlay %}
-                    <twig:Cm:Button variant="primary" href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ (progress.lit == 0 ? 'seriousGameCtaNew' : (progress.finished ? 'seriousGameCtaDone' : 'seriousGameCtaProgress'))|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" data-controller="sg-launch" data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ (progress.lit == 0 ? 'seriousGameCtaNew' : (progress.finished ? 'seriousGameCtaDone' : 'seriousGameCtaProgress'))|trans }}</twig:Cm:Button>
                 {% endif %}
             </div>
 

@@ -13944,9 +13944,24 @@ dialog.cm-wall-panel::backdrop { background: rgba(18, 52, 77, .2); }
 .sgm-t th { font-weight: 600; }
 .sgm-fig { display: block; max-width: 100%; height: auto; margin: .3em 0; }
 
-/* --- The host page of a game: the frame takes the page --- */
-.cm-sg-host { height: calc(100vh - 210px); min-height: 560px; border-radius: 8px; overflow: hidden; background: #070B1C; }
-.cm-sg-host__frame { display: block; width: 100%; height: 100%; border: 0; }
+/* --- The host page of a game: the platform's bar, then the frame. A game opens full screen
+   (`.is-immersive`: over the whole window, and in the browser's own full screen when it allowed
+   it); the bar toggles it and, during a timed session, shows the time left. --- */
+.cm-sg-host { display: flex; flex-direction: column; height: calc(100vh - 210px); min-height: 560px; border-radius: 8px; overflow: hidden; background: #070B1C; }
+.cm-sg-host.is-immersive { position: fixed; inset: 0; z-index: 10000; height: 100vh; height: 100dvh; min-height: 0; border-radius: 0; }
+body.cm-sg-immersive { overflow: hidden; }
+.cm-sg-host__bar { flex: none; display: flex; align-items: center; gap: 14px; min-height: 40px; padding: 4px 10px 4px 16px; background: #0B1026; border-bottom: 1px solid rgba(217, 164, 65, .35); color: #EDE6D6; }
+.cm-sg-host__title { font: italic 600 17px 'Cormorant Garamond', Georgia, serif; color: #D9A441; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cm-sg-host__timer { margin-left: auto; display: inline-flex; align-items: baseline; gap: 8px; padding: 3px 12px; border: 1px solid rgba(217, 164, 65, .55); border-radius: 16px; font: 500 12px 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; color: #C9D3EA; }
+.cm-sg-host__timer b { font-size: 17px; font-weight: 600; letter-spacing: .02em; color: #F2CE7A; font-variant-numeric: tabular-nums; text-transform: none; }
+.cm-sg-host__timer.is-low { border-color: #E06C5F; }
+.cm-sg-host__timer.is-low b { color: #FF8E80; }
+.cm-sg-host__timer.is-over b { color: #FF8E80; }
+.cm-sg-host__toggle { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgba(217, 164, 65, .55); border-radius: 6px; background: transparent; color: #EDE6D6; font: 600 13px var(--cm-font-ui); cursor: pointer; }
+.cm-sg-host__timer:not([hidden]) + .visually-hidden + .cm-sg-host__toggle { margin-left: 0; }
+.cm-sg-host__toggle:hover { border-color: #D9A441; color: #fff; }
+.cm-sg-host__toggle:focus-visible { outline: 2px solid #F2CE7A; outline-offset: 2px; }
+.cm-sg-host__frame { display: block; flex: 1; width: 100%; min-height: 0; border: 0; }
 
 /* --- The player page and its showcase (design/conception_serious_games/profil.html) --- */
 .cm-sg-player { display: grid; gap: 18px; }

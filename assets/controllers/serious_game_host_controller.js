@@ -7,32 +7,201 @@ import { Controller } from '@hotwired/stimulus';
  *
  * This controller is the relay. It accepts a message only from that very frame, only of a known
  * type and method, and calls the SDK's routes itself, with the session cookie and the CSRF token
- * the game never sees. The game receives the JSON answer, or `{error}`; after a call that granted
- * collection pieces, it is sent `reward.granted` to play its scene.
+ * the game never sees. The game receives the JSON answer, or `{error}`; after the end of a session
+ * that granted collection pieces, it is sent `reward.granted` to play its scene.
  *
  *   game → host  { sg: 1, type: 'call', id, method, params }
  *   host → game  { sg: 1, type: 'result', id, ok, result | error }
  *   host → game  { sg: 1, type: 'reward.granted', rewards }
  *   game → host  { sg: 1, type: 'exit' }  - back to the catalogue
+ *
+ * It also holds two things every game gets from the platform rather than from itself (the user's
+ * decision of 2026-10-18):
+ *
+ * - **Full screen.** A game opens full screen - the browser's own full screen when it allows it
+ *   (the « Jouer » click of the catalogue already asked for it, see sg_launch_controller.js), the
+ *   whole window otherwise - and the host bar toggles it. Escape leaves it, like everywhere.
+ * - **The time left.** As soon as a session the game opens carries a deadline (La Couronne), the
+ *   host bar counts down to it, read against the server's clock rather than the player's, until
+ *   that session ends. The server decides the time; this only shows it.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['frame'];
+    static targets = ['frame', 'toggle', 'toggleLabel', 'timer', 'timerValue', 'announce'];
 
     static values = {
+        src: String,
         api: String,
         csrf: String,
         exitUrl: String,
+        enterLabel: String,
+        exitLabel: String,
+        timeUpLabel: String,
+        minutesLeftLabel: String,
     };
 
     connect() {
         this.onMessage = (event) => this.receive(event);
+        this.onFullscreenChange = () => this.fullscreenChanged();
         window.addEventListener('message', this.onMessage);
+        document.addEventListener('fullscreenchange', this.onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', this.onFullscreenChange);
+
+        // Launched full screen: the window at least, the browser's full screen when allowed.
+        this.enterFullscreen();
+
+        // The game is loaded only now that its messages have somewhere to go: a frame given its
+        // address by the template could load, and call, before this lazily fetched relay is
+        // connected - and wait for answers that never come.
+        if (this.frameTarget.getAttribute('src') !== this.srcValue) {
+            this.frameTarget.setAttribute('src', this.srcValue);
+        }
     }
 
     disconnect() {
         window.removeEventListener('message', this.onMessage);
+        document.removeEventListener('fullscreenchange', this.onFullscreenChange);
+        document.removeEventListener('webkitfullscreenchange', this.onFullscreenChange);
+        this.stopTimer();
+        // Leaving the game leaves its full screen: the catalogue is never shown in it.
+        document.body.classList.remove('cm-sg-immersive');
+        if (this.fullscreenElement()) {
+            this.exitBrowserFullscreen();
+        }
     }
+
+    /* ---------- full screen ---------- */
+
+    toggleFullscreen() {
+        if (this.element.classList.contains('is-immersive')) {
+            this.leaveFullscreen();
+        } else {
+            this.enterFullscreen();
+        }
+    }
+
+    enterFullscreen() {
+        this.setImmersive(true);
+        const root = document.documentElement;
+        if (!this.fullscreenElement()) {
+            const request = root.requestFullscreen ?? root.webkitRequestFullscreen;
+            // Refused without a user gesture (a page opened from its address): the game still
+            // fills the window, and the toggle asks again with the gesture it needs.
+            Promise.resolve(request?.call(root)).catch(() => {});
+        }
+        this.focusGame();
+    }
+
+    leaveFullscreen() {
+        this.setImmersive(false);
+        if (this.fullscreenElement()) {
+            this.exitBrowserFullscreen();
+        }
+        this.focusGame();
+    }
+
+    fullscreenChanged() {
+        // Escape - or the browser's own gesture - leaves the browser's full screen: the player
+        // asked to leave, so the game goes back into the page too.
+        if (!this.fullscreenElement() && this.element.classList.contains('is-immersive')) {
+            this.setImmersive(false);
+        }
+    }
+
+    setImmersive(immersive) {
+        this.element.classList.toggle('is-immersive', immersive);
+        document.body.classList.toggle('cm-sg-immersive', immersive);
+        if (this.hasToggleTarget) {
+            this.toggleTarget.setAttribute('aria-pressed', immersive ? 'true' : 'false');
+            this.toggleLabelTarget.textContent = immersive ? this.exitLabelValue : this.enterLabelValue;
+        }
+    }
+
+    fullscreenElement() {
+        return document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
+    }
+
+    exitBrowserFullscreen() {
+        const exit = document.exitFullscreen ?? document.webkitExitFullscreen;
+        Promise.resolve(exit?.call(document)).catch(() => {});
+    }
+
+    focusGame() {
+        // The keyboard belongs to the game: give it back after a click on the host bar.
+        requestAnimationFrame(() => this.frameTarget.focus());
+    }
+
+    /* ---------- the time left ---------- */
+
+    watchTime(route, params, body) {
+        if (route.ends) {
+            if (this.timer && this.timer.session === Number.parseInt(params.session, 10)) {
+                this.stopTimer();
+            }
+
+            return;
+        }
+
+        if ('string' !== typeof body.deadline || '' === body.deadline) {
+            return;
+        }
+
+        const session = Number.parseInt(body.session ?? params.session, 10);
+        const deadline = Date.parse(body.deadline);
+        const serverNow = 'string' === typeof body.serverTime ? Date.parse(body.serverTime) : Date.now();
+        if (Number.isNaN(deadline) || Number.isNaN(serverNow)) {
+            return;
+        }
+
+        // The deadline in the player's clock: what the server says is left, from now.
+        const localDeadline = Date.now() + (deadline - serverNow);
+        if (this.timer && this.timer.session === session) {
+            this.timer.deadline = localDeadline;
+
+            return;
+        }
+
+        this.startTimer(session, localDeadline);
+    }
+
+    startTimer(session, deadline) {
+        this.stopTimer();
+        this.timer = { session, deadline, announced: new Set(), interval: null };
+        this.timerTarget.hidden = false;
+        this.tick();
+        this.timer.interval = window.setInterval(() => this.tick(), 1000);
+    }
+
+    tick() {
+        if (!this.timer) {
+            return;
+        }
+
+        const left = Math.max(0, Math.round((this.timer.deadline - Date.now()) / 1000));
+        this.timerValueTarget.textContent = 0 === left ? this.timeUpLabelValue : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+        this.timerTarget.classList.toggle('is-low', left <= 120);
+        this.timerTarget.classList.toggle('is-over', 0 === left);
+
+        // A screen reader hears the time at a few thresholds, not every second.
+        for (const minutes of [10, 5, 1]) {
+            if (left <= minutes * 60 && left > minutes * 60 - 2 && !this.timer.announced.has(minutes)) {
+                this.timer.announced.add(minutes);
+                this.announceTarget.textContent = this.minutesLeftLabelValue.replace('%count%', String(minutes));
+            }
+        }
+    }
+
+    stopTimer() {
+        if (this.timer?.interval) {
+            window.clearInterval(this.timer.interval);
+        }
+        this.timer = null;
+        if (this.hasTimerTarget) {
+            this.timerTarget.hidden = true;
+        }
+    }
+
+    /* ---------- the relay ---------- */
 
     async receive(event) {
         // The frame has an opaque origin ('null'): what proves the sender is the window itself.
@@ -55,7 +224,8 @@ export default class extends Controller {
             return;
         }
 
-        const route = this.route(message.method, message.params && 'object' === typeof message.params ? message.params : {});
+        const params = message.params && 'object' === typeof message.params ? message.params : {};
+        const route = this.route(message.method, params);
         if (null === route) {
             this.post({ sg: 1, type: 'result', id: message.id, ok: false, error: 'unknown-method' });
 
@@ -71,13 +241,17 @@ export default class extends Controller {
             });
             const body = await response.json().catch(() => ({}));
             if (!response.ok) {
+                if (route.ends) {
+                    this.watchTime(route, params, {});
+                }
                 this.post({ sg: 1, type: 'result', id: message.id, ok: false, error: body.error ?? `http-${response.status}` });
 
                 return;
             }
+            this.watchTime(route, params, body);
             this.post({ sg: 1, type: 'result', id: message.id, ok: true, result: body });
             // Only the end of a session grants pieces; the progress also lists the ones already held.
-            if (route.grants && Array.isArray(body.rewards) && body.rewards.length > 0) {
+            if (route.ends && Array.isArray(body.rewards) && body.rewards.length > 0) {
                 this.post({ sg: 1, type: 'reward.granted', rewards: body.rewards });
             }
         } catch {
@@ -108,7 +282,7 @@ export default class extends Controller {
             case 'endSession': {
                 const route = sessionPath('end');
 
-                return null === route ? null : { ...route, grants: true };
+                return null === route ? null : { ...route, ends: true };
             }
             default: return null;
         }

@@ -243,6 +243,7 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
                 'position' => $position,
                 'size' => $session->getSize(),
                 'deadline' => $session->getDeadline()?->format(\DATE_ATOM),
+                'serverTime' => (new \DateTimeImmutable())->format(\DATE_ATOM),
                 'question' => $question->publicView() + ['unitName' => self::manifest($session->getGame())->unit($planned['unit'])['label'] ?? $planned['unit']],
             ];
         }
@@ -542,6 +543,9 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
             'size' => $session->getSize(),
             'timeLimitSeconds' => $session->getTimeLimitSeconds(),
             'deadline' => $session->getDeadline()?->format(\DATE_ATOM),
+            // The host page's countdown reads the deadline against this, not against the
+            // player's own clock (design/validated/serious-games.md §6.1).
+            'serverTime' => (new \DateTimeImmutable())->format(\DATE_ATOM),
         ];
     }
 

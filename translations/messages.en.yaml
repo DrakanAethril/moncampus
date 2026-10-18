@@ -10374,3 +10374,8 @@ seriousGameReplayInput: "Student's answer"
 seriousGameReplayMethod: 'Method'
 seriousGameLastActivity: 'Last activity'
 seriousGameLastActivityOn: 'on %date%'
+seriousGameFullscreenEnter: 'Full screen'
+seriousGameFullscreenExit: 'Exit full screen'
+seriousGameTimeLeft: 'Time left'
+seriousGameTimeUp: 'Time is up'
+seriousGameMinutesLeft: 'Time left: %count% min.'
