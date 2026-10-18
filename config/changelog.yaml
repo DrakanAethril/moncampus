@@ -26,6 +26,17 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.18'
+      date: '2026-10-18'
+      summary: "Un module de jeux d'entraînement entre en essai auprès de l'administration : on s'y exerce librement, en mathématiques et en latin."
+      entries:
+          - type: nouveaute
+            title: "Jeux d'entraînement, en essai auprès de l'administration"
+            detail: "Deux jeux : les automatismes de mathématiques de 1re et les déclinaisons latines."
+          - type: interne
+            title: "Le connecteur Claude sait relire et faire évoluer les questions de ces jeux, pour les administrateurs"
+          - type: interne
+            title: "Outillage de développement : rechargement à chaud réparé"
     - version: '2026.10.13'
       date: '2026-10-13'
       summary: "L'UFA peut relire, dans sa configuration, les mails que la plateforme envoie d'elle-même : leur objet et leur texte, tels qu'ils partent."
