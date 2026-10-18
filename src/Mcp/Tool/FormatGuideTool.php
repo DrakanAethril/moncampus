@@ -13,6 +13,7 @@ use App\Mcp\McpToolResult;
 use App\Repository\LibraryBlocTagRepository;
 use App\Repository\LibraryNiveauTagRepository;
 use App\Repository\LibraryOptionTagRepository;
+use App\SeriousGame\Template\TemplateFormatGuide;
 use App\Service\EvaluationRubricJsonImporter;
 use App\Service\MixedExampleCatalog;
 use App\Service\OnlineCourse\InteractiveCourseGuide;
@@ -48,6 +49,7 @@ final readonly class FormatGuideTool implements McpTool
         private LibraryNiveauTagRepository $niveaux,
         private LibraryOptionTagRepository $options,
         private LibraryBlocTagRepository $blocs,
+        private TemplateFormatGuide $seriousGameGuide,
     ) {
     }
 
@@ -63,7 +65,7 @@ final readonly class FormatGuideTool implements McpTool
 
     public function description(): string
     {
-        return 'Renvoie la spécification complète, avec un exemple, du document à produire pour créer un quiz (`format: "quiz"`, « moncampus-quiz/1 »), une séquence pédagogique (`format: "sequence"`, « moncampus-sequence/1 ») un barème d\'évaluation (`format: "bareme"`, « moncampus-bareme/1 ») ou un cours interactif à publier en ligne (`format: "cours_interactif"`, une page HTML autonome). À appeler AVANT de rédiger le document.';
+        return 'Renvoie la spécification complète, avec un exemple, du document à produire pour créer un quiz (`format: "quiz"`, « moncampus-quiz/1 »), une séquence pédagogique (`format: "sequence"`, « moncampus-sequence/1 ») un barème d\'évaluation (`format: "bareme"`, « moncampus-bareme/1 ») un cours interactif à publier en ligne (`format: "cours_interactif"`, une page HTML autonome) ou un gabarit de questions de serious game (`format: "gabarit_serious_game"`, « moncampus-gabarit/1 », administrateurs seulement). À appeler AVANT de rédiger le document.';
     }
 
     public function inputSchema(): array
@@ -71,7 +73,7 @@ final readonly class FormatGuideTool implements McpTool
         return [
             'type' => 'object',
             'properties' => [
-                'format' => ['type' => 'string', 'enum' => ['quiz', 'sequence', 'bareme', 'cours_interactif']],
+                'format' => ['type' => 'string', 'enum' => ['quiz', 'sequence', 'bareme', 'cours_interactif', 'gabarit_serious_game']],
             ],
             'required' => ['format'],
             'additionalProperties' => false,
@@ -95,7 +97,8 @@ final readonly class FormatGuideTool implements McpTool
             'sequence' => McpToolResult::text($this->sequence($call->user)),
             'bareme' => McpToolResult::text(EvaluationRubricJsonImporter::guide()),
             'cours_interactif' => McpToolResult::text(InteractiveCourseGuide::TEXT),
-            default => throw new McpToolException('L\'argument « format » vaut « quiz », « sequence », « bareme » ou « cours_interactif ».'),
+            'gabarit_serious_game' => McpToolResult::text($this->seriousGameGuide->text()),
+            default => throw new McpToolException('L\'argument « format » vaut « quiz », « sequence », « bareme », « cours_interactif » ou « gabarit_serious_game ».'),
         };
     }
 
