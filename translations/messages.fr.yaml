@@ -11494,3 +11494,11 @@ seriousGameBrightnessBlazing: 'Éclatante'
 seriousGameFinishBrass: 'Laiton'
 seriousGameFinishSilver: 'Argent'
 seriousGameFinishGold: 'Or'
+seriousGameAvatarSaveAction: 'Enregistrer mon avatar'
+seriousGameAvatarSavedLabel: 'Enregistré'
+seriousGameAvatarSaveError: "Non enregistré — réessayer"
+seriousGameAvatarRandomAction: 'Aléatoire'
+seriousGameAvatarResetAction: 'Réinitialiser'
+seriousGameAvatarScopeNote: "Votre avatar n'apparaît que dans les serious games. Partout ailleurs, Formatool garde votre photo ou vos initiales."
+seriousGameAvatarPinNotHeld: "Cette épinglette n'a pas encore été obtenue."
+seriousGameAvatarInvalid: 'Avatar illisible.'

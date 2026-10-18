@@ -18,6 +18,8 @@ use App\Service\SeriousGame\SeriousGameAccess;
  */
 trait SeriousGameControllerTrait
 {
+    private const string CSRF_TOKEN_ID = 'serious-games';
+
     private function currentPlayer(): User
     {
         $user = $this->getUser();
@@ -37,6 +39,15 @@ trait SeriousGameControllerTrait
         }
 
         return $user;
+    }
+
+    /** The serious games' one CSRF token: every write of the module is a fetch() from its screens. */
+    private function assertCsrf(\Symfony\Component\HttpFoundation\Request $request): void
+    {
+        $token = $request->headers->get('X-CSRF-Token') ?? $request->request->getString('_token');
+        if (!$this->isCsrfTokenValid(self::CSRF_TOKEN_ID, $token)) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
     }
 
     private function playableGame(SeriousGameRepository $games, string $slug): SeriousGame
