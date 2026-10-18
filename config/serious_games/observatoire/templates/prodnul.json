@@ -1,0 +1,42 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "prodnul",
+  "label": "Équation produit nul",
+  "misconceptions": [
+    { "id": "pn-sign", "label": "Oublier de changer le signe" },
+    { "id": "pn-no-divide", "label": "Oublier de diviser par le coefficient de x" },
+    { "id": "pn-one", "label": "Ne donner qu’une solution" },
+    { "id": "pn-zero", "label": "Oublier la solution x = 0 en simplifiant par x" },
+    { "id": "pn-inverse", "label": "Inverser le quotient" }
+  ],
+  "params": {
+    "a": "int(1, 4)",
+    "b": "nonZero(-8, 8)",
+    "withX": "chance(0.3)",
+    "c": "withX ? 1 : int(1, 4)",
+    "d": "withX ? 0 : nonZero(-8, 8)"
+  },
+  "let": {
+    "r1": "-b / a",
+    "r2": "-d / c",
+    "F1": "par(lin(a, b))",
+    "F2": "withX ? v('x') : par(lin(c, d))"
+  },
+  "constraints": ["abs(r1 - r2) >= 1e-9"],
+  "difficulty": 2,
+  "prompt": "Résoudre {{ withX ? v('x') ~ F1 : F1 ~ F2 }} = 0.",
+  "answer": {
+    "type": "set",
+    "value": "[r1, r2]",
+    "display": "setHtml([r1, r2], [frac(-b, a), frac(-d, c)])",
+    "text": "fracText(-b, a) ~ ' ; ' ~ fracText(-d, c)"
+  },
+  "wrongs": [
+    { "misconception": "pn-sign", "value": "[-r1, -r2]", "display": "setHtml([-r1, -r2], [frac(b, a), frac(d, c)])" },
+    { "misconception": "pn-zero", "value": "[r1]", "display": "setHtml([r1], [frac(-b, a)])", "when": "withX" },
+    { "misconception": "pn-no-divide", "value": "[-b, -d]", "display": "setHtml([-b, -d])", "when": "not withX and (a != 1 or c != 1)" },
+    { "misconception": "pn-one", "value": "[withX ? r2 : r1]", "display": "setHtml([withX ? r2 : r1], [withX ? '0' : frac(-b, a)])" },
+    { "misconception": "pn-inverse", "value": "withX ? [0, -a / b] : [-a / b, -c / d]", "display": "withX ? setHtml([0, -a / b], ['0', frac(-a, b)]) : setHtml([-a / b, -c / d], [frac(-a, b), frac(-c, d)])", "when": "b != 0 and (withX or d != 0)" }
+  ],
+  "method": "Un produit est nul si et seulement si l’un de ses facteurs est nul : {{ withX ? v('x') ~ ' = 0' : lin(c, d) ~ ' = 0 ⇔ ' ~ v('x') ~ ' = ' ~ frac(-d, c) }} ou {{ lin(a, b) }} = 0 ⇔ <i>x</i> = {{ frac(-b, a) }}."
+}

@@ -1,0 +1,45 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "image",
+  "label": "Image, antécédent",
+  "misconceptions": [
+    { "id": "image-neg-square", "label": "(−k)² calculé comme −k²" },
+    { "id": "image-square-double", "label": "Confondre k² et 2k" },
+    { "id": "image-coef-square", "label": "Élever aussi le coefficient au carré" },
+    { "id": "image-confuse", "label": "Calculer l’image au lieu de l’antécédent" },
+    { "id": "image-sign", "label": "Erreur de signe en isolant x" },
+    { "id": "image-mul", "label": "Multiplier au lieu de diviser" }
+  ],
+  "variants": [
+    {
+      "label": "Image",
+      "weight": 0.55,
+      "difficulty": 2,
+      "params": { "a": "pick([1, 2, 3, -1, -2])", "b": "int(-5, 5)", "c": "int(-6, 6)", "k": "int(-4, -1)" },
+      "let": { "fk": "a * k * k + b * k + c" },
+      "prompt": "Soit <i>f</i>(<i>x</i>) = {{ poly([a, b, c]) }}. Calculer l’image de {{ k }} par <i>f</i>.",
+      "answer": { "type": "number", "value": "fk" },
+      "wrongs": [
+        { "misconception": "image-neg-square", "value": "-a * k * k + b * k + c" },
+        { "misconception": "image-square-double", "value": "a * 2 * k + b * k + c" },
+        { "misconception": "image-coef-square", "value": "a * a * k * k + b * k + c", "when": "abs(a) != 1" }
+      ],
+      "method": "On remplace <i>x</i> par ({{ k }}) entre parenthèses : {{ a }} × ({{ k }})² {{ b < 0 ? '− ' : '+ ' }}{{ abs(b) }} × ({{ k }}) {{ c < 0 ? '− ' : '+ ' }}{{ abs(c) }} = {{ a * k * k }} {{ b * k < 0 ? '− ' : '+ ' }}{{ abs(b * k) }} {{ c < 0 ? '− ' : '+ ' }}{{ abs(c) }} = {{ fk }}. Avec les parenthèses, ({{ k }})² = {{ k * k }}."
+    },
+    {
+      "label": "Antécédent",
+      "weight": 0.45,
+      "difficulty": 1,
+      "params": { "a2": "nonZero(-5, 5)", "b2": "nonZero(-9, 9)", "x0": "int(-6, 6)" },
+      "let": { "y": "a2 * x0 + b2" },
+      "prompt": "Soit <i>f</i>(<i>x</i>) = {{ lin(a2, b2) }}. Quel est l’antécédent de {{ y }} par <i>f</i> ?",
+      "answer": { "type": "number", "value": "x0" },
+      "wrongs": [
+        { "misconception": "image-confuse", "value": "a2 * y + b2" },
+        { "misconception": "image-sign", "value": "(y + b2) / a2", "display": "num(y + b2, a2)" },
+        { "misconception": "image-mul", "value": "(y - b2) * a2" }
+      ],
+      "method": "On résout {{ lin(a2, b2) }} = {{ y }} : {{ lin(a2, 0) }} = {{ y - b2 }}, donc <i>x</i> = {{ fracRaw(fmt(y - b2), fmt(a2)) }} = {{ x0 }}."
+    }
+  ]
+}

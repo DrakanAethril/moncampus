@@ -1,0 +1,65 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "moy",
+  "label": "Moyenne",
+  "misconceptions": [
+    { "id": "moy-median", "label": "Confondre moyenne et médiane" },
+    { "id": "moy-midrange", "label": "Prendre le milieu entre la plus petite et la plus grande valeur" },
+    { "id": "moy-n-minus", "label": "Diviser par le mauvais effectif" },
+    { "id": "moy-no-coef", "label": "Oublier les coefficients" },
+    { "id": "moy-wrong-den", "label": "Diviser par le nombre de notes au lieu de la somme des coefficients" },
+    { "id": "moy-no-divide", "label": "Oublier de diviser" }
+  ],
+  "notes": "Variante « Série » : la référence tire n − 1 notes une à une ; ici six notes sont tirées et seules les n − 1 premières sont gardées (même loi).",
+  "variants": [
+    {
+      "label": "Série",
+      "weight": 0.55,
+      "difficulty": 1,
+      "params": {
+        "n": "int(5, 7)",
+        "drawn": "map(range(1, 6), 'int(4, 18)')",
+        "target": "int(8, 15)",
+        "first": "slice(drawn, 0, n - 1)",
+        "last": "target * n - sum(first)",
+        "vals": "shuffle(append(first, last))"
+      },
+      "let": {
+        "S": "target * n",
+        "md": "median(vals)",
+        "mr": "(min(vals) + max(vals)) / 2"
+      },
+      "constraints": ["last >= 0", "last <= 20"],
+      "prompt": "Notes obtenues par une élève : {{ join(vals, ' ; ') }}. Quelle est sa moyenne ?",
+      "answer": { "type": "number", "value": "target", "display": "fmt(target)", "tolerance": 1e-6 },
+      "wrongs": [
+        { "misconception": "moy-median", "value": "md", "display": "fmt(md)", "when": "md != target" },
+        { "misconception": "moy-midrange", "value": "mr", "display": "fmt(mr)" },
+        { "misconception": "moy-n-minus", "value": "S / (n - 1)", "display": "approx(S / (n - 1))" }
+      ],
+      "method": "Moyenne = somme ÷ effectif = {{ fracRaw(S, n) }} = {{ fmt(target) }}."
+    },
+    {
+      "label": "Pondérée",
+      "weight": 0.45,
+      "difficulty": 2,
+      "params": {
+        "notes": "[int(6, 18), int(6, 18), int(6, 18)]",
+        "co": "[int(1, 4), int(1, 4), int(1, 4)]"
+      },
+      "let": {
+        "S": "notes[0] * co[0] + notes[1] * co[1] + notes[2] * co[2]",
+        "C": "co[0] + co[1] + co[2]"
+      },
+      "constraints": ["isInt(S / C * 2)", "not (co[0] == co[1] and co[1] == co[2])"],
+      "prompt": "Quelle est la moyenne pondérée de ces notes ?{{ table([concat(['Note'], notes), concat(['Coefficient'], co)]) }}",
+      "answer": { "type": "number", "value": "S / C", "display": "fmt(S / C)", "tolerance": 1e-6 },
+      "wrongs": [
+        { "misconception": "moy-no-coef", "value": "mean(notes)", "display": "approx(mean(notes))" },
+        { "misconception": "moy-wrong-den", "value": "S / 3", "display": "approx(S / 3)" },
+        { "misconception": "moy-no-divide", "value": "S", "display": "fmt(S)" }
+      ],
+      "method": "Σ(note × coef) ÷ Σ coef = {{ fracRaw(join(map(notes, 'item ~ \\'×\\' ~ co[index]'), ' + '), join(co, ' + ')) }} = {{ fracRaw(S, C) }} = {{ fmt(S / C) }}."
+    }
+  ]
+}

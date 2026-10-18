@@ -1,0 +1,45 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "signe",
+  "label": "Signe d'une fonction affine",
+  "misconceptions": [
+    { "id": "signe-root-sign", "label": "Prendre b/a comme racine au lieu de −b/a" },
+    { "id": "signe-ignore-a", "label": "Ne pas tenir compte du signe de a" },
+    { "id": "signe-root-inverse", "label": "Inverser le quotient de la racine" },
+    { "id": "signe-root-b", "label": "Prendre b comme racine" }
+  ],
+  "params": {
+    "a": "nonZero(-5, 5)",
+    "b": "nonZero(-9, 9)",
+    "ask": "pick(['>', '≥', '<', '≤'])"
+  },
+  "let": {
+    "root": "-b / a",
+    "rootHtml": "frac(-b, a)",
+    "word": "{'>': 'strictement positif', '≥': 'positif ou nul', '<': 'strictement négatif', '≤': 'négatif ou nul'}[ask]",
+    "right": "(a > 0) == (ask == '>' or ask == '≥')",
+    "closed": "ask == '≥' or ask == '≤'",
+    "S": "right ? iv(root, inf(), closed, false) : iv(-inf(), root, false, closed)",
+    "Sd": "ivHtml(S, rootHtml, rootHtml)",
+    "wSign": "right ? iv(b / a, inf(), closed, false) : iv(-inf(), b / a, false, closed)",
+    "wIgnore": "right ? iv(-inf(), root, false, closed) : iv(root, inf(), closed, false)",
+    "inverse": "abs(-a / b - root) > 1e-9 and abs(-a / b - b / a) > 1e-9",
+    "wInverse": "right ? iv(-a / b, inf(), closed, false) : iv(-inf(), -a / b, false, closed)",
+    "wB": "right ? iv(b, inf(), closed, false) : iv(-inf(), b, false, closed)"
+  },
+  "difficulty": 2,
+  "prompt": "Soit <i>f</i>(<i>x</i>) = {{ lin(a, b) }}. Sur quel intervalle <i>f</i>(<i>x</i>) est-il {{ word }} ?",
+  "answer": {
+    "type": "interval",
+    "value": "S",
+    "display": "Sd",
+    "text": "plain(Sd)"
+  },
+  "wrongs": [
+    { "misconception": "signe-root-sign", "value": "wSign", "display": "ivHtml(wSign, frac(b, a), frac(b, a))" },
+    { "misconception": "signe-ignore-a", "value": "wIgnore", "display": "ivHtml(wIgnore, rootHtml, rootHtml)" },
+    { "misconception": "signe-root-inverse", "value": "wInverse", "display": "ivHtml(wInverse, frac(-a, b), frac(-a, b))", "when": "inverse" },
+    { "misconception": "signe-root-b", "value": "wB", "display": "ivHtml(wB, fmt(b), fmt(b))", "when": "not inverse" }
+  ],
+  "method": "<i>f</i>(<i>x</i>) = 0 pour <i>x</i> = −{{ fracRaw('b', 'a') }} = {{ rootHtml }}. Le coefficient a = {{ fmt(a) }} est {{ a > 0 ? 'positif' : 'négatif' }} : <i>f</i> est du signe de a à droite de la racine. <i>f</i>(<i>x</i>) est {{ word }} sur {{ Sd }}."
+}

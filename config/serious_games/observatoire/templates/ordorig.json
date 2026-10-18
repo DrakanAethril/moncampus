@@ -1,0 +1,63 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "ordorig",
+  "label": "Ordonnée à l'origine",
+  "misconceptions": [
+    { "id": "oo-slope", "label": "Prendre le coefficient de x" },
+    { "id": "oo-sign", "label": "Erreur de signe" },
+    { "id": "oo-x-intercept", "label": "Confondre avec l’abscisse à l’origine" },
+    { "id": "oo-point", "label": "Prendre l’ordonnée d’un point de la droite" }
+  ],
+  "params": { "m": "nonZero(-4, 4)", "p": "nonZero(-6, 6)" },
+  "variants": [
+    {
+      "label": "Équation",
+      "weight": 1,
+      "difficulty": 1,
+      "prompt": "La droite d’équation <i>y</i> = {{ p }}{{ m < 0 ? ' − ' : ' + ' }}{{ abs(m) == 1 ? '' : abs(m) }}<i>x</i> a pour ordonnée à l’origine :",
+      "answer": { "type": "number", "value": "p" },
+      "wrongs": [
+        { "misconception": "oo-slope", "value": "m" },
+        { "misconception": "oo-sign", "value": "-p" },
+        { "misconception": "oo-x-intercept", "value": "-p / m", "display": "num(-p, m)" }
+      ],
+      "method": "Sous la forme <i>y</i> = <i>m</i><i>x</i> + <i>p</i>, l’ordonnée à l’origine est le terme constant, quel que soit l’ordre d’écriture : <i>p</i> = {{ p }}."
+    },
+    {
+      "label": "Deux images",
+      "weight": 1,
+      "difficulty": 2,
+      "params": { "xA": "nonZero(-3, 3)", "xB": "xA + int(1, 3)" },
+      "let": { "yA": "m * xA + p", "yB": "m * xB + p" },
+      "prompt": "Une fonction affine <i>f</i> vérifie <i>f</i>({{ xA }}) = {{ yA }} et <i>f</i>({{ xB }}) = {{ yB }}. Quelle est son ordonnée à l’origine ?",
+      "answer": { "type": "number", "value": "p" },
+      "wrongs": [
+        { "misconception": "oo-slope", "value": "m" },
+        { "misconception": "oo-sign", "value": "-p" },
+        { "misconception": "oo-x-intercept", "value": "-p / m", "display": "num(-p, m)" },
+        { "misconception": "oo-point", "value": "yA" }
+      ],
+      "method": "On calcule d’abord <i>m</i> = {{ m }}, puis <i>p</i> = <i>f</i>(x<sub>A</sub>) − <i>m</i> × x<sub>A</sub> = {{ p }}. C’est <i>f</i>(0)."
+    },
+    {
+      "label": "Droite tracée",
+      "weight": 1,
+      "difficulty": 1,
+      "constraints": ["abs(p) <= 4"],
+      "prompt": "Quelle est l’ordonnée à l’origine de la droite tracée ?",
+      "figure": {
+        "type": "grid", "x": [-5, 5], "y": [-4, 5],
+        "items": [
+          { "draw": "line", "m": "m", "p": "p", "color": "blue" }
+        ]
+      },
+      "answer": { "type": "number", "value": "p" },
+      "wrongs": [
+        { "misconception": "oo-slope", "value": "m" },
+        { "misconception": "oo-sign", "value": "-p" },
+        { "misconception": "oo-x-intercept", "value": "-p / m", "display": "num(-p, m)" }
+      ],
+      "method": "L’ordonnée à l’origine se lit là où la droite coupe l’axe des ordonnées : {{ p }}."
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "arbre",
+  "label": "Arbre pondéré",
+  "misconceptions": [
+    { "id": "arbre-add", "label": "Additionner les probabilités le long d’un chemin" },
+    { "id": "arbre-forget-first", "label": "Oublier la première branche" },
+    { "id": "arbre-wrong-branch", "label": "Prendre la mauvaise branche" },
+    { "id": "arbre-one-path", "label": "Oublier un des chemins" },
+    { "id": "arbre-add-cond", "label": "Additionner les probabilités conditionnelles" }
+  ],
+  "params": {
+    "D": "[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]",
+    "p": "pick(slice(D, 1, 7))",
+    "q": "pick(D)",
+    "q2": "pick(D)"
+  },
+  "variants": [
+    {
+      "label": "Intersection",
+      "weight": 0.6,
+      "difficulty": 2,
+      "let": { "res": "round(p * q, 4)" },
+      "prompt": "D’après l’arbre pondéré, calculer P(A ∩ B).",
+      "figure": { "type": "tree", "p": "p", "q": "q", "q2": "q2" },
+      "answer": { "type": "number", "value": "res", "display": "fmt(res)" },
+      "wrongs": [
+        { "misconception": "arbre-add", "value": "round(p + q, 4)", "display": "fmt(round(p + q, 4))" },
+        { "misconception": "arbre-forget-first", "value": "q", "display": "fmt(q)" },
+        { "misconception": "arbre-wrong-branch", "value": "round(p * (1 - q), 4)", "display": "fmt(round(p * (1 - q), 4))" }
+      ],
+      "method": "On multiplie les probabilités le long du chemin A puis B : P(A ∩ B) = P(A) × P<sub>A</sub>(B) = {{ fmt(p) }} × {{ fmt(q) }} = {{ fmt(res) }}."
+    },
+    {
+      "label": "Probabilités totales",
+      "weight": 0.4,
+      "difficulty": 3,
+      "let": { "tot": "round(p * q + (1 - p) * q2, 4)" },
+      "prompt": "D’après l’arbre pondéré, calculer P(B).",
+      "figure": { "type": "tree", "p": "p", "q": "q", "q2": "q2" },
+      "answer": { "type": "number", "value": "tot", "display": "fmt(tot)" },
+      "wrongs": [
+        { "misconception": "arbre-one-path", "value": "round(p * q, 4)", "display": "fmt(round(p * q, 4))" },
+        { "misconception": "arbre-add-cond", "value": "round(q + q2, 4)", "display": "fmt(round(q + q2, 4))" },
+        { "misconception": "arbre-add", "value": "round(p + q, 4)", "display": "fmt(round(p + q, 4))" }
+      ],
+      "method": "Formule des probabilités totales : deux chemins mènent à B. P(B) = {{ fmt(p) }} × {{ fmt(q) }} + {{ fmt(round(1 - p, 2)) }} × {{ fmt(q2) }} = {{ fmt(round(p * q, 4)) }} + {{ fmt(round((1 - p) * q2, 4)) }} = {{ fmt(tot) }}."
+    }
+  ]
+}

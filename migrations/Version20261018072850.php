@@ -158,7 +158,7 @@ final class Version20261018072850 extends AbstractMigration
               unit_code VARCHAR(40) NOT NULL,
               version INT NOT NULL,
               status VARCHAR(20) NOT NULL,
-              definition JSON NOT NULL,
+              definition LONGTEXT NOT NULL,
               note LONGTEXT DEFAULT NULL,
               bench_report JSON DEFAULT NULL,
               created_at DATETIME NOT NULL,

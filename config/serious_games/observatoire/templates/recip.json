@@ -1,0 +1,29 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "recip",
+  "label": "Évolution réciproque",
+  "misconceptions": [
+    { "id": "recip-same", "label": "Reprendre le même pourcentage dans l’autre sens" },
+    { "id": "recip-coef", "label": "Donner le coefficient réciproque au lieu du taux" },
+    { "id": "recip-complement", "label": "Prendre le complément à 100" }
+  ],
+  "params": {
+    "up": "chance(0.5)",
+    "t": "up ? pick([25, 100, 50, 60, 300, 150, 400, 20, 10]) : pick([20, 50, 25, 60, 75, 40, 10, 80])"
+  },
+  "let": {
+    "res": "up ? t / (100 + t) * 100 : t / (100 - t) * 100",
+    "coefR": "up ? 100 / (100 + t) * 100 : 100 / (100 - t) * 100",
+    "exact": "isInt(res * 10)",
+    "k": "1 + (up ? t : -t) / 100"
+  },
+  "difficulty": 3,
+  "prompt": "Après une {{ up ? 'hausse' : 'baisse' }} de {{ t }} %, quelle {{ up ? 'baisse' : 'hausse' }} ramène à la valeur initiale ?{{ exact ? '' : ' (arrondir à 0,1 %)' }}",
+  "answer": { "type": "number", "value": "res", "display": "approxPct(res)", "text": "fmt(round(res, 1))", "unit": "%", "tolerance": "exact ? 0.000001 : 0.15" },
+  "wrongs": [
+    { "misconception": "recip-same", "value": "t", "display": "pct(t)" },
+    { "misconception": "recip-coef", "value": "coefR", "display": "approxPct(coefR)" },
+    { "misconception": "recip-complement", "value": "up ? 100 - t : 100 + t", "display": "pct(up ? 100 - t : 100 + t)" }
+  ],
+  "method": "Le coefficient réciproque de {{ k }} est 1 ÷ {{ k }} ≈ {{ round(coefR / 100, 4) }}, soit une {{ up ? 'baisse' : 'hausse' }} de {{ approxPct(res) }}."
+}

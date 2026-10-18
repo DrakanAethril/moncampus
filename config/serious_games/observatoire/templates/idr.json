@@ -1,0 +1,49 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "idr",
+  "label": "Identités remarquables",
+  "misconceptions": [
+    { "id": "idr-no-double", "label": "(a + b)² = a² + b²" },
+    { "id": "idr-half", "label": "Oublier le 2 du double produit" },
+    { "id": "idr-k", "label": "Ne pas élever le coefficient de x au carré" },
+    { "id": "idr-sign", "label": "Erreur de signe sur le carré" },
+    { "id": "idr-confuse", "label": "Confondre (a − b)(a + b) et (a − b)²" },
+    { "id": "idr-double", "label": "Confondre carré et double" }
+  ],
+  "params": { "k": "pick([1, 1, 2, 3])", "a": "int(1, 9)", "s": "pick([1, -1])" },
+  "let": { "kx": "(k == 1 ? '' : k) ~ v('x')" },
+  "variants": [
+    {
+      "label": "Carré d’une somme ou d’une différence",
+      "weight": 2,
+      "difficulty": "k == 1 ? 1 : 2",
+      "let": {
+        "co": "[k * k, 2 * k * a * s, a * a]",
+        "w3": "k != 1 ? [k, 2 * k * a * s, a * a] : [k * k, 2 * k * a * s, -a * a]"
+      },
+      "prompt": "Développer et réduire ({{ kx }}{{ s > 0 ? ' + ' : ' − ' }}{{ a }})².",
+      "answer": { "type": "polynomial", "form": "developed", "value": "polyValue(co)", "display": "poly(co)", "text": "poly(co, true)" },
+      "wrongs": [
+        { "misconception": "idr-no-double", "value": "polyValue([k * k, 0, a * a])", "display": "poly([k * k, 0, a * a])" },
+        { "misconception": "idr-half", "value": "polyValue([k * k, k * a * s, a * a])", "display": "poly([k * k, k * a * s, a * a])" },
+        { "misconception": "idr-k", "value": "polyValue(w3)", "display": "poly(w3)", "when": "k != 1" },
+        { "misconception": "idr-sign", "value": "polyValue(w3)", "display": "poly(w3)", "when": "k == 1" }
+      ],
+      "method": "(a {{ s > 0 ? '+' : '−' }} b)² = a² {{ s > 0 ? '+' : '−' }} 2ab + b² avec a = {{ kx }} et b = {{ a }} : {{ poly(co) }}. Le double produit vaut 2 × {{ kx }} × {{ a }}."
+    },
+    {
+      "label": "Produit (a − b)(a + b)",
+      "weight": 1,
+      "difficulty": 1,
+      "let": { "cd": "[k * k, 0, -a * a]" },
+      "prompt": "Développer et réduire ({{ kx }} − {{ a }})({{ kx }} + {{ a }}).",
+      "answer": { "type": "polynomial", "form": "developed", "value": "polyValue(cd)", "display": "poly(cd)", "text": "poly(cd, true)" },
+      "wrongs": [
+        { "misconception": "idr-sign", "value": "polyValue([k * k, 0, a * a])", "display": "poly([k * k, 0, a * a])" },
+        { "misconception": "idr-confuse", "value": "polyValue([k * k, -2 * k * a, a * a])", "display": "poly([k * k, -2 * k * a, a * a])" },
+        { "misconception": "idr-double", "value": "polyValue([k * k, 0, -2 * a])", "display": "poly([k * k, 0, -2 * a])" }
+      ],
+      "method": "(a − b)(a + b) = a² − b² : les doubles produits s’annulent. Ici {{ poly(cd) }}."
+    }
+  ]
+}

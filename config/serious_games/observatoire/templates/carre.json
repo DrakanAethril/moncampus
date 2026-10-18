@@ -1,0 +1,80 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "carre",
+  "label": "Fonction carrée",
+  "misconceptions": [
+    { "id": "carre-one", "label": "Oublier la solution négative" },
+    { "id": "carre-half", "label": "Diviser par 2 au lieu de prendre la racine" },
+    { "id": "carre-neg", "label": "Oublier qu’un carré est toujours positif" },
+    { "id": "carre-bounds", "label": "Élever les bornes au carré sans tenir compte de 0" },
+    { "id": "carre-order", "label": "Garder l’ordre des bornes : x² n’est pas croissante sur ℝ" },
+    { "id": "carre-double", "label": "Confondre carré et double" },
+    { "id": "carre-zero", "label": "Ajouter 0 à tort" }
+  ],
+  "variants": [
+    {
+      "label": "x² = k",
+      "weight": 2,
+      "difficulty": "irr ? 2 : 1",
+      "params": {
+        "root": "int(1, 12)",
+        "irr": "chance(0.25) and root < 6",
+        "k": "irr ? pick([2, 3, 5, 6, 7, 10]) : root * root"
+      },
+      "let": {
+        "rt": "sqrt(k)",
+        "rh": "irr ? '√' ~ k : fmt(rt)",
+        "shown": "setHtml([-rt, rt], ['−' ~ rh, rh])"
+      },
+      "prompt": "Résoudre dans ℝ l’équation <i>x</i>² = {{ k }}.",
+      "answer": { "type": "set", "value": "[-rt, rt]", "display": "shown", "text": "irr ? '-√' ~ k ~ ' ; √' ~ k : '-' ~ fmt(rt) ~ ' ; ' ~ fmt(rt)" },
+      "wrongs": [
+        { "misconception": "carre-one", "value": "[rt]", "display": "setHtml([rt], [rh])" },
+        { "misconception": "carre-half", "value": "[-k / 2, k / 2]" },
+        { "misconception": "carre-neg", "value": "[]", "display": "'S = ∅'" }
+      ],
+      "method": "<i>x</i>² = {{ k }} a deux solutions opposées, car (−{{ rh }})² = {{ rh }}² = {{ k }} : {{ shown }}."
+    },
+    {
+      "label": "x² = −q²",
+      "weight": 1,
+      "difficulty": 2,
+      "params": { "q": "int(1, 9)" },
+      "let": { "kk": "-q * q" },
+      "prompt": "Résoudre dans ℝ l’équation <i>x</i>² = {{ kk }}.",
+      "answer": { "type": "set", "value": "[]", "display": "'S = ∅'", "text": "'∅'" },
+      "wrongs": [
+        { "misconception": "carre-neg", "value": "[-q, q]" },
+        { "misconception": "carre-neg", "value": "[q]" },
+        { "misconception": "carre-half", "value": "[kk / 2]" }
+      ],
+      "method": "Un carré est toujours positif ou nul : <i>x</i>² = {{ kk }} n’a aucune solution réelle, S = ∅."
+    },
+    {
+      "label": "Encadrement de x²",
+      "weight": 1,
+      "difficulty": 3,
+      "params": {
+        "a": "-int(1, 5)",
+        "b": "chance(0.7) ? int(1, 5) : -int(0, max(0, -a - 1))"
+      },
+      "let": {
+        "pos": "b > 0",
+        "M2": "max(a * a, b * b)",
+        "lo": "b > 0 ? 0 : b * b",
+        "hi": "b > 0 ? max(a * a, b * b) : a * a",
+        "ansH": "ivHtml(iv(lo, hi, true, true))"
+      },
+      "constraints": ["a != b", "not pos or a * a != b * b"],
+      "prompt": "Si {{ a }} ≤ <i>x</i> ≤ {{ b }}, à quel intervalle appartient <i>x</i>² ? (par exemple [0 ; 9])",
+      "answer": { "type": "interval", "value": "iv(lo, hi, true, true)", "display": "ansH" },
+      "wrongs": [
+        { "misconception": "carre-bounds", "value": "iv(min(a * a, b * b), M2, true, true)", "when": "pos" },
+        { "misconception": "carre-order", "value": "pos and a * a < b * b ? iv(b * b, a * a, true, true) : iv(a * a, b * b, true, true)" },
+        { "misconception": "carre-zero", "value": "iv(0, a * a, true, true)", "when": "not pos" },
+        { "misconception": "carre-double", "value": "iv(2 * a, 2 * b, true, true)" }
+      ],
+      "method": "{{ pos ? 'L’intervalle contient 0, où <i>x</i>² atteint son minimum 0 ; le maximum est le plus grand des carrés des bornes, ' ~ M2 ~ '. Donc ' ~ ansH ~ '.' : 'Sur ]−∞ ; 0], la fonction carrée est décroissante : elle renverse l’ordre, ' ~ fmt(b) ~ '² ≤ <i>x</i>² ≤ (' ~ fmt(a) ~ ')², soit ' ~ ansH ~ '.' }}"
+    }
+  ]
+}

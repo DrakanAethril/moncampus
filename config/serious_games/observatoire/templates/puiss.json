@@ -1,0 +1,76 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "puiss",
+  "label": "Puissances",
+  "misconceptions": [
+    { "id": "puiss-mul-exp", "label": "Multiplier les exposants au lieu de les additionner" },
+    { "id": "puiss-mul-base", "label": "Multiplier les bases entre elles" },
+    { "id": "puiss-both", "label": "Multiplier les bases et les exposants" },
+    { "id": "puiss-add-exp", "label": "Additionner les exposants au lieu de les soustraire" },
+    { "id": "puiss-order", "label": "Soustraire les exposants dans le mauvais ordre" },
+    { "id": "puiss-div-base", "label": "Diviser les bases entre elles" },
+    { "id": "puiss-add-pow", "label": "Additionner les exposants d'une puissance de puissance" },
+    { "id": "puiss-exp-exp", "label": "Élever l'exposant à la puissance" },
+    { "id": "puiss-base-times", "label": "Multiplier la base par l'exposant" }
+  ],
+  "params": { "B": "pick([2, 3, 5, 10, 10, 'a'])" },
+  "let": {
+    "lb": "B == 'a' ? ln(1.7) : ln(B)",
+    "bs": "B == 'a' ? v('a') : fmt(B)",
+    "sq": "B == 'a' ? '(' ~ v('a') ~ '²)' : fmt(B * B)",
+    "lsq": "2 * lb"
+  },
+  "variants": [
+    {
+      "label": "Produit",
+      "params": {
+        "m": "B == 10 ? nonZero(-5, 6) : int(2, 6)",
+        "n": "B == 10 ? nonZero(-5, 6) : int(2, 6)"
+      },
+      "difficulty": "B == 10 and (m < 0 or n < 0) ? 2 : 1",
+      "prompt": "Écrire sous la forme d’une seule puissance : {{ pow(bs, m) }} × {{ pow(bs, n) }}.",
+      "answer": { "type": "power", "value": "(m + n) * lb", "display": "pow(bs, m + n)" },
+      "wrongs": [
+        { "misconception": "puiss-mul-exp", "value": "m * n * lb", "display": "pow(bs, m * n)" },
+        { "misconception": "puiss-mul-base", "value": "(m + n) * lsq", "display": "pow(sq, m + n)" },
+        { "misconception": "puiss-both", "value": "m * n * lsq", "display": "pow(sq, m * n)" }
+      ],
+      "method": "{{ pow(bs, 'm') }} × {{ pow(bs, 'n') }} = {{ pow(bs, 'm+n') }} : on garde la base et on additionne les exposants, {{ m }} + {{ n < 0 ? '(' ~ fmt(n) ~ ')' : n }} = {{ m + n }}."
+    },
+    {
+      "label": "Quotient",
+      "params": {
+        "m": "B == 10 ? nonZero(-4, 8) : int(3, 9)",
+        "n0": "B == 10 ? nonZero(-4, 6) : int(1, m - 1)"
+      },
+      "let": { "n": "n0 == m ? (m - 1 != 0 ? m - 1 : 1) : n0" },
+      "difficulty": 2,
+      "prompt": "Écrire sous la forme d’une seule puissance : {{ fracRaw(pow(bs, m), pow(bs, n)) }}.",
+      "answer": { "type": "power", "value": "(m - n) * lb", "display": "pow(bs, m - n)" },
+      "wrongs": [
+        { "misconception": "puiss-add-exp", "value": "(m + n) * lb", "display": "pow(bs, m + n)" },
+        { "misconception": "puiss-order", "value": "(n - m) * lb", "display": "pow(bs, n - m)" },
+        { "misconception": "puiss-div-base", "value": 0, "display": "pow('1', m - n)" }
+      ],
+      "method": "{{ fracRaw(pow(bs, 'm'), pow(bs, 'n')) }} = {{ pow(bs, 'm−n') }} : exposant du numérateur moins exposant du dénominateur, {{ m }} − {{ n < 0 ? '(' ~ fmt(n) ~ ')' : n }} = {{ m - n }}."
+    },
+    {
+      "label": "Puissance de puissance",
+      "params": { "m0": "int(2, 4)", "n": "int(2, 3)" },
+      "let": {
+        "m": "m0 == n ? m0 + 1 : m0",
+        "bn": "B == 'a' ? '(' ~ n ~ v('a') ~ ')' : fmt(B * n)",
+        "lbn": "B == 'a' ? ln(1.7 * n) : ln(B * n)"
+      },
+      "difficulty": 1,
+      "prompt": "Écrire sous la forme d’une seule puissance : ({{ pow(bs, m) }})<sup>{{ n }}</sup>.",
+      "answer": { "type": "power", "value": "m * n * lb", "display": "pow(bs, m * n)" },
+      "wrongs": [
+        { "misconception": "puiss-add-pow", "value": "(m + n) * lb", "display": "pow(bs, m + n)" },
+        { "misconception": "puiss-exp-exp", "value": "m ** n * lb", "display": "pow(bs, m ** n)" },
+        { "misconception": "puiss-base-times", "value": "m * lbn", "display": "pow(bn, m)" }
+      ],
+      "method": "({{ pow(bs, 'm') }})<sup>n</sup> = {{ pow(bs, 'm×n') }} : on multiplie les exposants, {{ m }} × {{ n }} = {{ m * n }}."
+    }
+  ]
+}

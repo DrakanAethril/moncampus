@@ -1,0 +1,118 @@
+# L'Observatoire (design/validated/serious-games.md): automatismes de mathématiques de 1re.
+#
+# Read by `app:serious-games:sync`, which writes the SeriousGame row and installs the templates of
+# templates/ that are missing in the database. Everything the server decides is read from here -
+# the units and their chapters, the series, the final test, the comets, the rewards - so the game's
+# static package (public/serious-games/observatoire/) holds nothing but its display.
+slug: observatoire
+title: "L'Observatoire"
+pitch: "Calculer la position des étoiles pour rallumer la carte du ciel. Automatismes de l'épreuve anticipée."
+subjects: [Maths]
+levels: [1re]
+unit_label: étoiles
+answer_kinds: [short]
+version: 1.0.0
+# Published by an administrator from Paramètres › Serious games, never by the sync.
+published: false
+
+series:
+  size: 12
+  # A unit lights at 6/12; its brightness is its best series: 6 discrète, 8 nette, 10 brillante, 12 éclatante.
+  lit_at: 6
+
+final:
+  code: couronne
+  label: La Couronne
+  size: 12
+  time_limit_seconds: 1200
+  # 3 + 3 + 2 + 2 + 2 across the five constellations, shuffled between them.
+  per_chapter: [3, 3, 2, 2, 2]
+
+comet:
+  # The same typical error twice among the player's last 30 answers in the game.
+  window: 30
+  repeat: 2
+  questions: 3
+  solved_at: 2
+
+grades:
+  - [0, "Assistant·e stagiaire"]
+  - [8, "Assistant·e de nuit"]
+  - [16, "Observateur·rice"]
+  - [24, "Astronome adjoint·e"]
+  - [31, "Astronome"]
+
+chapters:
+  - code: compas
+    label: Le Compas
+    topic: Calcul numérique & algébrique
+    units:
+      - { code: frac, label: Fractions }
+      - { code: puiss, label: Puissances }
+      - { code: sci, label: Écriture scientifique }
+      - { code: prio, label: Priorités opératoires }
+      - { code: dev, label: Développer }
+      - { code: fact, label: Factoriser }
+      - { code: idr, label: Identités remarquables }
+  - code: sablier
+    label: Le Sablier
+    topic: Proportions & pourcentages
+    units:
+      - { code: prop, label: Proportion }
+      - { code: propprop, label: Proportion de proportion }
+      - { code: taux, label: "Taux d'évolution" }
+      - { code: cm, label: Coefficient multiplicateur }
+      - { code: succ, label: Évolutions successives }
+      - { code: recip, label: Évolution réciproque }
+  - code: balance
+    label: La Balance
+    topic: Équations & inéquations
+    units:
+      - { code: eq1, label: Équation du 1er degré }
+      - { code: isoler, label: Isoler une variable }
+      - { code: prodnul, label: Équation produit nul }
+      - { code: ineq, label: Inéquation }
+      - { code: signe, label: "Signe d'une fonction affine" }
+  - code: serpent
+    label: Le Serpent
+    topic: Fonctions & représentations
+    units:
+      - { code: image, label: "Image, antécédent" }
+      - { code: lecture, label: Lecture graphique }
+      - { code: variations, label: Sens de variation }
+      - { code: coefdir, label: Coefficient directeur }
+      - { code: ordorig, label: "Ordonnée à l'origine" }
+      - { code: resgraph, label: Résolution graphique }
+      - { code: carre, label: Fonction carrée }
+  - code: des
+    label: Les Dés
+    topic: Statistiques & probabilités
+    units:
+      - { code: moy, label: Moyenne }
+      - { code: freq, label: Fréquence }
+      - { code: proba, label: Probabilité simple }
+      - { code: med, label: "Médiane, quartiles" }
+      - { code: croise, label: Tableau croisé }
+      - { code: arbre, label: Arbre pondéré }
+
+rewards:
+  # The collection piece: brass once every star is lit, silver at 10/12 on the final test, gold at 12/12.
+  trophy:
+    code: astrolabe
+    label: "L'Astrolabe"
+    lore: "L'instrument de l'ancien astronome, retrouvé sous la carte du ciel quand la Couronne s'allume."
+    silver_at: 10
+    gold_at: 12
+  # Given with the trophy, worn on the avatar.
+  pin:
+    code: pin-etoile
+    label: Épinglette Étoile
+  # One card per complete constellation, and the card of the Couronne once it was played to the end.
+  cards: true
+
+thumbnail:
+  background: "radial-gradient(120% 90% at 50% 10%, #1B2550 0%, #101833 55%, #070B1C 100%)"
+  font: "'Cormorant Garamond', Georgia, serif"
+  style: italic
+  weight: 600
+  color: "#D9A441"

@@ -1,0 +1,38 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "croise",
+  "label": "Tableau croisé",
+  "misconceptions": [
+    { "id": "croise-total", "label": "Diviser par l’effectif total" },
+    { "id": "croise-wrong-margin", "label": "Diviser par le total de l’autre caractère" },
+    { "id": "croise-margin", "label": "Donner la part de la sous-population entière" }
+  ],
+  "difficulty": 2,
+  "params": {
+    "R1": "pick([20, 25, 40, 50])",
+    "R2": "pick([20, 25, 40, 50, 30, 35])",
+    "a": "int(1, R1 - 1)",
+    "c": "int(1, R2 - 1)",
+    "lab": "pick([['Filles', 'Garçons', 'Demi-pension', 'Externat', 'd’externes', 'parmi les filles', 1], ['Seconde', 'Première', 'Bus', 'Vélo', 'd’élèves venant en bus', 'parmi les élèves de seconde', 0]])"
+  },
+  "let": {
+    "b": "R1 - a",
+    "d": "R2 - c",
+    "N": "R1 + R2",
+    "C1": "a + c",
+    "C2": "b + d",
+    "askCol": "lab[6]",
+    "cell": "askCol == 1 ? b : a",
+    "colTot": "askCol == 1 ? C2 : C1",
+    "res": "cell / R1 * 100"
+  },
+  "constraints": ["isInt(a / R1 * 100)", "isInt(cell / R1 * 100)"],
+  "prompt": "D’après le tableau, quel est le pourcentage {{ lab[4] }} {{ lab[5] }} ?{{ table([['', lab[2], lab[3], 'Total'], [lab[0], a, b, R1], [lab[1], c, d, R2], ['Total', C1, C2, N]], true) }}",
+  "answer": { "type": "number", "value": "res", "display": "pct(res)", "unit": "%", "tolerance": 0.06 },
+  "wrongs": [
+    { "misconception": "croise-total", "value": "cell / N * 100", "display": "approxPct(cell / N * 100)" },
+    { "misconception": "croise-wrong-margin", "value": "cell / colTot * 100", "display": "approxPct(cell / colTot * 100)" },
+    { "misconception": "croise-margin", "value": "R1 / N * 100", "display": "approxPct(R1 / N * 100)" }
+  ],
+  "method": "« Parmi » fixe la population de référence : la ligne {{ lower(lab[0]) }}, d’effectif {{ R1 }}. {{ fracRaw(cell, R1) }} = {{ fmt(cell / R1) }}, soit {{ pct(res) }}."
+}

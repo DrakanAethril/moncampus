@@ -1,0 +1,66 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "fact",
+  "label": "Factoriser",
+  "misconceptions": [
+    { "id": "fact-partial-divide", "label": "Ne pas diviser le second terme par le facteur commun" },
+    { "id": "fact-incomplete", "label": "Factorisation incomplète" },
+    { "id": "fact-too-high", "label": "Mettre en facteur une puissance trop forte" },
+    { "id": "fact-lost-x", "label": "Oublier le x du premier facteur en regroupant" },
+    { "id": "fact-common-twice", "label": "Garder le facteur commun deux fois" },
+    { "id": "fact-multiply", "label": "Multiplier les facteurs au lieu de les regrouper" },
+    { "id": "fact-minus-bracket", "label": "Ne pas distribuer le − dans le crochet" }
+  ],
+  "variants": [
+    {
+      "label": "Facteur commun kx",
+      "weight": 0.5,
+      "difficulty": 2,
+      "minWrongs": 2,
+      "params": { "k": "int(2, 5)", "a": "int(1, 5)", "b0": "nonZero(-7, 7)" },
+      "let": {
+        "b": "gcd(a, b0) != 1 ? (b0 > 0 ? b0 + 1 : b0 - 1) : b0",
+        "kx": "(k == 1 ? '' : k) ~ v('x')",
+        "kxP": "(k == 1 ? '' : k) ~ 'x'",
+        "ex": "poly([k * a, k * b, 0])",
+        "ansP": "kxP ~ '(' ~ lin(a, b, true) ~ ')'",
+        "tooHigh": "k ~ 'x²(' ~ poly([b, a], true) ~ ')'"
+      },
+      "constraints": ["gcd(a, b) == 1"],
+      "prompt": "Factoriser au maximum {{ ex }}.",
+      "answer": { "type": "polynomial", "form": "factoredMax", "value": "ansP", "display": "kx ~ par(lin(a, b))", "text": "ansP", "shapeMisconception": "fact-incomplete" },
+      "wrongs": [
+        { "misconception": "fact-partial-divide", "value": "kxP ~ '(' ~ lin(a, k * b, true) ~ ')'", "display": "kx ~ par(lin(a, k * b))" },
+        { "misconception": "fact-too-high", "value": "tooHigh", "display": "k ~ v('x') ~ '²' ~ par(poly([b, a]))" }
+      ],
+      "method": "Le facteur commun aux deux termes est {{ kx }} ({{ k }} divise {{ k * a }} et {{ fmt(k * b) }}, et x est dans les deux) : {{ ex }} = {{ kx }} × {{ a }}{{ v('x') }} + {{ kx }} × {{ par(fmt(b)) }} = {{ kx }}{{ par(lin(a, b)) }}."
+    },
+    {
+      "label": "Facteur commun (x + p)",
+      "weight": 0.5,
+      "difficulty": 3,
+      "params": { "p": "nonZero(-6, 6)", "q": "nonZero(-6, 6)", "rr": "int(1, 3)", "s": "nonZero(-6, 6)", "minus": "chance(0.4)" },
+      "let": {
+        "c1": "minus ? 1 - rr : 1 + rr",
+        "c0": "minus ? q - s : q + s",
+        "F": "par(lin(1, p))",
+        "FP": "'(' ~ lin(1, p, true) ~ ')'",
+        "op": "minus ? ' − ' : ' + '",
+        "right": "par(lin(c1, c0))",
+        "rightP": "'(' ~ lin(c1, c0, true) ~ ')'",
+        "wr1": "'(' ~ lin(minus ? -rr : rr, c0, true) ~ ')'",
+        "wr3": "'(' ~ lin(c1, minus ? q + s : q - s, true) ~ ')'"
+      },
+      "constraints": ["c1 != 0", "c0 != 0"],
+      "prompt": "Factoriser {{ F }}{{ par(lin(1, q)) }}{{ op }}{{ F }}{{ par(lin(rr, s)) }}.",
+      "answer": { "type": "polynomial", "form": "factored", "value": "FP ~ rightP", "display": "F ~ right", "text": "FP ~ rightP" },
+      "wrongs": [
+        { "misconception": "fact-lost-x", "value": "FP ~ wr1", "display": "F ~ par(lin(minus ? -rr : rr, c0))" },
+        { "misconception": "fact-common-twice", "value": "FP ~ '^2' ~ rightP", "display": "F ~ '²' ~ right" },
+        { "misconception": "fact-minus-bracket", "value": "FP ~ wr3", "display": "F ~ par(lin(c1, minus ? q + s : q - s))", "when": "minus" },
+        { "misconception": "fact-multiply", "value": "FP ~ '(' ~ lin(1, q, true) ~ ')(' ~ lin(rr, s, true) ~ ')'", "display": "F ~ par(lin(1, q)) ~ par(lin(rr, s))", "when": "not minus" }
+      ],
+      "method": "Le facteur commun est {{ F }}. On le sort : {{ F }}[{{ par(lin(1, q)) }}{{ op }}{{ par(lin(rr, s)) }}] = {{ F }}{{ right }}{{ minus ? ' — le − change le signe de chaque terme du second crochet.' : '.' }}"
+    }
+  ]
+}

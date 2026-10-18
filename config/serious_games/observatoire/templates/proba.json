@@ -1,0 +1,70 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "proba",
+  "label": "Probabilité simple",
+  "misconceptions": [
+    { "id": "proba-odds", "label": "Comparer aux issues défavorables au lieu du total" },
+    { "id": "proba-equi", "label": "Croire les issues équiprobables" },
+    { "id": "proba-one", "label": "Ne compter qu’une issue favorable" },
+    { "id": "proba-52", "label": "Raisonner sur un jeu de 52 cartes" },
+    { "id": "proba-double-count", "label": "Compter deux fois une carte commune aux deux événements" },
+    { "id": "proba-strict", "label": "Oublier la valeur limite elle-même" },
+    { "id": "proba-complement", "label": "Donner la probabilité de l’événement contraire" }
+  ],
+  "variants": [
+    {
+      "label": "Urne",
+      "weight": 1,
+      "difficulty": 1,
+      "params": {
+        "R": "int(1, 9)",
+        "B": "int(1, 9)",
+        "Gg": "int(1, 9)",
+        "col": "pick([['rouge', R], ['bleue', B], ['verte', Gg]])"
+      },
+      "let": { "T": "R + B + Gg", "n": "col[1]" },
+      "prompt": "Une urne contient {{ R }} boules rouges, {{ B }} bleues et {{ Gg }} vertes. On tire une boule au hasard. Probabilité qu’elle soit {{ col[0] }} ?",
+      "answer": { "type": "number", "value": "n / T", "display": "frac(n, T)", "text": "fracText(n, T)" },
+      "wrongs": [
+        { "misconception": "proba-odds", "value": "n / (T - n)", "display": "frac(n, T - n)" },
+        { "misconception": "proba-equi", "value": "1 / 3", "display": "frac(1, 3)" },
+        { "misconception": "proba-one", "value": "1 / T", "display": "frac(1, T)" },
+        { "misconception": "proba-complement", "value": "(T - n) / T", "display": "frac(T - n, T)" }
+      ],
+      "method": "Situation d’équiprobabilité sur les {{ T }} boules : {{ fracRaw('issues favorables', 'issues possibles') }} = {{ fracRaw(n, T) }}{{ gcd(n, T) > 1 ? ' = ' ~ frac(n, T) : '' }}."
+    },
+    {
+      "label": "Cartes",
+      "weight": 1,
+      "difficulty": "ev[2] != null ? 3 : 1",
+      "params": {
+        "ev": "pick([['un as', 4, null], ['un cœur', 8, null], ['une figure (valet, dame ou roi)', 12, null], ['une carte rouge', 16, null], ['un as rouge', 2, null], ['un pique ou un as', 11, 12], ['un roi ou un trèfle', 11, 12]])"
+      },
+      "let": { "nn": "ev[1]" },
+      "prompt": "On tire une carte au hasard dans un jeu de 32 cartes. Probabilité d’obtenir {{ ev[0] }} ?",
+      "answer": { "type": "number", "value": "nn / 32", "display": "frac(nn, 32)", "text": "fracText(nn, 32)" },
+      "wrongs": [
+        { "misconception": "proba-double-count", "value": "ev[2] / 32", "display": "frac(ev[2], 32)", "when": "ev[2] != null" },
+        { "misconception": "proba-one", "value": "1 / 32", "display": "frac(1, 32)" },
+        { "misconception": "proba-52", "value": "nn / 52", "display": "frac(nn, 52)" },
+        { "misconception": "proba-odds", "value": "nn / (32 - nn)", "display": "frac(nn, 32 - nn)" }
+      ],
+      "method": "Le jeu de 32 cartes a 4 couleurs de 8 cartes (7, 8, 9, 10, V, D, R, As). On compte {{ nn }} cartes favorables{{ ev[2] != null ? ', sans compter deux fois celle qui est dans les deux' : '' }} : {{ fracRaw(nn, 32) }}{{ gcd(nn, 32) > 1 ? ' = ' ~ frac(nn, 32) : '' }}."
+    },
+    {
+      "label": "Dé",
+      "weight": 1,
+      "difficulty": 1,
+      "params": { "k": "int(2, 5)" },
+      "let": { "fav": "7 - k" },
+      "prompt": "On lance un dé équilibré à 6 faces. Probabilité d’obtenir au moins {{ k }} ?",
+      "answer": { "type": "number", "value": "fav / 6", "display": "frac(fav, 6)", "text": "fracText(fav, 6)" },
+      "wrongs": [
+        { "misconception": "proba-strict", "value": "(fav - 1) / 6", "display": "frac(fav - 1, 6)" },
+        { "misconception": "proba-one", "value": "1 / 6", "display": "frac(1, 6)" },
+        { "misconception": "proba-complement", "value": "(k - 1) / 6", "display": "frac(k - 1, 6)" }
+      ],
+      "method": "« Au moins {{ k }} » : les faces {{ join(filter(range(k, k + 4), 'item <= 6'), ', ') }}, soit {{ fav }} issues sur 6 : {{ frac(fav, 6) }}."
+    }
+  ]
+}
