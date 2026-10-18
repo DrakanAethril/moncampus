@@ -42,6 +42,29 @@ class SeriousGamePlayTest extends FunctionalTestCase
         $this->token = $this->csrfToken('serious-games');
     }
 
+    public function testTheHostPageCarriesTheFullScreenToggleAndLoadsTheGameOnceItListens(): void
+    {
+        $this->client->request('GET', '/serious-games/play/observatoire');
+        $page = (string) $this->client->getResponse()->getContent();
+
+        self::assertStringContainsString('data-action="serious-game-host#toggleFullscreen"', $page);
+        self::assertStringContainsString('data-serious-game-host-target="timer"', $page);
+        self::assertStringContainsString('data-serious-game-host-src-value="/serious-games/observatoire/index.html', $page);
+        self::assertDoesNotMatchRegularExpression('/<iframe[^>]*\ssrc=/', $page, 'the relay gives the frame its address');
+    }
+
+    public function testATimedSessionCarriesItsDeadlineAndTheServersClock(): void
+    {
+        $this->lightEveryStar();
+        $final = $this->call('POST', 'final');
+
+        self::assertIsString($final['deadline']);
+        self::assertIsString($final['serverTime']);
+        self::assertSame(1200, strtotime($final['deadline']) - strtotime($final['serverTime']));
+        $next = $this->call('POST', 'sessions/'.self::int($final, 'session').'/next');
+        self::assertSame($final['deadline'], $next['deadline']);
+    }
+
     public function testASeriesLightsAStarAndAWorseOneNeverDimsIt(): void
     {
         $series = $this->call('POST', 'series', ['unit' => 'taux']);

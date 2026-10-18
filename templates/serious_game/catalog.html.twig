@@ -31,7 +31,7 @@
 {% endblock %}
 
 {% block main %}
-    <div class="cm-sg-catalog" data-controller="sg-catalog">
+    <div class="cm-sg-catalog" data-controller="sg-catalog sg-launch">
         <aside class="card cm-sg-catalog__filters">
             <label class="cm-sg-catalog__search">
                 <span class="visually-hidden">{{ 'seriousGameCatalogSearchLabel'|trans }}</span>
@@ -70,7 +70,7 @@
                     <article class="cm-sg-card" data-sg-catalog-target="card"
                              data-subjects="{{ game.subjects|json_encode }}" data-levels="{{ game.levels|json_encode }}"
                              data-status="{{ card.status }}" data-text="{{ (game.title ~ ' ' ~ game.pitch)|lower }}">
-                        <a class="cm-sg-card__visual" href="{{ path('app_serious_games_play', {slug: game.slug}) }}"
+                        <a class="cm-sg-card__visual" data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}"
                            style="background: {{ thumb.background|default('#1B2550') }}; color: {{ thumb.color|default('#D9A441') }}; font-family: {{ thumb.font|default('Georgia, serif') }}; font-style: {{ thumb.style|default('normal') }}; font-weight: {{ thumb.weight|default(600) }};">
                             <span class="cm-sg-card__title-art">{{ game.title }}</span>
                             {% if not game.published %}<span class="cm-sg-card__flag">{{ 'seriousGameUnpublishedLabel'|trans }}</span>{% endif %}
@@ -79,7 +79,7 @@
                             {% endif %}
                         </a>
                         <div class="cm-sg-card__body">
-                            <h2 class="cm-sg-card__title"><a href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ game.title }}</a></h2>
+                            <h2 class="cm-sg-card__title"><a data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ game.title }}</a></h2>
                             <p class="cm-sg-card__pitch">{{ game.pitch }}</p>
                             <div class="cm-sg-card__tags">
                                 {% for subject in game.subjects %}<span class="cm-sg-tag cm-sg-tag--subject">{{ subject }}</span>{% endfor %}
@@ -92,7 +92,7 @@
                                         <span class="cm-sg-card__value">{{ card.value }}/{{ card.total }} {{ game.unitLabel }}</span>
                                     {% endif %}
                                 </div>
-                                <a class="cm-sg-card__cta" href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ ('seriousGameCta' ~ card.status|capitalize)|trans }}</a>
+                                <a class="cm-sg-card__cta" data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ ('seriousGameCta' ~ card.status|capitalize)|trans }}</a>
                             </div>
                         </div>
                     </article>
