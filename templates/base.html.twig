@@ -65,8 +65,12 @@
         {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
         {% if frankenphpHotReload %}
         <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
+        {# Dev only (FRANKENPHP_HOT_RELOAD). Versions and files pinned: idiomorph 0.8.0 dropped the
+           `main` field jsDelivr resolved a bare /npm/idiomorph with, and the unpinned URL answered a
+           404 that Chrome blocked (ERR_BLOCKED_BY_ORB) on every page - the hot reload then fell
+           back to Turbo without saying so. #}
+        <script src="https://cdn.jsdelivr.net/npm/idiomorph@0.8.0/dist/idiomorph.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload@1.0.1/+esm" type="module"></script>
         {% endif %}
     </head>
     <body>
