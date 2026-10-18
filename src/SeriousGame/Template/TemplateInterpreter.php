@@ -42,9 +42,9 @@ final class TemplateInterpreter
     public const int MAX_ATTEMPTS = 200;
     public const int DEFAULT_MIN_WRONGS = 3;
 
-    private const array TOP_KEYS = ['format', 'unit', 'label', 'kind', 'difficulty', 'misconceptions', 'params', 'let', 'constraints', 'variants', 'prompt', 'figure', 'answer', 'wrongs', 'method', 'minWrongs', 'notes'];
+    private const array TOP_KEYS = ['format', 'unit', 'label', 'difficulty', 'misconceptions', 'params', 'let', 'constraints', 'variants', 'prompt', 'figure', 'answer', 'wrongs', 'method', 'minWrongs', 'notes'];
     private const array VARIANT_KEYS = ['weight', 'label', 'difficulty', 'params', 'let', 'constraints', 'prompt', 'figure', 'answer', 'wrongs', 'method', 'minWrongs'];
-    private const array ANSWER_KEYS = ['type', 'value', 'display', 'text', 'tolerance', 'unit', 'form', 'anyClosure', 'vars', 'target', 'shapeMisconception'];
+    private const array ANSWER_KEYS = ['type', 'value', 'display', 'text', 'tolerance', 'unit', 'form', 'anyClosure', 'vars', 'target', 'shapeMisconception', 'labels', 'choices'];
     private const array WRONG_KEYS = ['misconception', 'value', 'display', 'text', 'when'];
     private const array RESERVED = ['item', 'index', TemplateFunctions::CONTEXT, 'true', 'false', 'null'];
 
@@ -95,9 +95,6 @@ final class TemplateInterpreter
         }
         if (!\is_string($document['label'] ?? null) || '' === trim($document['label'])) {
             throw new TemplateFormatException('label', 'libellé de l’unité attendu');
-        }
-        if (isset($document['kind']) && 'short' !== $document['kind']) {
-            throw new TemplateFormatException('kind', 'seule la réponse courte (« short ») existe');
         }
 
         $ids = [];
@@ -264,6 +261,22 @@ final class TemplateInterpreter
             return null;
         }
 
+        // A QCM shows the answer and as many typical wrong answers as it has room for, in the order
+        // of the seed: only a proposition the student can choose is an error they can be
+        // recognised making, so the others are dropped.
+        $choices = [];
+        if (AnswerType::Choice === $spec->type) {
+            if (\count($wrongs) < $spec->choices - 1) {
+                return null;
+            }
+            $wrongs = \array_slice($wrongs, 0, $spec->choices - 1);
+            $options = [['value' => $text, 'html' => $display]];
+            foreach ($wrongs as $wrong) {
+                $options[] = ['value' => $wrong['text'], 'html' => $wrong['display']];
+            }
+            $choices = (new SeededRandom($seed, $template->unit.'#choices'))->shuffle($options);
+        }
+
         $figure = null;
         if (isset($variant['figure']) && \is_array($variant['figure'])) {
             $figure = $this->figure($variant['figure'], $variables);
@@ -276,7 +289,7 @@ final class TemplateInterpreter
             unit: $template->unit,
             version: $template->version,
             seed: $seed,
-            kind: 'short',
+            kind: $spec->type->kind(),
             prompt: ($this->sanitize)($this->render(self::stringAt($variant, 'prompt'), $variables, 'prompt')),
             figure: $figure,
             spec: $spec,
@@ -289,6 +302,7 @@ final class TemplateInterpreter
             misconceptions: $misconceptions,
             shapeMisconception: \is_string($answer['shapeMisconception'] ?? null) ? $answer['shapeMisconception'] : null,
             attempts: $attempt,
+            choices: array_map(fn (array $c): array => ['value' => $c['value'], 'html' => ($this->sanitize)($c['html'])], $choices),
         );
     }
 
@@ -312,6 +326,9 @@ final class TemplateInterpreter
         }
         if (\is_string($answer['target'] ?? null)) {
             $answer['target'] = $this->evaluate($answer['target'], $variables, 'answer.target');
+        }
+        if (\is_string($answer['labels'] ?? null)) {
+            $answer['labels'] = $this->evaluate($answer['labels'], $variables, 'answer.labels');
         }
 
         return $answer;
@@ -500,6 +517,9 @@ final class TemplateInterpreter
                 ? MathFormat::intervalHtml(['lo' => $value['lo'], 'hi' => $value['hi'], 'lc' => true === ($value['lc'] ?? false), 'hc' => true === ($value['hc'] ?? false)])
                 : '',
             AnswerType::Scientific => \is_array($value) && isset($value['m'], $value['e']) && \is_float($value['m']) && \is_int($value['e']) ? MathFormat::sci($value['m'], $value['e']) : '',
+            // a Latin form in italics, its first accepted writing; a table, its cells in order
+            AnswerType::Latin => \is_array($value) && \is_string($value[0] ?? null) ? '<i>'.htmlspecialchars($value[0], \ENT_NOQUOTES).'</i>' : '',
+            AnswerType::Forms => \is_array($value) ? implode(' · ', array_map(static fn (mixed $cell): string => \is_array($cell) && \is_string($cell[0] ?? null) ? '<i>'.htmlspecialchars($cell[0], \ENT_NOQUOTES).'</i>' : '', $value)) : '',
             default => \is_int($value) || \is_float($value) ? MathFormat::fmt($value) : (\is_string($value) ? $value : ''),
         };
     }
@@ -559,7 +579,7 @@ final class TemplateInterpreter
         }
         $answer = $body['answer'];
         self::onlyKeys($answer, self::ANSWER_KEYS, $path.'answer');
-        foreach (['tolerance', 'vars', 'target'] as $key) {
+        foreach (['tolerance', 'vars', 'target', 'labels'] as $key) {
             $this->lint($answer[$key] ?? null, $path.'answer.'.$key);
         }
         try {
@@ -569,6 +589,7 @@ final class TemplateInterpreter
                 'tolerance' => \is_string($answer['tolerance'] ?? null) ? null : ($answer['tolerance'] ?? null),
                 'vars' => \is_string($answer['vars'] ?? null) ? ['x'] : ($answer['vars'] ?? null),
                 'target' => isset($answer['target']) ? 'x' : null,
+                'labels' => \is_string($answer['labels'] ?? null) ? ['a', 'b'] : ($answer['labels'] ?? null),
             ] + $answer);
         } catch (TemplateFormatException $e) {
             throw new TemplateFormatException($path.$e->path, str_replace($e->path.' : ', '', $e->getMessage()));

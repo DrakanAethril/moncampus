@@ -13,13 +13,15 @@ use App\SeriousGame\Answer\AnswerSpec;
  * receives is publicView(), which carries neither - « jamais la réponse » (§6.2).
  *
  * @phpstan-type Wrong array{value: mixed, display: string, text: string, misconception: string}
- * @phpstan-type PublicQuestion array{unit: string, version: int, seed: int, kind: string, prompt: string, figure: ?string, answerType: string, unit_label: ?string, form: ?string, difficulty: int, misconceptions: list<array{id: string, label: string}>}
+ * @phpstan-type Choice array{value: string, html: string}
+ * @phpstan-type PublicQuestion array{unit: string, version: int, seed: int, kind: string, prompt: string, figure: ?string, answerType: string, unit_label: ?string, form: ?string, difficulty: int, misconceptions: list<array{id: string, label: string}>, labels: list<string>, choices: list<Choice>}
  */
 final readonly class GeneratedQuestion
 {
     /**
      * @param list<Wrong>                              $wrongs         the distinct wrong answers this question recognises
      * @param list<array{id: string, label: string}> $misconceptions the template's catalogue, without values
+     * @param list<Choice>                             $choices        a QCM's propositions, in the order shown: the answer among its typical wrong answers
      */
     public function __construct(
         public string $unit,
@@ -38,6 +40,7 @@ final readonly class GeneratedQuestion
         public array $misconceptions,
         public ?string $shapeMisconception,
         public int $attempts,
+        public array $choices = [],
     ) {
     }
 
@@ -59,7 +62,8 @@ final readonly class GeneratedQuestion
     }
 
     /**
-     * The statement as the game receives it: never the answer, never the wrong values.
+     * The statement as the game receives it: never the answer, never the wrong values - except,
+     * for a QCM, the propositions themselves, among which nothing says which one is right.
      *
      * @return PublicQuestion
      */
@@ -77,6 +81,8 @@ final readonly class GeneratedQuestion
             'form' => $this->spec->form,
             'difficulty' => $this->difficulty,
             'misconceptions' => $this->misconceptions,
+            'labels' => $this->spec->labels,
+            'choices' => $this->choices,
         ];
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\SeriousGame\Template;
 
+use App\SeriousGame\Answer\AnswerType;
+
 /**
  * One version of a unit's template, as the engine reads it: the unit, the version number and the
  * JSON document. Independent of Doctrine so that the bench and the tests run on the files of the
@@ -39,9 +41,30 @@ final readonly class TemplateDefinition
         return \is_string($this->document['label'] ?? null) ? $this->document['label'] : $this->unit;
     }
 
-    public function kind(): string
+    /**
+     * The kinds of answer this template asks - `short`, `choice` or both - read from the answer
+     * type of each variant. A unit is served when one of them is a kind its game accepts
+     * (design/validated/serious-games.md §1.14), and a question of a kind the game refuses is never
+     * planned (QuestionEngine).
+     *
+     * @return list<string>
+     */
+    public function kinds(): array
     {
-        return \is_string($this->document['kind'] ?? null) ? $this->document['kind'] : 'short';
+        $bodies = \is_array($this->document['variants'] ?? null) ? $this->document['variants'] : [$this->document];
+        $kinds = [];
+        foreach ($bodies as $body) {
+            $type = \is_array($body) && \is_array($body['answer'] ?? null) && \is_string($body['answer']['type'] ?? null) ? AnswerType::tryFrom($body['answer']['type']) : null;
+            $kinds[] = ($type ?? AnswerType::Text)->kind();
+        }
+
+        return array_values(array_unique($kinds));
+    }
+
+    /** @param list<string> $kinds the kinds a game accepts */
+    public function servableWith(array $kinds): bool
+    {
+        return [] !== array_intersect($this->kinds(), $kinds);
     }
 
     /** @return list<array{id: string, label: string, explanation: ?string}> */

@@ -1,0 +1,96 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "manus",
+  "label": "4e déclinaison (manus, -us)",
+  "misconceptions": [
+    {
+      "id": "manus-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "Le cas peut être juste et le nombre faux : chaque cas a une terminaison au singulier et une autre au pluriel. Repère d’abord le nombre demandé, puis la ligne du tableau."
+    },
+    {
+      "id": "manus-nominatif",
+      "label": "Laisser le mot au nominatif",
+      "explanation": "Le nominatif n’est que la forme du dictionnaire : un mot latin change de terminaison selon sa fonction. Pars du radical du génitif et ajoute la terminaison du cas demandé."
+    },
+    {
+      "id": "manus-cas",
+      "label": "Confondre deux cas voisins",
+      "explanation": "Certains cas ont des terminaisons proches ou identiques (datif et ablatif pluriels, génitif et datif singuliers de la 1re déclinaison). Récite la ligne entière du tableau pour retrouver la bonne case."
+    },
+    {
+      "id": "manus-decl",
+      "label": "Prendre manus pour un nom de la 2e déclinaison",
+      "explanation": "Manus, exercitus, senatus ressemblent à dominus, mais leur génitif est en -us : ils appartiennent à la 4e déclinaison. On décline -um, -us, -ui, -u ; -us, -uum, -ibus."
+    },
+    {
+      "id": "manus-gen",
+      "label": "Génitif pluriel en -um au lieu de -uum",
+      "explanation": "Le génitif pluriel de la 4e déclinaison garde le -u- du radical : manuum, exercituum, avec deux u."
+    }
+  ],
+  "params": {
+    "w": "pick([['manus', 'manus', 'f', 'la main', 'les mains'], ['exercitus', 'exercitus', 'm', 'l’armée', 'les armées'], ['senatus', 'senatus', 'm', 'le sénat', 'les sénats'], ['fructus', 'fructus', 'm', 'le fruit', 'les fruits'], ['portus', 'portus', 'm', 'le port', 'les ports'], ['impetus', 'impetus', 'm', 'l’attaque', 'les attaques'], ['currus', 'currus', 'm', 'le char', 'les chars'], ['metus', 'metus', 'm', 'la peur', 'les peurs'], ['cursus', 'cursus', 'm', 'la course', 'les courses'], ['spiritus', 'spiritus', 'm', 'le souffle', 'les souffles'], ['exitus', 'exitus', 'm', 'la sortie', 'les sorties'], ['magistratus', 'magistratus', 'm', 'le magistrat', 'les magistrats']])",
+    "k": "pick(['acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "variants": [
+    {
+      "weight": 5,
+      "label": "Une forme",
+      "prompt": "Décline <i>{{ w[0] }}, {{ w[1] }}</i> ({{ (keyNumber(k) == 'sg' ? w[3] : w[4]) }}) {{ atCase(k) }}.",
+      "answer": {
+        "type": "latin",
+        "value": "forms(w, k)"
+      },
+      "wrongs": [
+        {
+          "misconception": "manus-nombre",
+          "value": "forms(w, otherNumber(k))"
+        },
+        {
+          "misconception": "manus-nominatif",
+          "value": "form(w, 'nom.' ~ keyNumber(k))",
+          "when": "keyCase(k) != 'nom' and keyCase(k) != 'voc'"
+        },
+        {
+          "misconception": "manus-gen",
+          "value": "stem(w) ~ 'um'",
+          "when": "k == 'gen.pl'"
+        },
+        {
+          "misconception": "manus-decl",
+          "value": "formAs(w, 2, k, 'genitive')"
+        },
+        {
+          "misconception": "manus-cas",
+          "value": "forms(w, withCase(k, confusedCase(keyCase(k))))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ declName(decl(w)) }} : le radical <i>{{ stem(w) }}-</i> se lit sur le génitif <i>{{ w[1] }}</i>. {{ ucfirst(caseLabel(k)) }} : <i>{{ form(w, k) }}</i>.{{ declTable(w, k) }}"
+    },
+    {
+      "weight": 1,
+      "label": "Le tableau",
+      "prompt": "Décline <i>{{ w[0] }}, {{ w[1] }}</i> ({{ (n == 'sg' ? w[3] : w[4]) }}) au {{ numberName(n) }} : les six cas.",
+      "answer": {
+        "type": "forms",
+        "value": "paradigmAlts(w, n)",
+        "labels": "caseNames()"
+      },
+      "wrongs": [
+        {
+          "misconception": "manus-nombre",
+          "value": "paradigm(w, n == 'sg' ? 'pl' : 'sg')"
+        },
+        {
+          "misconception": "manus-decl",
+          "value": "paradigmAs(w, 2, n, 'genitive')"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ declName(decl(w)) }}, radical <i>{{ stem(w) }}-</i> (génitif <i>{{ w[1] }}</i>).{{ declTable(w, n == 'sg' ? ['nom.sg', 'voc.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg'] : ['nom.pl', 'voc.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl']) }}"
+    }
+  ]
+}

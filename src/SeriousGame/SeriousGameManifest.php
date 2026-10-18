@@ -12,6 +12,7 @@ namespace App\SeriousGame;
  * The only reader of that JSON - nobody indexes the array by hand.
  *
  * @phpstan-type Unit array{code: string, label: string, chapter: string}
+ * @phpstan-type Words array{unit: string, units: string, chapter: string, chapters: string, lit: string, litPlural: string, unlit: string, unlitPlural: string, level: string, skill: string, comet: string, comets: string, cometSolved: string, cometInView: string, chapterDone: string, dim: string, brightness: array<string, string>}
  * @phpstan-type Chapter array{code: string, label: string, topic: string, units: list<Unit>}
  */
 final readonly class SeriousGameManifest
@@ -191,6 +192,51 @@ final readonly class SeriousGameManifest
     public function hasCards(): bool
     {
         return true === $this->path(['rewards', 'cards']);
+    }
+
+    /**
+     * The game's own vocabulary (`words` in game.yaml), which Formatool's screens use when they
+     * speak of this game: a star is « allumée » in L'Observatoire, a tablet « tracée » in Les
+     * Tablettes de Pompéi; a repeated error is a « comète » there, a « lézarde » here. What a
+     * manifest does not say is L'Observatoire's word - the first game, written before the key.
+     * The sentences that use these words agree in the feminine, as both games' nouns do.
+     *
+     * @return Words
+     */
+    public function words(): array
+    {
+        $pair = function (string $key, string $one, string $many): array {
+            $value = $this->path(['words', $key]);
+            if (\is_array($value) && \is_string($value[0] ?? null)) {
+                return [$value[0], \is_string($value[1] ?? null) ? $value[1] : $value[0]];
+            }
+
+            return \is_string($value) ? [$value, $value] : [$one, $many];
+        };
+        [$unit, $units] = $pair('unit', 'étoile', 'étoiles');
+        [$chapter, $chapters] = $pair('chapter', 'constellation', 'constellations');
+        [$lit, $litPlural] = $pair('lit', 'allumée', 'allumées');
+        [$unlit, $unlitPlural] = $pair('unlit', 'éteinte', 'éteintes');
+        [$comet, $comets] = $pair('comet', 'comète', 'comètes');
+
+        $brightness = ['discrete' => 'discrète', 'clear' => 'nette', 'bright' => 'brillante', 'blazing' => 'éclatante'];
+        foreach ($brightness as $level => $word) {
+            $value = $this->path(['words', 'brightness', $level]);
+            $brightness[$level] = \is_array($value) && \is_string($value[0] ?? null) ? $value[0] : (\is_string($value) ? $value : $word);
+        }
+
+        return [
+            'unit' => $unit, 'units' => $units, 'chapter' => $chapter, 'chapters' => $chapters,
+            'lit' => $lit, 'litPlural' => $litPlural, 'unlit' => $unlit, 'unlitPlural' => $unlitPlural,
+            'level' => $this->string(['words', 'level'], 'éclat'),
+            'skill' => $this->string(['words', 'skill'], 'automatisme'),
+            'comet' => $comet, 'comets' => $comets,
+            'cometSolved' => $this->string(['words', 'comet_solved'], 'élucidée'),
+            'cometInView' => $this->string(['words', 'comet_in_view'], 'en vue'),
+            'chapterDone' => $this->string(['words', 'chapter_done'], 'complète'),
+            'dim' => $this->string(['words', 'dim_filter'], 'Peu d’éclat'),
+            'brightness' => $brightness,
+        ];
     }
 
     /** @return array<string, string> */

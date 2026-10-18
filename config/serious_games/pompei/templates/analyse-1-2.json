@@ -1,0 +1,84 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "analyse-1-2",
+  "label": "Analyser une forme (1re et 2e déclinaisons)",
+  "misconceptions": [
+    {
+      "id": "analyse-1-2-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "Une terminaison dit à la fois le cas et le nombre. Cherche la forme dans le tableau entier, singulier et pluriel, avant de choisir."
+    },
+    {
+      "id": "analyse-1-2-lecture",
+      "label": "Lire la terminaison d’une autre déclinaison",
+      "explanation": "La même terminaison n’a pas le même sens d’une déclinaison à l’autre : -is est un datif-ablatif pluriel pour rosa, un génitif singulier pour rex. Repère d’abord la déclinaison du mot grâce à son génitif."
+    },
+    {
+      "id": "analyse-1-2-cas",
+      "label": "Confondre deux cas",
+      "explanation": "Avant de répondre, récite la déclinaison du mot et cherche toutes les cases où la forme apparaît. Une forme peut avoir plusieurs analyses : une seule figure parmi les propositions."
+    }
+  ],
+  "params": {
+    "w": "pick([['rosa', 'rosae', 'f', 'la rose', 'les roses'], ['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['aqua', 'aquae', 'f', 'l’eau', 'les eaux'], ['via', 'viae', 'f', 'la route', 'les routes'], ['insula', 'insulae', 'f', 'l’île', 'les îles'], ['silva', 'silvae', 'f', 'la forêt', 'les forêts'], ['villa', 'villae', 'f', 'la villa', 'les villas'], ['porta', 'portae', 'f', 'la porte', 'les portes'], ['columna', 'columnae', 'f', 'la colonne', 'les colonnes'], ['tabula', 'tabulae', 'f', 'la tablette', 'les tablettes'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['terra', 'terrae', 'f', 'la terre', 'les terres'], ['epistula', 'epistulae', 'f', 'la lettre', 'les lettres'], ['amphora', 'amphorae', 'f', 'l’amphore', 'les amphores'], ['sagitta', 'sagittae', 'f', 'la flèche', 'les flèches'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['equus', 'equi', 'm', 'le cheval', 'les chevaux'], ['murus', 'muri', 'm', 'le mur', 'les murs'], ['hortus', 'horti', 'm', 'le jardin', 'les jardins'], ['lupus', 'lupi', 'm', 'le loup', 'les loups'], ['populus', 'populi', 'm', 'le peuple', 'les peuples'], ['ventus', 'venti', 'm', 'le vent', 'les vents'], ['oculus', 'oculi', 'm', 'l’œil', 'les yeux'], ['annus', 'anni', 'm', 'l’année', 'les années'], ['gladius', 'gladii', 'm', 'l’épée', 'les épées'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['stilus', 'stili', 'm', 'le stylet', 'les stylets'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['ager', 'agri', 'm', 'le champ', 'les champs'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['liber', 'libri', 'm', 'le livre', 'les livres'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['culter', 'cultri', 'm', 'le couteau', 'les couteaux'], ['socer', 'soceri', 'm', 'le beau-père', 'les beaux-pères'], ['aper', 'apri', 'm', 'le sanglier', 'les sangliers'], ['templum', 'templi', 'n', 'le temple', 'les temples'], ['bellum', 'belli', 'n', 'la guerre', 'les guerres'], ['donum', 'doni', 'n', 'le cadeau', 'les cadeaux'], ['oppidum', 'oppidi', 'n', 'la place forte', 'les places fortes'], ['verbum', 'verbi', 'n', 'la parole', 'les paroles'], ['forum', 'fori', 'n', 'le forum', 'les forums'], ['periculum', 'periculi', 'n', 'le danger', 'les dangers'], ['consilium', 'consilii', 'n', 'le conseil', 'les conseils'], ['signum', 'signi', 'n', 'le signe', 'les signes'], ['vinum', 'vini', 'n', 'le vin', 'les vins']])",
+    "k": "pick(['nom.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])"
+  },
+  "let": {
+    "f": "form(w, k)",
+    "A": "analyses(w, f)",
+    "M": "misreadings(w, f)"
+  },
+  "prompt": "Quelle analyse convient à la forme <i>{{ f }}</i> ({{ w[0] }}, {{ w[1] }} : {{ w[3] }}) ?",
+  "answer": {
+    "type": "choice",
+    "value": "caseLabel(k)"
+  },
+  "wrongs": [
+    {
+      "misconception": "analyse-1-2-nombre",
+      "value": "caseLabel(otherNumber(k))",
+      "when": "not has(A, otherNumber(k))"
+    },
+    {
+      "misconception": "analyse-1-2-lecture",
+      "value": "caseLabel(M[0])",
+      "when": "count(M) > 0"
+    },
+    {
+      "misconception": "analyse-1-2-cas",
+      "value": "caseLabel(withCase(k, confusedCase(keyCase(k))))",
+      "when": "not has(A, withCase(k, confusedCase(keyCase(k))))"
+    },
+    {
+      "misconception": "analyse-1-2-lecture",
+      "value": "caseLabel(M[1])",
+      "when": "count(M) > 1"
+    },
+    {
+      "misconception": "analyse-1-2-cas",
+      "value": "caseLabel(withCase(k, 'acc'))",
+      "when": "not has(A, withCase(k, 'acc'))"
+    },
+    {
+      "misconception": "analyse-1-2-cas",
+      "value": "caseLabel(withCase(k, 'gen'))",
+      "when": "not has(A, withCase(k, 'gen'))"
+    },
+    {
+      "misconception": "analyse-1-2-cas",
+      "value": "caseLabel(withCase(k, 'dat'))",
+      "when": "not has(A, withCase(k, 'dat'))"
+    },
+    {
+      "misconception": "analyse-1-2-cas",
+      "value": "caseLabel(withCase(k, 'abl'))",
+      "when": "not has(A, withCase(k, 'abl'))"
+    },
+    {
+      "misconception": "analyse-1-2-cas",
+      "value": "caseLabel(withCase(k, 'nom'))",
+      "when": "not has(A, withCase(k, 'nom'))"
+    }
+  ],
+  "method": "<i>{{ f }}</i> : {{ join(map(A, \"caseLabel(item)\"), ', ') }}.{{ count(A) > 1 ? ' Une forme peut avoir plusieurs analyses : une seule figurait parmi les propositions.' : '' }}{{ declTable(w, A) }}"
+}

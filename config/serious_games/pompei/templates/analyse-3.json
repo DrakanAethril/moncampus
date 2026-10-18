@@ -1,0 +1,84 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "analyse-3",
+  "label": "Analyser une forme (3e déclinaison)",
+  "misconceptions": [
+    {
+      "id": "analyse-3-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "Une terminaison dit à la fois le cas et le nombre. Cherche la forme dans le tableau entier, singulier et pluriel, avant de choisir."
+    },
+    {
+      "id": "analyse-3-lecture",
+      "label": "Lire la terminaison d’une autre déclinaison",
+      "explanation": "La même terminaison n’a pas le même sens d’une déclinaison à l’autre : -is est un datif-ablatif pluriel pour rosa, un génitif singulier pour rex. Repère d’abord la déclinaison du mot grâce à son génitif."
+    },
+    {
+      "id": "analyse-3-cas",
+      "label": "Confondre deux cas",
+      "explanation": "Avant de répondre, récite la déclinaison du mot et cherche toutes les cases où la forme apparaît. Une forme peut avoir plusieurs analyses : une seule figure parmi les propositions."
+    }
+  ],
+  "params": {
+    "w": "pick([['rex', 'regis', 'm', 'le roi', 'les rois'], ['lex', 'legis', 'f', 'la loi', 'les lois'], ['pax', 'pacis', 'f', 'la paix', 'les paix'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['virtus', 'virtutis', 'f', 'le courage', 'les courages'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['labor', 'laboris', 'm', 'le travail', 'les travaux'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['leo', 'leonis', 'm', 'le lion', 'les lions'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['vox', 'vocis', 'f', 'la voix', 'les voix'], ['corpus', 'corporis', 'n', 'le corps', 'les corps'], ['nomen', 'nominis', 'n', 'le nom', 'les noms'], ['tempus', 'temporis', 'n', 'le temps', 'les temps'], ['flumen', 'fluminis', 'n', 'le fleuve', 'les fleuves'], ['caput', 'capitis', 'n', 'la tête', 'les têtes'], ['opus', 'operis', 'n', 'l’ouvrage', 'les ouvrages'], ['carmen', 'carminis', 'n', 'le chant', 'les chants'], ['genus', 'generis', 'n', 'la famille', 'les familles'], ['vulnus', 'vulneris', 'n', 'la blessure', 'les blessures'], ['iter', 'itineris', 'n', 'le chemin', 'les chemins'], ['litus', 'litoris', 'n', 'le rivage', 'les rivages'], ['onus', 'oneris', 'n', 'la charge', 'les charges'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['navis', 'navis', 'f', 'le navire', 'les navires'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis'], ['urbs', 'urbis', 'f', 'la ville', 'les villes'], ['mons', 'montis', 'm', 'la montagne', 'les montagnes'], ['nox', 'noctis', 'f', 'la nuit', 'les nuits'], ['pars', 'partis', 'f', 'la partie', 'les parties'], ['ars', 'artis', 'f', 'l’art', 'les arts'], ['finis', 'finis', 'm', 'la limite', 'les limites'], ['collis', 'collis', 'm', 'la colline', 'les collines'], ['nubes', 'nubis', 'f', 'le nuage', 'les nuages'], ['avis', 'avis', 'f', 'l’oiseau', 'les oiseaux'], ['ignis', 'ignis', 'm', 'le feu', 'les feux'], ['dens', 'dentis', 'm', 'la dent', 'les dents'], ['gens', 'gentis', 'f', 'la famille', 'les familles'], ['fons', 'fontis', 'm', 'la source', 'les sources'], ['mare', 'maris', 'n', 'la mer', 'les mers'], ['animal', 'animalis', 'n', 'l’animal', 'les animaux'], ['exemplar', 'exemplaris', 'n', 'le modèle', 'les modèles'], ['cubile', 'cubilis', 'n', 'le lit', 'les lits'], ['sedile', 'sedilis', 'n', 'le siège', 'les sièges'], ['vectigal', 'vectigalis', 'n', 'l’impôt', 'les impôts'], ['calcar', 'calcaris', 'n', 'l’éperon', 'les éperons'], ['rete', 'retis', 'n', 'le filet', 'les filets'], ['ovile', 'ovilis', 'n', 'la bergerie', 'les bergeries'], ['tribunal', 'tribunalis', 'n', 'la tribune', 'les tribunes']])",
+    "k": "pick(['nom.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])"
+  },
+  "let": {
+    "f": "form(w, k)",
+    "A": "analyses(w, f)",
+    "M": "misreadings(w, f)"
+  },
+  "prompt": "Quelle analyse convient à la forme <i>{{ f }}</i> ({{ w[0] }}, {{ w[1] }} : {{ w[3] }}) ?",
+  "answer": {
+    "type": "choice",
+    "value": "caseLabel(k)"
+  },
+  "wrongs": [
+    {
+      "misconception": "analyse-3-nombre",
+      "value": "caseLabel(otherNumber(k))",
+      "when": "not has(A, otherNumber(k))"
+    },
+    {
+      "misconception": "analyse-3-lecture",
+      "value": "caseLabel(M[0])",
+      "when": "count(M) > 0"
+    },
+    {
+      "misconception": "analyse-3-cas",
+      "value": "caseLabel(withCase(k, confusedCase(keyCase(k))))",
+      "when": "not has(A, withCase(k, confusedCase(keyCase(k))))"
+    },
+    {
+      "misconception": "analyse-3-lecture",
+      "value": "caseLabel(M[1])",
+      "when": "count(M) > 1"
+    },
+    {
+      "misconception": "analyse-3-cas",
+      "value": "caseLabel(withCase(k, 'acc'))",
+      "when": "not has(A, withCase(k, 'acc'))"
+    },
+    {
+      "misconception": "analyse-3-cas",
+      "value": "caseLabel(withCase(k, 'gen'))",
+      "when": "not has(A, withCase(k, 'gen'))"
+    },
+    {
+      "misconception": "analyse-3-cas",
+      "value": "caseLabel(withCase(k, 'dat'))",
+      "when": "not has(A, withCase(k, 'dat'))"
+    },
+    {
+      "misconception": "analyse-3-cas",
+      "value": "caseLabel(withCase(k, 'abl'))",
+      "when": "not has(A, withCase(k, 'abl'))"
+    },
+    {
+      "misconception": "analyse-3-cas",
+      "value": "caseLabel(withCase(k, 'nom'))",
+      "when": "not has(A, withCase(k, 'nom'))"
+    }
+  ],
+  "method": "<i>{{ f }}</i> : {{ join(map(A, \"caseLabel(item)\"), ', ') }}.{{ count(A) > 1 ? ' Une forme peut avoir plusieurs analyses : une seule figurait parmi les propositions.' : '' }}{{ declTable(w, A) }}"
+}

@@ -37,14 +37,14 @@ final readonly class SeriousGameTemplateListTool implements McpTool
 
     public function description(): string
     {
-        return 'Réservé aux administrateurs. Renvoie les unités d\'un serious game (par défaut « observatoire »), regroupées par chapitre : leur version courante (celle que les élèves reçoivent), son statut, la date et le résultat de son dernier banc, et les brouillons en attente.';
+        return 'Réservé aux administrateurs. Renvoie les unités d\'un serious game (« observatoire » par défaut, ou « pompei »), regroupées par chapitre : leur version courante (celle que les élèves reçoivent), son statut, la date et le résultat de son dernier banc, et les brouillons en attente.';
     }
 
     public function inputSchema(): array
     {
         return [
             'type' => 'object',
-            'properties' => ['game' => ['type' => 'string', 'description' => 'Identifiant du jeu (« observatoire » par défaut).']],
+            'properties' => ['game' => ['type' => 'string', 'description' => 'Identifiant du jeu : « observatoire » (par défaut) ou « pompei ».']],
             'additionalProperties' => false,
         ];
     }

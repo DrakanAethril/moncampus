@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\SeriousGame\Template;
 
 use App\SeriousGame\Answer\IntervalChecker;
+use App\SeriousGame\Latin\LatinMorphology;
+use App\SeriousGame\Latin\LatinTables;
 use App\SeriousGame\Math\MathFormat;
 use Symfony\Component\ExpressionLanguage\ExpressionFunction;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
@@ -18,11 +20,13 @@ use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
  * registers it, and the connector's `format_guide` prints it (catalogue()), so the guide and the
  * engine cannot drift apart.
  *
- * Three families, as the format describes them:
+ * Four families, as the format describes them:
  * - **draws** (`int`, `pick`, `nonZero`…): only in `params`, from the question's seeded draw;
  * - **calculation** on numbers and lists (`gcd`, `median`, `map`…);
  * - **writing** (`fmt`, `frac`, `pow`, `poly`, `table`…), producing the restricted HTML of a
- *   statement.
+ *   statement;
+ * - **latin** (`form`, `forms`, `analyses`, `declTable`…), the grammar of LatinMorphology over the
+ *   lexicon a template writes in its `params`.
  *
  * map(), filter(), any(), all(), find() and sortBy() take their per-item rule as an expression in a
  * string, evaluated with `item` and `index` bound - ExpressionLanguage has no lambdas.
@@ -292,6 +296,58 @@ final class TemplateFunctions implements ExpressionFunctionProviderInterface
             'ivHtml' => [static fn (TemplateContext $c, array $v, mixed $interval, mixed $loShown = null, mixed $hiShown = null): string => MathFormat::intervalHtml(self::interval($interval), null === $loShown ? null : self::string($loShown), null === $hiShown ? null : self::string($hiShown)), 'écriture', 'ivHtml(intervalle, écritureMin?, écritureMax?)', '« ]−∞ ; 4] » ; les écritures remplacent celles des bornes (une fraction, par exemple).'],
             'table' => [static fn (TemplateContext $c, array $v, mixed $rows, mixed $headerRow = false): string => MathFormat::table(array_map(self::list(...), self::list($rows)), true === $headerRow), 'écriture', 'table(lignes, ligneEnTête = false)', 'Un petit tableau : chaque ligne est une liste dont le premier élément est l’en-tête de ligne.'],
             'plain' => [static fn (TemplateContext $c, array $v, mixed $html): string => MathFormat::plain(self::string($html)), 'écriture', 'plain(html)', 'Le texte tapé d’une écriture : fractions en a/b, exposants en ^n, balises retirées.'],
+
+            // --- Latin (Les Tablettes de Pompéi) --------------------------------------------------
+            // A noun is written as the dictionary gives it: ['rosa', 'rosae', 'f', 'la rose'] ; an
+            // adjective ['bonus', 'bona', 'bonum', 'boni', 'bon'] ; a pronoun by its lemma ('hic').
+            // A key names a case and a number - 'acc.pl' - and a gender for adjectives and pronouns -
+            // 'acc.pl.f'.
+            'decl' => [static fn (TemplateContext $c, array $v, mixed $entry): int => LatinMorphology::declension(self::list($entry)), 'latin', 'decl(nom)', 'La déclinaison d’un nom (1 à 5), lue sur son génitif.'],
+            'declName' => [static fn (TemplateContext $c, array $v, mixed $n): string => LatinMorphology::declensionName(self::integer($n)), 'latin', 'declName(n)', '« 1re déclinaison », « 3e déclinaison ».'],
+            'form' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $key): string => LatinMorphology::form(self::list($entry), self::string($key)), 'latin', "form(nom, 'acc.pl')", 'La forme d’un nom à ce cas et ce nombre.'],
+            'forms' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $key): array => LatinMorphology::forms(self::list($entry), self::string($key)), 'latin', "forms(nom, 'acc.pl')", 'Toutes les formes acceptées (la première est celle qu’on montre) : la valeur d’une réponse « latin ».'],
+            'formAs' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $declension, mixed $key, mixed $from = 'genitive'): string => LatinMorphology::formAs(self::list($entry), self::integer($declension), self::string($key), self::string($from)), 'latin', "formAs(nom, déclinaison, 'acc.sg', 'genitive' | 'nominative')", 'La forme fautive d’un élève qui applique les terminaisons d’une autre déclinaison, au radical du génitif ou à celui du nominatif.'],
+            'paradigm' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $number): array => LatinMorphology::paradigm(self::list($entry), self::string($number)), 'latin', "paradigm(nom, 'sg')", 'Les six formes d’un nombre, dans l’ordre nominatif, vocatif, accusatif, génitif, datif, ablatif.'],
+            'paradigmAs' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $declension, mixed $number, mixed $from = 'genitive'): array => array_map(static fn (string $case): string => LatinMorphology::formAs(self::list($entry), self::integer($declension), $case.'.'.self::string($number), self::string($from)), LatinMorphology::CASES), 'latin', "paradigmAs(nom, déclinaison, 'sg', 'genitive')", 'Les six formes fautives d’un élève qui décline avec une autre déclinaison.'],
+            'analyses' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $form): array => LatinMorphology::analyses(self::list($entry), self::string($form)), 'latin', 'analyses(nom, forme)', 'Toutes les clés (cas.nombre) qui donnent cette forme : « rosae » → gen.sg, dat.sg, nom.pl, voc.pl.'],
+            'stem' => [static fn (TemplateContext $c, array $v, mixed $entry): string => LatinMorphology::stem(self::list($entry)), 'latin', 'stem(nom)', 'Le radical : le génitif sans sa terminaison.'],
+            'iStem' => [static fn (TemplateContext $c, array $v, mixed $entry): bool => LatinMorphology::isIStem(self::list($entry)), 'latin', 'iStem(nom)', 'Vrai pour un thème en -i de la 3e déclinaison (génitif pluriel en -ium).'],
+            'adj' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $key): string => LatinMorphology::adjectiveForm(self::list($entry), self::string($key)), 'latin', "adj(adjectif, 'acc.sg.f')", 'La forme d’un adjectif à ce cas, ce nombre et ce genre.'],
+            'adjs' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $key): array => LatinMorphology::adjectiveForms(self::list($entry), self::string($key)), 'latin', "adjs(adjectif, 'acc.pl.m')", 'Toutes les formes acceptées d’un adjectif.'],
+            'adjParadigm' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $gender, mixed $number): array => LatinMorphology::adjectiveParadigm(self::list($entry), self::string($gender), self::string($number)), 'latin', "adjParadigm(adjectif, 'f', 'sg')", 'Les six formes d’un adjectif à un genre et un nombre.'],
+            'adjAnalyses' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $form): array => LatinMorphology::adjectiveAnalyses(self::list($entry), self::string($form)), 'latin', 'adjAnalyses(adjectif, forme)', 'Toutes les clés (cas.nombre.genre) qui donnent cette forme.'],
+            'pron' => [static fn (TemplateContext $c, array $v, mixed $lemma, mixed $gender, mixed $key): string => LatinMorphology::pronounForm(self::string($lemma), self::string($gender), self::string($key)), 'latin', "pron('hic', 'f', 'acc.sg')", 'La forme d’un pronom (is, hic, ille, qui, ego, tu, se) ; « — » quand elle n’existe pas.'],
+            'prons' => [static fn (TemplateContext $c, array $v, mixed $lemma, mixed $gender, mixed $key): array => LatinMorphology::pronounForms(self::string($lemma), self::string($gender), self::string($key)), 'latin', "prons('is', 'm', 'nom.pl')", 'Toutes les formes acceptées d’un pronom.'],
+            'pronParadigm' => [static fn (TemplateContext $c, array $v, mixed $lemma, mixed $gender, mixed $number): array => LatinMorphology::pronounParadigm(self::string($lemma), self::string($gender), self::string($number)), 'latin', "pronParadigm('ille', 'n', 'pl')", 'Les six formes d’un pronom à un genre et un nombre (« — » pour le vocatif).'],
+            'pronAnalyses' => [static fn (TemplateContext $c, array $v, mixed $lemma, mixed $form): array => LatinMorphology::pronounAnalyses(self::string($lemma), self::string($form)), 'latin', "pronAnalyses('hic', forme)", 'Toutes les clés (cas.nombre.genre ; cas.nombre pour un pronom personnel) qui donnent cette forme.'],
+            'caseLabel' => [static fn (TemplateContext $c, array $v, mixed $key): string => LatinMorphology::caseLabel(self::string($key)), 'latin', "caseLabel('acc.pl')", '« accusatif pluriel », « génitif singulier féminin ».'],
+            'caseName' => [static fn (TemplateContext $c, array $v, mixed $case): string => LatinMorphology::caseName(self::string($case)), 'latin', "caseName('gen')", '« génitif ».'],
+            'numberName' => [static fn (TemplateContext $c, array $v, mixed $number): string => LatinMorphology::numberName(self::string($number)), 'latin', "numberName('pl')", '« pluriel ».'],
+            'genderName' => [static fn (TemplateContext $c, array $v, mixed $gender): string => LatinMorphology::genderName(self::string($gender)), 'latin', "genderName('n')", '« neutre ».'],
+            'caseNames' => [static fn (TemplateContext $c, array $v): array => array_map(static fn (string $case): string => ucfirst(LatinMorphology::caseName($case)), LatinMorphology::CASES), 'latin', 'caseNames()', 'Les six cas, dans l’ordre : les cases d’une réponse « forms ».'],
+            'keyCase' => [static fn (TemplateContext $c, array $v, mixed $key): string => explode('.', self::string($key))[0], 'latin', "keyCase('acc.pl')", 'Le cas d’une clé : « acc ».'],
+            'keyNumber' => [static fn (TemplateContext $c, array $v, mixed $key): string => explode('.', self::string($key))[1] ?? '', 'latin', "keyNumber('acc.pl')", 'Le nombre d’une clé : « pl ».'],
+            'otherNumber' => [static fn (TemplateContext $c, array $v, mixed $key): string => self::otherNumber(self::string($key)), 'latin', "otherNumber('acc.pl')", 'La même clé à l’autre nombre : « acc.sg ».'],
+            'withCase' => [static fn (TemplateContext $c, array $v, mixed $key, mixed $case): string => self::string($case).substr(self::string($key), (int) strpos(self::string($key), '.')), 'latin', "withCase('acc.pl', 'abl')", 'La même clé à un autre cas : « abl.pl ».'],
+            'sameLatin' => [static fn (TemplateContext $c, array $v, mixed $a, mixed $b): bool => LatinMorphology::same(self::string($a), self::string($b)), 'latin', 'sameLatin(a, b)', 'Vrai si deux formes sont la même, macrons, majuscules, j et v mis à part.'],
+            'misreadings' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $form): array => LatinMorphology::misreadings(self::list($entry), self::string($form)), 'latin', 'misreadings(nom, forme)', 'Les clés qu’un élève lit dans la forme en prenant sa terminaison pour celle d’une autre déclinaison (« rosis » lu comme un génitif singulier), les plus longues terminaisons d’abord, jamais une analyse juste.'],
+            'declGuess' => [static fn (TemplateContext $c, array $v, mixed $nominative): int => LatinMorphology::declensionFromNominative(self::string($nominative)), 'latin', 'declGuess(nominatif)', 'La déclinaison qu’on devine au seul nominatif (corpus « ressemble » à dominus).'],
+            'confusedCase' => [static fn (TemplateContext $c, array $v, mixed $case): string => LatinMorphology::confusedCase(self::string($case)), 'latin', "confusedCase('acc')", 'Le cas qu’on met le plus souvent à la place de celui-ci (nominatif ↔ accusatif, datif ↔ ablatif, génitif → datif).'],
+            'ending' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $key): string => LatinMorphology::ending(self::list($entry), self::string($key)), 'latin', "ending(nom, 'acc.sg')", 'La terminaison d’une forme (ce qui suit le radical) ; vide pour un nominatif de la 3e déclinaison.'],
+            'atCase' => [static fn (TemplateContext $c, array $v, mixed $key): string => LatinMorphology::atCase(self::string($key)), 'latin', "atCase('acc.pl')", '« à l’accusatif pluriel », « au génitif singulier ».'],
+            'caseSet' => [static fn (TemplateContext $c, array $v, mixed $keys): array => array_values(array_unique(array_map(static fn (mixed $k): string => explode('.', self::string($k))[0], self::list($keys)))), 'latin', 'caseSet(clés)', 'Les cas distincts d’une liste de clés : caseSet(analyses(nom, forme)).'],
+            'paradigmAlts' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $number): array => array_map(static fn (string $case): array => LatinMorphology::forms(self::list($entry), $case.'.'.self::string($number)), LatinMorphology::CASES), 'latin', "paradigmAlts(nom, 'pl')", 'Les six cases d’un nombre avec leurs formes acceptées : la valeur d’une réponse « forms ».'],
+            'adjParadigmAlts' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $gender, mixed $number): array => array_map(static fn (string $case): array => LatinMorphology::adjectiveForms(self::list($entry), $case.'.'.self::string($number).'.'.self::string($gender)), LatinMorphology::CASES), 'latin', "adjParadigmAlts(adjectif, 'n', 'pl')", 'Les six cases d’un adjectif avec leurs formes acceptées.'],
+            'adjStem' => [static fn (TemplateContext $c, array $v, mixed $entry): string => LatinMorphology::adjectiveStem(self::list($entry)), 'latin', 'adjStem(adjectif)', 'Le radical d’un adjectif : bon-, fort-, ingent-.'],
+            'pronCells' => [static fn (TemplateContext $c, array $v, mixed $lemma, mixed $gender, mixed $number): array => array_map(static fn (string $case): array => LatinMorphology::pronounForms(self::string($lemma), self::string($gender), $case.'.'.self::string($number)), LatinMorphology::CASES_WITHOUT_VOCATIVE), 'latin', "pronCells('hic', 'f', 'pl')", 'Les cinq cases d’un pronom (sans vocatif) avec leurs formes acceptées : la valeur d’une réponse « forms ».'],
+            'pronRow' => [static fn (TemplateContext $c, array $v, mixed $lemma, mixed $gender, mixed $number): array => array_map(static fn (string $case): string => LatinMorphology::pronounForm(self::string($lemma), self::string($gender), $case.'.'.self::string($number)), LatinMorphology::CASES_WITHOUT_VOCATIVE), 'latin', "pronRow('hic', 'f', 'pl')", 'Les cinq formes d’un pronom, sans vocatif.'],
+            'caseNamesNoVoc' => [static fn (TemplateContext $c, array $v): array => array_map(static fn (string $case): string => ucfirst(LatinMorphology::caseName($case)), LatinMorphology::CASES_WITHOUT_VOCATIVE), 'latin', 'caseNamesNoVoc()', 'Les cinq cas sans le vocatif : les cases d’un tableau de pronom.'],
+            'frA' => [static fn (TemplateContext $c, array $v, mixed $group): string => self::frenchPreposition('à', self::string($group)), 'texte', "frA('le maître')", '« au maître », « à la rose », « à l’ami », « aux enfants ».'],
+            'frDe' => [static fn (TemplateContext $c, array $v, mixed $group): string => self::frenchPreposition('de', self::string($group)), 'texte', "frDe('le maître')", '« du maître », « de la rose », « de l’ami », « des enfants ».'],
+            'lat' => [static fn (TemplateContext $c, array $v, mixed $text): string => '<i>'.htmlspecialchars(self::string($text), \ENT_NOQUOTES).'</i>', 'latin', 'lat(texte)', 'Un mot latin en italique.'],
+            'declTable' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $highlight = null): string => LatinTables::noun(self::list($entry), null === $highlight ? [] : self::keys($highlight)), 'latin', "declTable(nom, 'acc.pl' | ['acc.pl', …])", 'Le tableau de déclinaison d’un nom (six cas, singulier et pluriel), les cases nommées en gras.'],
+            'adjTable' => [static fn (TemplateContext $c, array $v, mixed $entry, mixed $number, mixed $highlight = null): string => LatinTables::adjective(self::list($entry), self::string($number), null === $highlight ? [] : self::keys($highlight)), 'latin', "adjTable(adjectif, 'sg', 'acc.sg.f')", 'Le tableau d’un adjectif à un nombre : six cas, trois genres.'],
+            'pronTable' => [static fn (TemplateContext $c, array $v, mixed $lemma, mixed $number, mixed $highlight = null): string => LatinTables::pronoun(self::string($lemma), self::string($number), null === $highlight ? [] : self::keys($highlight)), 'latin', "pronTable('hic', 'pl', 'gen.pl.m')", 'Le tableau d’un pronom à un nombre (singulier et pluriel pour un pronom personnel).'],
         ];
     }
 
@@ -301,6 +357,33 @@ final class TemplateFunctions implements ExpressionFunctionProviderInterface
     private static function apply(TemplateContext $context, array $variables, mixed $rule, mixed $item, int $index): mixed
     {
         return $context->language->evaluate(self::string($rule), ['item' => $item, 'index' => $index] + $variables);
+    }
+
+    /** « à » or « de » before a French group with its article, contracted as French does. */
+    private static function frenchPreposition(string $preposition, string $group): string
+    {
+        $contracted = 'à' === $preposition ? ['le ' => 'au ', 'les ' => 'aux '] : ['le ' => 'du ', 'les ' => 'des '];
+        foreach ($contracted as $article => $replacement) {
+            if (str_starts_with($group, $article)) {
+                return $replacement.substr($group, \strlen($article));
+            }
+        }
+
+        return $preposition.' '.$group;
+    }
+
+    private static function otherNumber(string $key): string
+    {
+        $parts = explode('.', $key);
+        $parts[1] = 'sg' === ($parts[1] ?? '') ? 'pl' : 'sg';
+
+        return implode('.', $parts);
+    }
+
+    /** @return list<string> one key, or a list of keys */
+    private static function keys(mixed $highlight): array
+    {
+        return \is_array($highlight) ? array_map(self::string(...), array_values($highlight)) : [self::string($highlight)];
     }
 
     /** @return array{lo: float, hi: float, lc: bool, hc: bool} */

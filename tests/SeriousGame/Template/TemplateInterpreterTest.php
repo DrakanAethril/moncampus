@@ -225,4 +225,53 @@ class TemplateInterpreterTest extends TestCase
         }
         self::assertStringNotContainsString((string) $question->answerText, json_encode(array_diff_key($view, ['seed' => true]), \JSON_THROW_ON_ERROR));
     }
+
+    public function testAQcmShowsTheAnswerAmongItsTypicalErrorsInTheOrderOfTheSeed(): void
+    {
+        $definition = new TemplateDefinition('qcm', 1, [
+            'format' => 'moncampus-gabarit/1',
+            'unit' => 'qcm',
+            'label' => 'QCM',
+            'misconceptions' => [['id' => 'q-a', 'label' => 'A'], ['id' => 'q-b', 'label' => 'B'], ['id' => 'q-c', 'label' => 'C'], ['id' => 'q-d', 'label' => 'D']],
+            'params' => ['n' => 'int(2, 40)'],
+            'prompt' => '{{ n }} + 1 ?',
+            'answer' => ['type' => 'choice', 'value' => 'str(n + 1)'],
+            'wrongs' => [
+                ['misconception' => 'q-a', 'value' => 'str(n)'],
+                ['misconception' => 'q-b', 'value' => 'str(n + 2)'],
+                ['misconception' => 'q-c', 'value' => 'str(n - 1)'],
+                ['misconception' => 'q-d', 'value' => 'str(n * 2)'],
+            ],
+            'method' => 'Ajouter 1.',
+        ]);
+        $interpreter = new TemplateInterpreter();
+        $question = $interpreter->generate($definition, 7);
+
+        self::assertSame('choice', $question->kind);
+        self::assertCount(4, $question->choices);
+        self::assertCount(3, $question->wrongs, 'only a proposition shown is an error one can make');
+        self::assertContains($question->answerText, array_column($question->choices, 'value'));
+        self::assertSame(array_column($question->choices, 'value'), array_column($interpreter->generate($definition, 7)->choices, 'value'));
+        self::assertSame($question->choices, $question->publicView()['choices']);
+    }
+
+    public function testATableToFillNamesItsCells(): void
+    {
+        $definition = new TemplateDefinition('tab', 1, [
+            'format' => 'moncampus-gabarit/1',
+            'unit' => 'tab',
+            'label' => 'Tableau',
+            'misconceptions' => [['id' => 't-n', 'label' => 'Nombre']],
+            'prompt' => 'Décline rosa au singulier.',
+            'answer' => ['type' => 'forms', 'value' => "paradigmAlts(['rosa', 'rosae', 'f'], 'sg')", 'labels' => 'caseNames()'],
+            'wrongs' => [['misconception' => 't-n', 'value' => "paradigm(['rosa', 'rosae', 'f'], 'pl')"]],
+            'minWrongs' => 1,
+            'method' => '{{ declTable([\'rosa\', \'rosae\', \'f\'], \'acc.sg\') }}',
+        ]);
+        $question = (new TemplateInterpreter())->generate($definition, 1);
+
+        self::assertSame(['Nominatif', 'Vocatif', 'Accusatif', 'Génitif', 'Datif', 'Ablatif'], $question->publicView()['labels']);
+        self::assertSame('rosa · rosa · rosam · rosae · rosae · rosa', $question->answerText);
+        self::assertStringContainsString('<b><i>rosam</i></b>', $question->method);
+    }
 }

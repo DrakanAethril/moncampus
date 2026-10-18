@@ -1,0 +1,111 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "rex",
+  "label": "3e déclinaison, masculins et féminins (rex, regis)",
+  "misconceptions": [
+    {
+      "id": "rex-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "Le cas peut être juste et le nombre faux : chaque cas a une terminaison au singulier et une autre au pluriel. Repère d’abord le nombre demandé, puis la ligne du tableau."
+    },
+    {
+      "id": "rex-nominatif",
+      "label": "Laisser le mot au nominatif",
+      "explanation": "Le nominatif n’est que la forme du dictionnaire : un mot latin change de terminaison selon sa fonction. Pars du radical du génitif et ajoute la terminaison du cas demandé."
+    },
+    {
+      "id": "rex-cas",
+      "label": "Confondre deux cas voisins",
+      "explanation": "Certains cas ont des terminaisons proches ou identiques (datif et ablatif pluriels, génitif et datif singuliers de la 1re déclinaison). Récite la ligne entière du tableau pour retrouver la bonne case."
+    },
+    {
+      "id": "rex-decl",
+      "label": "Prendre les terminaisons de la 2e déclinaison",
+      "explanation": "Un génitif en -is signale la 3e déclinaison : -em, -is, -i, -e ; -es, -um, -ibus. Les terminaisons -um, -o, -orum sont celles de la 2e."
+    },
+    {
+      "id": "rex-radical",
+      "label": "Bâtir les cas sur le nominatif (rexem)",
+      "explanation": "À la 3e déclinaison, le nominatif cache souvent le radical : rex, regis donne reg-, miles, militis donne milit-. On apprend toujours le génitif avec le nominatif."
+    },
+    {
+      "id": "rex-ium",
+      "label": "Génitif pluriel en -ium au lieu de -um",
+      "explanation": "Le génitif pluriel en -ium est réservé aux thèmes en -i (civis, urbs, mare). Les autres noms de la 3e déclinaison font -um : regum, militum."
+    }
+  ],
+  "params": {
+    "w": "pick([['rex', 'regis', 'm', 'le roi', 'les rois'], ['lex', 'legis', 'f', 'la loi', 'les lois'], ['pax', 'pacis', 'f', 'la paix', 'les paix'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['virtus', 'virtutis', 'f', 'le courage', 'les courages'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['labor', 'laboris', 'm', 'le travail', 'les travaux'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['leo', 'leonis', 'm', 'le lion', 'les lions'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['vox', 'vocis', 'f', 'la voix', 'les voix']])",
+    "k": "pick(['acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "variants": [
+    {
+      "weight": 5,
+      "label": "Une forme",
+      "prompt": "Décline <i>{{ w[0] }}, {{ w[1] }}</i> ({{ (keyNumber(k) == 'sg' ? w[3] : w[4]) }}) {{ atCase(k) }}.",
+      "answer": {
+        "type": "latin",
+        "value": "forms(w, k)"
+      },
+      "wrongs": [
+        {
+          "misconception": "rex-nombre",
+          "value": "forms(w, otherNumber(k))"
+        },
+        {
+          "misconception": "rex-nominatif",
+          "value": "form(w, 'nom.' ~ keyNumber(k))",
+          "when": "keyCase(k) != 'nom' and keyCase(k) != 'voc'"
+        },
+        {
+          "misconception": "rex-radical",
+          "value": "w[0] ~ ending(w, k)",
+          "when": "stem(w) != w[0] and not (k in ['nom.sg', 'voc.sg'])"
+        },
+        {
+          "misconception": "rex-ium",
+          "value": "stem(w) ~ 'ium'",
+          "when": "k == 'gen.pl'"
+        },
+        {
+          "misconception": "rex-decl",
+          "value": "formAs(w, 2, k, 'genitive')"
+        },
+        {
+          "misconception": "rex-cas",
+          "value": "forms(w, withCase(k, confusedCase(keyCase(k))))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ declName(decl(w)) }} : le radical <i>{{ stem(w) }}-</i> se lit sur le génitif <i>{{ w[1] }}</i>. {{ ucfirst(caseLabel(k)) }} : <i>{{ form(w, k) }}</i>.{{ declTable(w, k) }}"
+    },
+    {
+      "weight": 1,
+      "label": "Le tableau",
+      "prompt": "Décline <i>{{ w[0] }}, {{ w[1] }}</i> ({{ (n == 'sg' ? w[3] : w[4]) }}) au {{ numberName(n) }} : les six cas.",
+      "answer": {
+        "type": "forms",
+        "value": "paradigmAlts(w, n)",
+        "labels": "caseNames()"
+      },
+      "wrongs": [
+        {
+          "misconception": "rex-nombre",
+          "value": "paradigm(w, n == 'sg' ? 'pl' : 'sg')"
+        },
+        {
+          "misconception": "rex-decl",
+          "value": "paradigmAs(w, 2, n, 'genitive')"
+        },
+        {
+          "misconception": "rex-radical",
+          "value": "map(paradigm(w, n), \"index < 2 and n == 'sg' ? item : replace(item, stem(w), w[0])\")",
+          "when": "stem(w) != w[0]"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ declName(decl(w)) }}, radical <i>{{ stem(w) }}-</i> (génitif <i>{{ w[1] }}</i>).{{ declTable(w, n == 'sg' ? ['nom.sg', 'voc.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg'] : ['nom.pl', 'voc.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl']) }}"
+    }
+  ]
+}

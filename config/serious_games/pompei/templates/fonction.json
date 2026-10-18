@@ -1,0 +1,110 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "fonction",
+  "label": "La fonction d’un mot dans la phrase",
+  "misconceptions": [
+    {
+      "id": "fonction-place",
+      "label": "Se fier à la place du mot",
+      "explanation": "En latin, l’ordre des mots est libre : le premier mot n’est pas forcément le sujet. C’est la terminaison qui donne le cas, et le cas qui donne la fonction."
+    },
+    {
+      "id": "fonction-sujet-cod",
+      "label": "Confondre sujet et COD",
+      "explanation": "Nominatif = sujet, accusatif = COD. Servum dominus vocat : servum (accusatif) est COD, dominus (nominatif) est sujet."
+    },
+    {
+      "id": "fonction-genitif-datif",
+      "label": "Confondre complément du nom et complément d’attribution",
+      "explanation": "Le génitif complète un nom (hortus domini, le jardin du maître) ; le datif dit à qui l’on donne (domino rosam dat, il donne une rose au maître)."
+    },
+    {
+      "id": "fonction-terminaison",
+      "label": "Mal lire la terminaison",
+      "explanation": "Analyse la forme avant de chercher sa fonction : trouve sa déclinaison grâce au génitif, puis la case du tableau où elle apparaît."
+    }
+  ],
+  "params": {
+    "pat": "pick(['sov', 'sov', 'siov', 'sogv'])",
+    "s": "pick([['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis']])",
+    "op": "pick([['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis']])",
+    "ot": "pick([['rosa', 'rosae', 'f', 'la rose', 'les roses'], ['epistula', 'epistulae', 'f', 'la lettre', 'les lettres'], ['liber', 'libri', 'm', 'le livre', 'les livres'], ['equus', 'equi', 'm', 'le cheval', 'les chevaux'], ['gladius', 'gladii', 'm', 'l’épée', 'les épées'], ['amphora', 'amphorae', 'f', 'l’amphore', 'les amphores']])",
+    "x": "pick([['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis']])",
+    "sn": "pick(['sg', 'sg', 'pl'])",
+    "on": "pick(['sg', 'pl'])",
+    "pv": "pick([['vocat', 'vocant', 'appelle', 'appellent'], ['amat', 'amant', 'aime', 'aiment'], ['videt', 'vident', 'voit', 'voient'], ['laudat', 'laudant', 'loue', 'louent'], ['exspectat', 'exspectant', 'attend', 'attendent'], ['salutat', 'salutant', 'salue', 'saluent'], ['adiuvat', 'adiuvant', 'aide', 'aident']])",
+    "tv": "pick([['amat', 'amant', 'aime', 'aiment'], ['videt', 'vident', 'voit', 'voient'], ['laudat', 'laudant', 'admire', 'admirent'], ['portat', 'portant', 'porte', 'portent'], ['quaerit', 'quaerunt', 'cherche', 'cherchent'], ['exspectat', 'exspectant', 'attend', 'attendent']])",
+    "dv": "pick([['dat', 'dant', 'donne', 'donnent'], ['monstrat', 'monstrant', 'montre', 'montrent'], ['mittit', 'mittunt', 'envoie', 'envoient']])",
+    "order": "int(0, 2)",
+    "ask": "int(0, 2)"
+  },
+  "let": {
+    "o": "pat == 'sov' ? op : ot",
+    "v": "pat == 'sov' ? pv : tv",
+    "S": "form(s, 'nom.' ~ sn)",
+    "O": "form(o, 'acc.' ~ on)",
+    "X": "form(x, (pat == 'siov' ? 'dat' : 'gen') ~ '.sg')",
+    "V": "pat == 'siov' ? (sn == 'sg' ? dv[0] : dv[1]) : (sn == 'sg' ? v[0] : v[1])",
+    "words": "pat == 'sov' ? [[S, 'nom', s], [O, 'acc', o]] : (pat == 'siov' ? [[S, 'nom', s], [X, 'dat', x], [O, 'acc', o]] : [[S, 'nom', s], [O, 'acc', o], [X, 'gen', x]])",
+    "orders": "pat == 'sov' ? [[0, 1], [1, 0], [0, 1]] : (pat == 'siov' ? [[0, 1, 2], [1, 0, 2], [2, 0, 1]] : [[0, 1, 2], [1, 2, 0], [2, 1, 0]])",
+    "seq": "map(orders[order], 'words[item][0]')",
+    "sentence": "ucfirst(join(seq, ' ')) ~ ' ' ~ V",
+    "idx": "ask % count(words)",
+    "W": "words[idx]",
+    "role": "W[1]",
+    "first": "seq[0] == W[0]",
+    "fns": "{'nom': 'sujet', 'acc': 'COD', 'gen': 'complément du nom', 'dat': 'complément d’attribution'}"
+  },
+  "constraints": [
+    "s[0] != o[0]",
+    "s[0] != x[0]",
+    "o[0] != x[0]",
+    "caseSet(filter(analyses(W[2], W[0]), \"keyCase(item) in ['nom', 'acc', 'gen', 'dat']\")) == [role]",
+    "caseSet(filter(analyses(s, S), \"keyCase(item) in ['nom', 'acc']\")) == ['nom']",
+    "caseSet(filter(analyses(o, O), \"keyCase(item) in ['nom', 'acc']\")) == ['acc']",
+    "pat == 'sov' or caseSet(filter(analyses(x, X), \"keyCase(item) in ['nom', 'acc', 'gen', 'dat']\")) == [pat == 'siov' ? 'dat' : 'gen']"
+  ],
+  "prompt": "Dans la phrase « <i>{{ sentence }}</i> », quelle est la fonction de <i>{{ W[0] }}</i> ?",
+  "answer": {
+    "type": "choice",
+    "value": "fns[role]"
+  },
+  "wrongs": [
+    {
+      "misconception": "fonction-place",
+      "value": "'sujet'",
+      "when": "first and role != 'nom'"
+    },
+    {
+      "misconception": "fonction-sujet-cod",
+      "value": "role == 'nom' ? 'COD' : 'sujet'",
+      "when": "role in ['nom', 'acc']"
+    },
+    {
+      "misconception": "fonction-genitif-datif",
+      "value": "role == 'gen' ? 'complément d’attribution' : 'complément du nom'",
+      "when": "role in ['gen', 'dat']"
+    },
+    {
+      "misconception": "fonction-terminaison",
+      "value": "'COD'",
+      "when": "role != 'acc'"
+    },
+    {
+      "misconception": "fonction-terminaison",
+      "value": "'complément du nom'",
+      "when": "role != 'gen'"
+    },
+    {
+      "misconception": "fonction-terminaison",
+      "value": "'complément d’attribution'",
+      "when": "role != 'dat'"
+    },
+    {
+      "misconception": "fonction-terminaison",
+      "value": "'sujet'",
+      "when": "role != 'nom'"
+    }
+  ],
+  "method": "<i>{{ W[0] }}</i> : {{ caseLabel(role ~ '.' ~ (role == 'nom' ? sn : (role == 'acc' ? on : 'sg'))) }} de <i>{{ W[2][0] }}, {{ W[2][1] }}</i> → {{ fns[role] }}. La place du mot ne compte pas : seule la terminaison décide."
+}

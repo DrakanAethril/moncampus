@@ -14050,6 +14050,10 @@ body.cm-sg-immersive { overflow: hidden; }
 .cm-sg-replay__facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 14px 0 0; }
 .cm-sg-replay__facts dt { color: var(--cm-muted); font-weight: 600; }
 .cm-sg-replay__facts dd { margin: 0; }
+.cm-sg-replay__choices { list-style: upper-alpha; display: grid; gap: 4px; margin: 12px 0 0; padding-left: 26px; }
+.cm-sg-replay__choices li { padding: 4px 10px; border: 1px solid var(--cm-border); border-radius: 4px; }
+.cm-sg-replay__choices li.is-right { border-color: var(--cm-green-tx); background: var(--cm-green-bg); font-weight: 600; }
+.cm-sg-replay__choices li.is-chosen:not(.is-right) { border-color: var(--cm-red-tx); background: var(--cm-red-bg); }
 /* Tabler's .card is a column: these rows are rows, and a subhead inside a card keeps its gutter. */
 .cm-sg-player__head, .cm-sg-filters { flex-direction: row; }
 .cm-sg-results .card > .cm-subhead, .cm-sg-results__columns .card > .cm-subhead, .cm-sg-showcase > .cm-subhead, .cm-sg-tpl .card > .cm-subhead { padding: 14px 18px 0; }

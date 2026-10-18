@@ -1,0 +1,142 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "qui",
+  "label": "Le relatif qui, quae, quod",
+  "misconceptions": [
+    {
+      "id": "qui-genre",
+      "label": "Se tromper de genre",
+      "explanation": "Le pronom prend le genre du nom qu’il remplace. Repère la colonne : masculin, féminin ou neutre."
+    },
+    {
+      "id": "qui-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "Vérifie le nombre demandé : le pluriel a ses propres formes (qui, quae, quod au pluriel n’est pas qui, quae, quod)."
+    },
+    {
+      "id": "qui-cas",
+      "label": "Confondre deux cas",
+      "explanation": "Les pronoms ont des formes irrégulières, qu’on apprend par cœur. Récite la colonne entière dans l’ordre des cas."
+    },
+    {
+      "id": "qui-nominatif",
+      "label": "Laisser le pronom au nominatif",
+      "explanation": "Le pronom change de forme selon sa fonction, comme un nom : il ne reste au nominatif que s’il est sujet."
+    },
+    {
+      "id": "qui-antecedent",
+      "label": "Mettre le relatif au cas de l’antécédent",
+      "explanation": "Le relatif prend le genre et le nombre de son antécédent, mais son cas dépend de sa fonction dans la relative : « l’esclave que le maître appelle » → servus, quem dominus vocat."
+    }
+  ],
+  "params": {
+    "g": "pick(['m', 'f', 'n'])",
+    "k": "pick(['nom.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "let": {
+    "key": "k ~ '.' ~ g",
+    "og": "g == 'm' ? 'f' : (g == 'f' ? 'n' : 'm')"
+  },
+  "variants": [
+    {
+      "weight": 4,
+      "label": "Une forme",
+      "prompt": "Donne <i>qui, quae, quod</i> {{ atCase(key) }}.",
+      "answer": {
+        "type": "latin",
+        "value": "prons('qui', g, k)"
+      },
+      "wrongs": [
+        {
+          "misconception": "qui-genre",
+          "value": "prons('qui', og, k)"
+        },
+        {
+          "misconception": "qui-nombre",
+          "value": "prons('qui', g, otherNumber(k))"
+        },
+        {
+          "misconception": "qui-nominatif",
+          "value": "pron('qui', g, 'nom.' ~ keyNumber(k))",
+          "when": "keyCase(k) != 'nom'"
+        },
+        {
+          "misconception": "qui-cas",
+          "value": "prons('qui', g, withCase(k, confusedCase(keyCase(k))))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ ucfirst(caseLabel(key)) }} : <i>{{ pron('qui', g, k) }}</i>.{{ pronTable('qui', keyNumber(k), key) }}"
+    },
+    {
+      "weight": 1,
+      "label": "Le tableau",
+      "prompt": "Décline <i>qui, quae, quod</i> au {{ genderName(g) }} {{ numberName(n) }} (le pronom n’a pas de vocatif).",
+      "answer": {
+        "type": "forms",
+        "value": "pronCells('qui', g, n)",
+        "labels": "caseNamesNoVoc()"
+      },
+      "wrongs": [
+        {
+          "misconception": "qui-genre",
+          "value": "pronRow('qui', og, n)"
+        },
+        {
+          "misconception": "qui-nombre",
+          "value": "pronRow('qui', g, n == 'sg' ? 'pl' : 'sg')"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ pronTable('qui', n) }}"
+    },
+    {
+      "weight": 4,
+      "label": "Le relatif dans la phrase",
+      "params": {
+        "ant": "pick([['puella', 'puellae', 'f', 'la jeune fille', 'les jeunes filles'], ['nauta', 'nautae', 'm', 'le marin', 'les marins'], ['agricola', 'agricolae', 'm', 'le paysan', 'les paysans'], ['poeta', 'poetae', 'm', 'le poète', 'les poètes'], ['ancilla', 'ancillae', 'f', 'la servante', 'les servantes'], ['dominus', 'domini', 'm', 'le maître', 'les maîtres'], ['servus', 'servi', 'm', 'l’esclave', 'les esclaves'], ['amicus', 'amici', 'm', 'l’ami', 'les amis'], ['filius', 'filii', 'm', 'le fils', 'les fils'], ['puer', 'pueri', 'm', 'l’enfant', 'les enfants'], ['magister', 'magistri', 'm', 'le maître d’école', 'les maîtres d’école'], ['faber', 'fabri', 'm', 'l’artisan', 'les artisans'], ['rex', 'regis', 'm', 'le roi', 'les rois'], ['dux', 'ducis', 'm', 'le chef', 'les chefs'], ['miles', 'militis', 'm', 'le soldat', 'les soldats'], ['homo', 'hominis', 'm', 'l’homme', 'les hommes'], ['consul', 'consulis', 'm', 'le consul', 'les consuls'], ['soror', 'sororis', 'f', 'la sœur', 'les sœurs'], ['pater', 'patris', 'm', 'le père', 'les pères'], ['mater', 'matris', 'f', 'la mère', 'les mères'], ['frater', 'fratris', 'm', 'le frère', 'les frères'], ['uxor', 'uxoris', 'f', 'l’épouse', 'les épouses'], ['mercator', 'mercatoris', 'm', 'le marchand', 'les marchands'], ['imperator', 'imperatoris', 'm', 'le général', 'les généraux'], ['civis', 'civis', 'm', 'le citoyen', 'les citoyens'], ['hostis', 'hostis', 'm', 'l’ennemi', 'les ennemis']])",
+        "an": "pick(['sg', 'pl'])",
+        "role": "pick(['nom', 'acc', 'gen', 'dat'])",
+        "v": "pick([['amat', 'amant', 'aime', 'aiment'], ['videt', 'vident', 'voit', 'voient'], ['laudat', 'laudant', 'loue', 'louent'], ['vocat', 'vocant', 'appelle', 'appellent'], ['exspectat', 'exspectant', 'attend', 'attendent']])",
+        "o": "pick([['dominus', 'le maître'], ['poeta', 'le poète'], ['rex', 'le roi'], ['mater', 'la mère'], ['magister', 'le maître d’école']])",
+        "ob": "pick([['rosas', 'les roses'], ['equos', 'les chevaux'], ['libros', 'les livres'], ['villam', 'la villa'], ['hortum', 'le jardin']])"
+      },
+      "let": {
+        "antf": "form(ant, 'nom.' ~ an)",
+        "rk": "role ~ '.' ~ an ~ '.' ~ ant[2]",
+        "main": "an == 'sg' ? 'venit' : 'veniunt'",
+        "mainfr": "an == 'sg' ? 'arrive' : 'arrivent'",
+        "antfr": "an == 'sg' ? ant[3] : ant[4]",
+        "clause": "role == 'nom' ? ob[0] ~ ' ' ~ (an == 'sg' ? v[0] : v[1]) : (role == 'acc' ? o[0] ~ ' ' ~ v[0] : (role == 'gen' ? ob[0] ~ ' ' ~ o[0] ~ ' ' ~ v[0] : o[0] ~ ' ' ~ ob[0] ~ ' dat'))",
+        "clausefr": "role == 'nom' ? 'qui ' ~ (an == 'sg' ? v[2] : v[3]) ~ ' ' ~ ob[1] : (role == 'acc' ? (o[1] matches '/^[aeiou]/' ? 'qu’' : 'que ') ~ o[1] ~ ' ' ~ v[2] : (role == 'gen' ? 'dont ' ~ o[1] ~ ' ' ~ v[2] ~ ' ' ~ ob[1] : 'à qui ' ~ o[1] ~ ' donne ' ~ ob[1]))"
+      },
+      "prompt": "Complète par la bonne forme du relatif <i>qui, quae, quod</i> : <i>{{ ucfirst(antf) }}, ___ {{ clause }}, {{ main }}.</i> — « {{ ucfirst(antfr) }}, {{ clausefr }}, {{ mainfr }}. »",
+      "answer": {
+        "type": "latin",
+        "value": "prons('qui', ant[2], role ~ '.' ~ an)"
+      },
+      "wrongs": [
+        {
+          "misconception": "qui-antecedent",
+          "value": "prons('qui', ant[2], 'nom.' ~ an)",
+          "when": "role != 'nom'"
+        },
+        {
+          "misconception": "qui-genre",
+          "value": "prons('qui', ant[2] == 'f' ? 'm' : 'f', role ~ '.' ~ an)"
+        },
+        {
+          "misconception": "qui-nombre",
+          "value": "prons('qui', ant[2], role ~ '.' ~ (an == 'sg' ? 'pl' : 'sg'))"
+        },
+        {
+          "misconception": "qui-cas",
+          "value": "prons('qui', ant[2], (role == 'gen' ? 'dat' : (role == 'dat' ? 'gen' : (role == 'acc' ? 'abl' : 'acc'))) ~ '.' ~ an)"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "Le relatif prend le genre et le nombre de son antécédent (<i>{{ antf }}</i> : {{ genderName(ant[2]) }} {{ numberName(an) }}) et le cas de sa fonction dans la relative ({{ role == 'nom' ? 'sujet' : (role == 'acc' ? 'COD' : (role == 'gen' ? 'complément du nom' : 'complément d’attribution')) }} → {{ caseName(role) }}) : <i>{{ pron('qui', ant[2], role ~ '.' ~ an) }}</i>.{{ pronTable('qui', an, rk) }}"
+    }
+  ]
+}

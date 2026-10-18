@@ -1,0 +1,90 @@
+{
+  "format": "moncampus-gabarit/1",
+  "unit": "hic",
+  "label": "hic, haec, hoc",
+  "misconceptions": [
+    {
+      "id": "hic-genre",
+      "label": "Se tromper de genre",
+      "explanation": "Le pronom prend le genre du nom qu’il remplace. Repère la colonne : masculin, féminin ou neutre."
+    },
+    {
+      "id": "hic-nombre",
+      "label": "Confondre singulier et pluriel",
+      "explanation": "Vérifie le nombre demandé : le pluriel a ses propres formes (hic, haec, hoc au pluriel n’est pas hic, haec, hoc)."
+    },
+    {
+      "id": "hic-cas",
+      "label": "Confondre deux cas",
+      "explanation": "Les pronoms ont des formes irrégulières, qu’on apprend par cœur. Récite la colonne entière dans l’ordre des cas."
+    },
+    {
+      "id": "hic-nominatif",
+      "label": "Laisser le pronom au nominatif",
+      "explanation": "Le pronom change de forme selon sa fonction, comme un nom : il ne reste au nominatif que s’il est sujet."
+    }
+  ],
+  "params": {
+    "g": "pick(['m', 'f', 'n'])",
+    "k": "pick(['nom.sg', 'acc.sg', 'gen.sg', 'dat.sg', 'abl.sg', 'nom.pl', 'acc.pl', 'gen.pl', 'dat.pl', 'abl.pl'])",
+    "n": "pick(['sg', 'pl'])"
+  },
+  "let": {
+    "key": "k ~ '.' ~ g",
+    "og": "g == 'm' ? 'f' : (g == 'f' ? 'n' : 'm')"
+  },
+  "variants": [
+    {
+      "weight": 4,
+      "label": "Une forme",
+      "prompt": "Donne <i>hic, haec, hoc</i> {{ atCase(key) }}.",
+      "answer": {
+        "type": "latin",
+        "value": "prons('hic', g, k)"
+      },
+      "wrongs": [
+        {
+          "misconception": "hic-genre",
+          "value": "prons('hic', og, k)"
+        },
+        {
+          "misconception": "hic-nombre",
+          "value": "prons('hic', g, otherNumber(k))"
+        },
+        {
+          "misconception": "hic-nominatif",
+          "value": "pron('hic', g, 'nom.' ~ keyNumber(k))",
+          "when": "keyCase(k) != 'nom'"
+        },
+        {
+          "misconception": "hic-cas",
+          "value": "prons('hic', g, withCase(k, confusedCase(keyCase(k))))"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ ucfirst(caseLabel(key)) }} : <i>{{ pron('hic', g, k) }}</i>.{{ pronTable('hic', keyNumber(k), key) }}"
+    },
+    {
+      "weight": 1,
+      "label": "Le tableau",
+      "prompt": "Décline <i>hic, haec, hoc</i> au {{ genderName(g) }} {{ numberName(n) }} (le pronom n’a pas de vocatif).",
+      "answer": {
+        "type": "forms",
+        "value": "pronCells('hic', g, n)",
+        "labels": "caseNamesNoVoc()"
+      },
+      "wrongs": [
+        {
+          "misconception": "hic-genre",
+          "value": "pronRow('hic', og, n)"
+        },
+        {
+          "misconception": "hic-nombre",
+          "value": "pronRow('hic', g, n == 'sg' ? 'pl' : 'sg')"
+        }
+      ],
+      "minWrongs": 1,
+      "method": "{{ pronTable('hic', n) }}"
+    }
+  ]
+}

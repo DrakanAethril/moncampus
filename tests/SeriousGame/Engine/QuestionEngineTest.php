@@ -64,7 +64,7 @@ class QuestionEngineTest extends TestCase
         $source = new class implements TemplateSource {
             public function current(string $unit): ?TemplateDefinition
             {
-                return 'u2' === $unit ? null : new TemplateDefinition($unit, 1, ['kind' => 'u3' === $unit ? 'choice' : 'short']);
+                return 'u2' === $unit ? null : new TemplateDefinition($unit, 1, ['answer' => ['type' => 'u3' === $unit ? 'choice' : 'number']]);
             }
 
             public function version(string $unit, int $version): ?TemplateDefinition
@@ -76,6 +76,38 @@ class QuestionEngineTest extends TestCase
         $servable = $this->engine()->servableUnits(new SeriousGameManifest(['chapters' => [['code' => 'c', 'units' => [['code' => 'u1'], ['code' => 'u2'], ['code' => 'u3']]]]]), $source, ['short']);
 
         self::assertSame(['u1'], $servable);
+    }
+
+    public function testATemplateMixingQcmAndTypedAnswersServesOnlyTheKindsTheGameAccepts(): void
+    {
+        $engine = $this->engine();
+        $definition = new TemplateDefinition('mix', 1, [
+            'format' => 'moncampus-gabarit/1',
+            'unit' => 'mix',
+            'label' => 'Mélange',
+            'misconceptions' => [['id' => 'e-add', 'label' => 'Additionner'], ['id' => 'e-sub', 'label' => 'Soustraire'], ['id' => 'e-one', 'label' => 'Un de plus']],
+            'params' => ['a' => 'int(2, 30)', 'b' => 'int(2, 30)'],
+            'variants' => [
+                ['prompt' => '{{ a }} × {{ b }}', 'answer' => ['type' => 'number', 'value' => 'a * b'], 'wrongs' => [['misconception' => 'e-add', 'value' => 'a + b']], 'minWrongs' => 1, 'method' => 'm'],
+                ['prompt' => 'Combien font {{ a }} × {{ b }} ?', 'answer' => ['type' => 'choice', 'value' => 'str(a * b)'], 'wrongs' => [
+                    ['misconception' => 'e-add', 'value' => 'str(a + b)'],
+                    ['misconception' => 'e-sub', 'value' => 'str(a - b)'],
+                    ['misconception' => 'e-one', 'value' => 'str(a * b + 1)'],
+                ], 'method' => 'm'],
+            ],
+        ]);
+
+        self::assertSame(['short', 'choice'], $definition->kinds());
+        self::assertTrue($definition->servableWith(['short']));
+
+        foreach ($engine->seriesPlan($definition, 12, ['short']) as $planned) {
+            self::assertSame('short', $engine->generate($definition, $planned['seed'])->kind);
+        }
+        foreach ($engine->seriesPlan($definition, 12, ['choice']) as $planned) {
+            $question = $engine->generate($definition, $planned['seed']);
+            self::assertSame('choice', $question->kind);
+            self::assertCount(4, $question->publicView()['choices']);
+        }
     }
 
     public function testTheCometOpensOnTheErrorNamedThenTheMethod(): void
