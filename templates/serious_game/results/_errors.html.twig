@@ -1,0 +1,27 @@
+{# The errors of a class or of one student: the information is the error, not the score. Each
+   carries a question regenerated where it occurs (fixed seeds: the same example at every reading)
+   with the answer a student making it types. #}
+{% if errors is empty %}
+    <div class="card-body"><p class="text-secondary mb-0">{{ 'seriousGameNoErrors'|trans }}</p></div>
+{% else %}
+    <ul class="cm-sg-errors">
+        {% for error in errors %}
+            <li>
+                <details>
+                    <summary>
+                        <strong>{{ error.label }}</strong>
+                        <span class="text-secondary">· {{ error.unitName }}</span>
+                        <span class="cm-sg-errors__count">{{ 'seriousGameErrorCount'|trans({'%students%': error.students, '%answers%': error.answers}) }}</span>
+                    </summary>
+                    {% if error.example %}
+                        <div class="cm-sg-errors__example">
+                            <div class="cm-sg-sample__prompt">{{ error.example.prompt|raw }}</div>
+                            {% if error.example.figure %}<div class="cm-sg-sample__figure">{{ error.example.figure|raw }}</div>{% endif %}
+                            <div>{{ 'seriousGameErrorExampleInput'|trans }} <code>{{ error.example.input }}</code></div>
+                        </div>
+                    {% endif %}
+                </details>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

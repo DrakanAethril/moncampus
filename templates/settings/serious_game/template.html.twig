@@ -24,12 +24,12 @@
         </twig:block>
         <form method="post" action="{{ path('app_settings_serious_games_bench', {slug: game.slug, unit: template.unitCode, version: template.version}) }}">
             <input type="hidden" name="_token" value="{{ csrf_token('serious-game-template-' ~ template.id) }}">
-            <button type="submit" class="cm-btn cm-btn--secondary">{{ 'seriousGameBenchAction'|trans }}</button>
+            <twig:Cm:Button variant="outline" type="submit">{{ 'seriousGameBenchAction'|trans }}</twig:Cm:Button>
         </form>
         {% if template.draft %}
             <form method="post" action="{{ path('app_settings_serious_games_validate', {slug: game.slug, unit: template.unitCode, version: template.version}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('serious-game-template-' ~ template.id) }}">
-                <button type="submit" class="cm-btn cm-btn--primary" {{ template.benchGreen ? '' : 'disabled' }}>{{ 'seriousGameValidateAction'|trans }}</button>
+                <twig:Cm:Button variant="primary" type="submit" :disabled="not template.benchGreen">{{ 'seriousGameValidateAction'|trans }}</twig:Cm:Button>
             </form>
         {% endif %}
     </twig:Cm:ActionBar>
@@ -60,7 +60,7 @@
                     <article class="cm-sg-sample">
                         <div class="cm-sg-sample__prompt">{{ question.prompt|raw }}</div>
                         {% if question.figure %}<div class="cm-sg-sample__figure">{{ question.figure|raw }}</div>{% endif %}
-                        <div><strong>{{ 'seriousGameExpectedAnswer'|trans }}</strong> {{ question.answerDisplay|raw }}{% if question.spec.unit %} {{ question.spec.unit }}{% endif %}</div>
+                        <div><strong>{{ 'seriousGameExpectedAnswer'|trans }}</strong> {{ question.answerDisplay|raw }}</div>
                         <ul class="cm-sg-sample__wrongs">
                             {% for wrong in question.wrongs %}<li><code>{{ wrong.text }}</code> — {{ wrong.misconception }}</li>{% endfor %}
                         </ul>
