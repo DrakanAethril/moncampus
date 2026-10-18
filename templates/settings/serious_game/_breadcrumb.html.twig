@@ -1,0 +1,7 @@
+{# The trail of Paramètres › Serious games, shared by its screens: `extra` holds the levels after
+   « Serious games » (a game, then a template version). #}
+{% set segments = [
+    {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
+    {label: 'seriousGamesNavLabel'|trans, url: path('app_settings_serious_games')},
+]|merge(extra|default([])) %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}
