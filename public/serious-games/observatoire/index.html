@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L’Observatoire</title>
+<!-- L'Observatoire, the first serious game of Formatool (design/validated/serious-games.md).
+     Played in a sandboxed frame with an opaque origin: everything it needs is here or in
+     ../shared/, and it speaks to the platform only through ../shared/sdk.js. -->
+<link rel="stylesheet" href="../shared/fonts.css">
+<link rel="stylesheet" href="game.css">
+</head>
+<body>
+<div class="sky" id="sky"></div>
+<div class="app" id="app">
+    <p class="loading">Le carnet s’ouvre…</p>
+</div>
+<div id="live" class="visually-hidden" aria-live="polite"></div>
+<div id="layer"></div>
+<script src="../shared/sdk.js"></script>
+<script src="../shared/avatar.js"></script>
+<script src="../shared/rewards.js"></script>
+<script src="scene.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

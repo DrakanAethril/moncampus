@@ -95,6 +95,10 @@
 	# /serious-games/… routes are the module's screens.
 	@seriousGameFiles path /serious-games/shared/* /serious-games/observatoire/*
 	header @seriousGameFiles ?Cache-Control "no-cache"
+	# A font is always fetched in CORS mode, and the game's frame has an opaque origin: without this
+	# header its own typefaces would be refused. Fonts only - they carry nothing of anybody.
+	@seriousGameFonts path /serious-games/shared/fonts/*
+	header @seriousGameFonts Access-Control-Allow-Origin "*"
 	redir /serious-games/observatoire /serious-games/observatoire/ 308
 	rewrite /serious-games/observatoire/ /serious-games/observatoire/index.html
 
