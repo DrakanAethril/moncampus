@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  var SDK = window.SGSdk, Scene = window.ABYScene, GLOSS = window.ABYGlossary, esc = Scene.esc, E = window.SGEngage;
+  var SDK = window.SGSdk, Scene = window.ABYScene, GLOSS = window.ABYGlossary, esc = Scene.esc, E = window.SGEngage, STORY = window.ABYStory;
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- wording ---------- */
@@ -326,7 +326,7 @@
     var u = G.selected ? unitOf(G.selected) : null, ch = !u && G.zone ? chapterOf(G.zone) : null;
     var panel = u ? speciesCardHtml(u) : ch ? zonePanelHtml(ch) : dialogHtml();
     var depth = G.progress.finished ? 3 : G.progress.lit >= 15 ? 2 : G.progress.lit >= 8 ? 1 : 0;
-    var html = topbar('SVT · 2NDE–1RE', speciesCount() + bestiaryButton() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
+    var html = topbar('SVT · 2NDE–1RE', speciesCount() + storyButton() + bestiaryButton() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
       '<main class="home"><div class="scene-cell">' + Scene.scene(G.user.avatar, { anomalies: G.progress.comets.length > 0, depth: depth }) +
       '<div class="status"><span class="status__grade">' + esc(G.progress.grade) + '</span><span class="status__levels">' + esc(levelsLabel().toUpperCase()) + '</span></div></div>' +
       '<div class="nb-cell">' + notebookHtml() + '</div>' +
@@ -786,7 +786,7 @@
       '<span class="kicker">Prochain niveau : ' + esc(nextLevel(r.best)) + '</span></div></div>' +
       boxesHtml(run, r.size) +
       '<dl class="rows"><div><dt>Croquis</dt><dd>' + levelRow + '</dd></div><div><dt>Meilleure plongée</dt><dd class="num">' + (r.best === null || r.best === undefined ? '—' : r.best + '/12') + '</dd></div></dl>' +
-      anomaliesRaisedHtml(r.comets) +
+      anomaliesRaisedHtml(r.comets) + storyNewHtml() +
       '<p class="guide"><b>' + esc(GUIDE) + '</b> — ' + esc(note) + '</p>' +
       againHtml(r) + '</div></main>');
     announce('Fin de la plongée : ' + r.score + ' sur ' + r.size + '.' + (r.newlyLit ? ' Nouvelle espèce au carnet !' : r.brighter ? ' Le croquis gagne en précision.' : record ? ' Nouveau record.' : ''));
@@ -888,7 +888,7 @@
       '<p class="kicker">Meilleur score · ' + (r.best !== null && r.best !== undefined ? r.best : r.score) + '/' + r.size + '</p>' +
       (r.timedOut ? '<div class="notice notice--warn">' + (G.run && G.run.endedByPlayer ? 'Remontée terminée avant la dernière observation' : 'Le temps s’est écoulé') + ' : les observations restées sans réponse comptent fausses.</div>' : '') +
       (rewards.length && window.SGRewards ? '<div class="review-pieces">' + rewards.map(function (rw) { return '<figure>' + window.SGRewards.art(rw.kind, rw.code, { size: rw.kind === 'card' ? 90 : 110, finish: rw.finish || 'brass' }) + '<figcaption>' + esc(typo(rw.name)) + (rw.kind === 'trophy' ? ' · ' + ({ brass: 'laiton', silver: 'argent', gold: 'or' }[rw.finish] || 'laiton') : '') + '</figcaption></figure>'; }).join('') + '</div>' : '') +
-      anomaliesRaisedHtml(r.comets) +
+      anomaliesRaisedHtml(r.comets) + storyNewHtml() +
       '<p class="guide"><b>' + esc(GUIDE) + '</b> — ' + esc(note) + '</p>' +
       '<div class="qacts qacts--start"><button type="button" class="btn" data-act="final-intro">Refaire la remontée</button><button type="button" class="btn btn--primary" data-act="home" data-autofocus>Retour au hublot</button></div></div>' +
       '<ol class="review" aria-label="Correction, observation par observation">' + items + '</ol></div></main>');
@@ -939,6 +939,34 @@
       '<main class="screen bestiary" tabindex="-1"><h2 class="big-title" tabindex="-1" data-autofocus>' + esc(BESTIARY) + '</h2>' +
       '<p class="sg-bestiary__count" style="margin-top:10px">' + list.length + ' anomalie' + (list.length > 1 ? 's' : '') + ' identifiée' + (list.length > 1 ? 's' : '') + ' sur ' + total + ' erreurs que le sonar connaît</p>' +
       body + '</main>');
+  }
+
+  /* ---------- the journal de bord: a page per species catalogued, the last one on the ascent ---------- */
+
+  function storyPages() { return E.story.pages(STORY, G.progress); }
+  function storyUnread() { return E.story.lastOpen(storyPages()) > (G.data.storyRead || 0); }
+  function storyButton() {
+    var pages = storyPages();
+    return '<button type="button" class="btn btn--small' + (storyUnread() ? ' sg-story-door is-new' : ' sg-story-door') + '" data-act="story">Journal <b>' + E.story.openCount(pages) + '/' + pages.length + '</b>' +
+      (storyUnread() ? '<span class="visually-hidden"> — nouvelle page</span>' : '') + '</button>';
+  }
+  // under a result: the page this run has just opened
+  function storyNewHtml() {
+    if (!storyUnread()) return '';
+    var last = E.story.lastOpen(storyPages());
+    return '<div class="notice sg-story-new"><b>' + (last > STORY.pages.length ? 'La dernière page du journal de bord s’est ouverte.' : 'Une page du journal de bord s’est ouverte.') + '</b> ' +
+      '<button type="button" class="btn btn--small" data-act="story" data-arg="' + Math.min((G.data.storyRead || 0) + 1, last) + '">Lire la page</button></div>';
+  }
+  function renderStory(page) {
+    G.screen = 'story';
+    var pages = storyPages(), read = G.data.storyRead || 0;
+    // by default the first page not yet read, else the last one open
+    var n = +page || Math.min(read + 1, E.story.lastOpen(pages)) || 1;
+    n = Math.max(1, Math.min(pages.length, n));
+    if (pages[n - 1].open && n > read) { G.data.storyRead = n; save(); }
+    show(topbar(STORY.title, speciesCount() + '<button type="button" class="btn btn--small" data-act="home">Retour au hublot <span class="kbd">Échap</span></button>') +
+      '<main class="screen story" tabindex="-1"><h2 class="big-title" tabindex="-1">' + esc(STORY.title) + '</h2>' +
+      E.story.html(STORY, pages, n, G.user.firstName) + '</main>', '.sg-story__mark[data-arg="' + n + '"]');
   }
 
   /* ---------- 4. the reward scene ---------- */
@@ -1000,6 +1028,8 @@
     home: goHome,
     list: renderList,
     bestiary: renderBestiary,
+    story: function (arg) { renderStory(arg); },
+    'story-page': function (arg) { renderStory(arg); },
     sound: function () {
       E.sound.setMuted(!E.sound.muted());
       G.data.mute = E.sound.muted();
@@ -1087,7 +1117,7 @@
     var t = document.querySelector('.toast');
     if (t) { t.remove(); return; }
     if (G.screen === 'home' && (G.selected || G.zone)) { e.preventDefault(); ACTIONS.deselect(); return; }
-    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'bestiary' || G.screen === 'seriesEnd') { e.preventDefault(); goHome(); return; }
+    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'bestiary' || G.screen === 'story' || G.screen === 'seriesEnd') { e.preventDefault(); goHome(); return; }
     if (G.screen === 'run' && G.run && G.run.draftOpen && document.activeElement && document.activeElement.id === 'draft-text') {
       e.preventDefault();
       var inp = document.getElementById('answer') || app.querySelector('.choice') || app.querySelector('.order__item');

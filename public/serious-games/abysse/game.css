@@ -544,3 +544,12 @@ mark { background: rgba(127, 245, 227, .25); color: inherit; padding: 0 2px; }
 .console--end .sg-next { flex-direction: row; flex-wrap: wrap; align-items: stretch; margin-top: 18px; }
 .console--end .sg-next > .btn { flex: 1 1 200px; }
 .console--end .sg-next > .btn--small { flex: 0 0 auto; align-self: center; }
+
+/* the journal de bord of the commandante, on the station's logbook paper */
+:root {
+    --sg-page: var(--paper);
+    --sg-page-ink: var(--paper-ink);
+    --sg-page-muted: var(--paper-dim);
+    --sg-title-font: var(--title);
+}
+.sg-story__page p { font-family: var(--sans); font-size: 17px; }

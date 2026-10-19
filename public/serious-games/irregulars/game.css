@@ -640,3 +640,20 @@ button, input, textarea { font: inherit; color: inherit; }
 .sg-bestiary__label { font-family: var(--display); font-weight: 400; font-size: 21px; color: var(--lamp); }
 .sg-bestiary__item .method { color: var(--ink); font-size: 15px; }
 .bestiary .sg-bestiary__count { margin: 0; }
+
+/* the gang's own investigation, written on the paper of the case files */
+.story {
+    --sg-page: var(--paper);
+    --sg-page-ink: var(--paper-ink);
+    --sg-page-muted: var(--paper-dim);
+    --sg-title-font: var(--display);
+    --sg-fill: var(--brass-hi);
+    --sg-text: var(--ink);
+    --sg-muted: var(--ink-2);
+    --sg-line: var(--line);
+}
+.sg-story__title { font-weight: 400; }
+.sg-story__page p { font-family: var(--serif); font-size: 18px; }
+.sg-story__page i[lang="en"] { color: var(--red); }
+.sg-story-new { border-left-color: var(--brass); }
+.sg-story-new .btn { color: var(--paper-ink); border-color: var(--brass); }
