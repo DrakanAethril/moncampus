@@ -539,3 +539,33 @@ i[lang="la"], .prompt i, .method i, .expected i, .choice i { font-family: var(--
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* the pieces of shared/engage.js: gauge, streak, sparks, registre des lézardes */
+:root {
+    --sg-fill: var(--gold-hi);
+    --sg-track: #6B4A33;
+    --sg-tick: #8F877D;
+    --sg-muted: var(--text-2);
+    --sg-text: var(--text);
+    --sg-record: var(--cream);
+    --sg-mono: var(--mono);
+    --sg-line: #6B4A33;
+    --sg-card: var(--ink);
+    --sg-streak-ink: var(--ink);
+    --sg-spark: #FFF4DD;
+}
+.sg-gauge { margin-top: 16px; }
+.sg-bestiary__label { font-family: var(--serif); font-size: 20px; color: var(--cream); }
+.sg-bestiary__item .method { margin: 8px 0 0; line-height: 1.45; }
+/* the tablets of Lucilla: dark wax in a wooden frame, the letters scratched lighter */
+:root {
+    --sg-page: #2A1A10;
+    --sg-page-ink: var(--cream);
+    --sg-page-muted: var(--gold);
+    --sg-title-font: var(--serif);
+}
+.sg-story__page { border: 10px solid #6B4A33; border-radius: 4px; box-shadow: inset 0 0 0 1px #8A6446, inset 0 2px 14px rgba(0, 0, 0, .55); }
+.sg-story__page.is-blank { border: 10px solid #4A3122; background: #241710; }
+.sg-story__page.is-finale:not(.is-blank) { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-hi), inset 0 2px 14px rgba(0, 0, 0, .55); }
+.sg-story__page p { font-family: var(--serif); font-size: 20px; letter-spacing: .01em; }
+.sg-story__title { color: var(--gold-hi); }

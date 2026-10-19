@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  var SDK = window.SGSdk, Scene = window.ABYScene, GLOSS = window.ABYGlossary, esc = Scene.esc;
+  var SDK = window.SGSdk, Scene = window.ABYScene, GLOSS = window.ABYGlossary, esc = Scene.esc, E = window.SGEngage, STORY = window.ABYStory;
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- wording ---------- */
@@ -58,6 +58,14 @@
     'Moi aussi, j’ai lu des flèches à l’envers pendant des années. Relis toujours la légende.',
     'Une erreur ne retire rien à ta meilleure plongée.'
   ];
+  // what each level is called by the gauge of a dive in progress (shared/engage.js)
+  var GAUGE_LEVELS = {
+    6: ['cataloguer l’espèce', 'Espèce cataloguée !'],
+    8: ['un croquis annoté', 'Croquis annoté !'],
+    10: ['un croquis colorié', 'Croquis colorié !'],
+    12: ['un croquis encadré', 'Douze sur douze : croquis encadré !']
+  };
+  var BESTIARY = 'Registre des anomalies';
   var AFTER_LIT = ['Espèce cataloguée. Elle entre au carnet.', 'Une page de plus au carnet.', 'Bien observé. Les équipes de surface vont aimer ce croquis.'];
   var OK_LINES = ['Spécimen consigné.', 'Bien observé. On descend.', 'Le carnet te remercie.'];
   var KO_LINES = ['Le spécimen a filé. On continue la descente.', 'Pas tout à fait. On garde notre calme et on descend.'];
@@ -196,7 +204,7 @@
 
   function topbar(sub, right) {
     return '<header class="topbar"><div class="topbar__title"><h1 class="topbar__name">Station Abysse</h1><span class="topbar__sub">' + esc(sub) + '</span></div>' +
-      '<div class="topbar__right">' + right + '</div></header>';
+      '<div class="topbar__right">' + right + E.sound.button() + '</div></header>';
   }
   function speciesCount() {
     return '<span class="count" aria-label="' + G.progress.lit + ' espèces cataloguées sur ' + G.progress.total + '"><b>' + G.progress.lit + '</b>/' + G.progress.total + ' ESPÈCES</span>';
@@ -318,7 +326,7 @@
     var u = G.selected ? unitOf(G.selected) : null, ch = !u && G.zone ? chapterOf(G.zone) : null;
     var panel = u ? speciesCardHtml(u) : ch ? zonePanelHtml(ch) : dialogHtml();
     var depth = G.progress.finished ? 3 : G.progress.lit >= 15 ? 2 : G.progress.lit >= 8 ? 1 : 0;
-    var html = topbar('SVT · 2NDE–1RE', speciesCount() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
+    var html = topbar('SVT · 2NDE–1RE', speciesCount() + storyButton() + bestiaryButton() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
       '<main class="home"><div class="scene-cell">' + Scene.scene(G.user.avatar, { anomalies: G.progress.comets.length > 0, depth: depth }) +
       '<div class="status"><span class="status__grade">' + esc(G.progress.grade) + '</span><span class="status__levels">' + esc(levelsLabel().toUpperCase()) + '</span></div></div>' +
       '<div class="nb-cell">' + notebookHtml() + '</div>' +
@@ -359,7 +367,8 @@
       (p.final.unlocked ? '<button type="button" data-act="final-intro"><span>L’épreuve</span><em>' + minutes(p.final.timeLimitSeconds) + ' min</em></button>' : '<span class="is-hidden">A lieu quand toutes les espèces sont cataloguées.</span>') + '</li></ul></section>';
     show(topbar('Tout le carnet', speciesCount() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="home">Retour au hublot <span class="kbd">Échap</span></button>') +
       '<main class="screen" tabindex="-1"><h2 class="big-title" tabindex="-1" data-autofocus>Le carnet d’espèces</h2>' +
-      '<p class="kicker">Plongées illimitées · 12 observations · trois paliers · sans chronomètre</p><div class="list">' + cols + anomalies + ascent + '</div></main>');
+      '<p class="kicker">Plongées illimitées · 12 observations · trois paliers · sans chronomètre</p><div class="list">' + cols + anomalies + ascent + '</div>' +
+      '<p style="margin-top:22px">' + bestiaryButton() + '</p></main>');
   }
 
   /* ---------- 3. a run: a dive, an anomaly or the ascent ---------- */
@@ -397,7 +406,7 @@
     call('startFinal', {}).then(function (r) {
       G.busy = false;
       var limit = r.timeLimitSeconds || G.progress.final.timeLimitSeconds || 1200;
-      G.run = { mode: 'final', session: r.session, size: r.size || 12, results: [], limit: limit, localDeadline: Date.now() + limit * 1000, draft: '' };
+      G.run = { mode: 'final', session: r.session, size: r.size || 12, results: [], limit: limit, localDeadline: Date.now() + limit * 1000, draft: '', beforeBest: G.progress.final.best };
       G.data.open = { mode: 'final', session: r.session, deadline: r.deadline, limit: limit };
       save();
       nextQuestion();
@@ -567,8 +576,8 @@
     }
 
     show(topbar(sub, right) +
-      '<main class="screen run"><div class="console"><div class="qhead"><span class="qhead__title">' + esc(runTitle(run)) + '</span><span class="qhead__num">' + (run.mode === 'comet' ? 'Analyse ' : 'Observation ') + (run.position + 1) + '/' + run.size + depthHtml(run) + progressHtml(run) + '</span></div>' +
-      body + correction + '</div>' + draft + '</main>',
+      '<main class="screen run"><div class="console"><div class="qhead"><span class="qhead__title">' + esc(runTitle(run)) + '</span>' + streakHtml(run) + '<span class="qhead__num">' + (run.mode === 'comet' ? 'Analyse ' : 'Observation ') + (run.position + 1) + '/' + run.size + depthHtml(run) + progressHtml(run) + '</span></div>' +
+      gaugeHtml(run) + body + correction + '</div>' + draft + '</main>',
       done ? '[data-act="next"]' : (q.answerType === 'choice' || q.answerType === 'order' ? '[data-first]' : '#answer'));
 
     var ta = document.getElementById('draft-text');
@@ -595,6 +604,29 @@
     }
     var inp = document.getElementById('answer');
     return (inp ? inp.value : '').trim();
+  }
+
+  /* The gauge of a dive or an anomaly's analysis, from the corrections already given - never during
+     the ascent, whose observations are not corrected before the surface. */
+  function gaugeHtml(run) {
+    if (run.mode === 'final') return '';
+    return E.gauge({
+      mode: run.mode, results: run.results, size: run.size,
+      best: run.before ? run.before.best : null,
+      solvedAt: 2, solve: 'l’identifier', levels: GAUGE_LEVELS, record: 'ta meilleure plongée'
+    }).html;
+  }
+  function streakHtml(run) {
+    if (run.mode === 'final' || !run.correction) return '';
+    var n = E.streak(run.results);
+    return n >= 3 ? '<span class="sg-streak' + (n % 4 === 0 ? ' is-hot' : '') + '">' + n + ' d’affilée</span>' : '';
+  }
+  // the sound of a correction: the sonar climbs with the streak, a flourish every fourth
+  function correctionSound(run, r) {
+    if (r.dontKnow) return;
+    if (!r.ok) { E.sound.play('ko'); return; }
+    var n = E.streak(run.results);
+    E.sound.play(n >= 4 && n % 4 === 0 ? 'combo' : 'ok', n);
   }
 
   function submit(dontKnow) {
@@ -626,6 +658,7 @@
       }
       run.results[run.position] = r.dontKnow ? 'dk' : r.ok ? 'ok' : 'ko';
       run.correction = r;
+      correctionSound(run, r);
       renderRun();
       announce(r.dontKnow ? 'Noté « je ne sais pas ». La méthode est affichée.' : r.ok ? 'Observation juste.' : 'Observation fausse : le spécimen a filé.' + (r.misconceptionLabel ? ' Erreur repérée : ' + lowerFirst(typo(r.misconceptionLabel)) + '.' : '') + (run.q.answerType === 'order' ? ' Ordre attendu : ' + (r.expectedCells || []).join(', ') : ' Réponse attendue : ' + plain(r.expected || r.expectedText)));
     }, function (e) {
@@ -740,6 +773,7 @@
     var r = G.endRes, run = G.run, u = unitOf(r.unit) || { label: r.unit, chapter: run.unit && unitOf(run.unit) ? unitOf(run.unit).chapter : 'recif' };
     var before = run.before || {};
     var lit = !!r.brightness;
+    var record = before.best !== null && before.best !== undefined && r.score > before.best && !r.newlyLit && !r.brighter;
     var note = r.score === 12 ? 'Douze sur douze. Planche complète, je l’encadre.' : r.newlyLit ? pick(AFTER_LIT, r.score + run.session) : r.brighter ? 'Le croquis ' + deW(typo(u.label)) + ' gagne en précision. Une plongée moins bonne ne l’effacera pas.' : pick(AFTER_ERROR, r.score + run.session);
     var levelRow = lit
       ? (r.brighter && before.brightness ? '<span class="was">' + Scene.sketch(u.chapter, before.brightness, 28) + ' ' + esc(LEVEL[before.brightness]) + '</span> <span aria-label="devient">→</span> ' : '') + Scene.sketch(u.chapter, r.brightness, 30) + ' ' + esc(LEVEL[r.brightness])
@@ -747,15 +781,35 @@
     show(topbar('Plongée de 12', speciesCount()) +
       '<main class="screen"><div class="console console--end"><div class="qhead"><span class="qhead__title">' + esc(chapterName(u) + ' · ' + typo(u.label)) + '</span><span class="kicker">RETOUR À LA STATION</span></div>' +
       '<div class="result"><div class="score" aria-label="' + r.score + ' observations justes sur ' + r.size + '"><b>' + r.score + '</b><span>/' + r.size + '</span></div>' +
-      '<div class="result__sketch">' + (r.newlyLit ? '<span class="badge-new">Nouvelle espèce au carnet</span>' : '') +
+      '<div class="result__sketch">' + (r.newlyLit ? '<span class="badge-new">Nouvelle espèce au carnet</span>' : r.brighter ? '<span class="badge-new">Croquis plus précis</span>' : record ? '<span class="badge-new">Nouveau record</span>' : '') +
       '<div class="result__arrow">' + (r.newlyLit ? Scene.sketch(u.chapter, before.series ? 'tried' : 'never', 70) + '<span aria-hidden="true">→</span>' : '') + Scene.sketch(u.chapter, lit ? r.brightness : 'tried', 120) + '</div>' +
       '<span class="kicker">Prochain niveau : ' + esc(nextLevel(r.best)) + '</span></div></div>' +
       boxesHtml(run, r.size) +
       '<dl class="rows"><div><dt>Croquis</dt><dd>' + levelRow + '</dd></div><div><dt>Meilleure plongée</dt><dd class="num">' + (r.best === null || r.best === undefined ? '—' : r.best + '/12') + '</dd></div></dl>' +
-      anomaliesRaisedHtml(r.comets) +
+      anomaliesRaisedHtml(r.comets) + storyNewHtml() +
       '<p class="guide"><b>' + esc(GUIDE) + '</b> — ' + esc(note) + '</p>' +
-      '<div class="qacts"><button type="button" class="btn" data-act="series" data-arg="' + esc(r.unit) + '">Replonger</button><button type="button" class="btn btn--primary" data-act="home" data-autofocus>Retour au hublot <span class="kbd">Entrée</span></button></div></div></main>');
-    announce('Fin de la plongée : ' + r.score + ' sur ' + r.size + '.' + (r.newlyLit ? ' Nouvelle espèce au carnet !' : ''));
+      againHtml(r) + '</div></main>');
+    announce('Fin de la plongée : ' + r.score + ' sur ' + r.size + '.' + (r.newlyLit ? ' Nouvelle espèce au carnet !' : r.brighter ? ' Le croquis gagne en précision.' : record ? ' Nouveau record.' : ''));
+    celebrate(r.newlyLit || r.brighter ? 'level' : record ? 'record' : 'end', '.result__arrow > svg:last-child');
+  }
+
+  /* « Encore une » in one key: the same species again unless its sketch is framed, then the species
+     nearest to its next level - a fact read on the notebook, never a recommendation. */
+  function againHtml(r) {
+    var u = unitOf(r.unit), maxed = u && u.best >= 12, near = E.closest(G.progress.units, r.unit), acts = [];
+    if (!maxed) acts.push('<button type="button" class="btn btn--primary" data-act="series" data-arg="' + esc(r.unit) + '" data-autofocus>Encore une plongée <span class="kbd">Entrée</span></button>');
+    if (near) acts.push('<button type="button" class="btn sg-next__near' + (maxed ? ' btn--primary' : '') + '" data-act="series" data-arg="' + esc(near.unit.code) + '"' + (maxed ? ' data-autofocus' : '') + '>Plonger : ' + esc(typo(near.unit.label)) +
+      '<span class="sg-next__hint">' + esc(nearHint(near)) + '</span></button>');
+    acts.push('<button type="button" class="btn btn--small" data-act="home"' + (acts.length ? '' : ' data-autofocus') + '>Retour au hublot <span class="kbd">Échap</span></button>');
+    return '<div class="sg-next">' + acts.join('') + '</div>';
+  }
+  function nearHint(near) {
+    var b = near.unit.best;
+    return (b === null || b === undefined ? 'à cataloguer' : 'meilleure plongée ' + b + '/12') + ' · ' + nextLevel(b);
+  }
+  function celebrate(cue, selector) {
+    E.sound.play(cue);
+    if (cue === 'level' || cue === 'record' || cue === 'solved') E.burst(app.querySelector(selector), cue === 'level');
   }
 
   function renderCometIntro() {
@@ -777,13 +831,15 @@
       '<main class="screen"><div class="study"><div class="study__art">' + Scene.sonar(1, !!r.solved) + '</div><div><span class="kicker">ANALYSE TERMINÉE · ' + esc(typo(c.label || '').toUpperCase()) + '</span>' +
       '<h2 class="big-title" tabindex="-1">' + (r.solved ? 'Anomalie identifiée.' : 'Elle reste à identifier.') + '</h2>' +
       boxesHtml(run, r.size) +
+      (r.solved ? '<div class="sg-bestiary-new">' + E.bestiaryArt('abysse', run.misconception, 110) + '<span class="kicker">Nouvelle fiche au ' + esc(BESTIARY.toLowerCase()) + '</span></div>' : '') +
       '<p class="explanation">' + (r.solved
         ? 'L’écho est expliqué : ' + r.score + ' justes sur ' + r.size + '. Il ne reviendra que si l’erreur revient.'
         : r.score + ' juste' + (r.score > 1 ? 's' : '') + ' sur ' + r.size + '. Rien n’est perdu : l’anomalie reste sur le sonar, et deux justes sur trois suffisent pour l’identifier.') + '</p>' +
       anomaliesRaisedHtml(r.comets) +
       '<div class="qacts qacts--start"><button type="button" class="btn btn--primary" data-act="home" data-autofocus>Retour au hublot <span class="kbd">Entrée</span></button>' +
-      (r.solved ? '' : '<button type="button" class="btn" data-act="comet" data-arg="' + esc(run.misconception) + '">Réessayer</button>') + '</div></div></div></main>');
-    announce(r.solved ? 'Anomalie identifiée.' : 'L’anomalie reste à identifier.');
+      (r.solved ? '<button type="button" class="btn" data-act="bestiary">Ouvrir le ' + esc(BESTIARY.toLowerCase()) + '</button>' : '<button type="button" class="btn" data-act="comet" data-arg="' + esc(run.misconception) + '">Réessayer</button>') + '</div></div></div></main>');
+    announce(r.solved ? 'Anomalie identifiée. Elle rejoint le registre des anomalies.' : 'L’anomalie reste à identifier.');
+    celebrate(r.solved ? 'solved' : 'end', '.sg-bestiary-new svg');
   }
 
   function renderFinalIntro() {
@@ -832,11 +888,13 @@
       '<p class="kicker">Meilleur score · ' + (r.best !== null && r.best !== undefined ? r.best : r.score) + '/' + r.size + '</p>' +
       (r.timedOut ? '<div class="notice notice--warn">' + (G.run && G.run.endedByPlayer ? 'Remontée terminée avant la dernière observation' : 'Le temps s’est écoulé') + ' : les observations restées sans réponse comptent fausses.</div>' : '') +
       (rewards.length && window.SGRewards ? '<div class="review-pieces">' + rewards.map(function (rw) { return '<figure>' + window.SGRewards.art(rw.kind, rw.code, { size: rw.kind === 'card' ? 90 : 110, finish: rw.finish || 'brass' }) + '<figcaption>' + esc(typo(rw.name)) + (rw.kind === 'trophy' ? ' · ' + ({ brass: 'laiton', silver: 'argent', gold: 'or' }[rw.finish] || 'laiton') : '') + '</figcaption></figure>'; }).join('') + '</div>' : '') +
-      anomaliesRaisedHtml(r.comets) +
+      anomaliesRaisedHtml(r.comets) + storyNewHtml() +
       '<p class="guide"><b>' + esc(GUIDE) + '</b> — ' + esc(note) + '</p>' +
       '<div class="qacts qacts--start"><button type="button" class="btn" data-act="final-intro">Refaire la remontée</button><button type="button" class="btn btn--primary" data-act="home" data-autofocus>Retour au hublot</button></div></div>' +
       '<ol class="review" aria-label="Correction, observation par observation">' + items + '</ol></div></main>');
     announce('Remontée terminée : ' + r.score + ' sur ' + r.size + '.');
+    var was = G.run ? G.run.beforeBest : null;
+    celebrate(was !== null && was !== undefined && r.score > was ? 'record' : 'end', '.review-side .score');
   }
 
   /* ---------- the glossary: over any screen ---------- */
@@ -860,6 +918,57 @@
     if (prev && document.body.contains(prev)) prev.focus();
   }
 
+  /* ---------- the registre des anomalies: every typical error identified ---------- */
+
+  function bestiaryButton() {
+    var n = (G.progress.bestiary || []).length;
+    return '<button type="button" class="btn btn--small" data-act="bestiary">' + esc(BESTIARY) + ' <b>' + n + '</b></button>';
+  }
+  function renderBestiary() {
+    G.screen = 'bestiary';
+    var list = G.progress.bestiary || [], total = G.progress.bestiaryTotal || 0;
+    var body = list.length ? '<ul class="sg-bestiary">' + list.map(function (b) {
+      return '<li class="sg-bestiary__item">' + E.bestiaryArt('abysse', b.misconception, 96) +
+        '<span class="sg-bestiary__unit">' + esc(typo(b.unitName)) + '</span>' +
+        '<h3 class="sg-bestiary__label">' + esc(typo(b.label)) + '</h3>' +
+        (b.explanation ? '<details><summary>La note de la commandante</summary><p class="method">' + esc(typo(b.explanation)) + '</p></details>' : '') +
+        '<span class="sg-bestiary__count">Identifiée le ' + esc(new Date(b.solvedAt).toLocaleDateString('fr-FR')) + '</span></li>';
+    }).join('') + '</ul>'
+      : '<p class="sg-bestiary__empty">Aucune anomalie identifiée pour l’instant. Quand la même erreur revient deux fois, une anomalie s’affiche au sonar ; l’analyser et l’identifier la range ici, avec la note qui l’explique.</p>';
+    show(topbar(BESTIARY, speciesCount() + '<button type="button" class="btn btn--small" data-act="home">Retour au hublot <span class="kbd">Échap</span></button>') +
+      '<main class="screen bestiary" tabindex="-1"><h2 class="big-title" tabindex="-1" data-autofocus>' + esc(BESTIARY) + '</h2>' +
+      '<p class="sg-bestiary__count" style="margin-top:10px">' + list.length + ' anomalie' + (list.length > 1 ? 's' : '') + ' identifiée' + (list.length > 1 ? 's' : '') + ' sur ' + total + ' erreurs que le sonar connaît</p>' +
+      body + '</main>');
+  }
+
+  /* ---------- the journal de bord: a page per species catalogued, the last one on the ascent ---------- */
+
+  function storyPages() { return E.story.pages(STORY, G.progress); }
+  function storyUnread() { return E.story.lastOpen(storyPages()) > (G.data.storyRead || 0); }
+  function storyButton() {
+    var pages = storyPages();
+    return '<button type="button" class="btn btn--small' + (storyUnread() ? ' sg-story-door is-new' : ' sg-story-door') + '" data-act="story">Journal <b>' + E.story.openCount(pages) + '/' + pages.length + '</b>' +
+      (storyUnread() ? '<span class="visually-hidden"> — nouvelle page</span>' : '') + '</button>';
+  }
+  // under a result: the page this run has just opened
+  function storyNewHtml() {
+    if (!storyUnread()) return '';
+    var last = E.story.lastOpen(storyPages());
+    return '<div class="notice sg-story-new"><b>' + (last > STORY.pages.length ? 'La dernière page du journal de bord s’est ouverte.' : 'Une page du journal de bord s’est ouverte.') + '</b> ' +
+      '<button type="button" class="btn btn--small" data-act="story" data-arg="' + Math.min((G.data.storyRead || 0) + 1, last) + '">Lire la page</button></div>';
+  }
+  function renderStory(page) {
+    G.screen = 'story';
+    var pages = storyPages(), read = G.data.storyRead || 0;
+    // by default the first page not yet read, else the last one open
+    var n = +page || Math.min(read + 1, E.story.lastOpen(pages)) || 1;
+    n = Math.max(1, Math.min(pages.length, n));
+    if (pages[n - 1].open && n > read) { G.data.storyRead = n; save(); }
+    show(topbar(STORY.title, speciesCount() + '<button type="button" class="btn btn--small" data-act="home">Retour au hublot <span class="kbd">Échap</span></button>') +
+      '<main class="screen story" tabindex="-1"><h2 class="big-title" tabindex="-1">' + esc(STORY.title) + '</h2>' +
+      E.story.html(STORY, pages, n, G.user.firstName) + '</main>', '.sg-story__mark[data-arg="' + n + '"]');
+  }
+
   /* ---------- 4. the reward scene ---------- */
 
   function finishText(rw) {
@@ -880,6 +989,7 @@
       '<p class="reward__lore" id="reward-lore">' + esc(typo(rw.lore || (rw.kind === 'card' ? 'Une carte de la station, pour ta vitrine.' : rw.kind === 'pin' ? 'Elle se porte sur ton avatar, depuis ta page joueur.' : ''))) + '</p>' +
       '<button type="button" class="btn btn--primary" data-act="reward-close">' + (G.rewards.length > 1 ? 'Pièce suivante' : 'Continuer') + ' <span class="kbd">Entrée</span></button></div></div>';
     layer.querySelector('[data-act="reward-close"]').focus();
+    E.sound.play('reward');
     layer._prev = prev;
     app.setAttribute('aria-hidden', 'true');
   }
@@ -917,6 +1027,17 @@
     exit: function () { SDK.exit(); },
     home: goHome,
     list: renderList,
+    bestiary: renderBestiary,
+    story: function (arg) { renderStory(arg); },
+    'story-page': function (arg) { renderStory(arg); },
+    sound: function () {
+      E.sound.setMuted(!E.sound.muted());
+      G.data.mute = E.sound.muted();
+      save();
+      var b = app.querySelector('[data-act="sound"]');
+      if (b) { b.outerHTML = E.sound.button(); b = app.querySelector('[data-act="sound"]'); if (b) b.focus(); }
+      if (!E.sound.muted()) E.sound.play('ok', 1);
+    },
     glossary: function () { openGlossary(); },
     'glossary-close': closeGlossary,
     'gloss-tab': function (arg) { openGlossary(arg); },
@@ -975,7 +1096,7 @@
     var fn = ACTIONS[b.getAttribute('data-act')];
     if (!fn) return;
     e.preventDefault();
-    if (G.busy && ['toast-close', 'reward-close', 'key', 'draft', 'draft-clear', 'choose', 'place', 'unplace', 'order-reset', 'glossary', 'glossary-close', 'gloss-tab'].indexOf(b.getAttribute('data-act')) < 0) return;
+    if (G.busy && ['toast-close', 'reward-close', 'key', 'draft', 'draft-clear', 'choose', 'place', 'unplace', 'order-reset', 'glossary', 'glossary-close', 'gloss-tab', 'sound'].indexOf(b.getAttribute('data-act')) < 0) return;
     fn(b.getAttribute('data-arg'));
   });
 
@@ -996,7 +1117,7 @@
     var t = document.querySelector('.toast');
     if (t) { t.remove(); return; }
     if (G.screen === 'home' && (G.selected || G.zone)) { e.preventDefault(); ACTIONS.deselect(); return; }
-    if (G.screen === 'list' || G.screen === 'finalIntro') { e.preventDefault(); goHome(); return; }
+    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'bestiary' || G.screen === 'story' || G.screen === 'seriesEnd') { e.preventDefault(); goHome(); return; }
     if (G.screen === 'run' && G.run && G.run.draftOpen && document.activeElement && document.activeElement.id === 'draft-text') {
       e.preventDefault();
       var inp = document.getElementById('answer') || app.querySelector('.choice') || app.querySelector('.order__item');
@@ -1025,6 +1146,8 @@
     G.progress = res[1];
     G.data = res[1].data && typeof res[1].data === 'object' && !Array.isArray(res[1].data) ? res[1].data : {};
     if (G.data.last && !unitOf(G.data.last)) G.data.last = null;
+    E.sound.voice('sonar');
+    E.sound.setMuted(G.data.mute === true); // on by default
     renderHome(false);
   }, function (e) {
     app.innerHTML = '<p class="loading" role="alert">' + esc(errorText(e)) + '</p>';

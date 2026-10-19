@@ -49,7 +49,8 @@ use Doctrine\ORM\EntityManagerInterface;
  * @phpstan-type ChapterProgress array{code: string, label: string, topic: string, lit: int, total: int}
  * @phpstan-type RewardView array{code: string, finish: ?string, kind: string, name: string, lore: string, chapter: ?string, grantedAt?: string, raised?: bool}
  * @phpstan-type CometView array{misconception: string, label: string, unit: string, unitName: string, state: string, attempts: int, appearedAt: string}
- * @phpstan-type Progress array{units: list<UnitProgress>, chapters: list<ChapterProgress>, lit: int, total: int, grade: string, finished: bool, comets: list<CometView>, final: array{code: string, label: string, unlocked: bool, best: ?int, size: int, timeLimitSeconds: int}, collects: bool, rewards: list<RewardView>, data: array<string, mixed>|\stdClass}
+ * @phpstan-type BestiaryEntry array{misconception: string, label: string, unit: string, unitName: string, explanation: string, solvedAt: string}
+ * @phpstan-type Progress array{units: list<UnitProgress>, chapters: list<ChapterProgress>, lit: int, total: int, grade: string, finished: bool, comets: list<CometView>, bestiary: list<BestiaryEntry>, bestiaryTotal: int, final: array{code: string, label: string, unlocked: bool, best: ?int, size: int, timeLimitSeconds: int}, collects: bool, rewards: list<RewardView>, data: array<string, mixed>|\stdClass}
  */
 final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
 {
@@ -137,6 +138,8 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
             'grade' => $manifest->gradeFor($lit),
             'finished' => AcquisitionRules::finished($lit, \count($servable)),
             'comets' => array_map(fn (SeriousGameComet $comet): array => $this->cometView($game, $comet), $this->comets->findInView($player, $game)),
+            'bestiary' => $this->bestiary($player, $game),
+            'bestiaryTotal' => $this->knownMisconceptions($game, $servable),
             'final' => [
                 'code' => $manifest->finalCode(),
                 'label' => $manifest->finalLabel(),
@@ -546,6 +549,59 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
         }
 
         return $out;
+    }
+
+    /**
+     * Every typical error the player has elucidated in the game, once each, the latest first - with
+     * the explanation its study opened on. An error elucidated again after coming back keeps its
+     * latest date; one back in view stays in the bestiary, since it was elucidated once.
+     *
+     * @return list<BestiaryEntry>
+     */
+    private function bestiary(User $player, SeriousGame $game): array
+    {
+        $manifest = self::manifest($game);
+        $out = [];
+        foreach ($this->comets->findSolved($player, $game) as $comet) {
+            $misconception = $comet->getMisconception();
+            if (isset($out[$misconception])) {
+                continue;
+            }
+            $template = $this->source($game)->current($comet->getUnitCode());
+            $explanation = '';
+            if (null !== $template) {
+                // a fixed seed per error: the bestiary reads the same at every opening
+                $example = $this->engine->generate($template, crc32($misconception) ?: 1);
+                $explanation = $this->engine->cometIntroduction($template, $misconception, $example);
+            }
+            $out[$misconception] = [
+                'misconception' => $misconception,
+                'label' => $template?->misconceptionLabel($misconception) ?? $misconception,
+                'unit' => $comet->getUnitCode(),
+                'unitName' => $manifest->unit($comet->getUnitCode())['label'] ?? $comet->getUnitCode(),
+                'explanation' => $explanation,
+                'solvedAt' => ($comet->getSolvedAt() ?? $comet->getAppearedAt())->format(\DATE_ATOM),
+            ];
+        }
+
+        return array_values($out);
+    }
+
+    /**
+     * How many typical errors the servable units know - what the bestiary is counted against.
+     *
+     * @param list<string> $servable
+     */
+    private function knownMisconceptions(SeriousGame $game, array $servable): int
+    {
+        $ids = [];
+        foreach ($servable as $unit) {
+            foreach ($this->source($game)->current($unit)?->misconceptions() ?? [] as $entry) {
+                $ids[$entry['id']] = true;
+            }
+        }
+
+        return \count($ids);
     }
 
     /** @return CometView */

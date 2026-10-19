@@ -26,6 +26,21 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.19'
+      date: '2026-10-19'
+      summary: "Les jeux d'entraînement, toujours en essai auprès de l'administration, donnent davantage envie de rejouer : on voit pendant la série ce qui est à portée, on enchaîne d'une touche, et chaque jeu raconte désormais une histoire."
+      entries:
+          - type: nouveaute
+            title: "Chaque jeu d'entraînement raconte une histoire, qui se dévoile page après page au fil des progrès"
+            detail: "Une page par notion réussie, et un dénouement réservé à l'épreuve finale."
+          - type: nouveaute
+            title: "Les jeux d'entraînement montrent, pendant une série, combien de bonnes réponses il manque pour le palier suivant ou pour battre son record"
+          - type: nouveaute
+            title: "Les jeux d'entraînement ont du son, des bonnes réponses enchaînées saluées et une fin de série plus festive ; le son se coupe d'un bouton"
+          - type: nouveaute
+            title: "En fin de série, une touche suffit pour rejouer, ou pour passer à la notion la plus proche de son palier"
+          - type: nouveaute
+            title: "Chaque erreur surmontée dans un jeu d'entraînement rejoint une collection personnelle, avec son explication"
     - version: '2026.10.18.2'
       date: '2026-10-18'
       summary: "Deux nouveaux jeux d'entraînement rejoignent l'essai auprès de l'administration : les SVT de seconde et de première, et l'anglais du collège."
