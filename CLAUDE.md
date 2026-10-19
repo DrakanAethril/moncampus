@@ -319,6 +319,14 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     carries a deadline, read against `serverTime`. The avatar and the reward
     drawings are one JavaScript module each, shared by the platform and the games
     (`public/serious-games/shared/`); students only collect.
+  - **What keeps a player in the game is one shared module too** (`shared/engage.js` +
+    `engage.css`, spec §1.17): the gauge of a series in progress (levels 6/8/10/12, the record,
+    « encore N justes pour… »), the « N d'affilée » streak, « Encore une » on Entrée at the end of a
+    series with the unit nearest its next level beside it, synthesised sounds (Web Audio, one
+    voice per game, **on by default**, muted from the game's bar into `data.mute`) and the
+    bestiary of elucidated comets (`getProgress()`'s `bestiary`, a reading of progress, not a
+    reward - adults have it too). **Nothing of it runs during the final test before its end**:
+    no gauge, no streak, no sound - each would tell an answer was right.
 - **Bibliothèque de fichiers et partages** — `FileLibraryNode`, one table for folders and files.
   The library is **personal**: `owner` is the access model, not a scope to widen later
   (`FileLibraryVoter`). `path` holds the ancestors' ids (`/12/48/`) so a subtree is one `LIKE`.

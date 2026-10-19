@@ -38,6 +38,12 @@ class SeriousGameCometRepository extends ServiceEntityRepository
         return $this->findBy(['player' => $player, 'game' => $game], ['appearedAt' => 'DESC', 'id' => 'DESC']);
     }
 
+    /** @return list<SeriousGameComet> the comets the player elucidated, the latest first */
+    public function findSolved(User $player, SeriousGame $game): array
+    {
+        return $this->findBy(['player' => $player, 'game' => $game, 'state' => SeriousGameCometState::Solved], ['solvedAt' => 'DESC', 'id' => 'DESC']);
+    }
+
     /** @return array<string, int> error => timestamp its last comet was solved */
     public function solvedAt(User $player, SeriousGame $game): array
     {

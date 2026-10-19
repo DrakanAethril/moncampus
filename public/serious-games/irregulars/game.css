@@ -610,3 +610,33 @@ button, input, textarea { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* the pieces of shared/engage.js: gauge, streak, sparks, bestiary - the fog by default, the paper
+   of a statement sheet inside it */
+:root {
+    --sg-fill: var(--brass-hi);
+    --sg-track: var(--line);
+    --sg-tick: #4A6A58;
+    --sg-muted: var(--ink-2);
+    --sg-text: var(--ink);
+    --sg-record: var(--red-hi);
+    --sg-mono: var(--mono);
+    --sg-line: var(--line);
+    --sg-card: var(--fog);
+    --sg-spark: var(--lamp);
+    --sg-streak-ink: var(--fog);
+}
+.sheet {
+    --sg-fill: var(--ok);
+    --sg-track: var(--paper-2);
+    --sg-tick: #8A7A62;
+    --sg-muted: var(--paper-dim);
+    --sg-text: var(--paper-ink);
+    --sg-record: var(--red);
+    --sg-streak-ink: var(--paper);
+}
+.sheet .sg-gauge { margin: 12px 0 4px; }
+.sheet .sg-next { margin-left: auto; }
+.sg-bestiary__label { font-family: var(--display); font-weight: 400; font-size: 21px; color: var(--lamp); }
+.sg-bestiary__item .method { color: var(--ink); font-size: 15px; }
+.bestiary .sg-bestiary__count { margin: 0; }

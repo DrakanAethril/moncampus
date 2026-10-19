@@ -539,3 +539,21 @@ i[lang="la"], .prompt i, .method i, .expected i, .choice i { font-family: var(--
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* the pieces of shared/engage.js: gauge, streak, sparks, registre des lézardes */
+:root {
+    --sg-fill: var(--gold-hi);
+    --sg-track: #6B4A33;
+    --sg-tick: #8F877D;
+    --sg-muted: var(--text-2);
+    --sg-text: var(--text);
+    --sg-record: var(--cream);
+    --sg-mono: var(--mono);
+    --sg-line: #6B4A33;
+    --sg-card: var(--ink);
+    --sg-streak-ink: var(--ink);
+    --sg-spark: #FFF4DD;
+}
+.sg-gauge { margin-top: 16px; }
+.sg-bestiary__label { font-family: var(--serif); font-size: 20px; color: var(--cream); }
+.sg-bestiary__item .method { margin: 8px 0 0; line-height: 1.45; }

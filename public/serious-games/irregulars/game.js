@@ -27,7 +27,7 @@
 (function () {
   'use strict';
 
-  var SDK = window.SGSdk, Scene = window.IRRScene, BOOK = window.IRRCasebook, esc = Scene.esc;
+  var SDK = window.SGSdk, Scene = window.IRRScene, BOOK = window.IRRCasebook, esc = Scene.esc, E = window.SGEngage;
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- wording ---------- */
@@ -65,6 +65,14 @@
     ['No harm done, mate. A bad round never closes a case.', 'Pas de casse. Une mauvaise tournée ne ferme jamais une affaire.'],
     ['Even the guv’nor gets it wrong sometimes. Not often, mind.', 'Même le patron se trompe, parfois. Pas souvent, remarque.']
   ];
+  // what each mention is called by the gauge of an investigation in progress (shared/engage.js)
+  var GAUGE_LEVELS = {
+    6: ['résoudre l’affaire', 'Affaire résolue !'],
+    8: ['la mention « résolue »', 'Mention « résolue » obtenue !'],
+    10: ['la mention « brillamment »', 'Brillamment résolue !'],
+    12: ['la mention « élémentaire »', 'Douze sur douze : élémentaire !']
+  };
+  var BESTIARY = 'Dossier des fausses pistes';
   var AFTER_SOLVED = [
     ['Six clues out of twelve. Case closed, mate. Now we knock at 221B.', 'Six indices sur douze. Affaire classée. On frappe au 221B.'],
     ['Case closed. The guv’nor will want the file.', 'Affaire classée. Le patron voudra le dossier.'],
@@ -206,7 +214,7 @@
 
   function topbar(sub, right) {
     return '<header class="topbar"><div class="topbar__title"><h1 class="topbar__name">The Irregulars</h1><span class="topbar__sub">' + esc(sub) + '</span></div>' +
-      '<div class="topbar__right">' + right + '</div></header>';
+      '<div class="topbar__right">' + right + E.sound.button() + '</div></header>';
   }
   function casesCount() {
     return '<span class="count" aria-label="' + G.progress.lit + ' affaires résolues sur ' + G.progress.total + '"><b>' + G.progress.lit + '</b>/' + G.progress.total + ' AFFAIRES</span>';
@@ -330,7 +338,7 @@
     if (!G.dlg) G.dlg = homeDialog();
     var u = G.selected ? unitOf(G.selected) : null, ch = !u && G.place ? chapterOf(G.place) : null;
     var panel = u ? caseCardHtml(u) : ch ? placePanelHtml(ch) : dialogHtml();
-    var html = topbar('ANGLAIS · 4E–3E', casesCount() + '<button type="button" class="btn btn--small" data-act="casebook">Le carnet</button>' + glossaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
+    var html = topbar('ANGLAIS · 4E–3E', casesCount() + '<button type="button" class="btn btn--small" data-act="casebook">Le carnet</button>' + bestiaryButton() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
       '<main class="home"><div class="scene-cell">' + Scene.scene(G.user.avatar) +
       '<div class="status"><span class="status__grade">' + esc(G.progress.grade) + '</span><span class="status__levels">' + esc(levelsLabel().toUpperCase()) + '</span></div></div>' +
       '<div class="board-cell">' + boardHtml() + '</div>' +
@@ -371,7 +379,8 @@
       (p.final.unlocked ? '<button type="button" data-act="final-intro">' + Scene.file('blazing', 26) + '<span>L’épreuve</span><em>' + minutes(p.final.timeLimitSeconds) + ' min</em></button>' : '<span class="is-hidden">Ouvre quand toutes les affaires sont résolues.</span>') + '</li></ul></section>';
     show(topbar('Toutes les affaires', casesCount() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="home">Retour à Baker Street <span class="kbd">Échap</span></button>') +
       '<main class="screen" tabindex="-1"><h2 class="big-title" tabindex="-1" data-autofocus>Toutes les affaires</h2>' +
-      '<p class="kicker">Enquêtes illimitées · 12 témoignages · sans chronomètre</p><div class="list">' + cols + leads + fin + '</div></main>');
+      '<p class="kicker">Enquêtes illimitées · 12 témoignages · sans chronomètre</p><div class="list">' + cols + leads + fin + '</div>' +
+      '<p style="margin-top:22px">' + bestiaryButton() + '</p></main>');
   }
 
   /* ---------- 3. a run: an investigation, a false lead or the final case ---------- */
@@ -413,7 +422,7 @@
     call('startFinal', {}).then(function (r) {
       G.busy = false;
       var limit = r.timeLimitSeconds || G.progress.final.timeLimitSeconds || 1200;
-      G.run = freshRun({ mode: 'final', session: r.session, size: r.size || 12, limit: limit, localDeadline: Date.now() + limit * 1000 });
+      G.run = freshRun({ mode: 'final', session: r.session, size: r.size || 12, limit: limit, localDeadline: Date.now() + limit * 1000, beforeBest: G.progress.final.best });
       G.data.open = { mode: 'final', session: r.session, deadline: r.deadline, limit: limit };
       save();
       nextQuestion();
@@ -599,8 +608,8 @@
     var focus = done ? '[data-act="next"]' : (q.answerType === 'text' || !q.answerType ? '#answer' : '[data-first]');
     if (!done && q.answerType === 'order' && run.lastFocus) focus = run.lastFocus;
     show(topbar(sub, right) +
-      '<main class="screen run"><div class="sheet sheet--' + esc(q.answerType || 'text') + '"><div class="qhead"><span class="qhead__title">' + esc(runTitle(run)) + '</span><span class="qhead__num">' + 'Témoignage ' + (run.position + 1) + '/' + run.size + progressHtml(run) + '</span></div>' +
-      body + correction + '</div>' + boardAside(run) + draft + '</main>', focus);
+      '<main class="screen run"><div class="sheet sheet--' + esc(q.answerType || 'text') + '"><div class="qhead"><span class="qhead__title">' + esc(runTitle(run)) + '</span>' + streakHtml(run) + '<span class="qhead__num">' + 'Témoignage ' + (run.position + 1) + '/' + run.size + progressHtml(run) + '</span></div>' +
+      gaugeHtml(run) + body + correction + '</div>' + boardAside(run) + draft + '</main>', focus);
 
     var ta = document.getElementById('draft-text');
     if (ta) { ta.value = run.draft || ''; ta.addEventListener('input', function () { run.draft = ta.value; }); }
@@ -637,6 +646,29 @@
     return 'Écris une réponse, ou choisis « Je ne sais pas ».';
   }
 
+  /* The gauge of an investigation or a false lead, from the corrections already given - never
+     during The Final Case, whose answers are not corrected before its end. */
+  function gaugeHtml(run) {
+    if (run.mode === 'final') return '';
+    return E.gauge({
+      mode: run.mode, results: run.results, size: run.size,
+      best: run.before ? run.before.best : null,
+      solvedAt: 2, solve: 'la lever', levels: GAUGE_LEVELS, record: 'ta meilleure enquête'
+    }).html;
+  }
+  function streakHtml(run) {
+    if (run.mode === 'final' || !run.correction) return '';
+    var n = E.streak(run.results);
+    return n >= 3 ? '<span class="sg-streak' + (n % 4 === 0 ? ' is-hot' : '') + '">' + n + ' indices d’affilée</span>' : '';
+  }
+  // the sound of a correction: the scale climbs with the streak, a flourish every fourth
+  function correctionSound(run, r) {
+    if (r.dontKnow) return;
+    if (!r.ok) { E.sound.play('ko'); return; }
+    var n = E.streak(run.results);
+    E.sound.play(n >= 4 && n % 4 === 0 ? 'combo' : 'ok', n);
+  }
+
   function submit(dontKnow) {
     var run = G.run;
     if (!run || run.correction || G.busy) return;
@@ -667,6 +699,7 @@
       run.results[run.position] = r.dontKnow ? 'dk' : r.ok ? 'ok' : 'ko';
       if (r.ok) { run.clues++; if (run.threads > 0) run.threads--; } else if (!r.dontKnow) run.threads++;
       run.correction = r;
+      correctionSound(run, r);
       renderRun();
       announce(r.dontKnow ? 'Noté « je ne sais pas ». La règle est affichée.' : r.ok ? 'Indice trouvé.' : 'Fausse piste.' + (r.misconceptionLabel ? ' Erreur repérée : ' + lowerFirst(typo(r.misconceptionLabel)) + '.' : '') + ' Réponse attendue : ' + plain(r.expected || r.expectedText));
     }, function (e) {
@@ -746,6 +779,7 @@
     var r = G.endRes, run = G.run, u = unitOf(r.unit) || { label: r.unit };
     var before = run.before || {};
     var lit = !!r.brightness;
+    var record = before.best !== null && before.best !== undefined && r.score > before.best && !r.newlyLit && !r.brighter;
     var note = r.score === 12 ? ['Twelve out of twelve. Elementary.', 'Douze sur douze. Élémentaire : le patron n’aurait pas mieux fait.'] : r.newlyLit ? pick(AFTER_SOLVED, r.score + run.session) : r.brighter ? 'L’affaire « ' + typo(u.label) + ' » gagne une meilleure mention. Une enquête moins réussie ne la lui retirera pas.' : pick(AFTER_ERROR, r.score + run.session);
     var levelRow = lit
       ? (r.brighter && before.brightness ? '<span class="was">' + Scene.file(before.brightness, 22) + ' ' + esc(LEVEL[before.brightness]) + '</span> <span aria-label="devient">→</span> ' : '') + Scene.file(r.brightness, 24) + ' ' + esc(LEVEL[r.brightness])
@@ -753,15 +787,35 @@
     show(topbar('Enquête de 12', casesCount()) +
       '<main class="screen"><div class="sheet sheet--end"><div class="qhead"><span class="qhead__title">' + esc(chapterName(u) + ' · ' + typo(u.label)) + '</span></div>' +
       '<div class="result"><div class="score" aria-label="' + r.score + ' indices sur ' + r.size + '"><b>' + r.score + '</b><span>/' + r.size + '</span></div>' +
-      '<div class="result__file">' + (r.newlyLit ? '<span class="badge-new">Nouvelle affaire résolue</span>' : '') +
+      '<div class="result__file">' + (r.newlyLit ? '<span class="badge-new">Nouvelle affaire résolue</span>' : r.brighter ? '<span class="badge-new">Meilleure mention</span>' : record ? '<span class="badge-new">Nouveau record</span>' : '') +
       '<div class="result__arrow">' + (r.newlyLit ? Scene.file(before.series ? 'tried' : 'never', 70) + '<span aria-hidden="true">→</span>' : '') + Scene.file(lit ? r.brightness : 'tried', 110) + '</div>' +
       '<span class="kicker">Prochaine mention : ' + esc(nextLevel(r.best)) + '</span></div></div>' +
       boxesHtml(run, r.size) +
       '<dl class="rows"><div><dt>Mention</dt><dd>' + levelRow + '</dd></div><div><dt>Meilleure enquête</dt><dd class="num">' + (r.best === null || r.best === undefined ? '—' : r.best + '/12') + '</dd></div></dl>' +
       leadsRaisedHtml(r.comets) +
       '<p class="guide"><b>' + esc(GUIDE) + '</b> — ' + lineHtml(note) + '</p>' +
-      '<div class="qacts"><button type="button" class="btn" data-act="series" data-arg="' + esc(r.unit) + '">Reprendre l’enquête</button><button type="button" class="btn btn--primary" data-act="home" data-autofocus>Retour à Baker Street <span class="kbd">Entrée</span></button></div></div></main>');
-    announce('Fin de l’enquête : ' + r.score + ' indices sur ' + r.size + '.' + (r.newlyLit ? ' Nouvelle affaire résolue !' : ''));
+      '<div class="qacts">' + againHtml(r) + '</div></div></main>');
+    announce('Fin de l’enquête : ' + r.score + ' indices sur ' + r.size + '.' + (r.newlyLit ? ' Nouvelle affaire résolue !' : r.brighter ? ' Meilleure mention.' : record ? ' Nouveau record.' : ''));
+    celebrate(r.newlyLit || r.brighter ? 'level' : record ? 'record' : 'end', '.result__arrow svg:last-child');
+  }
+
+  /* « Encore une » in one key: the same case again unless it is at its highest, then the case
+     nearest to its next mention - a fact read on the board, never a recommendation. */
+  function againHtml(r) {
+    var u = unitOf(r.unit), maxed = u && u.best >= 12, near = E.closest(G.progress.units, r.unit), acts = [];
+    if (!maxed) acts.push('<button type="button" class="btn btn--primary" data-act="series" data-arg="' + esc(r.unit) + '" data-autofocus>Encore une enquête <span class="kbd">Entrée</span></button>');
+    if (near) acts.push('<button type="button" class="btn sg-next__near' + (maxed ? ' btn--primary' : '') + '" data-act="series" data-arg="' + esc(near.unit.code) + '"' + (maxed ? ' data-autofocus' : '') + '>Enquêter : ' + esc(typo(near.unit.label)) +
+      '<span class="sg-next__hint">' + esc(nearHint(near)) + '</span></button>');
+    acts.push('<button type="button" class="btn btn--small" data-act="home"' + (acts.length ? '' : ' data-autofocus') + '>Retour à Baker Street <span class="kbd">Échap</span></button>');
+    return '<div class="sg-next">' + acts.join('') + '</div>';
+  }
+  function nearHint(near) {
+    var b = near.unit.best;
+    return (b === null || b === undefined ? 'dossier non ouvert' : 'meilleure enquête ' + b + '/12') + ' · ' + nextLevel(b);
+  }
+  function celebrate(cue, selector) {
+    E.sound.play(cue);
+    if (cue === 'level' || cue === 'record' || cue === 'solved') E.burst(app.querySelector(selector), cue === 'level');
   }
 
   function renderCometIntro() {
@@ -783,13 +837,15 @@
       '<main class="screen"><div class="lead-study"><div class="lead-study__art' + (r.solved ? ' is-cleared' : '') + '">' + Scene.leadBoard() + '</div><div><span class="kicker">FIN DE LA VÉRIFICATION · ' + esc(typo(c.label || '').toUpperCase()) + '</span>' +
       '<h2 class="big-title" tabindex="-1">' + (r.solved ? 'Fausse piste levée.' : 'Elle reste à lever.') + '</h2>' +
       boxesHtml(run, r.size) +
+      (r.solved ? '<div class="sg-bestiary-new">' + E.bestiaryArt('irregulars', run.misconception, 110) + '<span class="kicker">Une fiche de plus au ' + esc(lowerFirst(BESTIARY)) + '</span></div>' : '') +
       '<p class="explanation">' + (r.solved
         ? 'Le fil rouge est décroché : ' + r.score + ' justes sur ' + r.size + '. Il ne reviendra que si l’erreur revient.'
         : r.score + ' juste' + (r.score > 1 ? 's' : '') + ' sur ' + r.size + '. Rien n’est perdu : le fil reste épinglé au tableau, et deux justes sur trois suffisent pour le lever.') + '</p>' +
       leadsRaisedHtml(r.comets) +
       '<div class="qacts"><button type="button" class="btn btn--primary" data-act="home" data-autofocus>Retour à Baker Street <span class="kbd">Entrée</span></button>' +
-      (r.solved ? '' : '<button type="button" class="btn" data-act="comet" data-arg="' + esc(run.misconception) + '">Réessayer</button>') + '</div></div></div></main>');
-    announce(r.solved ? 'Fausse piste levée.' : 'La fausse piste reste à lever.');
+      (r.solved ? '<button type="button" class="btn" data-act="bestiary">Ouvrir le ' + esc(lowerFirst(BESTIARY)) + '</button>' : '<button type="button" class="btn" data-act="comet" data-arg="' + esc(run.misconception) + '">Réessayer</button>') + '</div></div></div></main>');
+    announce(r.solved ? 'Fausse piste levée. Elle rejoint le dossier des fausses pistes.' : 'La fausse piste reste à lever.');
+    celebrate(r.solved ? 'solved' : 'end', '.sg-bestiary-new svg');
   }
 
   function renderFinalIntro() {
@@ -850,6 +906,8 @@
       '<div class="qacts"><button type="button" class="btn" data-act="final-intro">Rejouer The Final Case</button><button type="button" class="btn btn--primary" data-act="home" data-autofocus>Retour à Baker Street</button></div></div>' +
       '<ol class="review" aria-label="Correction, témoignage par témoignage">' + items + '</ol></div></main>');
     announce('Épreuve terminée : ' + r.score + ' sur ' + r.size + '.');
+    var was = G.run ? G.run.beforeBest : null;
+    celebrate(was !== null && was !== undefined && r.score > was ? 'record' : 'end', '.review-side .score');
   }
 
   /* ---------- 4. the casebook: the irregular verbs and the memos, outside any investigation ---------- */
@@ -876,6 +934,29 @@
       '<main class="screen library"><nav class="library__nav" aria-label="Pages du carnet">' + tabs.map(function (t) {
         return '<button type="button" data-act="book-tab" data-arg="' + t[0] + '"' + (G.bookTab === t[0] ? ' aria-current="page" class="is-current"' : '') + '>' + esc(t[1]) + '</button>';
       }).join('') + '</nav><div class="library__body"><h2 class="big-title" tabindex="-1" data-autofocus>' + esc(tabs.filter(function (t) { return t[0] === G.bookTab; })[0][1]) + '</h2><div class="libgrid">' + casebookBody(G.bookTab) + '</div></div></main>');
+  }
+
+  /* ---------- the dossier des fausses pistes: every typical error lifted ---------- */
+
+  function bestiaryButton() {
+    var n = (G.progress.bestiary || []).length;
+    return '<button type="button" class="btn btn--small" data-act="bestiary">Fausses pistes <b>' + n + '</b></button>';
+  }
+  function renderBestiary() {
+    G.screen = 'bestiary';
+    var list = G.progress.bestiary || [], total = G.progress.bestiaryTotal || 0;
+    var body = list.length ? '<ul class="sg-bestiary">' + list.map(function (b) {
+      return '<li class="sg-bestiary__item">' + E.bestiaryArt('irregulars', b.misconception, 96) +
+        '<span class="sg-bestiary__unit">' + esc(typo(b.unitName)) + '</span>' +
+        '<h3 class="sg-bestiary__label">' + esc(typo(b.label)) + '</h3>' +
+        (b.explanation ? '<details><summary>Ce qu’en dit Wiggins</summary><p class="method">' + esc(typo(b.explanation)) + '</p></details>' : '') +
+        '<span class="sg-bestiary__count">Levée le ' + esc(new Date(b.solvedAt).toLocaleDateString('fr-FR')) + '</span></li>';
+    }).join('') + '</ul>'
+      : '<p class="sg-bestiary__empty">Aucune fausse piste levée pour l’instant. Quand la même erreur revient deux fois, un fil rouge s’épingle au tableau ; la vérifier et la lever range sa fiche ici, avec la règle qui en vient à bout.</p>';
+    show(topbar(BESTIARY, casesCount() + '<button type="button" class="btn btn--small" data-act="home">Retour à Baker Street <span class="kbd">Échap</span></button>') +
+      '<main class="screen bestiary" tabindex="-1"><h2 class="big-title" tabindex="-1" data-autofocus>' + esc(BESTIARY) + '</h2>' +
+      '<p class="sg-bestiary__count">' + list.length + ' fausse' + (list.length > 1 ? 's' : '') + ' piste' + (list.length > 1 ? 's' : '') + ' levée' + (list.length > 1 ? 's' : '') + ' sur ' + total + ' erreurs que Scotland Yard connaît</p>' +
+      body + '</main>');
   }
 
   /* ---------- the glossary: over any screen ---------- */
@@ -919,6 +1000,7 @@
       '<p class="reward__lore" id="reward-lore">' + esc(typo(rw.lore || (rw.kind === 'card' ? 'Une carte de Londres, pour ta vitrine.' : rw.kind === 'pin' ? 'Elle se porte sur ton avatar, depuis ta page joueur.' : ''))) + '</p>' +
       '<button type="button" class="btn btn--primary" data-act="reward-close">' + (G.rewards.length > 1 ? 'Pièce suivante' : 'Continuer') + ' <span class="kbd">Entrée</span></button></div></div>';
     layer.querySelector('[data-act="reward-close"]').focus();
+    E.sound.play('reward');
     layer._prev = prev;
     app.setAttribute('aria-hidden', 'true');
   }
@@ -957,6 +1039,15 @@
     home: goHome,
     list: renderList,
     casebook: function () { renderCasebook(); },
+    bestiary: renderBestiary,
+    sound: function () {
+      E.sound.setMuted(!E.sound.muted());
+      G.data.mute = E.sound.muted();
+      save();
+      var b = app.querySelector('[data-act="sound"]');
+      if (b) { b.outerHTML = E.sound.button(); b = app.querySelector('[data-act="sound"]'); if (b) b.focus(); }
+      if (!E.sound.muted()) E.sound.play('ok', 1);
+    },
     'book-tab': function (arg) { renderCasebook(arg); var b = app.querySelector('[data-arg="' + arg + '"]'); if (b) b.focus(); },
     glossary: function () { openGlossary(); },
     'glossary-close': closeGlossary,
@@ -1042,7 +1133,7 @@
     'toast-close': function () { var t = document.querySelector('.toast'); if (t) t.remove(); }
   };
 
-  var FREE_WHEN_BUSY = ['toast-close', 'reward-close', 'draft', 'draft-clear', 'choose', 'spot', 'place-word', 'unplace', 'order-clear', 'glossary', 'glossary-close', 'gloss-tab'];
+  var FREE_WHEN_BUSY = ['toast-close', 'reward-close', 'sound', 'draft', 'draft-clear', 'choose', 'spot', 'place-word', 'unplace', 'order-clear', 'glossary', 'glossary-close', 'gloss-tab'];
 
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act]');
@@ -1083,7 +1174,7 @@
     var t = document.querySelector('.toast');
     if (t) { t.remove(); return; }
     if (G.screen === 'home' && (G.selected || G.place)) { e.preventDefault(); ACTIONS.deselect(); return; }
-    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'casebook') { e.preventDefault(); goHome(); return; }
+    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'casebook' || G.screen === 'bestiary' || G.screen === 'seriesEnd') { e.preventDefault(); goHome(); return; }
     if (G.screen === 'run' && run && run.draftOpen && document.activeElement && document.activeElement.id === 'draft-text') {
       e.preventDefault();
       var inp = document.getElementById('answer') || app.querySelector('[data-first]');
@@ -1112,6 +1203,8 @@
     G.progress = res[1];
     G.data = res[1].data && typeof res[1].data === 'object' && !Array.isArray(res[1].data) ? res[1].data : {};
     if (G.data.last && !unitOf(G.data.last)) G.data.last = null;
+    E.sound.voice('keys');
+    E.sound.setMuted(G.data.mute === true); // on by default
     renderHome(false);
   }, function (e) {
     app.innerHTML = '<p class="loading" role="alert">' + esc(errorText(e)) + '</p>';

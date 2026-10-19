@@ -615,3 +615,18 @@ button, input, textarea { font: inherit; color: inherit; }
     }
     .map .ring-new { opacity: 0; }
 }
+
+/* the pieces of shared/engage.js: gauge, streak, sparks, bestiary */
+:root {
+    --sg-fill: var(--gold-hi);
+    --sg-track: var(--line);
+    --sg-tick: var(--line-2);
+    --sg-muted: var(--dim);
+    --sg-text: var(--ink-2);
+    --sg-record: var(--blue);
+    --sg-mono: var(--mono);
+    --sg-line: var(--line);
+    --sg-card: var(--panel);
+    --sg-spark: #FFF6DD;
+}
+.sg-bestiary__label { font-family: var(--serif); font-size: 20px; color: var(--ink); }

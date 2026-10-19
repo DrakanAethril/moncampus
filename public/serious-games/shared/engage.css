@@ -1,0 +1,48 @@
+/* Formatool — serious games — the pieces of shared/engage.js. Each game gives them its colours
+   through the --sg-* properties, set on the screen they appear on. */
+
+.sg-gauge { margin: 14px 0 0; font-family: var(--sg-font, inherit); }
+.sg-gauge__track { position: relative; height: 8px; border-radius: 4px; background: var(--sg-track, rgba(255, 255, 255, .14)); margin: 0 0 22px; }
+.sg-gauge__fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--sg-fill, #F2CE7A); transition: width .45s cubic-bezier(.2, .9, .3, 1.3); }
+.sg-gauge__tick { position: absolute; top: -3px; width: 2px; height: 14px; margin-left: -1px; background: var(--sg-tick, rgba(255, 255, 255, .45)); }
+.sg-gauge__tick.is-reached { background: var(--sg-fill, #F2CE7A); }
+.sg-gauge__tick i { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); font: 600 11px/1 var(--sg-mono, ui-monospace, monospace); font-style: normal; color: var(--sg-muted, rgba(255, 255, 255, .6)); white-space: nowrap; }
+.sg-gauge__tick:last-child:not(.sg-gauge__tick--record) i { transform: translateX(-100%); }
+.sg-gauge__tick--record { top: -6px; height: 20px; width: 0; margin-left: 0; background: none; border-left: 2px dashed var(--sg-record, #A9C1E8); }
+.sg-gauge__tick--record i { top: -16px; color: var(--sg-record, #A9C1E8); }
+.sg-gauge__msg { margin: 0; color: var(--sg-text, inherit); font-size: 15px; }
+.sg-gauge__left { color: var(--sg-muted, rgba(255, 255, 255, .6)); }
+
+.sg-streak { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font: 600 13px/1.4 var(--sg-mono, ui-monospace, monospace); letter-spacing: .04em; color: var(--sg-streak-ink, #1B1405); background: var(--sg-fill, #F2CE7A); }
+.sg-streak.is-hot { animation: sg-pop .5s cubic-bezier(.2, .9, .3, 1.4); box-shadow: 0 0 0 0 var(--sg-fill, #F2CE7A); }
+@keyframes sg-pop { 0% { transform: scale(.4); } 70% { transform: scale(1.18); } 100% { transform: none; } }
+
+.sg-sound { display: inline-flex; align-items: center; gap: 6px; }
+.sg-sound svg { flex: none; }
+
+.sg-burst { position: absolute; z-index: 60; width: 0; height: 0; pointer-events: none; }
+.sg-burst i { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: var(--sg-fill, #F2CE7A); opacity: 0; animation: sg-spark 1.1s ease-out forwards; }
+.sg-burst i.is-big { width: 9px; height: 9px; left: -4.5px; top: -4.5px; background: var(--sg-spark, #FFF6DD); }
+@keyframes sg-spark { 0% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.3); } }
+
+.sg-next { display: flex; flex-direction: column; align-items: stretch; gap: 10px; min-width: 240px; }
+.sg-next > * { justify-content: center; }
+.sg-next__near { flex-direction: column; align-items: center; gap: 2px; }
+.sg-next__hint { display: block; font-size: 12px; opacity: .8; font-weight: 400; }
+
+.sg-bestiary { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; margin: 18px 0 0; padding: 0; list-style: none; }
+.sg-bestiary__item { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--sg-line, rgba(255, 255, 255, .2)); border-radius: 10px; background: var(--sg-card, rgba(255, 255, 255, .04)); color: var(--sg-text, inherit); }
+.sg-bestiary__item svg { border-radius: 8px; }
+.sg-bestiary__label { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.25; }
+.sg-bestiary__unit { font: 600 11px/1.4 var(--sg-mono, ui-monospace, monospace); letter-spacing: .06em; text-transform: uppercase; color: var(--sg-muted, rgba(255, 255, 255, .6)); }
+.sg-bestiary__item details { font-size: 14px; }
+.sg-bestiary__item summary { cursor: pointer; color: var(--sg-muted, rgba(255, 255, 255, .7)); }
+.sg-bestiary__count { font: 600 13px/1.4 var(--sg-mono, ui-monospace, monospace); color: var(--sg-muted, rgba(255, 255, 255, .7)); }
+.sg-bestiary__empty { margin-top: 18px; max-width: 60ch; color: var(--sg-text, inherit); }
+.sg-bestiary-new { display: flex; gap: 16px; align-items: center; margin: 18px 0; }
+.sg-bestiary-new svg { border-radius: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+    .sg-gauge__fill { transition: none; }
+    .sg-streak.is-hot { animation: none; }
+}
