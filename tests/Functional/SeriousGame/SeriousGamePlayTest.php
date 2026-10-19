@@ -141,7 +141,19 @@ class SeriousGamePlayTest extends FunctionalTestCase
         $this->play(self::int($study, 'session'), 3, fn (array $question, array $planned): string => $this->answerOf($planned));
         $end = $this->call('POST', 'sessions/'.self::int($study, 'session').'/end');
         self::assertTrue($end['solved']);
-        self::assertSame([], $this->call('GET', 'progress')['comets'], 'élucidée, the comet leaves the map');
+        $progress = $this->call('GET', 'progress');
+        self::assertSame([], $progress['comets'], 'élucidée, the comet leaves the map');
+
+        // ... and enters the bestiary, with what the study said of it
+        $bestiary = $progress['bestiary'];
+        self::assertIsArray($bestiary);
+        self::assertSame(['taux-arrival'], array_column($bestiary, 'misconception'));
+        $entry = $bestiary[0];
+        self::assertIsArray($entry);
+        self::assertSame('taux', $entry['unit']);
+        self::assertIsString($entry['explanation']);
+        self::assertStringStartsWith('L’erreur qui revient', $entry['explanation']);
+        self::assertGreaterThan(100, $progress['bestiaryTotal'], 'every typical error of the servable stars');
     }
 
     public function testTheCouronneOpensOnThirtyOneStarsWithTheExtraTime(): void
