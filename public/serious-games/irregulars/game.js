@@ -27,7 +27,7 @@
 (function () {
   'use strict';
 
-  var SDK = window.SGSdk, Scene = window.IRRScene, BOOK = window.IRRCasebook, esc = Scene.esc, E = window.SGEngage;
+  var SDK = window.SGSdk, Scene = window.IRRScene, BOOK = window.IRRCasebook, esc = Scene.esc, E = window.SGEngage, STORY = window.IRRStory;
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- wording ---------- */
@@ -338,7 +338,7 @@
     if (!G.dlg) G.dlg = homeDialog();
     var u = G.selected ? unitOf(G.selected) : null, ch = !u && G.place ? chapterOf(G.place) : null;
     var panel = u ? caseCardHtml(u) : ch ? placePanelHtml(ch) : dialogHtml();
-    var html = topbar('ANGLAIS · 4E–3E', casesCount() + '<button type="button" class="btn btn--small" data-act="casebook">Le carnet</button>' + bestiaryButton() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
+    var html = topbar('ANGLAIS · 4E–3E', casesCount() + '<button type="button" class="btn btn--small" data-act="casebook">Le carnet</button>' + storyButton() + bestiaryButton() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
       '<main class="home"><div class="scene-cell">' + Scene.scene(G.user.avatar) +
       '<div class="status"><span class="status__grade">' + esc(G.progress.grade) + '</span><span class="status__levels">' + esc(levelsLabel().toUpperCase()) + '</span></div></div>' +
       '<div class="board-cell">' + boardHtml() + '</div>' +
@@ -792,7 +792,7 @@
       '<span class="kicker">Prochaine mention : ' + esc(nextLevel(r.best)) + '</span></div></div>' +
       boxesHtml(run, r.size) +
       '<dl class="rows"><div><dt>Mention</dt><dd>' + levelRow + '</dd></div><div><dt>Meilleure enquête</dt><dd class="num">' + (r.best === null || r.best === undefined ? '—' : r.best + '/12') + '</dd></div></dl>' +
-      leadsRaisedHtml(r.comets) +
+      leadsRaisedHtml(r.comets) + storyNewHtml() +
       '<p class="guide"><b>' + esc(GUIDE) + '</b> — ' + lineHtml(note) + '</p>' +
       '<div class="qacts">' + againHtml(r) + '</div></div></main>');
     announce('Fin de l’enquête : ' + r.score + ' indices sur ' + r.size + '.' + (r.newlyLit ? ' Nouvelle affaire résolue !' : r.brighter ? ' Meilleure mention.' : record ? ' Nouveau record.' : ''));
@@ -901,7 +901,7 @@
       '<p class="kicker">Meilleur score · ' + (r.best !== null && r.best !== undefined ? r.best : r.score) + '/' + r.size + '</p>' +
       (r.timedOut ? '<div class="notice notice--warn">' + (G.run && G.run.endedByPlayer ? 'Épreuve terminée avant le dernier témoignage' : 'Le temps s’est écoulé') + ' : les témoignages restés sans réponse comptent faux.</div>' : '') +
       (rewards.length && window.SGRewards ? '<div class="review-pieces">' + rewards.map(function (rw) { return '<figure>' + window.SGRewards.art(rw.kind, rw.code, { size: rw.kind === 'card' ? 90 : 110, finish: rw.finish || 'brass' }) + '<figcaption>' + esc(typo(rw.name)) + (rw.kind === 'trophy' ? ' · ' + ({ brass: 'laiton', silver: 'argent', gold: 'or' }[rw.finish] || 'laiton') : '') + '</figcaption></figure>'; }).join('') + '</div>' : '') +
-      leadsRaisedHtml(r.comets) +
+      leadsRaisedHtml(r.comets) + storyNewHtml() +
       '<p class="guide"><b>' + esc(GUIDE) + '</b> — ' + lineHtml(note) + '</p>' +
       '<div class="qacts"><button type="button" class="btn" data-act="final-intro">Rejouer The Final Case</button><button type="button" class="btn btn--primary" data-act="home" data-autofocus>Retour à Baker Street</button></div></div>' +
       '<ol class="review" aria-label="Correction, témoignage par témoignage">' + items + '</ol></div></main>');
@@ -957,6 +957,34 @@
       '<main class="screen bestiary" tabindex="-1"><h2 class="big-title" tabindex="-1" data-autofocus>' + esc(BESTIARY) + '</h2>' +
       '<p class="sg-bestiary__count">' + list.length + ' fausse' + (list.length > 1 ? 's' : '') + ' piste' + (list.length > 1 ? 's' : '') + ' levée' + (list.length > 1 ? 's' : '') + ' sur ' + total + ' erreurs que Scotland Yard connaît</p>' +
       body + '</main>');
+  }
+
+  /* ---------- the gang's own investigation: a page per case solved, the last one after The Final Case ---------- */
+
+  function storyPages() { return E.story.pages(STORY, G.progress); }
+  function storyUnread() { return E.story.lastOpen(storyPages()) > (G.data.storyRead || 0); }
+  function storyButton() {
+    var pages = storyPages();
+    return '<button type="button" class="btn btn--small' + (storyUnread() ? ' sg-story-door is-new' : ' sg-story-door') + '" data-act="story">L’enquête <b>' + E.story.openCount(pages) + '/' + pages.length + '</b>' +
+      (storyUnread() ? '<span class="visually-hidden"> — nouvelle page</span>' : '') + '</button>';
+  }
+  // under a result: the page this run has just opened
+  function storyNewHtml() {
+    if (!storyUnread()) return '';
+    var last = E.story.lastOpen(storyPages());
+    return '<div class="notice sg-story-new"><b>' + (last > STORY.pages.length ? 'La dernière page de l’enquête des Irregulars s’est écrite.' : 'Une page de l’enquête des Irregulars s’est écrite.') + '</b> ' +
+      '<button type="button" class="btn btn--small" data-act="story" data-arg="' + Math.min((G.data.storyRead || 0) + 1, last) + '">Lire la page</button></div>';
+  }
+  function renderStory(page) {
+    G.screen = 'story';
+    var pages = storyPages(), read = G.data.storyRead || 0;
+    // by default the first page not yet read, else the last one open
+    var n = +page || Math.min(read + 1, E.story.lastOpen(pages)) || 1;
+    n = Math.max(1, Math.min(pages.length, n));
+    if (pages[n - 1].open && n > read) { G.data.storyRead = n; save(); }
+    show(topbar(STORY.title, casesCount() + '<button type="button" class="btn btn--small" data-act="home">Retour à Baker Street <span class="kbd">Échap</span></button>') +
+      '<main class="screen story" tabindex="-1"><h2 class="big-title" tabindex="-1">' + esc(STORY.title) + '</h2>' +
+      E.story.html(STORY, pages, n, G.user.firstName) + '</main>', '.sg-story__mark[data-arg="' + n + '"]');
   }
 
   /* ---------- the glossary: over any screen ---------- */
@@ -1040,6 +1068,8 @@
     list: renderList,
     casebook: function () { renderCasebook(); },
     bestiary: renderBestiary,
+    story: function (arg) { renderStory(arg); },
+    'story-page': function (arg) { renderStory(arg); },
     sound: function () {
       E.sound.setMuted(!E.sound.muted());
       G.data.mute = E.sound.muted();
@@ -1174,7 +1204,7 @@
     var t = document.querySelector('.toast');
     if (t) { t.remove(); return; }
     if (G.screen === 'home' && (G.selected || G.place)) { e.preventDefault(); ACTIONS.deselect(); return; }
-    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'casebook' || G.screen === 'bestiary' || G.screen === 'seriesEnd') { e.preventDefault(); goHome(); return; }
+    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'casebook' || G.screen === 'bestiary' || G.screen === 'story' || G.screen === 'seriesEnd') { e.preventDefault(); goHome(); return; }
     if (G.screen === 'run' && run && run.draftOpen && document.activeElement && document.activeElement.id === 'draft-text') {
       e.preventDefault();
       var inp = document.getElementById('answer') || app.querySelector('[data-first]');

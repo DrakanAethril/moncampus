@@ -15,7 +15,7 @@
 (function () {
   'use strict';
 
-  var SDK = window.SGSdk, Scene = window.OBSScene, esc = Scene.esc, E = window.SGEngage;
+  var SDK = window.SGSdk, Scene = window.OBSScene, esc = Scene.esc, E = window.SGEngage, STORY = window.OBSStory;
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- wording ---------- */
@@ -307,7 +307,7 @@
     if (!G.dlg) G.dlg = homeDialog();
     var u = G.selected ? unitOf(G.selected) : null;
     var lamp = !!G.data.lamp;
-    var html = topbar('Automatismes · 1re', starsCount() + bestiaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
+    var html = topbar('Automatismes · 1re', starsCount() + storyButton() + bestiaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
       '<main class="home">' + Scene.mountains() +
       '<div class="status"><span class="status__grade">' + esc(G.progress.grade) + '</span><span class="status__eclats">' + esc(eclatsLabel().toUpperCase()) + '</span>' +
       '<button type="button" class="btn btn--small lamp-toggle" data-act="lamp" aria-pressed="' + lamp + '">Lampe frontale : ' + (lamp ? 'allumée' : 'éteinte') + '</button></div>' +
@@ -680,7 +680,7 @@
       (r.newlyLit ? '<p class="newlit">Nouvelle étoile allumée !</p>' : r.brighter ? '<p class="newlit">Plus brillante !</p>' : record ? '<p class="newlit">Nouveau record !</p>' : '') + '</div><div class="score-cap">Calculs justes</div>' +
       boxesHtml(run, r.size) +
       '<dl class="rows"><div><dt>Éclat</dt><dd>' + eclatRow + '</dd></div><div><dt>Meilleure série</dt><dd class="num">' + (r.best === null || r.best === undefined ? '—' : r.best + '/12') + '</dd></div></dl>' +
-      cometsRaisedHtml(r.comets) + '</div></div>' +
+      cometsRaisedHtml(r.comets) + storyNewHtml() + '</div></div>' +
       '<section class="panel result-note" aria-label="' + CARNET + '"><div class="dlg"><div class="dlg__body"><div class="dlg__who"><b>' + CARNET + '</b></div><p class="dlg__text">' + esc(note) + '</p></div>' +
       '<div class="dlg__acts">' + againHtml(r) + '</div></div></section></main>');
     announce('Fin de la série : ' + r.score + ' sur ' + r.size + '.' + (r.newlyLit ? ' Nouvelle étoile allumée !' : r.brighter ? ' L’étoile brille davantage.' : record ? ' Nouveau record.' : ''));
@@ -773,7 +773,7 @@
       '<span class="qhead__title">La Couronne</span>' + Scene.crown(r.score, 380) +
       '<div class="facts-line" style="flex-direction:column;gap:6px"><span><b>' + r.score + '</b> réponse' + (r.score > 1 ? 's' : '') + ' juste' + (r.score > 1 ? 's' : '') + ' sur ' + r.size + '</span><span>Meilleur score · <b>' + (r.best !== null && r.best !== undefined ? r.best : r.score) + '/' + r.size + '</b></span></div>' +
       (r.timedOut ? '<div class="notice notice--warn">' + (G.run && G.run.endedByPlayer ? 'Épreuve terminée avant la dernière question' : 'Le temps s’est écoulé') + ' : les questions restées sans réponse comptent fausses.</div>' : '') +
-      cometsRaisedHtml(r.comets) +
+      cometsRaisedHtml(r.comets) + storyNewHtml() +
       '<section class="panel" aria-label="' + CARNET + '"><div class="dlg__who"><b>' + CARNET + '</b></div><p class="dlg__text" style="margin-top:8px">' + esc(note) + '</p></section>' +
       '<div class="qacts"><button type="button" class="btn btn--primary" data-act="home" data-autofocus>Retour à la carte</button><button type="button" class="btn" data-act="final-intro">Rejouer la Couronne</button></div></div>' +
       '<ol class="review" aria-label="Correction, question par question">' + items + '</ol></div></main>');
@@ -805,7 +805,35 @@
       body + '</main>');
   }
 
-  /* ---------- 8. the reward scene ---------- */
+  /* ---------- 8. the journal of Hélène: a page per star lit, the last one after the Couronne ---------- */
+
+  function storyPages() { return E.story.pages(STORY, G.progress); }
+  function storyUnread() { return E.story.lastOpen(storyPages()) > (G.data.storyRead || 0); }
+  function storyButton() {
+    var pages = storyPages();
+    return '<button type="button" class="btn btn--small' + (storyUnread() ? ' sg-story-door is-new' : ' sg-story-door') + '" data-act="story">Journal <b>' + E.story.openCount(pages) + '/' + pages.length + '</b>' +
+      (storyUnread() ? '<span class="visually-hidden"> — nouvelle page</span>' : '') + '</button>';
+  }
+  // under a result: the page this run has just opened
+  function storyNewHtml() {
+    if (!storyUnread()) return '';
+    var last = E.story.lastOpen(storyPages());
+    return '<div class="notice sg-story-new"><b>' + (last > STORY.pages.length ? 'La dernière page du journal s’est ouverte.' : 'Une page du journal d’Hélène s’est ouverte.') + '</b> ' +
+      '<button type="button" class="btn btn--small" data-act="story" data-arg="' + Math.min((G.data.storyRead || 0) + 1, last) + '">Lire la page</button></div>';
+  }
+  function renderStory(page) {
+    G.screen = 'story';
+    var pages = storyPages(), read = G.data.storyRead || 0;
+    // by default the first page not yet read, else the last one open
+    var n = +page || Math.min(read + 1, E.story.lastOpen(pages)) || 1;
+    n = Math.max(1, Math.min(pages.length, n));
+    if (pages[n - 1].open && n > read) { G.data.storyRead = n; save(); }
+    show(topbar(STORY.title, starsCount() + '<button type="button" class="btn btn--small" data-act="home">Retour à la carte <span class="kbd">Échap</span></button>') +
+      '<main class="screen story" tabindex="-1"><h2 class="big-title" tabindex="-1">' + esc(STORY.title) + '</h2>' +
+      E.story.html(STORY, pages, n, G.user.firstName) + '</main>', '.sg-story__mark[data-arg="' + n + '"]');
+  }
+
+  /* ---------- 9. the reward scene ---------- */
 
   function finishText(rw) {
     if (rw.kind !== 'trophy' || !rw.finish) return '';
@@ -867,6 +895,8 @@
     home: goHome,
     list: renderList,
     bestiary: renderBestiary,
+    story: function (arg) { renderStory(arg); },
+    'story-page': function (arg) { renderStory(arg); },
     sound: function () {
       E.sound.setMuted(!E.sound.muted());
       G.data.mute = E.sound.muted();
@@ -926,7 +956,7 @@
     var t = document.querySelector('.toast');
     if (t) { t.remove(); return; }
     if (G.screen === 'home' && G.selected) { e.preventDefault(); ACTIONS.deselect(); return; }
-    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'bestiary' || G.screen === 'seriesEnd') { e.preventDefault(); goHome(); return; }
+    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'bestiary' || G.screen === 'story' || G.screen === 'seriesEnd') { e.preventDefault(); goHome(); return; }
     if (G.screen === 'run' && G.run && G.run.draftOpen && document.activeElement && document.activeElement.id === 'draft-text') {
       e.preventDefault();
       var inp = document.getElementById('answer');

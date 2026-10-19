@@ -630,3 +630,11 @@ button, input, textarea { font: inherit; color: inherit; }
     --sg-spark: #FFF6DD;
 }
 .sg-bestiary__label { font-family: var(--serif); font-size: 20px; color: var(--ink); }
+/* the journal of Hélène, on her paper */
+:root {
+    --sg-page: var(--paper);
+    --sg-page-ink: var(--paper-ink);
+    --sg-page-muted: #6B7396;
+    --sg-title-font: var(--serif);
+}
+.sg-story__page p { font-family: var(--serif); font-size: 20px; }

@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  var SDK = window.SGSdk, Scene = window.POMScene, LIB = window.POMLibrary, esc = Scene.esc, E = window.SGEngage;
+  var SDK = window.SGSdk, Scene = window.POMScene, LIB = window.POMLibrary, esc = Scene.esc, E = window.SGEngage, STORY = window.POMStory;
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- wording ---------- */
@@ -326,7 +326,7 @@
     if (!G.dlg) G.dlg = homeDialog();
     var u = G.selected ? unitOf(G.selected) : null, ch = !u && G.room ? chapterOf(G.room) : null;
     var panel = u ? tabletCardHtml(u) : ch ? roomPanelHtml(ch) : dialogHtml();
-    var html = topbar('LATIN · 4E–2NDE', tabletsCount() + '<button type="button" class="btn btn--small" data-act="library">Bibliothèque</button>' + bestiaryButton() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
+    var html = topbar('LATIN · 4E–2NDE', tabletsCount() + storyButton() + '<button type="button" class="btn btn--small" data-act="library">Bibliothèque</button>' + bestiaryButton() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="exit">Quitter</button>') +
       '<main class="home"><div class="scene-cell">' + Scene.scene(G.user.avatar) +
       '<div class="status"><span class="status__grade">' + esc(G.progress.grade) + '</span><span class="status__levels">' + esc(levelsLabel().toUpperCase()) + '</span></div></div>' +
       '<div class="plan-cell">' + planHtml() + '</div>' +
@@ -755,7 +755,7 @@
       '<span class="kicker">Prochain niveau : ' + esc(nextLevel(r.best)) + '</span></div></div>' +
       boxesHtml(run, r.size) +
       '<dl class="rows"><div><dt>Tracé</dt><dd>' + levelRow + '</dd></div><div><dt>Meilleure série</dt><dd class="num">' + (r.best === null || r.best === undefined ? '—' : r.best + '/12') + '</dd></div></dl>' +
-      cracksRaisedHtml(r.comets) +
+      cracksRaisedHtml(r.comets) + storyNewHtml() +
       '<p class="architect"><b>' + esc(ARCHITECT) + '</b> — ' + esc(note) + '</p>' +
       '<div class="qacts">' + againHtml(r) + '</div></div></main>');
     announce('Fin de la série : ' + r.score + ' sur ' + r.size + '.' + (r.newlyLit ? ' Nouvelle tablette tracée !' : r.brighter ? ' Le tracé est plus net.' : record ? ' Nouveau record.' : ''));
@@ -856,7 +856,7 @@
       '<p class="kicker">Meilleur score · ' + (r.best !== null && r.best !== undefined ? r.best : r.score) + '/' + r.size + '</p>' +
       (r.timedOut ? '<div class="notice notice--warn">' + (G.run && G.run.endedByPlayer ? 'Épreuve terminée avant la dernière inscription' : 'Le temps s’est écoulé') + ' : les inscriptions restées sans réponse comptent fausses.</div>' : '') +
       (rewards.length && window.SGRewards ? '<div class="review-pieces">' + rewards.map(function (rw) { return '<figure>' + window.SGRewards.art(rw.kind, rw.code, { size: rw.kind === 'card' ? 90 : 110, finish: rw.finish || 'brass' }) + '<figcaption>' + esc(typo(rw.name)) + (rw.kind === 'trophy' ? ' · ' + ({ brass: 'laiton', silver: 'argent', gold: 'or' }[rw.finish] || 'laiton') : '') + '</figcaption></figure>'; }).join('') + '</div>' : '') +
-      cracksRaisedHtml(r.comets) +
+      cracksRaisedHtml(r.comets) + storyNewHtml() +
       '<p class="architect"><b>' + esc(ARCHITECT) + '</b> — ' + esc(note) + '</p>' +
       '<div class="qacts"><button type="button" class="btn" data-act="final-intro">Rejouer le lararium</button><button type="button" class="btn btn--primary" data-act="home" data-autofocus>Retour à la villa</button></div></div>' +
       '<ol class="review" aria-label="Correction, inscription par inscription">' + items + '</ol></div></main>');
@@ -958,7 +958,35 @@
       body + '</main>');
   }
 
-  /* ---------- 6. the reward scene ---------- */
+  /* ---------- 6. the tablets of Lucilla: a page per tablet traced, the last one after the Lararium ---------- */
+
+  function storyPages() { return E.story.pages(STORY, G.progress); }
+  function storyUnread() { return E.story.lastOpen(storyPages()) > (G.data.storyRead || 0); }
+  function storyButton() {
+    var pages = storyPages();
+    return '<button type="button" class="btn btn--small' + (storyUnread() ? ' sg-story-door is-new' : ' sg-story-door') + '" data-act="story">Journal <b>' + E.story.openCount(pages) + '/' + pages.length + '</b>' +
+      (storyUnread() ? '<span class="visually-hidden"> — nouvelle tablette</span>' : '') + '</button>';
+  }
+  // under a result: the page this run has just opened
+  function storyNewHtml() {
+    if (!storyUnread()) return '';
+    var last = E.story.lastOpen(storyPages());
+    return '<div class="notice sg-story-new"><b>' + (last > STORY.pages.length ? 'La dernière tablette de Lucilla attend d’être lue.' : 'Une nouvelle tablette de Lucilla attend d’être lue.') + '</b> ' +
+      '<button type="button" class="btn btn--small" data-act="story" data-arg="' + Math.min((G.data.storyRead || 0) + 1, last) + '">Lire la tablette</button></div>';
+  }
+  function renderStory(page) {
+    G.screen = 'story';
+    var pages = storyPages(), read = G.data.storyRead || 0;
+    // by default the first page not yet read, else the last one open
+    var n = +page || Math.min(read + 1, E.story.lastOpen(pages)) || 1;
+    n = Math.max(1, Math.min(pages.length, n));
+    if (pages[n - 1].open && n > read) { G.data.storyRead = n; save(); }
+    show(topbar(STORY.title, tabletsCount() + glossaryButton() + '<button type="button" class="btn btn--small" data-act="home">Retour à la villa <span class="kbd">Échap</span></button>') +
+      '<main class="screen story" tabindex="-1"><h2 class="big-title" tabindex="-1">' + esc(STORY.title) + '</h2>' +
+      E.story.html(STORY, pages, n, G.user.firstName) + '</main>', '.sg-story__mark[data-arg="' + n + '"]');
+  }
+
+  /* ---------- 7. the reward scene ---------- */
 
   function finishText(rw) {
     if (rw.kind !== 'trophy' || !rw.finish) return '';
@@ -1017,6 +1045,8 @@
     home: goHome,
     list: renderList,
     bestiary: renderBestiary,
+    story: function (arg) { renderStory(arg); },
+    'story-page': function (arg) { renderStory(arg); },
     sound: function () {
       E.sound.setMuted(!E.sound.muted());
       G.data.mute = E.sound.muted();
@@ -1100,7 +1130,7 @@
     var t = document.querySelector('.toast');
     if (t) { t.remove(); return; }
     if (G.screen === 'home' && (G.selected || G.room)) { e.preventDefault(); ACTIONS.deselect(); return; }
-    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'library' || G.screen === 'bestiary' || G.screen === 'seriesEnd') { e.preventDefault(); goHome(); return; }
+    if (G.screen === 'list' || G.screen === 'finalIntro' || G.screen === 'library' || G.screen === 'bestiary' || G.screen === 'story' || G.screen === 'seriesEnd') { e.preventDefault(); goHome(); return; }
     if (G.screen === 'run' && G.run && G.run.draftOpen && document.activeElement && document.activeElement.id === 'draft-text') {
       e.preventDefault();
       var inp = document.getElementById('answer') || document.getElementById('cell-0') || app.querySelector('.choice');

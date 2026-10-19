@@ -13,6 +13,11 @@
      burst(el, strong)   a burst of sparks around an element (nothing under prefers-reduced-motion).
      bestiaryArt(slug, id, size)  the drawing of an elucidated typical error, seeded by its id: the
                          same error always looks the same, two errors never quite alike.
+     story               the game's story told page by page (the game's own story.js holds the text):
+                         a page opens at each unit lit - counted, not tied to a unit, so the story
+                         reads in order whatever order the units are lit in - the pages still to come
+                         stay visible and blank, and the last one, which solves the mystery, opens
+                         once the final test has been played to its end.
 
    Nothing here decides what a player acquires: the levels are the rule's (6 lit, then 8, 10, 12 -
    design/validated/serious-games.md §1.4), read here to say how far the next one is. */
@@ -339,7 +344,54 @@
     return '<svg viewBox="0 0 100 100" width="' + (size || 96) + '" height="' + (size || 96) + '" aria-hidden="true" focusable="false">' + draw(rng(hash(String(id)))) + '</svg>';
   }
 
+  /* ---------- the story ---------- */
+
+  /* text: {title, pages: [{title, text: [paragraphs]}], finale: {title, text}, lockedPage(n),
+     lockedFinale}. Paragraphs are HTML written by the game; « {prenom} » becomes the player's first
+     name. Page k of N opens at the lit count that is the same share of the units the player can be
+     served - k itself when every unit is served. */
+  function storyPages(text, progress) {
+    var n = text.pages.length, total = progress.total || n, lit = progress.lit || 0;
+    var out = text.pages.map(function (pg, i) {
+      var need = Math.max(1, Math.ceil((i + 1) * total / n));
+      return { n: i + 1, title: pg.title, text: pg.text, open: lit >= need, need: need };
+    });
+    if (text.finale) {
+      // the final test played to its end, on a map complete (an older test played on a map that
+      // since gained a unit does not count)
+      var played = lit >= total && progress.final && progress.final.best !== null && progress.final.best !== undefined;
+      out.push({ n: n + 1, title: text.finale.title, text: text.finale.text, open: played, finale: true });
+    }
+    return out;
+  }
+  function storyOpenCount(pages) { return pages.filter(function (p) { return p.open; }).length; }
+  // the highest page open, which the game compares with the highest page read
+  function storyLastOpen(pages) { var last = 0; pages.forEach(function (p) { if (p.open) last = p.n; }); return last; }
+
+  function storyHtml(text, pages, current, firstName) {
+    var pg = pages[Math.max(0, Math.min(pages.length, current) - 1)];
+    var strip = pages.map(function (p) {
+      return '<li><button type="button" class="sg-story__mark' + (p.open ? ' is-open' : '') + (p.finale ? ' is-finale' : '') + (p.n === pg.n ? ' is-current' : '') + '" data-act="story-page" data-arg="' + p.n + '"' +
+        (p.n === pg.n ? ' aria-current="page"' : '') + ' aria-label="Page ' + p.n + (p.open ? ' : ' + esc(p.title) : ', encore blanche') + '">' + (p.finale ? '✦' : p.n) + '</button></li>';
+    }).join('');
+    var body;
+    if (pg.open) {
+      body = '<h3 class="sg-story__title">' + esc(pg.title) + '</h3>' + (pg.text || []).map(function (para) {
+        return '<p>' + String(para).replace(/\{prenom\}/g, esc(firstName || '')) + '</p>';
+      }).join('');
+    } else {
+      body = '<h3 class="sg-story__title is-blank">Page blanche</h3><p class="sg-story__locked">' +
+        esc(pg.finale ? text.lockedFinale : text.lockedPage(pg.need)) + '</p>';
+    }
+    return '<div class="sg-story"><ol class="sg-story__strip" aria-label="Les pages">' + strip + '</ol>' +
+      '<article class="sg-story__page' + (pg.open ? '' : ' is-blank') + (pg.finale ? ' is-finale' : '') + '" aria-live="polite"><span class="sg-story__num">' + (pg.finale ? 'Dernière page' : 'Page ' + pg.n + ' sur ' + (pages.length - (text.finale ? 1 : 0))) + '</span>' + body + '</article>' +
+      '<div class="sg-story__nav"><button type="button" class="btn btn--small" data-act="story-page" data-arg="' + (pg.n - 1) + '"' + (pg.n <= 1 ? ' disabled' : '') + '>← Page précédente</button>' +
+      '<span class="sg-story__count">' + plural(storyOpenCount(pages), 'page ouverte', 'pages ouvertes') + ' sur ' + pages.length + '</span>' +
+      '<button type="button" class="btn btn--small" data-act="story-page" data-arg="' + (pg.n + 1) + '"' + (pg.n >= pages.length ? ' disabled' : '') + '>Page suivante →</button></div></div>';
+  }
+
   root.SGEngage = {
+    story: { pages: storyPages, html: storyHtml, openCount: storyOpenCount, lastOpen: storyLastOpen },
     STEPS: STEPS,
     nextStep: nextStep,
     gauge: gauge,

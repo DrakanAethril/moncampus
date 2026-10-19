@@ -326,7 +326,10 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     voice per game, **on by default**, muted from the game's bar into `data.mute`) and the
     bestiary of elucidated comets (`getProgress()`'s `bestiary`, a reading of progress, not a
     reward - adults have it too). **Nothing of it runs during the final test before its end**:
-    no gauge, no streak, no sound - each would tell an answer was right.
+    no gauge, no streak, no sound - each would tell an answer was right. Each game also tells a
+    story (`{slug}/story.js`, `SGEngage.story`, spec §1.18): one page per unit, opened by the
+    *count* of units lit so it reads in order, and a last page only after the final test is played
+    on a complete map.
 - **Bibliothèque de fichiers et partages** — `FileLibraryNode`, one table for folders and files.
   The library is **personal**: `owner` is the access model, not a scope to widen later
   (`FileLibraryVoter`). `path` holds the ancestors' ids (`/12/48/`) so a subtree is one `LIKE`.
