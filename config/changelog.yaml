@@ -26,6 +26,12 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.22'
+      date: '2026-10-22'
+      summary: "Mise à jour technique du serveur de l'application, sans changement visible pour les utilisateurs."
+      entries:
+          - type: interne
+            title: "Le moteur qui fait tourner l'application passe à sa version la plus récente, avec ses derniers correctifs de sécurité"
     - version: '2026.10.19'
       date: '2026-10-19'
       summary: "Les jeux d'entraînement, toujours en essai auprès de l'administration, donnent davantage envie de rejouer : on voit pendant la série ce qui est à portée, on enchaîne d'une touche, et chaque jeu raconte désormais une histoire."

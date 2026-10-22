@@ -36,7 +36,6 @@ services:
             watch ./templates/**/*.twig
             watch ./translations/**/*.yaml
         }
-      MERCURE_EXTRA_DIRECTIVES: demo
       # Credentials for the `composer install` that frankenphp/docker-entrypoint.sh runs when it
       # finds vendor/ empty - which on CI is every single run, vendor/ being gitignored. Left empty
       # on a developer's machine (Composer ignores a falsy COMPOSER_AUTH, no warning), and filled

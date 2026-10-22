@@ -26,6 +26,12 @@
 	encode zstd br gzip
 
 	mercure {
+		# The Mercure 1.0 hub (FrankenPHP >= 1.13) accepts the 0.x protocol this app speaks - the
+		# `mercure` JWT claim minted by symfony/mercure 0.7, `?topic=` subscriptions, the
+		# mercureAuthorization cookie - only in compatibility mode, and refuses to start on
+		# publisher_jwt/subscriber_jwt without it. Leaving it means the 1.0 protocol: an `issuer`
+		# block, symfony/mercure >= 0.9, `match=` in the Stimulus controllers and in the mobile app.
+		protocol_version_compatibility 8
 		# Publisher JWT key
 		publisher_jwt {env.MERCURE_PUBLISHER_JWT_KEY} {env.MERCURE_PUBLISHER_JWT_ALG}
 		# Subscriber JWT key

@@ -32,14 +32,15 @@ services:
       # here: 8 workers serving ~100-150 ms requests is 50+ req/s, well above anything a school's
       # browsing pattern produces.
       #
-      # num_threads sits above the worker count on purpose - FrankenPHP needs threads left over for
-      # anything not handled by the worker script, and the reserve costs nothing while idle.
+      # num_threads is the reserve for anything not handled by the worker script, and costs nothing
+      # while idle. Since FrankenPHP 1.13 it counts those threads only, the workers coming on top:
+      # 4 + 8 is the 12 threads the host ran before, when num_threads read 12 and included them.
       #
       # Deliberately here and not in .env, unlike most Caddy tuning (docs/options.md): .env is
       # shared with dev, where the frankenphp_dev image sets FRANKENPHP_WORKER_CONFIG=watch for hot
       # reload, and a value there would silently replace it. Same reasoning that keeps APP_ENV
       # above in this file.
-      FRANKENPHP_CONFIG: num_threads 12
+      FRANKENPHP_CONFIG: num_threads 4
       FRANKENPHP_WORKER_CONFIG: num 8
 
       # Every lock of the platform (App\Command\SharedLockableTrait, the VMID lock of
