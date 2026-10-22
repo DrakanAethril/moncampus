@@ -26,7 +26,7 @@ class QuizAttemptExtraTimeTest extends TestCase
 {
     public function testAPerQuestionBudgetGrowsAndRoundsUp(): void
     {
-        $attempt = $this->attempt(globalMinutes: null, closesAt: null, percent: '33.33');
+        $attempt = $this->quizAttempt(globalMinutes: null, closesAt: null, percent: '33.33');
 
         self::assertSame(40, $attempt->allowedSeconds(30));
         // Nothing to grow on an unlimited question.
@@ -35,7 +35,7 @@ class QuizAttemptExtraTimeTest extends TestCase
 
     public function testACopyWithoutAnAccommodationIsUntouched(): void
     {
-        $attempt = $this->attempt(globalMinutes: 30, closesAt: null, percent: null);
+        $attempt = $this->quizAttempt(globalMinutes: 30, closesAt: null, percent: null);
 
         self::assertSame(30, $attempt->allowedSeconds(30));
         self::assertEquals(
@@ -46,7 +46,7 @@ class QuizAttemptExtraTimeTest extends TestCase
 
     public function testTheWholeQuizClockGrowsBySeconds(): void
     {
-        $attempt = $this->attempt(globalMinutes: 30, closesAt: null, percent: '33.33');
+        $attempt = $this->quizAttempt(globalMinutes: 30, closesAt: null, percent: '33.33');
 
         // 1 800 s x 1,3333 = 2 399,94 -> 2 400 s, which is 40 minutes.
         self::assertEquals(
@@ -60,7 +60,7 @@ class QuizAttemptExtraTimeTest extends TestCase
         $startedAt = new \DateTimeImmutable('2026-09-12 09:30:00');
         // The class window shuts at 10h00, the budget is the same half hour: without the slide the
         // accommodation would buy nothing at all.
-        $attempt = $this->attempt(globalMinutes: 30, closesAt: new \DateTimeImmutable('2026-09-12 10:00:00'), percent: '33.33', startedAt: $startedAt);
+        $attempt = $this->quizAttempt(globalMinutes: 30, closesAt: new \DateTimeImmutable('2026-09-12 10:00:00'), percent: '33.33', startedAt: $startedAt);
 
         // 600 s granted, so the window shuts at 10h10 for this copy and the budget runs out at the
         // same instant - whichever comes first, it is ten minutes later than for everybody else.
@@ -71,7 +71,7 @@ class QuizAttemptExtraTimeTest extends TestCase
     {
         // Nothing was measured in duration, so there is nothing to grow: the closing date is the
         // class-wide window and stays where the teacher put it. The per-question budgets still grow.
-        $attempt = $this->attempt(globalMinutes: null, closesAt: new \DateTimeImmutable('2026-09-12 10:00:00'), percent: '33.33');
+        $attempt = $this->quizAttempt(globalMinutes: null, closesAt: new \DateTimeImmutable('2026-09-12 10:00:00'), percent: '33.33');
 
         self::assertEquals(new \DateTimeImmutable('2026-09-12 10:00:00'), $attempt->getTimeLimitAt());
         self::assertSame(40, $attempt->allowedSeconds(30));
@@ -79,13 +79,13 @@ class QuizAttemptExtraTimeTest extends TestCase
 
     public function testTheGrantedTimeIsReadableOffTheCopy(): void
     {
-        $attempt = $this->attempt(globalMinutes: null, closesAt: null, percent: '33.33');
+        $attempt = $this->quizAttempt(globalMinutes: null, closesAt: null, percent: '33.33');
 
         self::assertSame('33,33 %', $attempt->extraTimePercentLabel());
-        self::assertNull($this->attempt(globalMinutes: null, closesAt: null, percent: null)->extraTimePercentLabel());
+        self::assertNull($this->quizAttempt(globalMinutes: null, closesAt: null, percent: null)->extraTimePercentLabel());
     }
 
-    private function attempt(?int $globalMinutes, ?\DateTimeImmutable $closesAt, ?string $percent, ?\DateTimeImmutable $startedAt = null): QuizAttempt
+    private function quizAttempt(?int $globalMinutes, ?\DateTimeImmutable $closesAt, ?string $percent, ?\DateTimeImmutable $startedAt = null): QuizAttempt
     {
         $program = new Program('SIO-2 2026-2027', 'SIO-2', $this->createStub(Cohort::class), $this->createStub(SchoolYear::class));
         $instance = new QuizInstance($program, new User('teacher'));

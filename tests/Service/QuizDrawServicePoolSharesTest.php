@@ -65,7 +65,7 @@ final class QuizDrawServicePoolSharesTest extends TestCase
         $this->addQuestions($instance, 0, 8);
         $this->addQuestions($instance, 1, 8);
 
-        $drawn = (new QuizDrawService(new QuizDifficultyDistributionResolver()))->drawQuestions($this->attempt($instance, 11));
+        $drawn = (new QuizDrawService(new QuizDifficultyDistributionResolver()))->drawQuestions($this->quizAttempt($instance, 11));
         $ids = array_map(static fn (QuizInstanceQuestion $question): ?int => $question->getId(), $drawn);
 
         self::assertCount(12, $drawn);
@@ -102,7 +102,7 @@ final class QuizDrawServicePoolSharesTest extends TestCase
         }
     }
 
-    private function attempt(QuizInstance $instance, int $seed): QuizAttempt
+    private function quizAttempt(QuizInstance $instance, int $seed): QuizAttempt
     {
         $attempt = new QuizAttempt($instance, new User('etudiant'));
         $attempt->setShuffleSeed($seed);
@@ -113,7 +113,7 @@ final class QuizDrawServicePoolSharesTest extends TestCase
     /** @return array<int, int> questions drawn per pool position */
     private function origins(QuizInstance $instance, int $seed): array
     {
-        $drawn = (new QuizDrawService(new QuizDifficultyDistributionResolver()))->drawQuestions($this->attempt($instance, $seed));
+        $drawn = (new QuizDrawService(new QuizDifficultyDistributionResolver()))->drawQuestions($this->quizAttempt($instance, $seed));
 
         $origins = [];
         foreach ($drawn as $question) {

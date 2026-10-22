@@ -168,7 +168,7 @@ class QuizPenaltyRemarkerTest extends TestCase
     public function testACopyStillBeingComposedIsPutBackUnderOneRuleWithoutBeingMarked(): void
     {
         $instance = $this->instance(0.5);
-        $attempt = $this->attempt($instance, [1.0, -0.5]);
+        $attempt = $this->quizAttempt($instance, [1.0, -0.5]);
 
         $instance->setPenaltyPoints(0.25);
         self::assertSame(0, $this->remarker($attempt)->reapply($instance), 'an unfinished copy has no mark to move');
@@ -213,7 +213,7 @@ class QuizPenaltyRemarkerTest extends TestCase
      * @param list<float|null> $scores each answer's frozen score; null = never answered
      * @param list<float>      $points each question's barème, 1 point by default
      */
-    private function attempt(QuizInstance $instance, array $scores, array $points = []): QuizAttempt
+    private function quizAttempt(QuizInstance $instance, array $scores, array $points = []): QuizAttempt
     {
         $attempt = new QuizAttempt($instance, $this->stub(User::class));
 
@@ -239,7 +239,7 @@ class QuizPenaltyRemarkerTest extends TestCase
      */
     private function concludedAttempt(QuizInstance $instance, array $scores, array $points = []): QuizAttempt
     {
-        $attempt = $this->attempt($instance, $scores, $points);
+        $attempt = $this->quizAttempt($instance, $scores, $points);
         (new QuizAttemptConcluder($this->createStub(QuizSupervisionReportBuilder::class)))->conclude($attempt, AttemptStatus::Termine);
 
         return $attempt;
