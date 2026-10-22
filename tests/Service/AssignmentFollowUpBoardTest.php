@@ -64,7 +64,7 @@ class AssignmentFollowUpBoardTest extends TestCase
         $assignment = $this->assignment(AssignmentNature::Quiz);
         $instance = $this->quizInstance($assignment);
 
-        $rows = $this->rows($assignment, attempts: [$this->attempt($instance, $this->marie, 8, 10, '2026-09-01 10:12')]);
+        $rows = $this->rows($assignment, attempts: [$this->quizAttempt($instance, $this->marie, 8, 10, '2026-09-01 10:12')]);
 
         $this->assertSame(AssignmentFollowUpStatus::Done, $rows[0]->status);
         $this->assertSame('2026-09-01 10:12', $rows[0]->doneAt?->format('Y-m-d H:i'));
@@ -77,7 +77,7 @@ class AssignmentFollowUpBoardTest extends TestCase
         $assignment = $this->assignment(AssignmentNature::Quiz);
         $instance = $this->quizInstance($assignment);
 
-        $rows = $this->rows($assignment, attempts: [$this->attempt($instance, $this->marie, 8, 10, '2026-09-01 10:12')]);
+        $rows = $this->rows($assignment, attempts: [$this->quizAttempt($instance, $this->marie, 8, 10, '2026-09-01 10:12')]);
 
         $this->assertSame('assignmentFollowUpAnsweredLabel', $rows[0]->statusLabelKey);
         $this->assertSame('assignmentFollowUpNotAnsweredLabel', $rows[1]->statusLabelKey);
@@ -93,7 +93,7 @@ class AssignmentFollowUpBoardTest extends TestCase
         $assignment->setMinimumScorePercent(50.0);
         $instance = $this->quizInstance($assignment);
 
-        $rows = $this->rows($assignment, attempts: [$this->attempt($instance, $this->marie, 3, 10, '2026-09-01 10:12')]);
+        $rows = $this->rows($assignment, attempts: [$this->quizAttempt($instance, $this->marie, 3, 10, '2026-09-01 10:12')]);
 
         $this->assertSame(AssignmentFollowUpStatus::Insufficient, $rows[0]->status);
         $this->assertSame('assignmentFollowUpBelowThresholdLabel', $rows[0]->statusLabelKey);
@@ -108,8 +108,8 @@ class AssignmentFollowUpBoardTest extends TestCase
         $instance = $this->quizInstance($assignment);
 
         $rows = $this->rows($assignment, attempts: [
-            $this->attempt($instance, $this->marie, 9, 10, '2026-09-01 10:12'),
-            $this->attempt($instance, $this->marie, 2, 10, '2026-09-02 11:30'),
+            $this->quizAttempt($instance, $this->marie, 9, 10, '2026-09-01 10:12'),
+            $this->quizAttempt($instance, $this->marie, 2, 10, '2026-09-02 11:30'),
         ]);
 
         $this->assertSame(AssignmentFollowUpStatus::Done, $rows[0]->status);
@@ -386,7 +386,7 @@ class AssignmentFollowUpBoardTest extends TestCase
         return $instance;
     }
 
-    private function attempt(QuizInstance $instance, User $student, float $correct, int $total, string $submittedAt): QuizAttempt
+    private function quizAttempt(QuizInstance $instance, User $student, float $correct, int $total, string $submittedAt): QuizAttempt
     {
         $attempt = new QuizAttempt($instance, $student);
         $attempt->setStatus(AttemptStatus::Termine);

@@ -46,6 +46,7 @@ docker compose exec php bin/console <cmd>
 docker compose exec php composer <cmd>
 docker compose exec -e APP_ENV=test php bin/phpunit
 docker compose exec -e APP_ENV=test php bin/phpunit --filter <TestName>
+docker compose exec -e APP_ENV=test php vendor/bin/paratest --processes=4   # whole suite, ~2 min (setup: tests/README.md)
 
 docker compose exec php composer phpstan           # static analysis, level 5
 docker compose exec php composer phpstan-baseline  # regenerate the baseline
@@ -1127,7 +1128,16 @@ It boots the ordinary dev compose stack (there is no host-side PHP here, so ever
 `docker compose exec php …`, the same command you would run locally) and then, in order:
 `composer cs-check`, `lint:yaml`, `lint:twig`, `lint:container`, `composer phpstan`, then on a
 throwaway database `doctrine:migrations:migrate` from empty, `doctrine:schema:validate`, and
-`bin/phpunit`.
+the suite through ParaTest, 4 processes, each on its own copy of the migrated database
+(`app:test:parallel-databases`) - about 3 minutes where `bin/phpunit` took 8 to 9.
+
+**A release commit skips all of that.** When a commit changes `config/changelog.yaml` and
+`config/tech_profile.yaml` and nothing else, and its parent's `Checks` run succeeded, the job checks
+those two files (`.github/scripts/release_files.py`, stricter than the page that reads them) and
+reports `Checks` green in about a minute: its code is its parent's, which has just passed. That is
+what `/beaup-deploy` pushes before opening the deploy PR. It is why the release commit must go on top
+of a staging whose run has *finished* green: pushed while that run is still going, it cancels it
+(`cancel-in-progress`), the parent never turns green, and the release commit gets the full run.
 
 Three things about it are deliberate:
 
@@ -1149,9 +1159,11 @@ Three things about it are deliberate:
   `github.head_ref` is empty on a push, and the original `github.run_id` made every run its own
   group — `cancel-in-progress` silently did nothing, and three pushes in ten minutes ran three full
   jobs, two of them already superseded.
-- **It uses `TEST_TOKEN=ci`**, so the test database is `<database>_test**ci**`. A CI runner does not
+- **It uses `TEST_TOKEN=ci`**, so the migrations land in `<database>_test**ci**`. A CI runner does not
   need the isolation; a developer replaying the sequence locally to debug a red run does, because
-  otherwise it clobbers their own `_test` database.
+  otherwise it clobbers their own `_test` database. The ParaTest step then works on
+  `_test1`…`_test4`, ParaTest numbering its processes through the same variable - copies that
+  `app:test:parallel-databases` rewrites whole each time.
 
 The old template workflow (`deprecated.yaml`, wired to a `backuped` branch with every real step
 commented out) was deleted rather than left alongside: it was also called `CI` and also triggered on

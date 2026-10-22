@@ -35,14 +35,14 @@ class QuizAttemptRelaunchTest extends TestCase
     public function testAnOrdinaryAttemptIsStillClampedByTheClosingDate(): void
     {
         $closesAt = new \DateTimeImmutable('+1 hour');
-        $attempt = $this->attempt(AttemptOrigin::Initiale, $closesAt, globalMinutes: null);
+        $attempt = $this->quizAttempt(AttemptOrigin::Initiale, $closesAt, globalMinutes: null);
 
         self::assertEquals($closesAt, $attempt->getTimeLimitAt());
     }
 
     public function testAnOrdinaryAttemptPastTheClosingDateIsPastItsLimit(): void
     {
-        $attempt = $this->attempt(AttemptOrigin::Initiale, new \DateTimeImmutable('-1 hour'), globalMinutes: null);
+        $attempt = $this->quizAttempt(AttemptOrigin::Initiale, new \DateTimeImmutable('-1 hour'), globalMinutes: null);
 
         self::assertTrue($attempt->isPastTimeLimit());
     }
@@ -51,7 +51,7 @@ class QuizAttemptRelaunchTest extends TestCase
     // a granted retry clamped to closesAt would be dead on arrival.
     public function testAGrantedRetryOutlivesTheClosingDate(): void
     {
-        $attempt = $this->attempt(AttemptOrigin::Relance, new \DateTimeImmutable('-1 hour'), globalMinutes: null);
+        $attempt = $this->quizAttempt(AttemptOrigin::Relance, new \DateTimeImmutable('-1 hour'), globalMinutes: null);
 
         self::assertNull($attempt->getTimeLimitAt());
         self::assertFalse($attempt->isPastTimeLimit());
@@ -60,7 +60,7 @@ class QuizAttemptRelaunchTest extends TestCase
     // ... but it is still an évaluation: its own budget is the one thing that closes it.
     public function testAGrantedRetryStillRunsAgainstItsOwnBudget(): void
     {
-        $attempt = $this->attempt(AttemptOrigin::Relance, new \DateTimeImmutable('-1 hour'), globalMinutes: 30);
+        $attempt = $this->quizAttempt(AttemptOrigin::Relance, new \DateTimeImmutable('-1 hour'), globalMinutes: 30);
 
         self::assertNotNull($attempt->getTimeLimitAt());
         self::assertFalse($attempt->isPastTimeLimit());
@@ -72,7 +72,7 @@ class QuizAttemptRelaunchTest extends TestCase
 
     public function testAnAttemptNobodyHasOpenedHasBeenServedNothing(): void
     {
-        $attempt = $this->attempt(AttemptOrigin::Relance, null, globalMinutes: null);
+        $attempt = $this->quizAttempt(AttemptOrigin::Relance, null, globalMinutes: null);
         $attempt->addAttemptAnswer(new QuizAttemptAnswer($attempt, $this->createStub(QuizInstanceQuestion::class)));
 
         self::assertFalse($attempt->hasBeenServed());
@@ -80,7 +80,7 @@ class QuizAttemptRelaunchTest extends TestCase
 
     public function testOneQuestionOnScreenIsEnoughToCountAsOpened(): void
     {
-        $attempt = $this->attempt(AttemptOrigin::Relance, null, globalMinutes: null);
+        $attempt = $this->quizAttempt(AttemptOrigin::Relance, null, globalMinutes: null);
         $first = new QuizAttemptAnswer($attempt, $this->createStub(QuizInstanceQuestion::class));
         $attempt->addAttemptAnswer($first);
         $attempt->addAttemptAnswer(new QuizAttemptAnswer($attempt, $this->createStub(QuizInstanceQuestion::class)));
@@ -90,7 +90,7 @@ class QuizAttemptRelaunchTest extends TestCase
         self::assertTrue($attempt->hasBeenServed());
     }
 
-    private function attempt(AttemptOrigin $origin, ?\DateTimeImmutable $closesAt, ?int $globalMinutes): QuizAttempt
+    private function quizAttempt(AttemptOrigin $origin, ?\DateTimeImmutable $closesAt, ?int $globalMinutes): QuizAttempt
     {
         $program = new Program('SIO-2 2026-2027', 'SIO-2', $this->createStub(Cohort::class), $this->createStub(SchoolYear::class));
         $instance = new QuizInstance($program, new User('teacher'));

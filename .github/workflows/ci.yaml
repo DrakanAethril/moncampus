@@ -23,6 +23,8 @@ on:
 
 permissions:
   contents: read
+  # Read by « Recognise a release commit », which asks whether the parent commit's run was green.
+  checks: read
 
 # github.head_ref only exists on a pull_request; on a push it is empty, so the fallback is what
 # actually groups staging runs. It used to be github.run_id - unique per run, which made every run
@@ -43,11 +45,47 @@ jobs:
         with:
           persist-credentials: false
 
+      # A release commit - what /beaup-deploy writes on staging before opening the deploy PR - changes
+      # config/changelog.yaml and config/tech_profile.yaml and nothing else. Its code is its parent's,
+      # which has just passed this job, so running the whole suite again only delayed every deploy by
+      # some fifteen minutes, twice over (the push and the PR run on the same commit). When the commit
+      # touches those two files alone *and* its parent's Checks run succeeded, every step below that
+      # needs the stack is skipped and the two files are checked instead. The job still reports
+      # Checks, so main's required status check is satisfied as before.
+      #
+      # On a pull request the checkout is the merge of the branch into main; its tree must equal the
+      # branch head's, or main carries something the parent's run never saw and the suite runs.
+      # Anything unexpected - a root commit, an API that does not answer - also means the full run.
+      - name: Recognise a release commit
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=2 origin "$HEAD_SHA" || { echo "Cannot fetch $HEAD_SHA: full run."; exit 0; }
+          parent=$(git rev-parse --verify --quiet "$HEAD_SHA^1") || { echo "No parent: full run."; exit 0; }
+          if [ "$(git rev-parse "$HEAD_SHA^{tree}")" != "$(git rev-parse "HEAD^{tree}")" ]; then
+            echo "The merge with main differs from the branch head: full run."; exit 0
+          fi
+          changed=$(git diff --name-only "$parent" "$HEAD_SHA")
+          if [ -z "$changed" ] || printf '%s\n' "$changed" | grep -qvxE 'config/(changelog|tech_profile)\.yaml'; then
+            echo "Not a release commit: full run."; exit 0
+          fi
+          green=$(gh api "repos/$GITHUB_REPOSITORY/commits/$parent/check-runs?check_name=Checks" \
+            --jq '[.check_runs[] | select(.conclusion == "success")] | length') || green=0
+          if [ "${green:-0}" -gt 0 ]; then
+            echo "Release commit on top of a green $parent: checking the release files only."
+            echo "only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Release commit, but $parent has no green Checks run: full run."
+          fi
+
       # .env.dev.local is gitignored (it is a credentials-shaped file, even though in dev every
       # value in it is throwaway). Rebuild it from the tracked template and append the values the
       # template leaves blank - appended rather than substituted so that a variable added to the
       # template later is picked up here for free, and last-wins parsing gives it our value.
       - name: Write .env.dev.local
+        if: steps.release.outputs.only != 'true'
         run: |
           cp .env.dev.local.example .env.dev.local
           cat >> .env.dev.local <<'ENVFILE'
@@ -73,12 +111,15 @@ jobs:
       # container never creates its root entry, never reports healthy, and `up --wait` below fails
       # on a service none of these checks even use.
       - name: Seed the dev LDAP tree
+        if: steps.release.outputs.only != 'true'
         run: cp frankenphp/ldap/examples/10-tree.example.ldif frankenphp/ldap/10-tree.local.ldif
 
       - name: Set up Docker Buildx
+        if: steps.release.outputs.only != 'true'
         uses: docker/setup-buildx-action@v4
 
       - name: Build Docker images
+        if: steps.release.outputs.only != 'true'
         uses: docker/bake-action@v7
         with:
           pull: true
@@ -111,6 +152,7 @@ jobs:
       # `permissions: contents: read` above is all a public zipball needs. It is only read by
       # compose.override.yaml's php service, so it is set on this step rather than on the job.
       - name: Start services
+        if: steps.release.outputs.only != 'true'
         env:
           COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
         run: docker compose up --wait --no-build --scale phpmyadmin=0
@@ -118,30 +160,37 @@ jobs:
       # The stack answering at all is itself a check - it is what catches a service that no longer
       # boots. A redirect to /login is the expected answer for an anonymous request.
       - name: Check HTTP reachability
+        if: steps.release.outputs.only != 'true'
         run: curl -v --fail-with-body http://localhost
 
       # --- Checks that need no database ------------------------------------------------------
 
       - name: Coding standard
+        if: steps.release.outputs.only != 'true'
         run: docker compose exec -T php composer cs-check
 
       - name: Lint YAML
+        if: steps.release.outputs.only != 'true'
         run: docker compose exec -T php bin/console lint:yaml config translations
 
       - name: Lint Twig
+        if: steps.release.outputs.only != 'true'
         run: docker compose exec -T php bin/console lint:twig templates
 
       # Catches a service that is declared but cannot actually be constructed - a wrong argument
       # type, a removed class still referenced, an env var nothing provides.
       - name: Lint the service container
+        if: steps.release.outputs.only != 'true'
         run: docker compose exec -T php bin/console lint:container
 
       # PHPStan reads the compiled dev container to resolve service ids, so it needs the cache
       # warmed rather than whatever the first HTTP request happened to build.
       - name: Warm the dev cache
+        if: steps.release.outputs.only != 'true'
         run: docker compose exec -T php bin/console cache:warmup
 
       - name: Static analysis
+        if: steps.release.outputs.only != 'true'
         run: docker compose exec -T php composer phpstan
 
       # --- Checks that need a database -------------------------------------------------------
@@ -151,24 +200,43 @@ jobs:
       # means a developer can replay this whole sequence locally without touching their own
       # `_test` database - which is the only way anyone will debug a red run.
       - name: Create the test database
+        if: steps.release.outputs.only != 'true'
         run: |
           docker compose exec -T database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
             CREATE DATABASE IF NOT EXISTS beaupeyrat_mgmt_testci CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-            GRANT ALL PRIVILEGES ON beaupeyrat_mgmt_testci.* TO \"$MYSQL_USER\"@\"%\"; FLUSH PRIVILEGES;"'
+            GRANT ALL PRIVILEGES ON \`beaupeyrat\\_mgmt\\_test%\`.* TO \"$MYSQL_USER\"@\"%\"; FLUSH PRIVILEGES;"'
 
       # The point of replaying the whole history onto an empty database rather than running
       # doctrine:schema:create: it proves the migrations themselves still work, which is the one
       # thing production actually runs and the one thing nobody exercises by hand.
       - name: Run migrations from scratch
+        if: steps.release.outputs.only != 'true'
         run: docker compose exec -T -e APP_ENV=test -e TEST_TOKEN=ci php bin/console doctrine:migrations:migrate --no-interaction
 
       # And this proves the schema those migrations produced is the schema the entities expect.
       # A migration someone forgot to write shows up here, before it reaches production.
       - name: Validate the schema against the mapping
+        if: steps.release.outputs.only != 'true'
         run: docker compose exec -T -e APP_ENV=test -e TEST_TOKEN=ci php bin/console doctrine:schema:validate
 
+      # ParaTest runs the suite in 4 processes - the runner's 4 cores - where bin/phpunit took 8 to 9
+      # minutes alone. Each process opens its own database, `<database>_test<N>` (TEST_TOKEN, set by
+      # ParaTest, is appended by config/packages/doctrine.yaml), copied from the database the
+      # migrations were just replayed into, rows included: the tests still run on exactly what the
+      # migrations produced. The test cache is warmed first, or the processes would all compile the
+      # container into the same directory at once.
+      #
+      # More processes would not help: tests are handed out by file, and RoleAccessSmokeTest alone
+      # is a quarter of the suite's time.
+      - name: Prepare the parallel test databases
+        if: steps.release.outputs.only != 'true'
+        run: |
+          docker compose exec -T -e APP_ENV=test -e TEST_TOKEN=ci php bin/console cache:warmup
+          docker compose exec -T -e APP_ENV=test -e TEST_TOKEN=ci php bin/console app:test:parallel-databases --processes=4
+
       - name: Run PHPUnit
-        run: docker compose exec -T -e APP_ENV=test -e TEST_TOKEN=ci php bin/phpunit
+        if: steps.release.outputs.only != 'true'
+        run: docker compose exec -T -e APP_ENV=test php vendor/bin/paratest --processes=4
 
       # The release announcer is the one piece of logic here that runs nowhere but in the deploy
       # workflow. On 2026-08-10 it named the wrong release in a public Discord message, and nothing
@@ -177,6 +245,11 @@ jobs:
         run: |
           python3 -c 'import yaml' 2>/dev/null || pip install --quiet pyyaml
           python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+
+      # Stricter than the application, which drops a line it cannot read rather than break the
+      # page. On a release commit this is the check that stands in for the suite.
+      - name: Check the release files
+        run: python3 .github/scripts/release_files.py
 
       - name: Dump service logs on failure
         if: failure()
