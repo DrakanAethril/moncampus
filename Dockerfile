@@ -1,13 +1,17 @@
 #syntax=docker/dockerfile:1
 
 # Versions
-# Pinned to the 1.12 line. FrankenPHP 1.13.0 (2026-10-04) bundles the Mercure 1.0 hub, whose protocol
-# breaks 0.x clients - new token format, `match=` instead of `topic=` - and which refuses to start on
-# the `publisher_jwt`/`subscriber_jwt` directives of frankenphp/Caddyfile unless compatibility mode is
-# opted into. symfony/mercure and Turbo Streams still speak 0.x. On the floating `1-php8.5` tag the
-# container died at boot with no other message than the Caddyfile being loaded; CI read it as
-# « php-1 is unhealthy ». Moving to 1.13 is a Mercure migration of its own, not a version bump.
-FROM dunglas/frankenphp:1.12-php8.5 AS frankenphp_upstream
+# Pinned to a FrankenPHP minor line, never the floating `1-php8.5`: a minor can change what the
+# Caddyfile is allowed to say. 1.13.0 (2026-10-04) bundled the Mercure 1.0 hub, which refuses the
+# `publisher_jwt`/`subscriber_jwt` directives outside compatibility mode; on the floating tag the
+# container died at boot with no other message than the Caddyfile being loaded, and CI read it as
+# « php-1 is unhealthy ». frankenphp/Caddyfile now opts into that mode (the app and the mobile app
+# still speak Mercure 0.x).
+#
+# The pin is also what decides the PHP patch version: `build --pull` only picks up a new PHP 8.5.x
+# while the pinned line is still being republished, and upstream rebuilds the current line alone.
+# 1.12-php8.5 stopped at PHP 8.5.11 on 2026-09-25. Move the pin when a new minor ships.
+FROM dunglas/frankenphp:1.13-php8.5 AS frankenphp_upstream
 
 # The different stages of this Dockerfile are meant to be built into separate images
 # https://docs.docker.com/build/building/multi-stage/#stop-at-a-specific-build-stage
