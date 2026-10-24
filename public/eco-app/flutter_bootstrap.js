@@ -19,7 +19,7 @@ _flutter.loader.load({
     canvasKitBaseUrl: 'canvaskit/',
   },
   serviceWorkerSettings: {
-    serviceWorkerVersion: "3136166639",
-    serviceWorkerUrl: new URL('eco_sw.js?v=' + "3136166639", document.baseURI).href,
+    serviceWorkerVersion: "1778137897",
+    serviceWorkerUrl: new URL('eco_sw.js?v=' + "1778137897", document.baseURI).href,
   },
 });
