@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.24'
+      date: '2026-10-24'
+      summary: "Dans la version web d'e-CO, un coureur peut désormais quitter une course avant l'arrivée, sur un appareil partagé notamment."
+      entries:
+          - type: nouveaute
+            title: "e-CO : un coureur peut quitter une course en cours depuis la version web"
+            detail: "La sortie est confirmée avant d'être prise en compte, et l'enseignant voit le coureur sorti de l'application."
+          - type: interne
+            title: "Les vérifications automatiques qui précèdent chaque mise en production sont plus rapides"
     - version: '2026.10.22'
       date: '2026-10-22'
       summary: "Mise à jour technique du serveur de l'application, sans changement visible pour les utilisateurs."

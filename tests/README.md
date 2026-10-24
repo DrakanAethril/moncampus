@@ -38,6 +38,34 @@ docker compose exec -e APP_ENV=test php bin/console doctrine:schema:create
 After a schema change, refresh it with
 `docker compose exec -e APP_ENV=test php bin/console doctrine:schema:update --force`.
 
+## Running the suite in parallel
+
+ParaTest runs the suite in several processes - about 2 min 20 on the development machine, where
+`bin/phpunit` takes over 5 minutes. Each process opens its own database, `<database>_test<N>`:
+ParaTest sets `TEST_TOKEN` to the process number, and `dbname_suffix` appends it.
+
+Once, let the app user create those databases (the grant covers every `_test…` name):
+
+```console
+docker compose exec database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
+  GRANT ALL PRIVILEGES ON \`beaupeyrat\\_mgmt\\_test%\`.* TO \"$MYSQL_USER\"@\"%\"; FLUSH PRIVILEGES;"'
+```
+
+Then, the first time and after every schema change, copy `_test` into one database per process, and
+warm the test cache so the processes do not all compile the container at once:
+
+```console
+docker compose exec -e APP_ENV=test php bin/console doctrine:schema:update --force
+docker compose exec -e APP_ENV=test php bin/console app:test:parallel-databases --processes=4
+docker compose exec -e APP_ENV=test php bin/console cache:warmup
+docker compose exec -e APP_ENV=test php vendor/bin/paratest --processes=4
+```
+
+Four processes are as fast as eight: tests are handed out by file, and `RoleAccessSmokeTest` alone
+takes a minute and a half. A helper class shared by several test files needs a file of its own
+(`tests/Service/Guest/RecordingShell.php`): ParaTest does not load the file that happens to declare
+it first.
+
 ## Writing a functional test
 
 Extend `App\Tests\Functional\FunctionalTestCase`. It gives you `$this->client`, a `createUser()` and

@@ -23,16 +23,23 @@ if ($_SERVER['APP_DEBUG']) {
  * thing to commit) and its passphrase lives in .env.local, which Symfony deliberately does not load
  * in the test environment. So the test environment makes its own pair, passphrase-less, once - which
  * is also what makes CI need no secret and no extra step.
+ *
+ * Under a lock: ParaTest runs this file in every process at once, and two processes writing the pair
+ * together can leave the private key of one next to the public key of the other.
  */
 $testKeyDirectory = dirname(__DIR__).'/var/jwt-test';
 $testPrivateKey = $testKeyDirectory.'/private.pem';
 $testPublicKey = $testKeyDirectory.'/public.pem';
 
-if (!is_file($testPrivateKey) || !is_file($testPublicKey)) {
-    if (!is_dir($testKeyDirectory)) {
-        mkdir($testKeyDirectory, 0o777, true);
-    }
+if (!is_dir($testKeyDirectory)) {
+    @mkdir($testKeyDirectory, 0o777, true);
+}
+$keyLock = fopen($testKeyDirectory.'/.lock', 'c');
+if (false !== $keyLock) {
+    flock($keyLock, \LOCK_EX);
+}
 
+if (!is_file($testPrivateKey) || !is_file($testPublicKey)) {
     $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => \OPENSSL_KEYTYPE_RSA]);
 
     if (false !== $key) {
@@ -41,6 +48,11 @@ if (!is_file($testPrivateKey) || !is_file($testPublicKey)) {
         $details = openssl_pkey_get_details($key);
         file_put_contents($testPublicKey, $details['key']);
     }
+}
+
+if (false !== $keyLock) {
+    flock($keyLock, \LOCK_UN);
+    fclose($keyLock);
 }
 
 $_ENV['JWT_SECRET_KEY'] = $_SERVER['JWT_SECRET_KEY'] = $testPrivateKey;
