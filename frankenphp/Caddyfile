@@ -99,12 +99,14 @@
 	# keep their file names across versions, so every fetch revalidates. The game folder is a
 	# directory, not a `file` to @phpRoute below - without the rewrite it would reach Symfony, whose
 	# /serious-games/… routes are the module's screens.
-	@seriousGameFiles path /serious-games/shared/* /serious-games/observatoire/* /serious-games/pompei/* /serious-games/abysse/* /serious-games/irregulars/* /serious-games/neko-con/* /serious-games/blackout/*
+	@seriousGameFiles path /serious-games/shared/* /serious-games/observatoire/* /serious-games/pompei/* /serious-games/abysse/* /serious-games/irregulars/* /serious-games/neko-con/* /serious-games/blackout/* /serious-games/retro-rush/*
 	header @seriousGameFiles ?Cache-Control "no-cache"
 	# A font is always fetched in CORS mode, and the game's frame has an opaque origin: without this
 	# header its own typefaces would be refused. Fonts only - they carry nothing of anybody. Panique à
-	# la Neko-Con ships its own, which its previews of the convention's site load too; so does Black-out.
-	@seriousGameFonts path /serious-games/shared/fonts/* /serious-games/neko-con/fonts/* /serious-games/blackout/fonts/*
+	# la Neko-Con ships its own, which its previews of the convention's site load too; so do Black-out
+	# and Rétro Rush. Rétro Rush's SQL engine (sql.js) fetches its WebAssembly the same way: the .wasm
+	# is the SQLite library, nobody's data.
+	@seriousGameFonts path /serious-games/shared/fonts/* /serious-games/neko-con/fonts/* /serious-games/blackout/fonts/* /serious-games/retro-rush/fonts/* /serious-games/retro-rush/vendor/*
 	header @seriousGameFonts Access-Control-Allow-Origin "*"
 	redir /serious-games/observatoire /serious-games/observatoire/ 308
 	rewrite /serious-games/observatoire/ /serious-games/observatoire/index.html
@@ -118,6 +120,8 @@
 	rewrite /serious-games/neko-con/ /serious-games/neko-con/index.html
 	redir /serious-games/blackout /serious-games/blackout/ 308
 	rewrite /serious-games/blackout/ /serious-games/blackout/index.html
+	redir /serious-games/retro-rush /serious-games/retro-rush/ 308
+	rewrite /serious-games/retro-rush/ /serious-games/retro-rush/index.html
 
 	# The Claude connector's upload addresses (App\Controller\McpUploadController) take one file as
 	# a raw PUT body, sent with `curl --data-binary` - which labels it

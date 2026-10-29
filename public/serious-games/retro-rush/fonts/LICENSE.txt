@@ -1,0 +1,10 @@
+Typefaces shipped with Rétro Rush, all under the SIL Open Font License, Version 1.1
+(https://openfontlicense.org):
+
+- Syncopate - Copyright 2011 Astigmatic (AOETI) (http://www.astigmatic.com)
+- Manrope - Copyright 2018 The Manrope Project Authors (https://github.com/sharanda/manrope)
+- JetBrains Mono - Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+
+The .woff2 files are the latin and latin-ext subsets served by Google Fonts, copied here so that no
+pupil's browser asks a third party for them. The OFL imposes nothing on the AGPL licensing of the
+application; the fonts must not be sold on their own and keep their reserved font names.

@@ -1,0 +1,149 @@
+# Rétro Rush - acte 7 : Les automatismes.
+#
+# The server half of the tickets (design/validated/serious-games-retro-rush.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Jade's
+# guided questions, the clue closing gives. The game half (deliverables and their reference answers,
+# starting texts, views, written hints, scenes) is public/serious-games/retro-rush/tickets/acte7.js.
+# Converted from the prototype's host/scenario/acte7.js by its tool/to-yaml.js; `hints` counts
+# the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: R31
+    act: 7
+    after: [R30]
+    course: 'B2 · Vues et triggers'
+    requester: oceane
+    kind: incident
+    category: 'Triggers › Créer'
+    title: 'Le stock ne baisse plus à la vente'
+    request: 'Depuis la migration, quand je vends un jeu, la vente s''enregistre mais le stock ne bouge pas. Dans l''ancien tableur, Gilles le baissait à la main le soir. Il faut que la base le fasse toute seule, à chaque ligne de vente.'
+    reward: { clue: 'Deux triggers datent de 2019, écrits par le neveu de Gilles pour un site de réservation jamais ouvert : trg_reservation et trg_annulation. Ils touchent tous les deux au stock des articles.' }
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris le trigger, essaie-le en insérant une vente, puis livre-le à Océane.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Si une vente insère trois lignes d''un coup, combien de fois ton trigger s''exécute-t-il ?'
+        options:
+          - { text: 'Trois fois : FOR EACH ROW, une fois par ligne insérée, avec à chaque fois le NEW de cette ligne-là.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exactement. C''est ce qui permet d''écrire NEW.idArticle sans se demander de quelle ligne on parle.' } }
+          - { text: 'Une seule fois, pour l''instruction INSERT entière.', misconception: trigger-une-fois, reaction: { who: jade, expr: sourcil, text: 'Avec FOR EACH ROW, c''est une fois par ligne. MySQL ne connaît d''ailleurs que celui-là.' } }
+          - { text: 'Une seule fois par vente, quand la ligne de Vente est créée.', misconception: trigger-par-vente, reaction: { who: jade, expr: neutre, text: 'Ton trigger est posé sur LigneVente, pas sur Vente : il répond aux lignes de vente, une par une.' } }
+          - { text: 'Aucune : un trigger ne s''exécute que si on l''appelle avec CALL.', misconception: trigger-call, reaction: { who: jade, expr: neutre, text: 'CALL, c''est pour une procédure. Un trigger se déclenche tout seul, sur l''événement qu''il surveille.' } }
+    guide:
+      -
+        id: quand
+        kind: choice
+        prompt: 'Le stock doit baisser une fois la ligne de vente écrite. Quel trigger ?'
+        options:
+          - { text: 'AFTER INSERT ON LigneVente', ok: true }
+          - { text: 'AFTER INSERT ON Article', misconception: trigger-table, reaction: { who: jade, expr: sourcil, text: 'On n''insère pas d''article quand on vend : on insère une ligne de vente. Le trigger surveille la table où l''événement a lieu.' } }
+          - { text: 'BEFORE UPDATE ON Article', misconception: trigger-table, reaction: { who: jade, expr: neutre, text: 'C''est justement l''UPDATE d''Article que le trigger doit faire. Il ne peut pas l''attendre.' } }
+    hints: 3
+  -
+    id: R32
+    act: 7
+    after: [R31]
+    course: 'B2 · Vues et triggers'
+    requester: gilles
+    kind: incident
+    category: 'Triggers › Refuser'
+    title: 'Vendre ce qu''on n''a pas'
+    request: 'Ce matin, la caisse a vendu deux Street Fighter II en boîte. J''en avais un. Le stock est à −1 et le client attend le deuxième. La base doit refuser une ligne de vente quand il n''y a pas assez de stock, avec un message clair pour la caisse : « Stock insuffisant ».'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris le trigger de contrôle, essaie-le, puis livre-le à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi BEFORE INSERT plutôt qu''AFTER INSERT pour ce contrôle ?'
+        options:
+          - { text: 'Parce qu''on vérifie avant que la ligne existe : le refus arrive avant toute écriture, y compris la baisse du stock par trg_vente_stock. On empêche au lieu de défaire.', ok: true, reaction: { who: jade, expr: sourire, text: 'Oui. Un contrôle se place avant l''action qu''il contrôle.' } }
+          - { text: 'Parce qu''en AFTER, SIGNAL affiche bien le message mais la vente reste enregistrée.', misconception: after-sans-annuler, reaction: { who: jade, expr: sourcil, text: 'Non : un SIGNAL annule l''instruction en AFTER comme en BEFORE. Mais en BEFORE, il n''y a encore rien à défaire.' } }
+          - { text: 'Parce que SIGNAL n''est autorisé que dans un trigger BEFORE.', misconception: signal-before, reaction: { who: jade, expr: neutre, text: 'SIGNAL marche partout, même dans une procédure. C''est le moment du contrôle qui compte.' } }
+          - { text: 'Parce que BEFORE est plus rapide qu''AFTER.', misconception: before-rapide, reaction: { who: jade, expr: neutre, text: 'Ce n''est pas une question de vitesse, mais d''ordre : contrôler avant d''écrire.' } }
+    guide:
+      -
+        id: compare
+        kind: choice
+        prompt: 'Il reste 1 exemplaire et on en vend 1. La vente doit-elle passer ?'
+        options:
+          - { text: 'Oui : on refuse seulement quand le stock est plus petit que la quantité', ok: true }
+          - { text: 'Non : on refuse dès que le stock est inférieur ou égal à la quantité', misconception: borne, reaction: { who: gilles, expr: furieux, text: 'Et je ne vendrais jamais mon dernier exemplaire ? Si, je le vends !' } }
+    hints: 3
+  -
+    id: R33
+    act: 7
+    after: [R31]
+    course: 'B2 · Vues et triggers'
+    requester: gilles
+    kind: demande
+    category: 'Triggers › Historiser'
+    title: 'Garder la trace des prix'
+    request: 'Les déposants me demandent souvent « vous l''aviez mis à combien, mon jeu ? ». Jade a créé une table HistoriquePrix. À chaque changement de prix d''un article, je veux une ligne : l''article, l''ancien prix, le nouveau, et la date. Seulement quand le prix change vraiment.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris le trigger, essaie-le en changeant un prix, puis livre-le à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: neutre
+        prompt: 'Dans ton INSERT, que valent OLD.prixVente et NEW.prixVente ?'
+        options:
+          - { text: 'OLD.prixVente est le prix avant la mise à jour, NEW.prixVente le prix après. Dans un trigger UPDATE, on a les deux versions de la même ligne.', ok: true, reaction: { who: jade, expr: sourire, text: 'C''est ça. Et en INSERT il n''y a que NEW, en DELETE que OLD.' } }
+          - { text: 'La même valeur : c''est la même ligne d''Article.', misconception: old-new-meme, reaction: { who: jade, expr: sourcil, text: 'Même ligne, deux moments : avant et après. Sinon ton IF ne serait jamais vrai.' } }
+          - { text: 'NEW est la ligne insérée dans HistoriquePrix, OLD la ligne d''Article.', misconception: new-nouvelle-ligne, reaction: { who: jade, expr: neutre, text: 'NEW et OLD parlent toujours de la table que surveille le trigger : ici, Article.' } }
+          - { text: 'OLD est l''article précédent dans la table, NEW l''article suivant.', misconception: old-precedent, reaction: { who: jade, expr: neutre, text: 'Une table n''a pas d''ordre. OLD et NEW, c''est la même ligne, avant et après.' } }
+    guide:
+      -
+        id: quand
+        kind: choice
+        prompt: 'On ne veut une ligne d''historique que si le prix change. Comment le savoir dans le trigger ?'
+        options:
+          - { text: 'IF NEW.prixVente <> OLD.prixVente THEN …', ok: true }
+          - { text: 'IF NEW.prixVente IS NOT NULL THEN …', misconception: new-not-null, reaction: { who: jade, expr: neutre, text: 'Le prix n''est jamais NULL. Un changement de stock déclencherait aussi une ligne.' } }
+          - { text: 'Il n''y a rien à tester : le trigger ne se déclenche que si le prix change', misconception: update-colonne, reaction: { who: jade, expr: sourcil, text: 'AFTER UPDATE se déclenche pour toute mise à jour de la ligne, même du seul stock.' } }
+    hints: 3
+  -
+    id: R34
+    act: 7
+    after: [R32, R33]
+    course: 'B2 · Vues et triggers'
+    requester: oceane
+    kind: incident
+    category: 'Triggers › Corriger'
+    title: 'La remise fidélité ne s''applique pas'
+    request: 'J''ai voulu faire plaisir aux habitués : 10 % sur chaque article dès leur troisième passage en caisse, celui-ci compris. J''ai écrit un trigger, mais MySQL le refuse et je ne comprends pas pourquoi. Tu peux le corriger ?'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige le trigger d''Océane, essaie-le sur une vente, puis livre-le.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Le trigger d''Océane était refusé en AFTER. Pourquoi BEFORE ?'
+        options:
+          - { text: 'En AFTER, la ligne est déjà écrite : on ne peut plus changer NEW. En BEFORE, on modifie les valeurs juste avant qu''elles soient enregistrées.', ok: true, reaction: { who: jade, expr: sourire, text: 'Voilà. SET NEW, c''est toujours en BEFORE.' } }
+          - { text: 'En AFTER, il aurait suffi d''écrire un UPDATE de NEW au lieu d''un SET.', misconception: after-modifie-new, reaction: { who: jade, expr: sourcil, text: 'NEW n''est pas une table qu''on met à jour. En AFTER, il est en lecture seule.' } }
+          - { text: 'En BEFORE, le trigger s''exécute avant la vente entière, donc avant que le client soit connu.', misconception: before-avant-tout, reaction: { who: jade, expr: neutre, text: 'BEFORE INSERT ON LigneVente s''exécute juste avant chaque ligne. La Vente, avec son client, est déjà écrite.' } }
+          - { text: 'C''est une question de goût : AFTER et BEFORE font la même chose.', misconception: before-after-pareil, reaction: { who: jade, expr: neutre, text: 'MySQL t''a dit le contraire en refusant le trigger : ils ne voient pas la ligne au même moment.' } }
+    guide:
+      -
+        id: message
+        kind: choice
+        prompt: 'MySQL refuse le trigger d''Océane. Que reproche-t-il ?'
+        options:
+          - { text: 'De modifier NEW dans un trigger AFTER', ok: true }
+          - { text: 'De compter les ventes avec COUNT(*)', misconception: count-trigger, reaction: { who: jade, expr: neutre, text: 'Le COUNT est juste. Relis le message : il parle de NEW.' } }
+          - { text: 'D''utiliser une variable avec DECLARE', misconception: declare-trigger, reaction: { who: jade, expr: neutre, text: 'DECLARE est permis dans un trigger, au début du BEGIN.' } }
+    hints: 2

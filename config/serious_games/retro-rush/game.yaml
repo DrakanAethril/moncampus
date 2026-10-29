@@ -1,0 +1,83 @@
+# Rétro Rush: databases and SQL, BTS SIO 2e année SLAM - the third game of the « scénario »
+# mechanic (design/validated/serious-games-retro-rush.md).
+#
+# Read by `app:serious-games:sync`, which adds the tickets of `tickets/*.yaml` under `scenario.tickets`
+# and builds `chapters` from the acts, so that the screens common to every game read a ticket as a
+# unit and an act as a chapter. **The right answers of the choices live in those files and nowhere in
+# the game's package** (public/serious-games/retro-rush/), which holds the SQL engine (sql.js), the
+# shop's database, the deliverables with their reference answers, the views to designate, the written
+# hints and the scenes.
+slug: retro-rush
+title: "Rétro Rush"
+pitch: "Alternant·e d'une boutique de jeux rétro, migrer quinze ans de tableur vers une base avant l'ouverture du site, et trouver pourquoi le stock ne tombe jamais juste. SELECT, jointures, agrégats, sous-requêtes, UPDATE, triggers, transactions, vues, droits."
+subjects: [Informatique]
+levels: [BTS SIO 2]
+unit_label: issues
+mechanic: scenario
+# The kinds of step of the scenario: SQL delivered and checked by the game's pipeline, an answer to
+# Jade's review, a decision, a line to designate in a view, the order of the migration script.
+answer_kinds: [fix, choice, line, order]
+version: 1.0.0
+published: false
+
+words:
+  unit: [issue, issues]
+  chapter: [acte, actes]
+  lit: [fermée, fermées]
+  unlit: [ouverte, ouvertes]
+  level: étoiles
+  skill: notion
+  dim_filter: Beaucoup d'aide
+
+scenario:
+  # A ticket keeps the version it was started with; raise it when a step changes.
+  version: 1
+  # The forge holds four open issues at most.
+  capacity: 4
+  # Who answers a wrong step that names nobody.
+  helper: jade
+  # No password: the last ticket ends on the order of the migration script.
+  password: []
+  acts:
+    - { n: 1, title: "Le tableur de Gilles", tools: [atelier, schema] }
+    - { n: 2, title: "Premières requêtes", tools: [atelier, schema] }
+    - { n: 3, title: "Les jointures", tools: [atelier, schema] }
+    - { n: 4, title: "Les chiffres", tools: [atelier, schema] }
+    - { n: 5, title: "Questions difficiles", tools: [atelier, schema] }
+    - { n: 6, title: "Remettre le stock d'aplomb", tools: [atelier, schema] }
+    - { n: 7, title: "Les automatismes", tools: [atelier, schema, triggers] }
+    - { n: 8, title: "Le grand rush", tools: [atelier, schema, triggers, plan] }
+    - { n: 9, title: "Les accès et l'inventaire", tools: [atelier, schema, triggers, plan, journal] }
+
+grades:
+  - [0, "Alternant·e"]
+  - [11, "Développeur·se junior"]
+  - [22, "Développeur·se SQL"]
+  - [33, "Architecte des données"]
+  - [45, "Gardien·ne du stock"]
+
+rewards:
+  # Brass once the opening is closed (ticket 45); silver at two thirds of the tickets with three
+  # stars, gold at 40. Thresholds to review after a first promotion.
+  trophy:
+    code: cartouche
+    label: La Cartouche d'or
+    lore: "Une cartouche en métal, « SELECT * » sur l'étiquette, remise à qui a fait tomber juste le stock de « Continue ? » pour l'ouverture du site."
+    silver_at: 30
+    gold_at: 40
+  pin:
+    code: pin-joystick
+    label: Épinglette Joystick
+  # One card per act done.
+  cards: true
+
+# Played on a computer only: the issue, the SQL editor and the schema side by side need 1 100 px. On
+# a narrower screen the catalogue says so instead of opening the game.
+desktop_only: true
+
+thumbnail:
+  background: "radial-gradient(ellipse at 78% 40%, rgba(106, 62, 160, .85) 0 30%, transparent 31%), linear-gradient(180deg, #EDE7F7 0 72%, #D9CEEE 100%)"
+  font: "'Syncopate', 'Trebuchet MS', sans-serif"
+  style: normal
+  weight: 700
+  color: "#1E1433"
