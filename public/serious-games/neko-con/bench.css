@@ -1,0 +1,9 @@
+/* The ticket bench: a plain report, read by an administrator in Paramètres › Serious games. */
+body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 16px; color: #111827; background: #fff; }
+table { border-collapse: collapse; font-size: 13px; width: 100%; }
+td, th { border-bottom: 1px solid #e5e7eb; padding: 4px 8px; text-align: left; vertical-align: top; }
+th { font-size: 12px; color: #6b7280; }
+.ok { color: #065f46; }
+.ko { color: #b91c1c; font-weight: 600; }
+#sum { font-weight: 600; margin: 0 0 12px; }
+iframe { position: absolute; left: -10000px; top: 0; height: 900px; border: 0; }

@@ -22,7 +22,8 @@
     { id: 'pin-etoile', name: 'Épinglette Étoile', color: '#1B2550', glyph: '✦' },
     { id: 'pin-cave-canem', name: 'Épinglette Cave canem', color: '#9E2B25', glyph: 'C' },
     { id: 'pin-vague', name: 'Épinglette Abysse', color: '#167784', glyph: '≈' },
-    { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', glyph: '⌕' }
+    { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', glyph: '⌕' },
+    { id: 'pin-neko', name: 'Épinglette Neko', color: '#E8457A', glyph: '^' }
   ];
   A.PINS = PINS;
 
@@ -158,6 +159,14 @@
         el('path', sx({ d: 'M100 54 L100 78', stroke: '#167784', strokeWidth: 3 })) +
         el('path', sx({ d: 'M70 58 Q76 54 84 56', stroke: '#FFFFFF', strokeWidth: 2.5, opacity: .7 })) +
         el('path', sx({ d: 'M154 70 Q166 92 160 128', stroke: '#E0A93B', strokeWidth: 6 }));
+    } },
+    // Panique à la Neko-Con: the Badge Staff's lanyard round the neck, the badge hanging below
+    // (design/validated/serious-games-neko-con.md §4) - on the body, nothing on the head.
+    'neko-con': { label: 'Cordon du badge staff', svg: function () {
+      return el('path', sx({ d: 'M76 166 Q84 188 95 204', stroke: '#E8457A', strokeWidth: 5 })) + el('path', sx({ d: 'M124 166 Q116 188 105 204', stroke: '#E8457A', strokeWidth: 5 })) +
+        el('path', sx({ d: 'M79 172 L82 178 M121 172 L118 178', stroke: '#FFFFFF', strokeWidth: 1.6, opacity: .8 })) +
+        el('rect', { x: 88, y: 194, width: 24, height: 14, rx: 2.5, fill: '#FBF9FF', stroke: '#2A2440', strokeWidth: 1.6 }) +
+        el('rect', { x: 88, y: 194, width: 24, height: 4, fill: '#E8457A' });
     } },
     // The Irregulars: the street urchin's flat cap of 1895, its peak and its button.
     irregulars: { label: 'Casquette gavroche', svg: function () {

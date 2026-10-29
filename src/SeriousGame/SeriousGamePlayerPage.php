@@ -88,7 +88,8 @@ final readonly class SeriousGamePlayerPage
     {
         $manifest = SeriousGamePlay::manifest($game);
         $progress = $this->play->progress($player, $game);
-        $sessions = $this->sessions->findEndedFor($player, $game, self::HISTORY);
+        // A ticket opened and left for another one ends with no score: it is not a party played.
+        $sessions = array_values(array_filter($this->sessions->findEndedFor($player, $game, self::HISTORY), static fn (SeriousGameSession $s): bool => null !== $s->getScore()));
         $source = $this->play->source($game);
 
         return [
@@ -131,6 +132,10 @@ final readonly class SeriousGamePlayerPage
             return ['key' => 'seriousGameStatementNew', 'params' => ['%chapters%' => \count($manifest->chapters()), '%total%' => $progress['total']] + $vocabulary, 'finish' => null];
         }
 
+        if ($manifest->isScenario()) {
+            return self::scenarioStatement($progress);
+        }
+
         if (null !== $final['best']) {
             $finish = null;
             foreach ($progress['rewards'] as $reward) {
@@ -162,6 +167,39 @@ final readonly class SeriousGamePlayerPage
             '%chapter%' => null === $best ? '' : $best['label'],
             '%units%' => implode(', ', array_column($inBest, 'label')),
         ] + $vocabulary, 'finish' => null];
+    }
+
+    /**
+     * A scenario's statement (design/validated/serious-games-neko-con.md §4): the site online with
+     * its tickets at three stars and the badge's finish, or the tickets closed and the first act
+     * not done.
+     *
+     * @param Progress $progress
+     *
+     * @return array{key: string, params: array<string, string|int>, finish: ?string}
+     */
+    private static function scenarioStatement(array $progress): array
+    {
+        if (true === $progress['finished']) {
+            $finish = null;
+            foreach ($progress['rewards'] as $reward) {
+                if ('trophy' === $reward['kind']) {
+                    $finish = $reward['finish'];
+                }
+            }
+
+            return ['key' => 'seriousGameStatementScenarioOnline', 'params' => ['%count%' => \count(array_filter($progress['units'], static fn (array $u): bool => 3 === $u['best'])), '%total%' => $progress['total']], 'finish' => $finish];
+        }
+
+        $next = '';
+        foreach ($progress['chapters'] as $chapter) {
+            if ($chapter['lit'] < $chapter['total']) {
+                $next = $chapter['label'];
+                break;
+            }
+        }
+
+        return ['key' => 'seriousGameStatementScenarioProgress', 'params' => ['%count%' => $progress['lit'], '%total%' => $progress['total'], '%chapter%' => $next], 'finish' => null];
     }
 
     /** @return array<string, mixed> */

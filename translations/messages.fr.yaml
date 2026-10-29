@@ -11644,3 +11644,95 @@ seriousGameFullscreenExit: 'Quitter le plein écran'
 seriousGameTimeLeft: 'Temps restant'
 seriousGameTimeUp: 'Temps écoulé'
 seriousGameMinutesLeft: 'Temps restant : %count% min.'
+# Serious games: the « scénario » mechanic (design/validated/serious-games-neko-con.md)
+seriousGameTicketTodo: 'À faire'
+seriousGameTicketDoing: 'En cours'
+seriousGameTicketDone: 'Résolu'
+seriousGameTicketReassigned: 'Réaffecté'
+seriousGameScenarioVersion: '{1}Scénario v%version% · 1 ticket|]1,Inf[Scénario v%version% · %count% tickets'
+seriousGameScenarioHelp: "Les tickets sont écrits dans le dépôt (config/serious_games/…/tickets) et installés par la synchronisation, qui refuse un scénario incohérent. Le banc des tickets vérifie le rendu de chaque ticket : le code buggé doit échouer, le code corrigé passer tous les critères. La santé donne, par version du scénario, la part des réponses justes sur toutes les classes."
+seriousGameScenarioKinds: 'Réparation, choix, ligne, mot de passe (fixés par les tickets)'
+seriousGameSettingsTicketsCount: '{1}1 ticket|]1,Inf[%count% tickets'
+seriousGameTicketColumn: 'Ticket'
+seriousGameCourseColumn: 'Cours révisé'
+seriousGameStepsColumn: 'Étapes'
+seriousGameActLabel: 'Acte %n%'
+seriousGameGuideCount: "Aide d'Inès : %count% question(s) guidée(s), puis %hints% indice(s) écrit(s)"
+seriousGameTicketBenchAction: 'Banc des tickets'
+seriousGameTicketBenchHelp: "Chaque ticket est rejoué dans un vrai rendu, dans un cadre isolé comme le jeu : ses deux moitiés (plateforme et jeu) existent, ses questions ont une seule bonne réponse, ses lignes désignent une seule ligne, son code buggé échoue à au moins un critère et son code corrigé les passe tous. Le banc dure environ une minute."
+seriousGameTicketBenchRunning: 'Banc en cours…'
+seriousGameTicketBenchDone: '%total% tickets, %failures% en échec.'
+seriousGameTicketBenchError: "Le banc n'a pas pu s'exécuter."
+seriousGameStatementScenarioOnline: '{0}Le site est en ligne. Aucun ticket à trois étoiles sur %total%.|{1}Le site est en ligne. 1 ticket à trois étoiles sur %total%.|]1,Inf[Le site est en ligne. %count% tickets à trois étoiles sur %total%.'
+seriousGameStatementScenarioProgress: '{0}Aucun ticket clos sur %total%. À terminer d''abord : %chapter%.|{1}1 ticket clos sur %total%. À terminer d''abord : %chapter%.|]1,Inf[%count% tickets clos sur %total%. À terminer d''abord : %chapter%.'
+seriousGameTicketNotClosed: 'pas encore clos'
+seriousGameTicketStars: '{1}1 étoile|]1,Inf[%count% étoiles'
+seriousGameDesktopOnly: "Se joue sur un ordinateur : il faut un écran d'au moins 1 100 pixels de large."
+seriousGameNotionsHeading: 'Notions à reprendre'
+seriousGameNotionsIntro: "Pour la révision en classe : cours par cours, la part des tickets résolus sans l'aide d'Inès et les idées reçues relevées dans %game%, sur les %count% élèves de la classe."
+seriousGameNotionsNoClosure: '{1}1 ticket, aucun encore clos.|]1,Inf[%count% tickets, aucun encore clos.'
+seriousGameNotionsWithoutHelp: '%share% % des tickets clos l''ont été sans aide (%closed% clôtures, %count% tickets).'
+seriousGameNotionsNoMisconception: 'Aucune idée reçue relevée.'
+seriousGameNotionsHeldBy: '{1}1 élève sur %total% (%answers% réponses)|]1,Inf[%count% élèves sur %total% (%answers% réponses)'
+seriousGameKpiMedianClosed: 'tickets clos (médiane)'
+seriousGameKpiBlocked: 'élèves bloqués sur un ticket'
+seriousGameKpiOnline: 'sites mis en ligne'
+seriousGameActFilter: 'Acte'
+seriousGameFilterBlocked: 'Bloqués'
+seriousGameFilterMuchHelp: "Beaucoup d'aide"
+seriousGameLegendHelp: "aide d'Inès demandée"
+seriousGameLegendBlocked: 'bloqué (deux livraisons refusées, rien depuis)'
+seriousGameTicketNotOpened: 'pas encore au tableau'
+seriousGameShareClosed: '% clos'
+seriousGameStudentTicketsHeading: '%game% : les tickets'
+seriousGameStudentTicketsHint: "Dans l'ordre où l'élève les a pris. Le code livré n'est pas conservé : seuls restent les critères qui échouaient."
+seriousGameHelpCount: '{1}1 aide|]1,Inf[%count% aides'
+seriousGameDuringHelp: 'pendant l''aide ·'
+seriousGameDeliveryRefused: 'Livraison refusée'
+seriousGameWrongLine: 'Mauvaise ligne :'
+# Serious games: the statistics of every game (design/validated/serious-games-neko-con.md §6)
+seriousGameStatsHeading: 'Statistiques'
+seriousGameStatsScope: 'Périmètre'
+seriousGameStatsEstablishment: "Tout l'établissement"
+seriousGameStatsYear: 'Année scolaire'
+seriousGameStatsNote: "{0}Aucun élève compté.|{1}1 élève compté. Seuls les élèves comptent : les adultes jouent sans être comptés.|]1,Inf[%count% élèves comptés. Seuls les élèves comptent : les adultes jouent sans être comptés."
+seriousGameStatsUsage: 'Utilisation'
+seriousGameStatsUsageHint: "Lue sur les séances de l'année : le temps de jeu écarte les pauses de plus de 10 minutes ; le temps scolaire va du lundi au vendredi, de 8 h à 18 h."
+seriousGameStatsPlayers: 'joueurs différents'
+seriousGameStatsSessions: 'séances'
+seriousGameStatsTime: 'temps de jeu'
+seriousGameStatsMedianTime: 'temps de jeu médian par joueur'
+seriousGameStatsDays: "jours d'activité par joueur"
+seriousGameStatsSchoolShare: 'joué sur le temps scolaire'
+seriousGameStatsPerWeek: 'Joueurs différents par semaine'
+seriousGameStatsProgression: 'Progression'
+seriousGameFunnelStarted: 'Ont commencé'
+seriousGameFunnelAct: 'Acte %n% · %title%'
+seriousGameFunnelChapter: '%chapter%'
+seriousGameFunnelFinished: 'Ont fini'
+seriousGameStatsLeft: 'Unités les plus laissées en plan'
+seriousGameStatsLeftScenarioHint: 'Tickets ouverts et pas encore clos.'
+seriousGameStatsLeftSeriesHint: 'Unités tentées et pas encore acquises.'
+seriousGameStatsNothing: 'Rien pour le moment.'
+seriousGameStatsStudents: '{1}1 élève|]1,Inf[%count% élèves'
+seriousGameStatsUnits: 'Analyse des unités'
+seriousGameStatsUnitsScenarioHint: "Par ticket : la réussite au premier essai (clos sans erreur), le nombre moyen de livraisons, la part d'élèves qui demandent l'aide, le temps médian et les critères qui échouent le plus. Sous chaque ticket, la répartition des réponses choisies en premier à chaque question."
+seriousGameStatsUnitsSeriesHint: 'Par unité : la part des réponses justes dans les séries et les erreurs typiques les plus fréquentes.'
+seriousGameStatsClosed: 'Clos'
+seriousGameStatsFirstTry: 'Premier essai'
+seriousGameStatsDeliveries: 'Livraisons'
+seriousGameStatsHelp: "Demandent l'aide"
+seriousGameStatsMedianTicketTime: 'Temps médian'
+seriousGameStatsCriteria: 'Critères qui échouent'
+seriousGameStatsSpread: '{1}Réponses choisies (1 élève)|]1,Inf[Réponses choisies (%count% élèves)'
+seriousGameStatsRightOption: 'la bonne'
+seriousGameStatsOverRight: 'plus choisie que la bonne'
+seriousGameStatsUnused: 'jamais choisie'
+seriousGameStatsAnswers: 'réponses'
+seriousGameStatsSuccess: 'Réussite'
+seriousGameStatsClassList: 'Les élèves de %class%'
+seriousGameStatsClassListHint: "Une liste de suivi, pas un classement : triée par nom ou par dernière activité, jamais par score."
+seriousGameStatsPlayed: 'A joué'
+seriousGameStatsReached: 'Atteint'
+seriousGameStatsSucceeded: '%units% réussis'
+seriousGameStatsYears: "D'une année à l'autre"

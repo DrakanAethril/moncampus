@@ -192,6 +192,18 @@ class SeriousGameSession
         return $this;
     }
 
+    /**
+     * Closes a ticket's session that did not close the ticket - an opening left for another one,
+     * or one a « Nouvelle partie » leaves behind. It ends with no score: only the opening that
+     * closes the ticket carries its stars.
+     */
+    public function abandon(): static
+    {
+        $this->endedAt ??= new \DateTimeImmutable();
+
+        return $this;
+    }
+
     public function getTimeLimitSeconds(): ?int
     {
         return $this->timeLimitSeconds;

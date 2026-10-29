@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\SeriousGameBrightness;
+use App\Enum\SeriousGameTicketStatus;
 use App\Repository\SeriousGameUnitStateRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -16,6 +17,12 @@ use Doctrine\ORM\Mapping as ORM;
  * `$best` is the best series out of 12, null when the unit was never played to the end. **It only
  * goes up** (recordSeries()): neither time nor a worse series takes anything away, and the
  * brightness the screens draw is read from it (SeriousGameBrightness::fromBest()).
+ *
+ * **In a scenario** (design/validated/serious-games-neko-con.md §3.4) the unit is a ticket: `$best`
+ * holds its best stars (1 to 3) and `$firstLitAt` the date it was first closed, both kept across a
+ * « Nouvelle partie »; `$status`, `$stepId`, `$guideStep`, `$hints` and `$scenarioVersion` say where
+ * it stands in the current game, and are null for the series. A ticket is on the board when it has
+ * a status.
  */
 #[ORM\Entity(repositoryClass: SeriousGameUnitStateRepository::class)]
 #[ORM\Table(name: 'serious_game_unit_state')]
@@ -46,6 +53,24 @@ class SeriousGameUnitState
 
     #[ORM\Column(name: 'first_lit_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $firstLitAt = null;
+
+    #[ORM\Column(name: 'status', length: 20, nullable: true, enumType: SeriousGameTicketStatus::class)]
+    private ?SeriousGameTicketStatus $status = null;
+
+    /** The step in progress, by its identifier (Scenario::ALL_STEPS_DONE once all are answered). */
+    #[ORM\Column(name: 'step_id', length: 40, nullable: true)]
+    private ?string $stepId = null;
+
+    /** How many of Inès' guided questions are answered right. */
+    #[ORM\Column(name: 'guide_step', type: Types::SMALLINT, nullable: true)]
+    private ?int $guideStep = null;
+
+    /** How many rungs of Inès' help were asked for. */
+    #[ORM\Column(name: 'hints', type: Types::SMALLINT, nullable: true)]
+    private ?int $hints = null;
+
+    #[ORM\Column(name: 'scenario_version', nullable: true)]
+    private ?int $scenarioVersion = null;
 
     public function __construct(User $player, SeriousGame $game, string $unitCode)
     {
@@ -122,5 +147,112 @@ class SeriousGameUnitState
         }
 
         return false;
+    }
+
+    public function getStatus(): ?SeriousGameTicketStatus
+    {
+        return $this->status;
+    }
+
+    public function isOnTheBoard(): bool
+    {
+        return null !== $this->status;
+    }
+
+    public function isClosed(): bool
+    {
+        return true === $this->status?->isClosed();
+    }
+
+    public function getStepId(): ?string
+    {
+        return $this->stepId;
+    }
+
+    public function getGuideStep(): int
+    {
+        return $this->guideStep ?? 0;
+    }
+
+    public function getHints(): int
+    {
+        return $this->hints ?? 0;
+    }
+
+    public function getScenarioVersion(): ?int
+    {
+        return $this->scenarioVersion;
+    }
+
+    /** The ticket comes onto the board. */
+    public function putOnTheBoard(): static
+    {
+        $this->status = SeriousGameTicketStatus::Todo;
+        $this->stepId = null;
+        $this->guideStep = 0;
+        $this->hints = 0;
+        $this->scenarioVersion = null;
+
+        return $this;
+    }
+
+    /** The ticket is opened for the first time in this game: it keeps the scenario's version. */
+    public function startTicket(int $scenarioVersion, string $firstStepId): static
+    {
+        if (SeriousGameTicketStatus::Todo === $this->status) {
+            $this->status = SeriousGameTicketStatus::Doing;
+            $this->stepId = $firstStepId;
+            $this->scenarioVersion = $scenarioVersion;
+        }
+
+        return $this;
+    }
+
+    public function moveToStep(string $stepId): static
+    {
+        $this->stepId = $stepId;
+
+        return $this;
+    }
+
+    public function passGuideStep(): static
+    {
+        $this->guideStep = $this->getGuideStep() + 1;
+
+        return $this;
+    }
+
+    public function askHint(): static
+    {
+        $this->hints = $this->getHints() + 1;
+
+        return $this;
+    }
+
+    /**
+     * The ticket is closed with its stars. The best stars only move up, and the first closing is
+     * stamped once: a new game does not take them back.
+     */
+    public function closeTicket(bool $reassigned, int $stars): static
+    {
+        $this->status = $reassigned ? SeriousGameTicketStatus::Reassigned : SeriousGameTicketStatus::Done;
+        $this->stepId = null;
+        ++$this->seriesCount;
+        $this->best = max($this->best ?? 0, $stars);
+        $this->firstLitAt ??= new \DateTimeImmutable();
+
+        return $this;
+    }
+
+    /** « Nouvelle partie »: the ticket leaves the board; its best stars and first closing stay. */
+    public function resetForNewGame(): static
+    {
+        $this->status = null;
+        $this->stepId = null;
+        $this->guideStep = null;
+        $this->hints = null;
+        $this->scenarioVersion = null;
+
+        return $this;
     }
 }

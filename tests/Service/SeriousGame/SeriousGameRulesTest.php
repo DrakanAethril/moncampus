@@ -120,4 +120,18 @@ class SeriousGameRulesTest extends TestCase
         self::assertFalse(SeriousGameRules::canManage(self::STAFF_LEAD));
         self::assertFalse(SeriousGameRules::canManage(self::TEACHER));
     }
+
+    /**
+     * The statistics of every game, every class, with the names (design/validated/serious-games-neko-con.md
+     * §6): every teacher and the administrator; staff keep their figures without names.
+     */
+    public function testEveryTeacherAndTheAdministratorReadTheStatistics(): void
+    {
+        self::assertTrue(SeriousGameRules::canReadStats(self::TEACHER));
+        self::assertTrue(SeriousGameRules::canReadStats(self::ADMIN));
+        self::assertFalse(SeriousGameRules::canReadStats(self::STAFF));
+        self::assertFalse(SeriousGameRules::canReadStats(self::STAFF_LEAD));
+        self::assertFalse(SeriousGameRules::canReadStats(self::STUDENT));
+        self::assertFalse(SeriousGameRules::canReadStats(['ROLE_USER', 'ROLE_TEACHER', 'ROLE_TUTOR']), 'a tutor reads nothing');
+    }
 }

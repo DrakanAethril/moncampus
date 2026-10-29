@@ -23,6 +23,8 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  *   student's active classes - for the whole history.
  * - READ_CLASS (a Program): the administrator, or a teacher of that class.
  * - READ_AGGREGATE (no subject): staff, staff-lead, administrator - figures without names.
+ * - READ_STATS (no subject): every teacher and the administrator - the statistics of every game,
+ *   every class, with the names (design/validated/serious-games-neko-con.md §6).
  * - MANAGE (no subject): the administrator - publication, answer kinds, templates.
  *
  * Callers turn a refusal into a **404**, never a 403, like FeatureAccessSubscriber.
@@ -34,6 +36,7 @@ class SeriousGameVoter extends Voter
     public const string READ_STUDENT = 'SERIOUS_GAME_READ_STUDENT';
     public const string READ_CLASS = 'SERIOUS_GAME_READ_CLASS';
     public const string READ_AGGREGATE = 'SERIOUS_GAME_READ_AGGREGATE';
+    public const string READ_STATS = 'SERIOUS_GAME_READ_STATS';
     public const string MANAGE = 'SERIOUS_GAME_MANAGE';
 
     public function __construct(private readonly SeriousGameAccess $access)
@@ -46,7 +49,7 @@ class SeriousGameVoter extends Voter
             self::PLAY => $subject instanceof SeriousGame,
             self::READ_STUDENT => $subject instanceof User,
             self::READ_CLASS => $subject instanceof Program,
-            self::COLLECT, self::READ_AGGREGATE, self::MANAGE => true,
+            self::COLLECT, self::READ_AGGREGATE, self::READ_STATS, self::MANAGE => true,
             default => false,
         };
     }
@@ -72,6 +75,7 @@ class SeriousGameVoter extends Voter
             ),
             self::READ_CLASS => $subject instanceof Program && SeriousGameRules::canReadClass($roles, $this->access->teaches($user, $subject)),
             self::READ_AGGREGATE => SeriousGameRules::canReadAggregate($roles),
+            self::READ_STATS => SeriousGameRules::canReadStats($roles),
             self::MANAGE => SeriousGameRules::canManage($roles),
             default => false,
         };

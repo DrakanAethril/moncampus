@@ -1,0 +1,457 @@
+# Panique à la Neko-Con - acte 6 : L'avalanche.
+#
+# The server half of the tickets (design/validated/serious-games-neko-con.md §3.1): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Inès' guided
+# questions, what closing gives. The game half (bug, criteria, written hints, scenes) is
+# public/serious-games/neko-con/tickets/acte6.js. Converted once from the prototype's
+# host/scenario/acte6.js; `hints` counts the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: T24
+    act: 6
+    after:
+      - T22
+      - T23
+    course: 'CSS 02'
+    requester: theo
+    priority: haute
+    duplicates: 3
+    title: 'Les prix des billets sont gris'
+    request: "Sur la page Billetterie, les prix sont tout gris, on dirait qu'ils sont barrés ou que c'est épuisé. Trois personnes m'ont déjà demandé si on vendait encore des billets. Ils étaient roses avant, non ?"
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la sans !important, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiet
+        prompt: "Donc il y avait une bagarre entre le rose et le gris ? Pourquoi c'est le gris qui a gagné ? Il n'est même pas joli."
+        options:
+          - { text: 'Les deux règles donnaient une color différente aux prix, et le navigateur garde la première déclaration lue : la règle grise était plus haut dans style.css, alors elle a gagné.', misconception: premiere-regle-gagne, reaction: { who: ines, expr: sourcil, text: "À poids égal, c'est la dernière règle écrite qui gagne, pas la première. Et tu n'as déplacé aucune règle : tu as changé un sélecteur." } }
+          - { text: "Une classe bat toujours une balise : .prix aurait dû l'emporter sur p. C'était un bug d'affichage du navigateur, que j'ai contourné en réécrivant le sélecteur des prix.", misconception: classe-bat-tout, reaction: { who: ines, expr: sourcil, text: "Une classe bat une balise, oui. Mais #billets p n'est pas qu'une balise : il y a un id devant, et c'est lui qui fait pencher la balance. Aucun bug là-dedans." } }
+          - { text: "La spécificité, le poids d'un sélecteur, départage les règles : la grise, #billets p, contenait un id, plus lourd que la classe .prix. Avec l'id ajouté, la règle rose pèse davantage.", ok: true, reaction: { who: theo, expr: joie, text: 'Les couleurs se battent au poids, comme au sumo. Et le rose a pris du muscle. Je vais prévenir les trois personnes.' } }
+          - { text: "Quand deux règles se contredisent, le navigateur mélange leurs valeurs de color : le rose et le gris donnaient ce gris terne qui faisait « épuisé ». Il fallait n'en garder qu'une.", misconception: melange-couleurs, reaction: { who: ines, expr: neutre, text: "Le navigateur ne mélange jamais : pour chaque propriété, une seule déclaration l'emporte. Ce gris, c'était exactement celui de la phrase sur les ateliers." } }
+    guide:
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Deux règles donnent une couleur aux prix : #billets p (gris) et .prix (rose). Pourquoi le gris l'emporte-t-il ?"
+        options:
+          - { text: '#billets p contient un id : son sélecteur est plus spécifique que la simple classe .prix', ok: true }
+          - { text: 'Parce que #billets p est écrite en premier dans la feuille', misconception: premiere-regle-gagne, reaction: { who: ines, expr: sourcil, text: "À poids égal, c'est la dernière règle écrite qui gagne, pas la première. Et ici, les deux sélecteurs n'ont pas le même poids : compte ce que chacun contient." } }
+          - { text: 'Aucune ne gagne : le navigateur mélange les deux couleurs', misconception: melange-couleurs, reaction: { who: ines, expr: neutre, text: "Le navigateur ne fait jamais de mélange : pour chaque propriété, une seule déclaration l'emporte. La question est de savoir laquelle, et pourquoi." } }
+          - { text: "Une classe est toujours plus forte qu'une balise, donc c'est un bug du navigateur", misconception: classe-bat-tout, reaction: { who: ines, expr: sourcil, text: "Une classe bat une balise, oui. Mais #billets p n'est pas qu'une balise. Regarde le premier morceau de ce sélecteur." } }
+      -
+        id: localiser
+        kind: line
+        file: css/style.css
+        prompt: "C'est donc la règle rose qui manque de poids. Clique sur la ligne de son sélecteur : c'est lui qu'il faut renforcer."
+        answer:
+          - '.prix {'
+        reaction:
+          who: ines
+          expr: neutre
+          text: 'Cherche la règle qui met les prix en rose et en gros, dans la partie Billetterie.'
+    hints: 2
+  -
+    id: T25
+    act: 6
+    after:
+      - T22
+      - T23
+    course: 'CSS 02'
+    requester: maelle
+    priority: normale
+    title: 'Le bouton « Prendre mon billet » ne réagit plus au survol'
+    request: "Avant, quand on passait la souris sur le gros bouton jaune de l'accueil, il devenait rose. C'était trop mignon. Maintenant il ne fait plus rien, il boude."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiete
+        prompt: "Il boudait pour de vrai, alors ? La règle du survol était toujours là, je l'ai vue ! Pourquoi le bouton faisait-il comme si elle n'existait pas ?"
+        options:
+          - { text: "La règle ne visait plus le bouton. Dans un sélecteur, une espace veut dire « à l'intérieur de » : « .btn :hover » vise un élément survolé dans le bouton. Il n'y en a aucun.", ok: true, reaction: { who: maelle, expr: etoiles, text: "Il attendait qu'on survole quelque chose à l'intérieur de lui… Mon bouton est un philosophe incompris." } }
+          - { text: 'Le sélecteur « .btn :hover » contenait une faute de syntaxe : quand le navigateur tombe sur un sélecteur invalide, il saute toute la règle, et le survol disparaît sans message.', misconception: syntaxe-invalide, reaction: { who: ines, expr: neutre, text: "Le navigateur l'acceptait très bien : « .btn :hover » est un sélecteur valide, avec un sens précis. Il visait seulement autre chose que le bouton." } }
+          - { text: "En CSS, les espaces d'un sélecteur ne comptent pas : il visait bien le bouton. Mais :hover ne réagit que sur les liens du menu, alors il a fallu forcer le survol directement sur .btn.", misconception: espace-ignore, reaction: { who: ines, expr: sourcil, text: "Si les espaces ne comptaient pas, « .menu a » voudrait dire « .menua ». Et c'est bien le sélecteur que tu as retouché, pas le survol." } }
+          - { text: 'La règle du survol pesait moins lourd : .btn, qui met le bouton en jaune, était plus spécifique que .btn:hover, alors son background jaune passait devant le rose à chaque fois.', misconception: poids-survol, reaction: { who: ines, expr: sourcil, text: ".btn:hover pèse plus lourd que .btn : la pseudo-classe compte autant qu'une classe. Ce n'était pas une question de poids, mais d'élément visé." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: css/style.css
+        prompt: "Le survol, en CSS, c'est la pseudo-classe :hover. Clique sur la ligne du sélecteur censé changer le bouton au survol."
+        answer:
+          - '.btn :hover'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Un survol, en CSS, c'est la pseudo-classe :hover. Cherche celle qui concerne le bouton."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Lis ce sélecteur comme le navigateur, caractère par caractère. Que désigne exactement « .btn :hover » ?'
+        options:
+          - { text: "Un élément survolé situé à l'intérieur d'un .btn : l'espace est le combinateur descendant", ok: true }
+          - { text: 'Le bouton survolé : en CSS, les espaces ne comptent pas', misconception: espace-ignore, reaction: { who: ines, expr: sourcil, text: 'Si les espaces ne comptaient pas, « .menu a » voudrait dire « .menua ». Dans un sélecteur, une espace a un sens bien précis.' } }
+          - { text: "Rien du tout : c'est une erreur de syntaxe, la règle est ignorée", misconception: syntaxe-invalide, reaction: { who: ines, expr: neutre, text: "Le navigateur l'accepte très bien : c'est un sélecteur valide. Il ne désigne simplement pas l'élément que tu crois." } }
+          - { text: 'Tous les éléments survolés de la page', misconception: hover-global, reaction: { who: ines, expr: neutre, text: "Si c'était le cas, tout le site virerait au rose sous la souris. Le « .btn » devant restreint bien quelque chose : mais quoi ?" } }
+    hints: 2
+  -
+    id: T26
+    act: 6
+    after:
+      - T22
+      - T23
+    course: 'CSS 02'
+    requester: maelle
+    priority: basse
+    title: "Pourquoi le slogan est en italique ? Ne touche à rien, j'ai une réunion"
+    request: "Le slogan sous le titre est en italique et je ne sais pas pourquoi. Je ne veux pas qu'on touche au site pendant ma réunion avec le proviseur : trouve juste d'où ça vient et explique-moi, je verrai après."
+    steps:
+      -
+        id: localiser
+        kind: choice
+        prompt: 'Lis la feuille de style. Quelle déclaration met le slogan en italique ?'
+        options:
+          - { text: 'font-style: italic, dans la règle .slogan', misconception: regle-de-l-element, reaction: { who: ines, expr: sourcil, text: "Relis la règle .slogan : une marge, une taille, une graisse… pas un mot sur l'italique. Le style vient d'ailleurs." } }
+          - { text: 'font-style: italic, dans la règle .hero', ok: true }
+          - { text: 'font-style: italic, dans la règle body', misconception: heritage-depuis-body, reaction: { who: ines, expr: neutre, text: 'Si body le disait, toute la page serait penchée, cartes et pied de page compris. Cherche plus près du slogan.' } }
+          - { text: 'font-weight: 900, dans la règle .slogan', misconception: graisse-italique, reaction: { who: ines, expr: neutre, text: "font-weight règle la graisse, pas l'inclinaison. Le slogan est gras et penché : ce sont deux propriétés différentes." } }
+      -
+        id: pourquoi
+        kind: choice
+        prompt: 'La déclaration est dans la règle .hero. Pourquoi le slogan est-il concerné ?'
+        options:
+          - { text: "Le sélecteur .hero vise la section et, avec elle, tous les éléments qu'elle contient", misconception: selecteur-englobe-enfants, reaction: { who: ines, expr: sourcil, text: ".hero ne sélectionne que la section elle-même. Le slogan reçoit la valeur par un autre mécanisme : d'où un élément tire-t-il une valeur qu'on ne lui a pas donnée ?" } }
+          - { text: '.hero est plus spécifique que .slogan, donc ses déclarations passent devant celles du slogan', misconception: specificite-sans-conflit, reaction: { who: ines, expr: neutre, text: "Pour un duel de spécificité, il faut deux règles qui visent le même élément et la même propriété. .hero ne vise pas le slogan, et .slogan ne parle pas d'italique." } }
+          - { text: "Les paragraphes s'affichent en italique par défaut, et .slogan ne dit pas le contraire", misconception: p-italique-defaut, reaction: { who: ines, expr: neutre, text: "Les autres paragraphes du site, dans les cartes ou le pied de page, sont droits. Ce n'est pas un réglage par défaut du navigateur." } }
+          - { text: 'font-style se transmet par héritage : le slogan, placé dans .hero, reprend la valeur de son parent', ok: true }
+      -
+        id: portee
+        kind: choice
+        prompt: "Maëlle va demander : « Et c'est tout ? » Qu'est-ce qui est en italique sur l'accueil ?"
+        options:
+          - { text: "Le slogan seul : les titres et les liens ne reçoivent jamais l'héritage", misconception: heritage-selectif, reaction: { who: ines, expr: sourcil, text: "L'héritage ne choisit pas : tous les descendants qui ne disent rien d'autre le reçoivent. Regarde l'aperçu : le slogan est-il vraiment le seul penché ?" } }
+          - { text: "Toute la page : l'héritage descend sur tout le site, des cartes au pied", misconception: heritage-global, reaction: { who: ines, expr: neutre, text: "L'héritage descend, mais seulement à partir de l'élément qui porte la déclaration. Les cartes du programme, en dessous, ne sont pas dans .hero." } }
+          - { text: 'Tout ce qui est dans .hero : titre, slogan, horaires et bouton', ok: true }
+          - { text: 'Le titre et le slogan : les autres éléments ont leur propre règle', misconception: regle-bloque-heritage, reaction: { who: ines, expr: neutre, text: "Avoir une règle ne bloque pas l'héritage : il faudrait qu'elle donne elle-même une valeur à font-style. Ni .quand ni .btn ne le font." } }
+    hints: 3
+  -
+    id: T27
+    act: 6
+    after:
+      - T22
+      - T23
+    course: 'CSS 03'
+    requester: theo
+    priority: normale
+    title: 'Les deux colonnes des infos pratiques ne tiennent pas côte à côte'
+    request: "Sur la page Infos pratiques, « Venir au gymnase » et « Sur place » étaient côte à côte. Maintenant « Sur place » est tombé en dessous, alors qu'il reste de la place à droite. On dirait qu'elles ne s'aiment plus."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiet
+        prompt: "Attends : chaque colonne fait la moitié, et deux moitiés, ça fait un. J'ai vérifié deux fois, je suis trésorier. Comment elles pouvaient ne pas tenir ?"
+        options:
+          - { text: 'Les 50 % de width étaient calculés sur toute la fenêtre, barre de défilement comprise, pas sur le bloc parent : chacune dépassait donc la moitié de la place réellement disponible.', misconception: pourcentage-fenetre, reaction: { who: ines, expr: neutre, text: "Un pourcentage de width se calcule sur le bloc parent, ici la zone des colonnes. Les 50 % étaient justes : c'est ce qui s'y ajoutait qui posait problème." } }
+          - { text: "La colonne de gauche contient plus de texte : un bloc flottant s'élargit pour suivre son contenu, et en grossissant, elle a poussé « Sur place » à la ligne, faute de place.", misconception: contenu-pousse, reaction: { who: ines, expr: neutre, text: "Le texte fait grandir une colonne en hauteur, pas en largeur : sa largeur est fixée. Et tu n'as retiré aucun texte." } }
+          - { text: 'Les colonnes étaient posées avec float, une technique ancienne que les navigateurs récents gèrent mal : de temps en temps, le second bloc flottant se décale tout seul sous le premier.', misconception: float-obsolete, reaction: { who: ines, expr: sourcil, text: 'float est ancien, mais tous les navigateurs le gèrent très bien : il marchait encore hier. Rien ne se décale « de temps en temps » en CSS : il y a toujours un calcul derrière.' } }
+          - { text: "Par défaut, width ne compte que le contenu : les 20 px de padding de chaque côté s'ajoutaient aux 50 %. Deux colonnes un peu plus larges que la moitié ne tiennent pas sur une ligne.", ok: true, reaction: { who: theo, expr: joie, text: "Une moitié plus un petit supplément… C'est comme les frais de port : on les oublie toujours, et à la fin ça ne rentre plus dans le budget." } }
+    guide:
+      -
+        id: couche
+        kind: choice
+        prompt: "Le HTML de la page n'a pas changé depuis hier. La cause est-elle dans le HTML ou dans le CSS ?"
+        options:
+          - { text: 'Dans le CSS : les colonnes sont devenues trop larges pour tenir à deux', ok: true }
+          - { text: 'Dans le HTML : il faudrait un tableau à deux colonnes', misconception: tableau-mise-en-page, reaction: { who: ines, expr: sourcil, text: "Un tableau, c'est pour des données à double entrée, comme le planning. Pas pour mettre deux blocs côte à côte. Et ça marchait sans tableau hier." } }
+          - { text: 'Dans le HTML : les deux <section> devraient être dans deux <div> différentes', misconception: div-pour-colonnes, reaction: { who: ines, expr: neutre, text: "Le HTML n'a pas bougé depuis hier, et la disposition se règle en CSS. Mesure plutôt une colonne dans l'aperçu." } }
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Dans la règle .col, chaque colonne a width: 50% et padding: 20px. Mesure-en une dans l'aperçu : pourquoi ne tiennent-elles plus à deux ?"
+        options:
+          - { text: "Par défaut, width ne compte que le contenu : le padding s'ajoute, et chaque colonne fait 50 % + 40 px", ok: true }
+          - { text: "Le padding se place à l'intérieur de la largeur, il ne peut pas la faire grossir", misconception: padding-inclus, reaction: { who: ines, expr: sourcil, text: "Par défaut, ce n'est pas le cas. Mesure une colonne dans l'aperçu : fait-elle vraiment la moitié de la page ?" } }
+          - { text: '50 % se calcule par rapport à toute la fenêtre, pas au bloc qui contient les colonnes', misconception: pourcentage-fenetre, reaction: { who: ines, expr: neutre, text: "Un pourcentage de width se calcule par rapport au bloc parent. Le problème n'est pas les 50 %, c'est ce qui vient s'y ajouter." } }
+          - { text: "La colonne de gauche a plus de texte, elle pousse l'autre", misconception: contenu-pousse, reaction: { who: ines, expr: neutre, text: "Le texte fait grandir une colonne en hauteur, pas en largeur : sa largeur est fixée à 50 %. Regarde ce qui s'ajoute à ces 50 %." } }
+    hints: 2
+  -
+    id: T28
+    act: 6
+    after:
+      - T25
+    course: 'CSS 03'
+    requester: maelle
+    priority: normale
+    title: 'Le bouton « Prendre mon billet » ne veut pas grandir'
+    request: "Le bouton de l'accueil est censé être bien large, genre gros bouton qu'on ne peut pas rater. Là, il est tout étroit, collé à son texte. Jordan avait mis « 320 » quelque part, je l'ai vu !"
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: "Je le savais, qu'il y avait un 320 ! Mais alors pourquoi le bouton faisait comme s'il ne l'avait pas lu ?"
+        options:
+          - { text: 'La règle .btn était écrite avant .btn-large et imposait sa propre largeur : à spécificité égale, le navigateur garde la valeur de la première règle qui vise le bouton.', misconception: ordre-ecrase, reaction: { who: ines, expr: neutre, text: "Ce qui est écrit avant n'écrase jamais ce qui vient après. Et .btn ne parle pas de largeur : il n'y avait aucun conflit sur width." } }
+          - { text: 'Un lien <a> est par défaut en display: inline : il se place comme un mot dans une phrase, sa largeur suit son texte, et width est tout simplement ignoré.', ok: true, reaction: { who: maelle, expr: joie, text: "Mon bouton se prenait pour un mot ! Maintenant il se prend pour un bouton. C'est beau, la confiance en soi." } }
+          - { text: '320 px était trop étroit pour « Prendre mon billet » avec son padding : quand width est plus petit que le texte, le navigateur ignore la valeur et se cale sur le contenu.', misconception: width-minimum, reaction: { who: ines, expr: sourcil, text: 'Le texte fait bien moins de 320 px : la preuve, le bouton est large maintenant, avec exactement le même texte.' } }
+          - { text: "Une balise <a> ne peut jamais recevoir de width : seul un vrai <button> l'accepte. Il a fallu ruser en CSS pour que le lien se comporte comme un bouton de formulaire.", misconception: changer-html-pour-style, reaction: { who: ines, expr: sourcil, text: "Tu n'as pas touché au HTML, et le lien a sa largeur. Ce n'est pas la balise qui décide, c'est sa façon de s'afficher : sa propriété display." } }
+    guide:
+      -
+        id: couche
+        kind: choice
+        prompt: "Théo propose de remplacer le lien <a> par un <button> dans le HTML, « parce qu'un bouton, ça accepte une largeur ». Bonne idée ?"
+        options:
+          - { text: "Non : il mène à une autre page, il doit rester un lien. C'est son affichage qu'il faut régler, en CSS", ok: true }
+          - { text: 'Oui : un <button> a une largeur, un lien non', misconception: changer-html-pour-style, reaction: { who: ines, expr: sourcil, text: "Un <button> sert à envoyer un formulaire ou à déclencher une action. Pour aller vers une autre page, c'est un lien. On ne change pas le sens du HTML pour obtenir un rendu : le CSS sait faire." } }
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "La règle .btn-large contient bien width: 320px. Demande-toi comment ce lien s'affiche : pourquoi la largeur n'a-t-elle aucun effet ?"
+        options:
+          - { text: "Un lien est un élément en ligne (inline) : width ne s'applique pas à ce type d'élément", ok: true }
+          - { text: "La règle .btn est écrite avant .btn-large et l'écrase", misconception: ordre-ecrase, reaction: { who: ines, expr: neutre, text: "Ce qui est écrit avant n'écrase jamais ce qui vient après. Et .btn ne parle pas de largeur : il n'y a pas de conflit sur width." } }
+          - { text: "320 px, c'est moins que la largeur du texte, alors le navigateur l'ignore", misconception: width-minimum, reaction: { who: ines, expr: sourcil, text: "Le texte « Prendre mon billet » fait bien moins de 320 px. La largeur est correcte, c'est l'élément qui ne peut pas la prendre." } }
+          - { text: 'Il faut écrire min-width : width ne marche que sur les images', misconception: width-images, reaction: { who: ines, expr: neutre, text: "width marche sur les colonnes des infos, sur les formulaires… Ce n'est pas réservé aux images. Demande-toi plutôt comment ce lien s'affiche : en bloc, ou dans la ligne ?" } }
+    hints: 2
+  -
+    id: T29
+    act: 6
+    after:
+      - T24
+    course: 'CSS 04'
+    requester: mika
+    priority: haute
+    title: "Le badge DÉDICACE s'est envolé"
+    request: "Bonjour, c'est Mika, la mangaka invitée. Sur ma carte du programme, il y avait un joli badge « Dédicace 14 h » posé sur le coin. Il a disparu de la carte. Je l'ai dessiné moi-même, ce badge, alors s'il vous plaît : ne changez pas son style, ramenez-le juste chez lui."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la sans modifier la règle .badge, puis livre ta correction à Mika.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: "Merci beaucoup ! Mais je ne comprends pas : personne n'a touché à mon badge, et il est parti tout seul. Où était-il allé, et pourquoi ?"
+        options:
+          - { text: "Un élément en position: absolute se place toujours par rapport à l'écran : votre badge, avec top: 0, s'était collé en haut de la fenêtre, comme un autocollant sur la vitre.", misconception: absolute-ecran, reaction: { who: ines, expr: neutre, text: "Se placer par rapport à l'écran, c'est position: fixed. Le badge est revenu sur la carte sans perdre son absolute : il peut donc se placer par rapport à autre chose que l'écran." } }
+          - { text: 'En position absolue, un élément se place sur son parent direct, ici la carte. Mais la carte avait perdu sa hauteur, alors son top a poussé le badge tout en haut.', misconception: absolute-parent-direct, reaction: { who: ines, expr: sourcil, text: "Si le badge se plaçait toujours sur son parent direct, il ne serait jamais parti : la carte est son parent. Il faut qu'elle remplisse une condition pour lui servir de repère." } }
+          - { text: "En position absolue, le badge se cale sur son plus proche ancêtre « positionné ». La carte ne l'était plus : il a cherché plus haut, n'a rien trouvé, et s'est calé sur la page.", ok: true, reaction: { who: mika, expr: joie, text: "Il cherchait sa maison et il est monté jusqu'en haut de la page… Je le redessinerai avec une petite carte routière." } }
+          - { text: "En position absolue, le badge se décale de sa place normale dans la carte, de la valeur de son top. La carte s'était agrandie, et ce décalage l'a fait sortir par le haut.", misconception: absolute-comme-relative, reaction: { who: ines, expr: neutre, text: "Se décaler par rapport à sa place normale, c'est position: relative. Un élément absolute sort du flux et cherche un repère : c'est ce repère qui manquait." } }
+    guide:
+      -
+        id: notion
+        kind: choice
+        prompt: "Le badge est en position: absolute, et il s'est retrouvé tout en haut de la page. Par rapport à quoi un tel élément se place-t-il ?"
+        options:
+          - { text: 'Par rapport à son plus proche ancêtre positionné (relative, absolute, fixed ou sticky), et à défaut par rapport à la page', ok: true }
+          - { text: 'Toujours par rapport à son parent direct', misconception: absolute-parent-direct, reaction: { who: ines, expr: sourcil, text: "Si c'était le cas, le badge serait resté sur sa carte : c'est son parent direct. Le parent doit remplir une condition pour servir de repère." } }
+          - { text: "Par rapport à l'endroit où il serait sans positionnement", misconception: absolute-comme-relative, reaction: { who: ines, expr: neutre, text: "Ça, c'est position: relative. Un élément absolute sort du flux et cherche un repère ailleurs." } }
+          - { text: "Par rapport à l'écran, quoi qu'il arrive", misconception: absolute-ecran, reaction: { who: ines, expr: neutre, text: "Ça, c'est position: fixed. Hier, le badge était bien sur sa carte : absolute peut donc se placer par rapport à autre chose que l'écran." } }
+      -
+        id: ou
+        kind: choice
+        prompt: "Mika ne veut pas qu'on touche au style du badge. Où corriges-tu ?"
+        options:
+          - { text: "Sur la carte : c'est elle qui doit redevenir le repère du badge", ok: true }
+          - { text: 'Sur .badge, en remplaçant position: absolute par position: relative', misconception: corriger-enfant, reaction: { who: mika, expr: neutre, text: "Ah non, s'il vous plaît ! Mon badge est très bien comme il est, il est juste perdu. Et en relative, il pousserait le titre de ma carte." } }
+          - { text: 'Dans le HTML, en sortant le <span> de la carte', misconception: deplacer-html, reaction: { who: ines, expr: sourcil, text: "Le badge appartient à la carte de Mika : il a sa place dedans. Le HTML est bon, c'est le repère qui manque." } }
+    hints: 2
+  -
+    id: T30
+    act: 6
+    after:
+      - T27
+    course: 'CSS 04'
+    requester: theo
+    priority: normale
+    title: "Le haut des titres est mangé par l'en-tête"
+    request: "Sur le planning, on ne voit plus le titre « Planning du samedi » : il est caché sous la barre violette du menu. Sur les autres pages, pareil, le haut disparaît. Quelqu'un a voulu que le menu reste en haut, je crois."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiet
+        prompt: "Donc le titre était là depuis le début, juste caché dessous ? Mais comment une barre peut-elle s'asseoir sur un titre ?"
+        options:
+          - { text: "En position: fixed, l'en-tête sort du flux : la page se range comme s'il n'existait pas, et le titre remonte dessous. En sticky, il garde sa place et ne colle qu'au défilement.", ok: true, reaction: { who: theo, expr: joie, text: "Le titre ne voyait plus la barre, alors il s'est assis à sa place. Comme moi au self, quand quelqu'un part chercher du pain." } }
+          - { text: "L'en-tête portait un z-index qui le plaçait au premier plan, par-dessus tout le reste : c'est lui qui recouvrait le titre. Sans ce z-index, le titre serait resté visible, juste en dessous.", misconception: z-index-cause, reaction: { who: ines, expr: sourcil, text: 'Le z-index décide qui est dessiné devant, pas où commence le contenu. Sans lui, le titre aurait été dessiné par-dessus la barre, mais toujours tout en haut.' } }
+          - { text: "La déclaration top: 0 s'appliquait à toute la page, pas seulement à l'en-tête : tout le contenu remontait se coller en haut de l'écran, et le titre se retrouvait coincé sous la barre.", misconception: top-concerne-page, reaction: { who: ines, expr: neutre, text: "top ne concerne que l'élément qui le porte, ici l'en-tête. Et il était déjà là quand tout marchait." } }
+          - { text: "Le titre avait margin: 0, donc aucune marge au-dessus de lui : rien ne le retenait sous la barre, alors il remontait trop haut et glissait sous l'en-tête violet.", misconception: marge-titre, reaction: { who: ines, expr: neutre, text: "margin: 0 était déjà là hier, et le titre s'affichait très bien. Ce qui a changé, c'est la façon dont l'en-tête occupe, ou non, sa place." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: css/style.css
+        prompt: "C'est la règle .entete qui a changé. Clique sur la déclaration qui dit comment l'en-tête se place dans la page."
+        answer:
+          - 'position: fixed'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "C'est dans la règle .entete. Quelle déclaration dit comment l'en-tête se place dans la page ?"
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Le titre n'a pas bougé dans le code. Pourquoi passe-t-il sous l'en-tête ?"
+        options:
+          - { text: "position: fixed retire l'en-tête du flux : la page remonte dessous comme s'il n'existait pas, alors que sticky lui gardait sa place", ok: true }
+          - { text: "À cause de z-index: 10, qui fait passer l'en-tête devant", misconception: z-index-cause, reaction: { who: ines, expr: sourcil, text: 'Le z-index décide qui est dessiné devant, pas où commence le contenu. Sans lui, le titre serait toujours au même endroit, juste dessiné par-dessus la barre.' } }
+          - { text: "top: 0 colle tout le contenu de la page en haut de l'écran", misconception: top-concerne-page, reaction: { who: ines, expr: neutre, text: "top ne concerne que l'élément qui le porte, ici l'en-tête. Et il était déjà là quand tout marchait." } }
+          - { text: 'Le titre h1 a margin: 0, il faudrait lui ajouter une marge', misconception: marge-titre, reaction: { who: ines, expr: neutre, text: "margin: 0 était déjà là hier, et le titre s'affichait très bien. Ce qui a changé, c'est la façon dont l'en-tête occupe (ou non) sa place." } }
+    hints: 2
+    reward:
+      fragment:
+        index: 4
+        value: '2026'
+        where: "Quand l'en-tête a cessé de cacher le haut de la page, une petite note de Jordan est apparue : « 4e morceau : 2026 »."
+  -
+    id: T31
+    act: 6
+    after:
+      - T30
+    course: 'CSS 05'
+    requester: maelle
+    priority: haute
+    title: "Le menu s'empile au lieu de s'aligner"
+    request: "Le menu en haut, avec Accueil, Planning, etc., il était bien rangé sur une ligne. Maintenant les liens sont les uns sous les autres, l'en-tête est énorme et il prend la moitié de l'écran. Au secours."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiete
+        prompt: "Mais pourquoi le menu s'était mis en colonne ? Jordan avait écrit « row » dans le code, ça veut bien dire « rangée », non ?"
+        options:
+          - { text: "En flexbox, flex-direction: row veut dire « rangée » au sens d'une pile : les liens se rangent les uns sous les autres, comme des livres sur une étagère verticale.", misconception: row-vertical, reaction: { who: ines, expr: sourcil, text: "row, c'est la ligne, horizontale ; column, la colonne. La direction écrite par Jordan était juste : elle n'était simplement pas prise en compte." } }
+          - { text: "flex-wrap: wrap obligeait chaque lien à passer à la ligne suivante, qu'il reste de la place ou non : avec six liens dans le menu, la liste finissait forcément en une longue colonne.", misconception: wrap-force, reaction: { who: ines, expr: neutre, text: "wrap autorise le retour à la ligne quand la place manque, il ne l'impose pas. Il y avait toute la largeur de l'écran : ce n'était pas lui." } }
+          - { text: "Une liste <ul> s'affiche toujours en colonne, quoi qu'on écrive en CSS : ses <li> sont des blocs, et il a fallu les forcer à s'aligner par une autre technique.", misconception: liste-toujours-verticale, reaction: { who: ines, expr: sourcil, text: "En colonne par défaut, oui ; toujours, non. Le CSS peut en décider autrement, et c'est exactement ce qu'il faisait hier." } }
+          - { text: 'row et wrap sont des réglages de flexbox, valables seulement dans un conteneur flex. Or la règle disait display: block : ils étaient ignorés, et la liste restait en colonne.', ok: true, reaction: { who: maelle, expr: joie, text: "Donc Jordan avait écrit le mode d'emploi, mais il n'avait pas allumé la machine. Typique de Jordan." } }
+    guide:
+      -
+        id: couche
+        kind: choice
+        prompt: 'Le menu est une liste <ul> de liens. La cause est-elle dans le HTML ou dans le CSS ?'
+        options:
+          - { text: 'Dans le CSS : la règle .menu ne dispose plus les éléments côte à côte', ok: true }
+          - { text: "Dans le HTML : une liste <ul> s'affiche toujours en colonne, il faut des <span>", misconception: liste-toujours-verticale, reaction: { who: ines, expr: sourcil, text: "Un menu est bien une liste de liens : <ul> est le bon choix. Une liste s'affiche en colonne par défaut… sauf si le CSS en décide autrement, comme hier." } }
+          - { text: 'Dans le HTML : il manque <br> entre les liens', misconception: br-mise-en-page, reaction: { who: ines, expr: neutre, text: "<br> force un retour à la ligne : c'est l'inverse de ce que tu veux. Et la mise en page, c'est le travail du CSS." } }
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "La règle .menu contient pourtant flex-direction: row et flex-wrap: wrap. Relis sa première déclaration : pourquoi les liens s'empilent-ils ?"
+        options:
+          - { text: "Ces propriétés ne servent qu'à un conteneur flex : sans display: flex, elles sont ignorées", ok: true }
+          - { text: 'flex-direction: row empile les éléments en rangée verticale', misconception: row-vertical, reaction: { who: ines, expr: sourcil, text: "row, c'est la ligne, horizontale ; column, la colonne. Mais encore faut-il que cette direction soit prise en compte." } }
+          - { text: 'flex-wrap: wrap force chaque élément à passer à la ligne', misconception: wrap-force, reaction: { who: ines, expr: neutre, text: "wrap autorise le retour à la ligne quand la place manque. Ici, il y a toute la largeur de l'écran : ce n'est pas lui." } }
+    hints: 2
+  -
+    id: T32
+    act: 6
+    after:
+      - T29
+    course: 'CSS 05'
+    requester: theo
+    priority: normale
+    title: "Sur la tablette du stand, les cartes du programme sortent de l'écran"
+    request: "On a mis l'accueil sur la tablette du stand d'accueil, pour que les gens voient le programme. Les cartes « Au programme » partent toutes vers la droite, il faut faire glisser l'écran pour voir la dernière. Personne ne va penser à faire glisser."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: "Sur mon ordi, tout tenait. Pourquoi, sur la tablette, les cartes ont préféré partir hors de l'écran plutôt que de descendre d'une ligne ?"
+        options:
+          - { text: 'Le navigateur de la tablette ne comprend pas flexbox : il met les cartes à la suite, sans savoir les répartir sur plusieurs lignes, comme un vieux navigateur jamais mis à jour.', misconception: navigateur-incompatible, reaction: { who: ines, expr: neutre, text: "Les cartes étaient bien alignées côte à côte : c'est flexbox qui les plaçait, il fonctionnait. Le problème venait de son comportement par défaut." } }
+          - { text: "Par défaut, un conteneur flex garde tous ses éléments sur une seule ligne, quitte à déborder : c'est flex-wrap: nowrap. Il fallait l'autoriser à passer à la ligne.", ok: true, reaction: { who: theo, expr: joie, text: 'Elles attendaient juste la permission de descendre. Elles sont plus disciplinées que nous en fin de cours.' } }
+          - { text: "Les cartes ont une largeur fixe de 240 px : sur un écran plus étroit, elles ne peuvent que dépasser. Seules des largeurs en % ou en vw s'adaptent à l'écran d'une tablette.", misconception: largeur-fixe-coupable, reaction: { who: ines, expr: neutre, text: "Les tarifs de la billetterie ont aussi une base fixe, et ils passent bien à la ligne. Une largeur fixe n'empêche pas d'aller à la ligne : encore faut-il en avoir le droit." } }
+          - { text: "Le site n'avait aucun réglage pour la tablette : sans @media écrite pour 768 px, le navigateur garde la mise en page prévue pour l'ordinateur, cartes comprises.", misconception: media-query-partout, reaction: { who: ines, expr: sourcil, text: "Une media query répondrait à une seule largeur. Flexbox sait déjà répartir les cartes selon la place, à n'importe quelle largeur, si on le lui permet." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: css/style.css
+        prompt: "Ce n'est pas une carte qui déborde, c'est leur rangement. Clique sur la ligne de la règle du bloc qui contient toutes les cartes."
+        answer:
+          - '.cartes {'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Ce n'est pas la règle d'une carte, mais celle du bloc qui les contient toutes."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Compare la règle .cartes avec la règle .tarifs de la billetterie, dont les éléments passent bien à la ligne. Pourquoi les cartes débordent-elles ?'
+        options:
+          - { text: "Par défaut, un conteneur flex garde tous ses éléments sur une seule ligne, même s'ils n'y tiennent pas", ok: true }
+          - { text: 'Les cartes ont une largeur fixe de 240 px : il faudrait des pourcentages', misconception: largeur-fixe-coupable, reaction: { who: ines, expr: neutre, text: "Une base fixe n'empêche pas de passer à la ligne : les tarifs de la billetterie en ont une aussi, et ils s'adaptent. Compare les deux règles des conteneurs." } }
+          - { text: 'Il faut écrire une media query spéciale pour la tablette', misconception: media-query-partout, reaction: { who: ines, expr: sourcil, text: "Une media query répondrait à une seule largeur. Flexbox sait déjà répartir les cartes selon la place, à n'importe quelle largeur, si on le lui permet." } }
+          - { text: 'Le navigateur de la tablette ne connaît pas flexbox', misconception: navigateur-incompatible, reaction: { who: ines, expr: neutre, text: "Les cartes sont bien alignées côte à côte : flexbox fonctionne. C'est son comportement par défaut qui pose problème ici." } }
+    hints: 2
+  -
+    id: T33
+    act: 6
+    after:
+      - T31
+    course: 'CSS 05'
+    requester: maelle
+    priority: basse
+    title: 'La colonne « Une journée entière » devait être deux fois plus large que « Infos »'
+    request: "En bas de l'accueil, sur ma maquette, le bloc « Une journée entière » fait deux fois la largeur du bloc « Infos ». J'ai mesuré à la règle sur l'écran. Là, c'est n'importe quoi. Jordan m'avait dit « j'ai mis 2 et 1, c'est bon »."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Donc « 2 » et « 1 », ça ne voulait pas dire « deux fois plus large » ? Ça voulait dire quoi, alors ? Ma règle en plastique exige des explications.'
+        options:
+          - { text: 'Ça voulait bien dire « deux fois plus large ». Mais le navigateur arrondit chaque largeur au pixel près, et sur un grand écran, ces petits arrondis finissent par fausser la proportion.', misconception: flex-grow-multiplie, reaction: { who: ines, expr: sourcil, text: "Un arrondi, c'est un pixel, pas un tel écart. Et le rapport est juste maintenant : tu n'as pas changé la précision du navigateur, tu as changé le point de départ des blocs." } }
+          - { text: "Les 24 px de gap entre les deux blocs étaient retirés à un seul d'entre eux, pas aux deux : c'est cet écart, pris d'un seul côté, qui faussait la proportion entre « 2 » et « 1 ».", misconception: gap-fausse, reaction: { who: ines, expr: neutre, text: '24 px sur toute la largeur, ça ne peut pas expliquer un tel écart. Et le gap est toujours là, avec le bon rapport.' } }
+          - { text: "flex-grow ne multiplie pas la largeur : il partage la place libre. Chaque bloc partait de son contenu (flex-basis: auto), puis recevait 2 ou 1 part du reste. Avec flex-basis: 0, c'est 2 pour 1.", ok: true, reaction: { who: maelle, expr: etoiles, text: "Deux parts du gâteau qui reste, pas deux gâteaux ! Ma règle en plastique valide l'explication." } }
+          - { text: 'Il manquait flex-direction: row sur le conteneur : sans direction explicite, flexbox ne sait pas sur quel axe appliquer flex-grow, et répartit la place à peu près comme il veut.', misconception: direction-manquante, reaction: { who: ines, expr: neutre, text: "row est la valeur par défaut : les blocs étaient déjà côte à côte. Et flexbox ne fait rien « à peu près » : il calcule, à partir d'un point de départ." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: css/style.css
+        prompt: 'Cherche la règle .bloc-programme, et clique sur la ligne censée rendre « Une journée entière » plus large.'
+        answer:
+          - 'flex-grow: 2'
+        reaction:
+          who: ines
+          expr: neutre
+          text: 'Cherche la règle .bloc-programme.'
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "flex-grow: 2 d'un côté, flex-grow: 1 de l'autre. Mesure les deux blocs, puis demande-toi d'où part chacun avant de grandir. Pourquoi le rapport n'est-il pas de deux ?"
+        options:
+          - { text: "flex-grow partage l'espace libre qui reste après la taille de départ (ici, celle du contenu) ; il ne multiplie pas la largeur", ok: true }
+          - { text: "flex-grow: 2 rend l'élément deux fois plus large : c'est le navigateur qui arrondit", misconception: flex-grow-multiplie, reaction: { who: ines, expr: sourcil, text: "Un arrondi ne ferait pas une telle différence. Demande-toi d'où part chaque colonne avant de grandir : de zéro, ou de la taille de son contenu ?" } }
+          - { text: 'Il manque flex-direction: row sur .duo', misconception: direction-manquante, reaction: { who: ines, expr: neutre, text: "row est la valeur par défaut : les blocs sont déjà côte à côte. La question n'est pas leur direction, mais leur partage." } }
+          - { text: 'Le gap de 24 px fausse le calcul', misconception: gap-fausse, reaction: { who: ines, expr: neutre, text: '24 px sur toute la largeur, ça ne peut pas expliquer un tel écart. Regarde plutôt la taille de départ de chaque bloc.' } }
+    hints: 2

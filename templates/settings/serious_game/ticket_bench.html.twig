@@ -1,0 +1,28 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The ticket bench of a scenario (design/validated/serious-games-neko-con.md §8, lot 2): the game's
+   bench page runs in a frame with an opaque origin, like the game, and renders each ticket's bug and
+   repair; sg_ticket_bench_controller.js hands it the server's half of the tickets. #}
+
+{% block title %}{{ 'seriousGameTicketBenchAction'|trans }} · {{ game.title }}{% endblock %}
+
+{% block page_breadcrumb %}{% include 'settings/serious_game/_breadcrumb.html.twig' with {extra: [
+    {label: game.title, url: path('app_settings_serious_games_game', {slug: game.slug})},
+    {label: 'seriousGameTicketBenchAction'|trans, url: path('app_settings_serious_games_ticket_bench', {slug: game.slug})},
+]} %}{% endblock %}
+
+{% block page_title %}{{ 'seriousGameTicketBenchAction'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card" data-controller="sg-ticket-bench"
+         data-sg-ticket-bench-src-value="/serious-games/{{ game.slug }}/bench.html?v={{ game.version|url_encode }}"
+         data-sg-ticket-bench-scenario-value="{{ scenario|json_encode }}"
+         data-sg-ticket-bench-only-value="{{ only }}"
+         data-sg-ticket-bench-done-label-value="{{ 'seriousGameTicketBenchDone'|trans }}"
+         data-sg-ticket-bench-error-label-value="{{ 'seriousGameTicketBenchError'|trans }}">
+        <div class="cm-card-note">{{ 'seriousGameTicketBenchHelp'|trans }}</div>
+        <p class="card-body fw-bold mb-0" role="status" data-sg-ticket-bench-target="status">{{ 'seriousGameTicketBenchRunning'|trans }}</p>
+        {# No src here: the controller gives it once it listens. #}
+        <iframe class="cm-sg-bench" data-sg-ticket-bench-target="frame" sandbox="allow-scripts" title="{{ 'seriousGameTicketBenchAction'|trans }}"></iframe>
+    </div>
+{% endblock %}

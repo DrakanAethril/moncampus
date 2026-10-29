@@ -1,0 +1,249 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The statistics of the serious games (design/validated/serious-games-neko-con.md §6): a tab per game,
+   the establishment or one class, a school year. Usage, progression, the analysis of the units, the
+   list of a class's students (by name or last activity, never by score) and the comparison of the
+   years. Who plays and how far - never what each one gets wrong, which stays the student's sheet. #}
+
+{% macro duration(seconds) %}{% if seconds is null %}—{% elseif seconds < 60 %}{{ seconds|round }} s{% elseif seconds < 3600 %}{{ (seconds / 60)|round }} min{% else %}{{ (seconds / 3600)|round(0, 'floor') }} h {{ '%02d'|format(((seconds % 3600) / 60)|round(0, 'floor')) }}{% endif %}{% endmacro %}
+{% macro percent(share) %}{{ share is null ? '—' : (share * 100)|round ~ ' %' }}{% endmacro %}
+
+{% block title %}{{ 'seriousGameStatsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'seriousGamesNavLabel'|trans, url: path('app_serious_games')},
+        {label: 'seriousGameStatsHeading'|trans, url: path('app_serious_games_stats')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'seriousGameStatsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% import _self as f %}
+    {% set query = {program: program ? program.id : null, year: year ? year.id : null, order: order} %}
+
+    {% if game is null %}
+        <div class="card"><div class="card-body"><p class="text-secondary mb-0">{{ 'seriousGameSettingsNoGame'|trans }}</p></div></div>
+    {% else %}
+        <twig:Cm:Tabs :tabs="games|map(g => {url: path('app_serious_games_stats', query|merge({game: g.slug})), label: g.title, active: g.id == game.id})"/>
+        <div class="card cm-card--tabbed">
+            <form method="get" class="cm-sg-filters" data-controller="auto-submit">
+                <input type="hidden" name="game" value="{{ game.slug }}">
+                <label>{{ 'seriousGameStatsScope'|trans }}
+                    <select name="program" class="form-select" data-action="auto-submit#submit">
+                        <option value="">{{ 'seriousGameStatsEstablishment'|trans }}</option>
+                        {% for c in classes %}<option value="{{ c.id }}" {{ program and program.id == c.id ? 'selected' }}>{{ c.shortName }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>{{ 'seriousGameStatsYear'|trans }}
+                    <select name="year" class="form-select" data-action="auto-submit#submit">
+                        {% for y in years %}<option value="{{ y.id }}" {{ year and year.id == y.id ? 'selected' }}>{{ y.startDate|date('Y') }}-{{ y.endDate|date('Y') }}</option>{% endfor %}
+                    </select>
+                </label>
+                {% if program %}
+                    <label>{{ 'seriousGameFilterOrder'|trans }}
+                        <select name="order" class="form-select" data-action="auto-submit#submit">
+                            <option value="name" {{ order == 'name' ? 'selected' }}>{{ 'seriousGameOrderName'|trans }}</option>
+                            <option value="activity" {{ order == 'activity' ? 'selected' }}>{{ 'seriousGameOrderActivity'|trans }}</option>
+                        </select>
+                    </label>
+                {% endif %}
+                <noscript><button type="submit" class="cm-action--positive">{{ 'submitSaveAction'|trans }}</button></noscript>
+            </form>
+            <p class="cm-card-note">{{ 'seriousGameStatsNote'|trans({'%count%': stats.population}) }}</p>
+        </div>
+
+        {% set usage = stats.usage %}
+        <section class="cm-sg-stats__block">
+            {{ component('Cm:Subhead', {title: 'seriousGameStatsUsage'|trans, hint: 'seriousGameStatsUsageHint'|trans}) }}
+            <div class="cm-sg-kpis">
+                <div><b>{{ usage.players }}</b><span>{{ 'seriousGameStatsPlayers'|trans }}</span></div>
+                <div><b>{{ usage.sessions }}</b><span>{{ 'seriousGameStatsSessions'|trans }}</span></div>
+                <div><b>{{ f.duration(usage.seconds) }}</b><span>{{ 'seriousGameStatsTime'|trans }}</span></div>
+                <div><b>{{ f.duration(usage.medianSeconds) }}</b><span>{{ 'seriousGameStatsMedianTime'|trans }}</span></div>
+                <div><b>{{ usage.daysPerPlayer is null ? '—' : usage.daysPerPlayer|number_format(1, ',') }}</b><span>{{ 'seriousGameStatsDays'|trans }}</span></div>
+                <div><b>{{ f.percent(usage.schoolShare) }}</b><span>{{ 'seriousGameStatsSchoolShare'|trans }}</span></div>
+            </div>
+            {% set peak = max(usage.perWeek|map(w => w.players)|merge([1])) %}
+            <div class="card cm-sg-weeks" role="img" aria-label="{{ 'seriousGameStatsPerWeek'|trans }}">
+                <div class="cm-sg-weeks__title">{{ 'seriousGameStatsPerWeek'|trans }}</div>
+                <ol class="cm-sg-weeks__bars">
+                    {% for w in usage.perWeek %}
+                        <li title="{{ w.week }} · {{ w.players }}">
+                            <span class="cm-sg-weeks__value">{{ w.players }}</span>
+                            <span class="cm-sg-weeks__bar" style="height: {{ (100 * w.players / peak)|round }}%"></span>
+                            <span class="cm-sg-weeks__label">{{ w.week|slice(5) }}</span>
+                        </li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </section>
+
+        <section class="cm-sg-stats__block">
+            {{ component('Cm:Subhead', {title: 'seriousGameStatsProgression'|trans}) }}
+            <div class="cm-sg-results__columns">
+                <div class="card">
+                    {% set first = max(stats.progression.funnel|map(s => s.players)|merge([1])) %}
+                    <ol class="cm-sg-funnel">
+                        {% for step in stats.progression.funnel %}
+                            <li>
+                                <span class="cm-sg-funnel__label">{{ step.label|trans(step.params) }}</span>
+                                <span class="cm-sg-funnel__bar"><span style="width: {{ (100 * step.players / first)|round }}%"></span></span>
+                                <span class="cm-sg-funnel__value">{{ step.players }}</span>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </div>
+                <div class="card">
+                    {{ component('Cm:Subhead', {title: 'seriousGameStatsLeft'|trans, hint: (game.scenario ? 'seriousGameStatsLeftScenarioHint' : 'seriousGameStatsLeftSeriesHint')|trans}) }}
+                    {% if stats.progression.left is empty %}
+                        <div class="card-body"><p class="text-secondary mb-0">{{ 'seriousGameStatsNothing'|trans }}</p></div>
+                    {% else %}
+                        <ul class="cm-sg-errors">
+                            {% for row in stats.progression.left %}<li><strong>{{ row.unit }}</strong> <span class="cm-sg-errors__count">{{ 'seriousGameStatsStudents'|trans({'%count%': row.players}) }}</span></li>{% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="cm-sg-stats__block">
+            {{ component('Cm:Subhead', {title: 'seriousGameStatsUnits'|trans, hint: (game.scenario ? 'seriousGameStatsUnitsScenarioHint' : 'seriousGameStatsUnitsSeriesHint')|trans}) }}
+            <div class="card">
+                <div class="table-responsive">
+                    {% if game.scenario %}
+                        <table class="table table-vcenter card-table cm-sg-stats__table">
+                            <thead><tr>
+                                <th>{{ 'seriousGameTicketColumn'|trans }}</th>
+                                <th>{{ 'seriousGameStatsClosed'|trans }}</th>
+                                <th>{{ 'seriousGameStatsFirstTry'|trans }}</th>
+                                <th>{{ 'seriousGameStatsDeliveries'|trans }}</th>
+                                <th>{{ 'seriousGameStatsHelp'|trans }}</th>
+                                <th>{{ 'seriousGameStatsMedianTicketTime'|trans }}</th>
+                                <th>{{ 'seriousGameStatsCriteria'|trans }}</th>
+                            </tr></thead>
+                            <tbody>
+                                {% for row in stats.units %}
+                                    <tr>
+                                        <td><strong>{{ row.code }}</strong> {{ row.label }}<div class="text-secondary small">{{ row.course }}</div>
+                                            {% for q in row.questions|filter(q => q.answered > 0) %}
+                                                <details class="cm-sg-spread">
+                                                    <summary>{{ 'seriousGameStatsSpread'|trans({'%count%': q.answered}) }}{% if q.options|filter(o => o.overRight)|length > 0 %} <twig:Cm:Badge tone="red">{{ 'seriousGameStatsOverRight'|trans }}</twig:Cm:Badge>{% endif %}</summary>
+                                                    <p class="small mb-1">« {{ q.prompt }} »</p>
+                                                    <ul>
+                                                        {% for o in q.options %}
+                                                            <li class="{{ o.ok ? 'is-right' }}">
+                                                                <span class="cm-sg-spread__bar"><span style="width: {{ ((o.share ?? 0) * 100)|round }}%"></span></span>
+                                                                <span class="cm-sg-spread__share">{{ f.percent(o.share) }}</span>
+                                                                <span>{{ o.text }}</span>
+                                                                {% if o.ok %}<twig:Cm:Badge tone="green">{{ 'seriousGameStatsRightOption'|trans }}</twig:Cm:Badge>{% endif %}
+                                                                {% if o.overRight %}<twig:Cm:Badge tone="red">{{ 'seriousGameStatsOverRight'|trans }}</twig:Cm:Badge>{% endif %}
+                                                                {% if o.unused %}<twig:Cm:Badge tone="gray">{{ 'seriousGameStatsUnused'|trans }}</twig:Cm:Badge>{% endif %}
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                </details>
+                                            {% endfor %}
+                                        </td>
+                                        <td>{{ row.closed }} / {{ row.players }}</td>
+                                        <td>{{ f.percent(row.firstTry) }}</td>
+                                        <td>{{ row.deliveries is null ? '—' : row.deliveries|number_format(1, ',') }}</td>
+                                        <td>{{ f.percent(row.help) }}</td>
+                                        <td>{{ f.duration(row.medianSeconds) }}</td>
+                                        <td class="small">{% for criterion, count in row.criteria %}<div>{{ criterion }} <span class="text-secondary">({{ count }})</span></div>{% else %}—{% endfor %}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <table class="table table-vcenter card-table cm-sg-stats__table">
+                            <thead><tr>
+                                <th>{{ 'seriousGameUnitColumn'|trans }}</th>
+                                <th>{{ 'seriousGameStatsPlayers'|trans }}</th>
+                                <th>{{ 'seriousGameStatsAnswers'|trans }}</th>
+                                <th>{{ 'seriousGameStatsSuccess'|trans }}</th>
+                                <th>{{ 'seriousGameErrorsHeading'|trans }}</th>
+                            </tr></thead>
+                            <tbody>
+                                {% for row in stats.units %}
+                                    <tr>
+                                        <td>{{ row.label }}</td>
+                                        <td>{{ row.players }}</td>
+                                        <td>{{ row.answers }}</td>
+                                        <td>{{ f.percent(row.success) }}</td>
+                                        <td class="small">{% for label, count in row.errors %}<div>{{ label }} <span class="text-secondary">({{ count }})</span></div>{% else %}—{% endfor %}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        {% if program %}
+            {% set rows = stats.students %}
+            {% if order == 'activity' %}{% set rows = rows|sort((a, b) => (b.lastActivity ? b.lastActivity|date('U') : 0) <=> (a.lastActivity ? a.lastActivity|date('U') : 0)) %}{% endif %}
+            <section class="cm-sg-stats__block">
+                {{ component('Cm:Subhead', {title: 'seriousGameStatsClassList'|trans({'%class%': program.shortName}), hint: 'seriousGameStatsClassListHint'|trans}) }}
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table">
+                            <thead><tr>
+                                <th>{{ 'seriousGameResultsStudentColumn'|trans }}</th>
+                                <th>{{ 'seriousGameStatsPlayed'|trans }}</th>
+                                <th>{{ 'seriousGameLastActivity'|trans }}</th>
+                                <th>{{ 'seriousGameStatsTime'|trans }}</th>
+                                <th>{{ 'seriousGameStatsReached'|trans }}</th>
+                                <th>{{ 'seriousGameStatsSucceeded'|trans({'%units%': game.unitLabel}) }}</th>
+                            </tr></thead>
+                            <tbody>
+                                {% for row in rows %}
+                                    <tr>
+                                        <td>{{ row.student.lastname }} {{ row.student.firstname }}</td>
+                                        <td>{{ (row.played ? 'yesLabel' : 'noLabel')|trans }}</td>
+                                        <td>{{ row.lastActivity ? row.lastActivity|date('d/m/Y') : '—' }}</td>
+                                        <td>{{ f.duration(row.seconds) }}</td>
+                                        <td>{{ row.chapter ?? '—' }}</td>
+                                        <td>{{ row.succeeded }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="6" class="text-secondary">{{ 'seriousGameNoStudentMatches'|trans }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
+        <section class="cm-sg-stats__block">
+            {{ component('Cm:Subhead', {title: 'seriousGameStatsYears'|trans}) }}
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead><tr>
+                            <th>{{ 'seriousGameStatsYear'|trans }}</th>
+                            <th>{{ 'seriousGameStatsPlayers'|trans }}</th>
+                            <th>{{ 'seriousGameStatsSessions'|trans }}</th>
+                            <th>{{ 'seriousGameStatsAnswers'|trans }}</th>
+                        </tr></thead>
+                        <tbody>
+                            {% for row in comparison %}
+                                <tr class="{{ year and row.year.id == year.id ? 'table-active' }}">
+                                    <td>{{ row.year.startDate|date('Y') }}-{{ row.year.endDate|date('Y') }}</td>
+                                    <td>{{ row.players }}</td>
+                                    <td>{{ row.sessions }}</td>
+                                    <td>{{ row.answers }}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="4" class="text-secondary">{{ 'seriousGameStatsNothing'|trans }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}

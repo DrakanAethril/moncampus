@@ -17,6 +17,9 @@ namespace App\Service\SeriousGame;
  *   student's **active** classes - asked now, not at the time of the game, which is what gives the
  *   teachers of a new class the whole history (§1.9). Staff and staff-lead read no student by
  *   name: theirs are the aggregates.
+ * - **Read the statistics** (design/validated/serious-games-neko-con.md §6): every teacher and the
+ *   administrator, for every game and every class, with the names - who plays and how far, not
+ *   what each one gets wrong, which stays « read a student ».
  */
 final class SeriousGameRules
 {
@@ -93,6 +96,16 @@ final class SeriousGameRules
     public static function canReadAggregate(array $roles): bool
     {
         return [] !== array_intersect(['ROLE_STAFF', 'ROLE_STAFF-LEAD', self::ADMIN], $roles);
+    }
+
+    /** @param list<string> $roles */
+    public static function canReadStats(array $roles): bool
+    {
+        if (self::isAdmin($roles)) {
+            return true;
+        }
+
+        return !self::isShutOut($roles) && \in_array('ROLE_TEACHER', $roles, true);
     }
 
     /** @param list<string> $roles */

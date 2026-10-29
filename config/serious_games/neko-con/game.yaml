@@ -1,0 +1,79 @@
+# Panique à la Neko-Con: HTML and CSS, BTS SIO 1re année - the first game of the « scénario » mechanic
+# (design/validated/serious-games-neko-con.md).
+#
+# Read by `app:serious-games:sync`, which adds the tickets of `tickets/*.yaml` under `scenario.tickets`
+# and builds `chapters` from the acts, so that the screens common to every game read a ticket as a
+# unit and an act as a chapter. **The right answers live in those files and nowhere in the game's
+# package** (public/serious-games/neko-con/), which holds the site, the bugs, the rendering criteria,
+# the written hints and the scenes.
+slug: neko-con
+title: "Panique à la Neko-Con"
+pitch: "Stagiaire au service informatique, réparer le site cassé de la convention manga du lycée avant l'ouverture. Les 4 cours HTML et les 7 cours CSS."
+subjects: [Informatique]
+levels: [BTS SIO 1]
+unit_label: tickets
+mechanic: scenario
+# The kinds of step of the scenario (§7): a repair checked by the rendering, a choice, a line, the password.
+answer_kinds: [fix, choice, line, password]
+version: 1.0.0
+published: false
+
+words:
+  unit: [ticket, tickets]
+  chapter: [acte, actes]
+  lit: [résolu, résolus]
+  unlit: [ouvert, ouverts]
+  level: étoiles
+  skill: notion
+  dim_filter: Beaucoup d'aide
+
+scenario:
+  # A ticket keeps the version it was started with; raise it when a step changes.
+  version: 1
+  # The Kanban board holds four open tickets at most.
+  capacity: 4
+  # Jordan's password: the five pieces the tickets give, in order.
+  password: [Neko, Senpai, Ramen, '2026', '!']
+  acts:
+    - { n: 1, title: "Le site brut", tools: [apercu] }
+    - { n: 2, title: "La relecture d'Inès", tools: [apercu, lecteur, recherche] }
+    - { n: 3, title: "Le planning", tools: [apercu, lecteur, recherche] }
+    - { n: 4, title: "Les premières inscriptions", tools: [apercu, lecteur, recherche, requetes] }
+    - { n: 5, title: "La bascule", tools: [apercu, lecteur, recherche, requetes, appareils] }
+    - { n: 6, title: "L'avalanche", tools: [apercu, lecteur, recherche, requetes, appareils] }
+    - { n: 7, title: "« Je l'ai regardé sur mon téléphone… »", tools: [apercu, lecteur, recherche, requetes, appareils] }
+    - { n: 8, title: "« Ah, et j'avais oublié… »", tools: [apercu, lecteur, recherche, requetes, appareils] }
+    - { n: 9, title: "Les coulisses", tools: [apercu, lecteur, recherche, requetes, appareils] }
+
+grades:
+  - [0, "Stagiaire"]
+  - [10, "Stagiaire confirmé·e"]
+  - [20, "Technicien·ne support"]
+  - [30, "Intégrateur·rice web"]
+  - [39, "Webmaster de la Neko-Con"]
+
+rewards:
+  # Brass once the site is online (ticket 39); silver at two thirds of the tickets with three stars,
+  # gold at 35. Thresholds to review after a first promotion (§4).
+  trophy:
+    code: badge-staff
+    label: Le Badge Staff
+    lore: "Le badge plastifié à cordon de l'équipe, « STAFF · Neko-Con », remis à qui a mis le site en ligne."
+    silver_at: 26
+    gold_at: 35
+  pin:
+    code: pin-neko
+    label: Épinglette Neko
+  # One card per act done.
+  cards: true
+
+# Played on a computer only (§7): the code and the site side by side need 1 100 px. On a narrower
+# screen the catalogue says so instead of opening the game.
+desktop_only: true
+
+thumbnail:
+  background: "radial-gradient(circle at 82% 26%, #FFE9B0 0 7%, transparent 7.5%), linear-gradient(180deg, #3A3170 0 64%, #E8457A 64% 67%, #241F3A 67% 100%)"
+  font: "'Dela Gothic One', 'Trebuchet MS', sans-serif"
+  style: normal
+  weight: 400
+  color: "#FF6F91"

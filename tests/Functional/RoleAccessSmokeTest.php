@@ -1603,7 +1603,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
      * the game are lit for their role, and reaches the module **by its address alone** - no link in
      * their menus. The teachers of the class read the class and its students; another student is
      * nobody's to read but their own teachers'. A tutor gets nothing anywhere, and the staff reads
-     * no student by name.
+     * no student by name. The statistics of every game are read by every teacher - a class of
+     * theirs or not - and the administrator, never by the staff (design/validated/serious-games-neko-con.md §6).
      */
     public function testSeriousGamesArePlayedByAddressAndReadByTheTeachersOfTheClass(): void
     {
@@ -1628,6 +1629,14 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($staff, ['/serious-games' => 404, '/serious-games/results' => 200, $class => 404, $studentCard => 404, '/settings/serious-games' => 404]);
         $this->assertScreens($this->tutor, array_fill_keys(array_keys($own), 404) + ['/serious-games/results' => 404, $class => 404, $studentCard => 404]);
         $this->assertScreens($this->teacher, ['/settings/serious-games' => 403]);
+
+        $stats = ['/serious-games/stats' => 200, '/serious-games/stats?game=observatoire&program='.$this->program->getId() => 200];
+        $this->assertScreens($this->teacher, $stats);
+        $this->assertScreens($this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'smoke.other.teacher'), $stats);
+        $this->assertScreens($this->admin, $stats);
+        $this->assertScreens($this->student, ['/serious-games/stats' => 404]);
+        $this->assertScreens($staff, ['/serious-games/stats' => 404]);
+        $this->assertScreens($this->tutor, ['/serious-games/stats' => 404]);
 
         // No link in the student's menus, one in the teacher's (Ressources), read off the home page.
         $this->client->loginUser($this->student);

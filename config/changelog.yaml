@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.29'
+      date: '2026-10-29'
+      summary: "Un nouveau jeu d'entraînement d'un genre différent rejoint l'essai auprès de l'administration : une enquête en HTML et CSS pour le BTS SIO, où l'on répare un site plutôt que de répondre à des questions. Les enseignants disposent aussi de statistiques d'utilisation pour tous les jeux."
+      entries:
+          - type: nouveaute
+            title: "Nouveau jeu d'entraînement, en essai auprès de l'administration : un site de convention à remettre en ligne, ticket après ticket"
+            detail: "Pour le HTML et le CSS en première année de BTS SIO ; on y explique, répare et livre, avec une aide graduée quand on bloque."
+          - type: nouveaute
+            title: "Les enseignants suivent ce jeu par classe : élèves bloqués ou très aidés, notions à reprendre et parcours de chaque élève"
+          - type: nouveaute
+            title: "Statistiques des jeux d'entraînement : utilisation, progression, notions les plus difficiles et comparaison d'une année à l'autre"
+          - type: interne
+            title: "Les jeux d'entraînement accueillent une seconde mécanique, faite de missions écrites à la main"
     - version: '2026.10.24'
       date: '2026-10-24'
       summary: "Dans la version web d'e-CO, un coureur peut désormais quitter une course avant l'arrivée, sur un appareil partagé notamment."

@@ -1,0 +1,110 @@
+# Panique à la Neko-Con - acte 8 : « Ah, et j'avais oublié… ».
+#
+# The server half of the tickets (design/validated/serious-games-neko-con.md §3.1): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Inès' guided
+# questions, what closing gives. The game half (bug, criteria, written hints, scenes) is
+# public/serious-games/neko-con/tickets/acte8.js. Converted once from the prototype's
+# host/scenario/acte8.js; `hints` counts the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: T37
+    act: 8
+    after:
+      - T35
+      - T36
+    course: 'CSS 07'
+    requester: maelle
+    priority: haute
+    title: 'Le plan des stands est en vrac'
+    request: "La page « Plan des stands » est en vrac : tous les stands sont empilés les uns sur les autres dans un coin, on ne lit plus rien ! Sur le plan papier, c'est simple : la scène au fond sur deux cases, l'espace dédicaces dans le coin droit, et les six stands en dessous, trois par rangée."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiete
+        prompt: "Je ne comprends pas : une seule rangée de travers, et TOUS les stands s'empilent dans un coin ? Même ceux du bas, qui étaient bien placés sur le plan ?"
+        options:
+          - { text: "Le nom « scene » était écrit deux fois sur la même rangée de grid-template-areas : un nom de zone ne peut y apparaître qu'une fois, alors le navigateur a refusé le plan tout entier.", misconception: areas-nom-unique, reaction: { who: ines, expr: neutre, text: "Dans ta correction, « scene » est toujours écrit deux fois, et le plan marche. Répéter un nom, c'est justement comme ça qu'une zone s'étend sur plusieurs cases." } }
+          - { text: "Chaque zone de grid-template-areas doit former un rectangle. Les dédicaces coupaient la scène en deux : toute la déclaration devenait invalide, et plus aucun stand n'avait sa case.", ok: true, reaction: { who: maelle, expr: joie, text: "Donc une scène coupée en deux, et c'est tout le gymnase qui s'écroule. Je comprends mieux pourquoi le club théâtre ne joue jamais en deux morceaux." } }
+          - { text: 'Les zones de grid-template-areas doivent porter le nom des classes HTML, avec leur point, comme « .scene » : sans le point, le navigateur a empilé tous les stands dans le premier coin.', misconception: areas-classes, reaction: { who: ines, expr: sourcil, text: "Tu as écrit « scene », sans point, et chaque stand a retrouvé sa place. C'est grid-area, dans la règle de chaque stand, qui fait le lien avec le nom de la zone." } }
+          - { text: 'Le plan ne donnait pas la hauteur des rangées : sans grid-template-rows, le navigateur ne savait pas où commencer chaque rangée, alors il a posé tous les stands au même endroit, en haut à gauche.', misconception: rows-obligatoire, reaction: { who: ines, expr: neutre, text: "Tu n'as ajouté aucune hauteur, et les rangées sont revenues. Sans grid-template-rows, elles prennent simplement la hauteur de leur contenu." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: css/style.css
+        prompt: 'Le plan est dessiné en toutes lettres dans la règle .plan. Compare-le avec le plan papier de Maëlle, et clique sur la rangée qui ne lui ressemble pas.'
+        answer:
+          - '"scene dedicaces scene"'
+        reaction:
+          who: ines
+          expr: neutre
+          text: 'Le plan est dessiné dans la règle .plan, avec des noms de zones. Compare ce dessin avec le plan papier de Maëlle.'
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'À cause de cette rangée, le navigateur ignore toute la propriété grid-template-areas. Pourquoi ?'
+        options:
+          - { text: "La zone « scene » n'est pas un rectangle : ses deux cases ne se touchent pas", ok: true }
+          - { text: "Un même nom ne peut apparaître qu'une fois dans grid-template-areas", misconception: areas-nom-unique, reaction: { who: ines, expr: neutre, text: "Répéter un nom, c'est justement comme ça qu'une zone s'étend sur plusieurs cases. Le problème, c'est l'endroit où sont placées ces répétitions." } }
+          - { text: 'Les noms des zones doivent être ceux des classes HTML, avec le point : ".scene"', misconception: areas-classes, reaction: { who: ines, expr: sourcil, text: "Les noms de zones sont libres. C'est grid-area, dans chaque règle, qui fait le lien : .scene a bien grid-area: scene." } }
+          - { text: 'Il manque grid-template-rows pour donner la hauteur des rangées', misconception: rows-obligatoire, reaction: { who: ines, expr: neutre, text: "Sans grid-template-rows, les rangées prennent la hauteur de leur contenu. Ça n'empêche pas les zones de se placer." } }
+    hints: 2
+  -
+    id: T38
+    act: 8
+    after:
+      - T35
+      - T36
+    course: 'CSS 07'
+    requester: mika
+    priority: normale
+    title: "L'espace dédicaces prend la moitié de la page"
+    request: "Bonjour ! Mika, l'autrice invitée. Merci pour le plan des stands… mais mon espace dédicaces prend la moitié du gymnase, alors que la scène est toute serrée à côté. Je ne suis pas si célèbre ! Sur le plan papier, toutes les cases sont de la même largeur."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Mika.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Je suis curieuse : par quel miracle mon petit coin de dédicaces est-il devenu plus grand que la scène ? Sur le papier, tout le monde avait la même case.'
+        options:
+          - { text: "Votre case contenait le texte le plus long du plan : dans une grille, une colonne s'élargit pour suivre son contenu, et la vôtre a poussé les deux autres contre le bord de la page.", misconception: contenu-elargit-colonne, reaction: { who: ines, expr: neutre, text: "Tu n'as pas touché au texte de Mika, et sa case a rétréci. Ce sont les largeurs des colonnes, déclarées sur .plan, qui décidaient de tout." } }
+          - { text: "L'espace dédicaces avait sa propre règle, .dedicaces, avec un width plus grand que les autres cases : il suffisait de corriger cette largeur pour qu'il rentre dans le rang.", misconception: taille-sur-enfant, reaction: { who: ines, expr: sourcil, text: "Tu n'as pas touché à la règle .dedicaces. Dans une grille, c'est le conteneur qui fixe la largeur des colonnes ; les cases ne font que s'y ranger." } }
+          - { text: "Deux colonnes étaient fixées à 200 px, la vôtre à 1fr. Or fr ne veut pas dire « un tiers » : c'est une part de la place qui reste après les tailles fixes. Seule en fr, la vôtre a tout pris.", ok: true, reaction: { who: mika, expr: joie, text: "Une part de ce qui reste… et j'étais seule à table. Je comprends mieux : j'ai mangé tout le gâteau." } }
+          - { text: 'La dernière colonne était en fr, une unité qui vaut toujours un tiers de la grille ; les deux autres, fixées à 200 px, étaient simplement trop étroites pour un grand écran.', misconception: fr-fraction-totale, reaction: { who: ines, expr: sourcil, text: "Si 1fr valait un tiers, la case de Mika ne serait pas presque deux fois plus large que la scène. fr partage l'espace qui reste, après les colonnes fixes." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: css/style.css
+        prompt: "Les largeurs des colonnes d'une grille se règlent sur le conteneur. Clique sur la ligne qui les fixe pour le plan."
+        answer:
+          - 'grid-template-columns: 200px 200px 1fr'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Les largeurs des colonnes d'une grille se règlent sur le conteneur, la règle .plan. Pas dans la media query : on regarde l'ordinateur."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Jordan a écrit 200px 200px 1fr en pensant que 1fr veut dire « un tiers ». Que vaut 1fr ici ?'
+        options:
+          - { text: "Tout l'espace qui reste, une fois retirés les deux colonnes de 200 px et les espacements", ok: true }
+          - { text: "Un tiers de la largeur de la grille, quoi qu'il arrive", misconception: fr-fraction-totale, reaction: { who: ines, expr: sourcil, text: "fr ne partage que l'espace libre, après les tailles fixes. Avec 400 px déjà pris, que reste-t-il, et pour combien de colonnes en fr ?" } }
+          - { text: '1 % de la largeur de la grille', misconception: fr-pourcentage, reaction: { who: mika, expr: neutre, text: "Si c'était 1 %, mon espace serait minuscule. Or il est immense… j'aurais préféré, d'ailleurs." } }
+          - { text: 'Une largeur fixe, comme 1em vaut la taille du texte', misconception: fr-unite-fixe, reaction: { who: ines, expr: neutre, text: "Élargis l'aperçu : la colonne en fr change de largeur, pas les deux autres. Une unité fixe ne ferait pas ça." } }
+      -
+        id: valeur
+        kind: choice
+        prompt: 'Quelle valeur donne trois colonnes de même largeur qui remplissent la grille ?'
+        options:
+          - { text: '1fr 1fr 1fr', ok: true }
+          - { text: '33% 33% 33%', misconception: pourcentages-gap, reaction: { who: ines, expr: neutre, text: 'Presque. Mais la grille a aussi deux espacements de 12 px : 99 % plus 24 px, ça dépasse de la page.' } }
+          - { text: '200px 200px 200px', misconception: largeur-fixe-grille, reaction: { who: ines, expr: sourcil, text: 'Trois colonnes égales, oui, mais la grille ne serait plus remplie sur ordinateur. Il faut des colonnes qui se partagent la place, quelle que soit la largeur.' } }
+    hints: 2

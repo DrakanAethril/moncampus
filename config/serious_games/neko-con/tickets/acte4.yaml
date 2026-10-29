@@ -1,0 +1,299 @@
+# Panique à la Neko-Con - acte 4 : Les premières inscriptions.
+#
+# The server half of the tickets (design/validated/serious-games-neko-con.md §3.1): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Inès' guided
+# questions, what closing gives. The game half (bug, criteria, written hints, scenes) is
+# public/serious-games/neko-con/tickets/acte4.js. Converted once from the prototype's
+# host/scenario/acte4.js; `hints` counts the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: T15
+    act: 4
+    after:
+      - T11
+      - T12
+      - T13
+      - T14
+    course: 'HTML 04'
+    requester: maelle
+    priority: haute
+    title: "Quand je clique sur « J'accepte le règlement », rien ne se coche"
+    request: "Ma petite sœur a voulu réserver. Elle clique sur « J'accepte le règlement de la convention », et rien ne se coche. Du coup, impossible de payer. Elle a cliqué dix fois, elle pense que le règlement ne l'aime pas."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiete
+        prompt: "Ma sœur veut savoir si c'était personnel. Pourquoi cliquer sur la phrase ne cochait plus rien, alors que la case, elle, marchait ?"
+        options:
+          - { text: "Le texte et la case n'étaient plus assez collés : le navigateur relie un <label> au champ le plus proche dans la page, et la case était hors de portée.", misconception: label-proximite, reaction: { who: ines, expr: sourcil, text: "Tu n'as rien déplacé, et pourtant ça coche. Pour le navigateur, ce n'est jamais la distance qui relie un texte à un champ." } }
+          - { text: "La case portait l'attribut required : le navigateur interdit alors de la cocher par la phrase, pour être sûr que le visiteur l'a cochée exprès.", misconception: required-bloque-clic, reaction: { who: ines, expr: neutre, text: "Elle est toujours obligatoire, et la phrase la coche de nouveau. required empêche d'envoyer le formulaire tant que la case est vide ; il n'empêche jamais de la cocher." } }
+          - { text: "La phrase est un <label>, dont l'attribut for désigne l'id de sa case. La case avait été renommée : le for visait un id qui n'existait plus.", ok: true, reaction: { who: maelle, expr: joie, text: "L'étiquette appelait la case par son ancien nom, et personne ne répondait. Je vais dire à ma sœur que le règlement l'aimait, en fait." } }
+          - { text: "Une étiquette se relie à sa case par l'attribut name : les deux ne portaient plus le même, donc le clic sur la phrase ne trouvait plus la case à cocher.", misconception: for-name, reaction: { who: ines, expr: neutre, text: "Le name de la case n'a pas bougé de la journée : il vaut « reglement », comme le for. Le for vise un autre attribut, et c'est lui que tu as remis d'accord." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: billetterie.html
+        prompt: "Dans l'aperçu, clique sur le texte, puis sur la petite case : seule la case réagit. Trouve la ligne de cette case dans le code et clique dessus."
+        answer:
+          - 'id="cgu"'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "C'est tout en bas du formulaire, juste avant le bouton « Payer et réserver »."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Compare la case et son étiquette, sur cette ligne. Pourquoi cliquer sur le texte ne coche-t-il plus la case ?'
+        options:
+          - { text: "Le for du label ne correspond plus à l'id de la case : le texte n'est l'étiquette de rien", ok: true }
+          - { text: 'Le texte est trop loin de la case : il faut les coller', misconception: label-proximite, reaction: { who: ines, expr: sourcil, text: "Ils sont déjà côte à côte, sur la même ligne. Pour le navigateur, ce n'est pas la distance qui relie un texte à un champ." } }
+          - { text: 'Il faut que le name de la case soit le même que le for du label', misconception: for-name, reaction: { who: ines, expr: neutre, text: "Ici, ils sont même identiques : « reglement ». Le name sert à l'envoi ; le for, lui, vise un autre attribut." } }
+    hints: 2
+  -
+    id: T16
+    act: 4
+    after:
+      - T11
+      - T12
+      - T13
+      - T14
+    course: 'HTML 04'
+    requester: theo
+    priority: normale
+    title: "Sur mon téléphone, le clavier n'affiche que des lettres pour le numéro"
+    request: "J'ai voulu réserver depuis mon téléphone. Pour le numéro de téléphone, le clavier ne m'a proposé que des lettres, j'ai dû chercher les chiffres. Et pour l'adresse e-mail, pareil, pas d'arobase. Sur d'autres sites, le bon clavier apparaît tout seul."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Attends, mon téléphone lit dans les pensées ? Comment il sait quel clavier me montrer ?'
+        options:
+          - { text: 'Le champ le lui dit, par son attribut type. Les deux étaient en type="text", du texte quelconque, d''où les lettres. En tel ou en email, il sort les chiffres ou l''arobase.', ok: true, reaction: { who: theo, expr: joie, text: "Donc le champ dit « je veux des chiffres » et le téléphone obéit. J'aimerais que ma calculatrice soit aussi docile." } }
+          - { text: "C'est la feuille de style qui choisit le clavier, d'après la police des champs : tant qu'elle n'est pas chargée, le téléphone prend le clavier des lettres par défaut.", misconception: css-clavier, reaction: { who: ines, expr: sourcil, text: "Le CSS habille la page, il ne parle jamais au clavier. Et tu as réparé sans toucher à un seul style : la feuille n'est même pas chargée." } }
+          - { text: "Le téléphone lit l'étiquette <label> du champ : il n'avait pas reconnu le mot « Téléphone », alors il a gardé le clavier des lettres, par prudence.", misconception: clavier-devine-label, reaction: { who: ines, expr: neutre, text: "Les étiquettes n'ont pas changé d'une lettre, et le bon clavier est revenu. Le téléphone ne lit pas le texte de la page : il lit ce que le champ annonce." } }
+          - { text: 'Le champ doit annoncer au téléphone qu''il attend un nombre, avec type="number" : c''est ce type qui fait apparaître le pavé de chiffres pour un numéro.', misconception: number-telephone, reaction: { who: ines, expr: neutre, text: "Heureusement que tu ne l'as pas fait : un numéro de téléphone ne se calcule pas. En number, le 0 du début saute et le + de +33 est refusé." } }
+    guide:
+      -
+        id: couche
+        kind: choice
+        prompt: "Le CSS habille la page ; le HTML dit ce qu'est chaque élément. Où se décide le clavier que montre le téléphone ?"
+        options:
+          - { text: "Dans le HTML : c'est le champ qui dit quel genre de donnée il attend", ok: true }
+          - { text: 'Dans le CSS : il faut une police avec des chiffres plus gros', misconception: css-clavier, reaction: { who: ines, expr: sourcil, text: "Le CSS habille la page, il ne choisit pas le clavier du téléphone. Et la feuille n'est pas encore chargée." } }
+      -
+        id: localiser
+        kind: line
+        file: billetterie.html
+        prompt: 'Commence par le numéro : clique sur la ligne de son champ.'
+        answer:
+          - 'id="tel"'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Cherche la balise <input>, juste sous l'étiquette « Téléphone »."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Ce champ est en type="text". Quel type lui donner pour un numéro de téléphone ?'
+        options:
+          - { text: 'type="tel"', ok: true }
+          - { text: 'type="number"', misconception: number-telephone, reaction: { who: ines, expr: neutre, text: "Un numéro de téléphone n'est pas un nombre : on ne le calcule pas. En number, le 0 du début saute, le + de +33 est refusé et des flèches apparaissent pour l'augmenter de 1." } }
+          - { text: 'type="phone"', misconception: type-invente, reaction: { who: ines, expr: sourcil, text: "Ce type n'existe pas : le navigateur l'ignore sans rien dire et retombe sur un champ texte. Cherche le nom exact dans le cours." } }
+    hints: 2
+  -
+    id: T17
+    act: 4
+    after:
+      - T11
+      - T12
+      - T13
+      - T14
+    course: 'HTML 04'
+    requester: theo
+    priority: haute
+    title: 'Les réservations arrivent vides'
+    request: "Je suis trésorier, donc je regarde les réservations reçues par le serveur. Il y en a douze, toutes payées… mais sans nom, sans e-mail, sans téléphone. On a l'argent, on ne sait pas de qui. Le formulaire, pourtant, les gens le remplissent."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiet
+        prompt: "Les gens tapaient bien leur nom, j'ai vérifié avec ma cousine. Alors où il est passé ? Le serveur l'a mangé ?"
+        options:
+          - { text: 'Le serveur recevait bien les noms, mais un bug dans son script de traitement les effaçait juste avant de les enregistrer dans le tableau des réservations de Théo.', misconception: accuser-serveur, reaction: { who: ines, expr: sourcil, text: "Tu as vu la requête : le nom n'y était pas. Le serveur ne peut pas perdre ce qu'il n'a jamais reçu. Et tu as réparé sans toucher au serveur." } }
+          - { text: 'Le formulaire partait en method="post", qui n''envoie que les valeurs choisies (quantité, formule) et laisse de côté le texte tapé au clavier dans les champs.', misconception: post-vide, reaction: { who: ines, expr: neutre, text: "Le numéro de carte est tapé au clavier, et il part très bien en POST. Tu n'as pas changé la méthode : elle n'y était pour rien." } }
+          - { text: "Ces champs n'avaient pas tous l'attribut required : un champ facultatif, le navigateur le garde chez le visiteur pour ne pas encombrer le serveur de valeurs inutiles.", misconception: required-envoi, reaction: { who: ines, expr: neutre, text: "Le nom et l'e-mail étaient déjà obligatoires, et ils ne partaient pas. La formule, facultative, partait très bien. required oblige à remplir, il ne décide pas de l'envoi." } }
+          - { text: "Un champ n'est envoyé que s'il a un name, le nom sous lequel le serveur reçoit sa valeur (nom=Sakura). Ces champs n'avaient qu'un id, qui sert au label : ils ne partaient pas.", ok: true, reaction: { who: theo, expr: joie, text: 'Des valeurs sans nom, comme mes billets sans propriétaire. Au moins, maintenant, je sais à qui rendre la monnaie.' } }
+    guide:
+      -
+        id: reproduire
+        kind: choice
+        prompt: "Envoie une réservation de test et ouvre l'onglet « Requêtes ». Qu'est-ce qui cloche ?"
+        options:
+          - { text: "Le nom, l'e-mail et le téléphone sont signalés « sans attribut name » : ils ne partent pas", ok: true }
+          - { text: 'La méthode est POST : il faut GET pour que les champs soient envoyés', misconception: post-vide, reaction: { who: ines, expr: neutre, text: "Regarde bien : la quantité, la formule et la carte partent, elles, en POST. La méthode n'est pas en cause." } }
+          - { text: "Rien : le formulaire est bon, c'est le serveur qui perd les données", misconception: accuser-serveur, reaction: { who: ines, expr: sourcil, text: "La requête montre ce qui quitte le navigateur. Si le nom n'y est pas, le serveur ne peut pas le perdre : il ne l'a jamais reçu." } }
+      -
+        id: localiser
+        kind: line
+        file: billetterie.html
+        prompt: 'Prends le premier des trois : clique sur la ligne du champ « Nom et prénom ».'
+        answer:
+          - 'id="nom"'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Cherche l'<input> placé juste sous l'étiquette « Nom et prénom »."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Le champ a pourtant un id="nom". Pourquoi ne suffit-il pas ?'
+        options:
+          - { text: "L'id sert au label et à repérer l'élément dans la page ; c'est le name qui donne le nom sous lequel la valeur est envoyée", ok: true }
+          - { text: 'Il suffit, mais il faut l''écrire en majuscules : id="NOM"', misconception: casse-id, reaction: { who: ines, expr: sourcil, text: "La casse ne changera rien : l'id ne joue tout simplement aucun rôle dans l'envoi." } }
+          - { text: "Il manque required : un champ facultatif n'est pas envoyé", misconception: required-envoi, reaction: { who: ines, expr: neutre, text: "Le nom est déjà obligatoire, et la formule, qui ne l'est pas, part très bien. required oblige à remplir, il ne décide pas de l'envoi." } }
+    hints: 2
+  -
+    id: T18
+    act: 4
+    after:
+      - T11
+      - T12
+      - T13
+      - T14
+    course: 'HTML 04'
+    requester: maelle
+    priority: haute
+    title: "Mon numéro de carte bancaire apparaît dans l'adresse !"
+    request: "AU SECOURS !!! J'ai fait une réservation pour essayer et après avoir cliqué sur « Payer et réserver », mon numéro de carte bancaire était écrit dans la barre d'adresse ! En entier ! Il est aussi dans l'historique ! Et j'ai copié le lien à Théo !"
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: paniquee
+        prompt: "Explique-moi, j'ai besoin de comprendre : pourquoi mon numéro s'est retrouvé dans l'adresse ? Et maintenant, il est crypté, au moins ?"
+        options:
+          - { text: "Le champ de la carte n'était pas en type=\"password\" : sans lui, le numéro voyage en clair dans l'adresse. Maintenant, il est masqué à l'écran et chiffré pendant tout le trajet.", misconception: password-protege, reaction: { who: ines, expr: sourcil, text: 'Tu n''as pas touché au champ de la carte. type="password" cache les caractères à l''écran, pendant la saisie ; il ne change rien au trajet de la valeur.' } }
+          - { text: "En GET, le navigateur colle chaque champ à la fin de l'adresse : d'où l'historique et le lien copié. En POST, ils passent dans le corps de la requête, mais en clair : le chiffrement, c'est HTTPS.", ok: true, reaction: { who: maelle, expr: neutre, text: "D'accord… POST pour ne plus l'étaler dans l'adresse, HTTPS pour le cadenas. Je note. En rose fluo." } }
+          - { text: "Le formulaire partait en GET, une méthode qui envoie les données en clair dans l'adresse. Avec POST, le navigateur les chiffre avant l'envoi : ton numéro est illisible sur le réseau.", misconception: post-chiffre, reaction: { who: ines, expr: sourcil, text: "La première moitié est juste, pas la seconde. POST range les données dans le corps de la requête, mais en clair : sans HTTPS, n'importe qui sur le réseau peut les lire." } }
+          - { text: "Tout formulaire met ses données dans l'adresse, c'est normal. Pour cacher le numéro, il fallait que son champ ait autocomplete=\"cc-number\", l'attribut qui protège les cartes.", misconception: autocomplete-securite, reaction: { who: ines, expr: neutre, text: "Le formulaire du cosplay ne met rien dans l'adresse, regarde l'onglet « Requêtes ». Et autocomplete aide seulement à préremplir le champ : il ne protège rien." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: billetterie.html
+        prompt: "Envoie une réservation de test et regarde l'onglet « Requêtes » : la méthode utilisée y est indiquée. Clique ensuite sur la ligne du code qui décide de cette méthode."
+        answer:
+          - 'method="get"'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "C'est la balise qui ouvre le formulaire, avec son action."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Pourquoi le numéro de carte se retrouve-t-il dans l'adresse ?"
+        options:
+          - { text: 'En method="get", le navigateur colle tous les champs à la fin de l''adresse', ok: true }
+          - { text: 'Parce que le champ de la carte n''est pas en type="password"', misconception: password-protege, reaction: { who: ines, expr: sourcil, text: 'type="password" cache les caractères à l''écran, pendant la saisie. Il ne change rien à la façon dont la valeur voyage.' } }
+          - { text: "C'est normal : tout formulaire envoie ses données dans l'adresse", misconception: url-toujours, reaction: { who: ines, expr: neutre, text: "Pas tout formulaire. Regarde dans l'onglet « Requêtes » le formulaire du cosplay : ses données ne sont pas dans l'adresse." } }
+    hints: 2
+    reward:
+      clue: "Dans la requête, un champ caché jordan_admin vaut coulisses.html : la page d'administration de Jordan !"
+  -
+    id: T19
+    act: 4
+    after:
+      - T11
+      - T12
+      - T13
+      - T14
+    course: 'HTML 04'
+    requester: theo
+    priority: haute
+    title: "Quelqu'un a réservé −12 billets"
+    request: "Il y a une réservation de −12 billets. MOINS douze. D'après le serveur, on lui doit 60 euros. Le règlement dit pourtant 1 billet minimum et 10 maximum par personne. Comment c'est possible ?"
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiet
+        prompt: "Comment on peut commander moins douze billets ? Et maintenant, c'est réglé pour de bon ? Je ne veux pas devoir 60 euros à chaque petit malin."
+        options:
+          - { text: "Le champ n'avait pas l'attribut required, alors le navigateur acceptait n'importe quelle valeur, même absurde. Maintenant, il vérifie le nombre avant d'envoyer : plus de −12.", misconception: required-valeur, reaction: { who: ines, expr: neutre, text: "required interdit un champ vide, et −12 n'est pas vide. Tu n'as pas ajouté required : tu as posé des limites." } }
+          - { text: "Sans min ni max, un champ number accepte tout, même −12. Maintenant, le navigateur refuse tout ce qui sort de 1 à 10, et c'est lui qui envoie la commande : c'est réglé.", misconception: validation-client-suffit, reaction: { who: ines, expr: sourcil, text: 'La première moitié est juste. Mais le code de la page est chez le visiteur : un tricheur peut le modifier, ou envoyer sa requête sans passer par le formulaire.' } }
+          - { text: 'Sans min ni max, un champ number accepte tout, même −12. Le navigateur bloque maintenant hors de 1 à 10, mais un tricheur peut contourner la page : je préviens le développeur du serveur.', ok: true, reaction: { who: theo, expr: neutre, text: 'Je lui écris tout de suite. Et je garde la réservation des −12 billets comme preuve. Et comme souvenir.' } }
+          - { text: "Sans min ni max, le champ acceptait tout. Pour que ce soit vraiment sûr, j'ajoute en plus un script JavaScript qui bloque les nombres négatifs avant l'envoi du formulaire.", misconception: js-securise, reaction: { who: ines, expr: neutre, text: 'Le JavaScript tourne lui aussi dans le navigateur du visiteur : il se désactive ou se contourne aussi facilement que le HTML.' } }
+    guide:
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Le champ « Nombre de billets » est en type="number". Pourquoi accepte-t-il −12 ?'
+        options:
+          - { text: "Un champ number accepte tous les nombres tant qu'on ne lui donne pas de min et de max", ok: true }
+          - { text: 'Il faudrait type="positive"', misconception: type-invente, reaction: { who: ines, expr: sourcil, text: "Ce type n'existe pas. Le navigateur l'ignorerait et retomberait sur un champ texte : ce serait pire." } }
+          - { text: 'Il manque required', misconception: required-valeur, reaction: { who: ines, expr: neutre, text: "required interdit un champ vide. −12 n'est pas vide." } }
+    hints: 2
+  -
+    id: T20
+    act: 4
+    after:
+      - T15
+    course: 'HTML 04'
+    requester: mika
+    priority: normale
+    title: "On peut s'inscrire au concours cosplay sans nom de scène"
+    request: "Bonjour ! Je suis dans le jury du concours cosplay et je prépare les fiches. Trois inscrits n'ont pas de nom de scène : juste le personnage et l'e-mail. Je ne peux pas les annoncer « Toi, là » ! Le nom de scène devrait être obligatoire, comme le reste."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Mika.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Je suis curieuse : sans personnage, le formulaire refusait de partir. Pourquoi laissait-il passer une inscription sans nom de scène ?'
+        options:
+          - { text: "Le navigateur ne bloque l'envoi que pour les champs marqués required. Le personnage et l'e-mail l'avaient, pas le nom de scène : vide, il partait quand même.", ok: true, reaction: { who: mika, expr: joie, text: 'Un seul mot, required, et plus de « Toi, là ». Si seulement ça marchait aussi pour les retardataires du jury !' } }
+          - { text: 'Un champ en type="text" est facultatif par nature : le navigateur ne vérifie que les types spéciaux, comme email, dont il sait contrôler le format.', misconception: type-text-facultatif, reaction: { who: ines, expr: neutre, text: "Le personnage est lui aussi un champ texte, et il bloquait l'envoi. Le type ne rend rien obligatoire : c'est un attribut à part." } }
+          - { text: "Le navigateur repère les champs obligatoires grâce à l'étoile * de leur <label>, et personne n'en avait mis à côté de « Nom de scène » : il le croyait facultatif.", misconception: etoile-suffit, reaction: { who: ines, expr: sourcil, text: "Aucune étiquette du formulaire n'a d'étoile, pas même « Personnage », qui bloquait bien. Le navigateur ne lit pas les étoiles : il lit les attributs du champ." } }
+          - { text: "Le champ n'avait pas de placeholder « Obligatoire », le texte gris dans la case : sans ce message, le navigateur le traite comme un champ facultatif.", misconception: placeholder-obligatoire, reaction: { who: ines, expr: neutre, text: "Tu n'as ajouté aucun placeholder, et le champ bloque maintenant l'envoi. Le texte gris prévient le visiteur ; il n'empêche rien." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: cosplay.html
+        prompt: "Dans l'aperçu, envoie l'inscription sans nom de scène, puis sans personnage : seul le second est refusé. Clique sur la ligne du champ « Nom de scène »."
+        answer:
+          - 'id="pseudo"'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "C'est le premier champ du formulaire d'inscription, en bas de cosplay.html."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Compare-le au champ « Personnage », juste en dessous. Comment rendre le nom de scène obligatoire ?'
+        options:
+          - { text: "Ajouter l'attribut required, comme sur les deux autres champs", ok: true }
+          - { text: 'Ajouter placeholder="Obligatoire"', misconception: placeholder-obligatoire, reaction: { who: ines, expr: neutre, text: "Le placeholder affiche un texte gris dans le champ vide. Il prévient, il n'empêche rien : le formulaire part quand même." } }
+          - { text: "Ajouter une étoile * dans l'étiquette", misconception: etoile-suffit, reaction: { who: ines, expr: sourcil, text: "L'étoile renseigne le visiteur, c'est bien. Mais le navigateur, lui, ne lit pas les étoiles." } }
+    hints: 2

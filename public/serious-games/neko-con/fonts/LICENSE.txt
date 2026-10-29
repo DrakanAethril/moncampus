@@ -1,0 +1,9 @@
+Polices embarquées (sous-ensembles latin et latin-ext, téléchargés depuis Google Fonts) :
+
+- Dela Gothic One — SIL Open Font License 1.1
+- M PLUS Rounded 1c — SIL Open Font License 1.1
+- Fira Code — SIL Open Font License 1.1
+- Rampart One — SIL Open Font License 1.1
+- Zen Maru Gothic — SIL Open Font License 1.1
+
+Texte de la licence : https://openfontlicense.org/open-font-license-official-text/
