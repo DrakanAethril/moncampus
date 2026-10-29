@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.29.2'
+      date: '2026-10-29'
+      summary: "Un deuxième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration : une nuit de LAN party à sauver, pour le réseau et la cybersécurité en deuxième année de BTS SIO."
+      entries:
+          - type: nouveaute
+            title: "Nouveau jeu d'entraînement, en essai auprès de l'administration : remettre en route le réseau d'une LAN party pendant la nuit du tournoi"
+            detail: "Pour le réseau et la cybersécurité en deuxième année de BTS SIO ; on y diagnostique, corrige et explique, jusqu'au rapport d'incident final."
+          - type: interne
+            title: "La mécanique de ces jeux accepte de nouveaux types de questions, dont la remise dans l'ordre"
     - version: '2026.10.29'
       date: '2026-10-29'
       summary: "Un nouveau jeu d'entraînement d'un genre différent rejoint l'essai auprès de l'administration : une enquête en HTML et CSS pour le BTS SIO, où l'on répare un site plutôt que de répondre à des questions. Les enseignants disposent aussi de statistiques d'utilisation pour tous les jeux."
