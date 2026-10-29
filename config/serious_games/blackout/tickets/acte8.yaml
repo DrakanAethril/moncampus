@@ -1,0 +1,154 @@
+# Black-out - acte 8 : Le Ghost frappe.
+#
+# The server half of the tickets (design/validated/serious-games-blackout.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Nadia's
+# guided questions, the clue closing gives. The game half (bug, checks run in the network simulator,
+# views, written hints, scenes) is public/serious-games/blackout/tickets/acte8.js. Converted once
+# from the prototype's host/scenario/acte8.js; `hints` counts the written hints the game holds
+# after the guided questions.
+tickets:
+  -
+    id: T29
+    act: 8
+    after: [T26, T27, T28]
+    requester: karim
+    kind: incident
+    priority: tres-haute
+    category: 'Sécurité › DHCP'
+    title: 'Des joueurs reçoivent une passerelle qui n''existe pas'
+    request: 'Les rangs A et B tombent les uns après les autres : ils ont une adresse, mais rien ne passe. Un joueur m''a lu son « ip r » : passerelle 10.20.20.66. Ce n''est pas r1 ! Nadia a posé une capture sur un port miroir de sw-rang-b.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: capture
+        prompt: 'Clique sur la trame qui envoie les joueurs vers une fausse passerelle.'
+        answer: 'Offer 10.20.20.141'
+        reaction: { who: nadia, expr: sourcil, text: 'Cherche une offre qui ne vient pas de notre serveur, 10.20.10.5, relayée par r1.' }
+      -
+        id: pourquoi
+        kind: choice
+        label: 'Comprendre'
+        prompt: 'Pourquoi les postes prennent-ils l''offre du pirate ?'
+        options:
+          - { text: 'Le poste choisit toujours l''offre du serveur officiel, sauf s''il est en panne', misconception: poste-choisit-officiel, reaction: { who: nadia, expr: sourcil, text: 'Le poste ne sait pas qui est « officiel ». Rien ne le dit dans une offre.' } }
+          - { text: 'Le poste prend la première offre arrivée, et le pirate, dans la même salle, répond avant notre serveur relayé', ok: true, reaction: { who: nadia, expr: neutre, text: 'Exactement. DHCP n''authentifie rien : le plus rapide gagne.' } }
+          - { text: 'Le pirate a éteint notre serveur DHCP', misconception: serveur-eteint, reaction: { who: nadia, expr: neutre, text: 'Notre offre est dans la capture, trame 7. Elle arrive juste trop tard.' } }
+    hints: 0
+    reward:
+      clue: 'Le serveur pirate a pour MAC b8:27:eb:4c:11:9e (un Raspberry Pi) et s''est annoncé GHOST-PC à 21:52, sur la table B14.'
+  -
+    id: T30
+    act: 8
+    after: [T29]
+    course: 'SIO2 · Le service DHCP'
+    requester: nadia
+    kind: incident
+    priority: tres-haute
+    category: 'Sécurité › DHCP'
+    title: 'Couper le serveur pirate sans couper le rang B'
+    request: 'On ne sait pas encore où est physiquement ce Raspberry Pi, et je ne veux pas couper tout le rang B pendant un quart de finale. Il faut que sw-rang-b ne laisse plus passer de réponses DHCP que par son lien montant, celui qui vient de r1.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Écris la protection sur sw-rang-b, puis livre-la à Nadia.'
+      -
+        id: solution
+        kind: explain
+        expr: sourcil
+        prompt: 'Pour le cahier de liaison : pourquoi le filtrage se fait-il sur le commutateur, et pas sur le serveur DHCP ?'
+        options:
+          - { text: 'Il suffisait de redémarrer notre serveur DHCP pour qu''il reprenne la main.', misconception: redemarrer-dhcp, reaction: { who: nadia, expr: sourcil, text: 'Redémarré, il répond toujours aussi tard. Le pirate, lui, est toujours là.' } }
+          - { text: 'Le DHCP vérifie l''identité du serveur : il fallait déclarer notre serveur comme seul légitime dans Kea.', misconception: dhcp-authentifie, reaction: { who: nadia, expr: neutre, text: 'DHCP n''authentifie rien, ni le client ni le serveur. Kea ne peut pas empêcher un autre de répondre.' } }
+          - { text: 'DHCP n''authentifie rien : la seule protection est de ne laisser entrer les réponses DHCP (UDP source 67) que par le port d''où vient le vrai serveur, le lien montant. C''est ce que fait le « DHCP snooping » des commutateurs ; sur un pont Linux, une règle nftables de la famille bridge.', ok: true, reaction: { who: nadia, expr: sourire, text: 'Le pirate peut crier ce qu''il veut : sw-rang-b ne le transmet plus.' } }
+    guide:
+      -
+        id: quoi
+        kind: choice
+        prompt: 'Qu''est-ce qui distingue une réponse DHCP dans une trame ?'
+        options:
+          - { text: 'Elle part du port UDP 67 (le serveur) vers le port 68 (le client)', ok: true }
+          - { text: 'Elle vient de l''adresse 10.20.10.5', misconception: filtrer-adresse, reaction: { who: nadia, expr: neutre, text: 'Le pirate peut mentir sur son adresse. Le port, lui, est celui de tout serveur DHCP.' } }
+          - { text: 'Elle est en TCP', misconception: tcp, reaction: { who: nadia, expr: sourcil, text: 'DHCP, c''est de l''UDP.' } }
+      -
+        id: ou
+        kind: choice
+        prompt: 'Sur sw-rang-b, par quel port doivent arriver les vraies réponses DHCP ?'
+        options:
+          - { text: 'ens18, le lien montant vers sw-core', ok: true }
+          - { text: 'ens32, la table B14', misconception: mauvais-port, reaction: { who: nadia, expr: sourcil, text: 'C''est justement de là que vient le pirate.' } }
+          - { text: 'Tous les ports', misconception: tous-les-ports, reaction: { who: nadia, expr: neutre, text: 'Alors on n''aurait rien filtré.' } }
+    hints: 2
+  -
+    id: T31
+    act: 8
+    after: [T29]
+    course: 'SIO2 · SSH : connexion et authentification'
+    requester: karim
+    kind: incident
+    priority: tres-haute
+    category: 'Sécurité › Journaux'
+    title: 'Quelqu''un est entré sur srv-jeu ?'
+    request: 'Les scores de la poule B ont changé tout seuls, il y a cinq minutes. Personne de l''équipe n''y a touché. Est-ce que quelqu''un est entré sur le serveur de jeu ? Nadia a ouvert les journaux d''authentification.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: authlog
+        prompt: 'Clique sur la ligne qui prouve que quelqu''un a réussi à entrer.'
+        answer: 'Accepted password for karim'
+        reaction: { who: nadia, expr: sourcil, text: 'Des échecs, il y en a des centaines. Cherche celle qui dit « accepté ».' }
+      -
+        id: compte
+        kind: choice
+        label: 'Conclure'
+        prompt: 'Que montrent ces journaux ?'
+        options:
+          - { text: 'Beaucoup d''échecs : l''attaquant n''est donc pas entré', misconception: echecs-donc-pas-entre, reaction: { who: nadia, expr: sourcil, text: 'Il suffit d''une réussite. Elle est à 03:05:06.' } }
+          - { text: 'Une attaque par force brute depuis 10.20.20.66, qui a fini par deviner le mot de passe de Karim', ok: true, reaction: { who: karim, expr: panique, text: 'Mon mot de passe ? C''était… le nom du club et l''année. Oh non.' } }
+          - { text: 'Karim s''est connecté lui-même depuis un PC joueur', misconception: karim-coupable, reaction: { who: nadia, expr: neutre, text: 'Trente et une tentatives ratées avant la bonne, depuis l''adresse du fantôme : ce n''est pas Karim qui tape.' } }
+    hints: 0
+  -
+    id: T32
+    act: 8
+    after: [T31]
+    course: 'SIO2 · SSH : connexion et authentification'
+    requester: nadia
+    kind: incident
+    priority: tres-haute
+    category: 'Sécurité › SSH'
+    title: 'Fermer la porte'
+    request: 'J''ai écrit 60-tournoi.conf pour interdire les mots de passe sur srv-jeu : clés seulement, et pas de root. Je le vois bien dans sshd_config.d. Et pourtant, les connexions par mot de passe marchent encore. Trouve pourquoi.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Nadia.'
+      -
+        id: solution
+        kind: explain
+        expr: sourcil
+        prompt: 'Mon fichier dit « PasswordAuthentication no ». Pourquoi sshd l''ignorait-il ?'
+        options:
+          - { text: 'Dans sshd, c''est la dernière ligne lue qui l''emporte : il fallait ajouter la règle en bas de sshd_config.', misconception: derniere-ligne-gagne, reaction: { who: nadia, expr: sourcil, text: 'C''est l''inverse : pour sshd, la première valeur lue l''emporte.' } }
+          - { text: 'Pour sshd, la première valeur lue l''emporte, et les fichiers de sshd_config.d sont lus par ordre alphabétique. 50-cloud-init.conf, lu avant 60-tournoi.conf, disait « PasswordAuthentication yes ».', ok: true, reaction: { who: nadia, expr: sourire, text: 'Le piège de cloud-init. Il est même dans la fiche mémo de F. Sautour. Bravo.' } }
+          - { text: 'Il suffisait de changer le port SSH : les robots ne trouvent que le 22.', misconception: changer-de-port, reaction: { who: nadia, expr: neutre, text: 'L''attaquant est dans la salle, et il balaie tous les ports. Ça n''aurait rien changé.' } }
+    guide:
+      -
+        id: ordre
+        kind: choice
+        prompt: 'Dans quel ordre sshd lit-il les fichiers de sshd_config.d ?'
+        options:
+          - { text: 'Par ordre alphabétique : 50-… avant 60-…', ok: true }
+          - { text: 'Du plus récent au plus ancien', misconception: ordre-date, reaction: { who: nadia, expr: neutre, text: 'La date ne compte pas : c''est le nom.' } }
+      -
+        id: localiser
+        kind: line
+        file: 'srv-jeu:/etc/ssh/sshd_config.d/50-cloud-init.conf'
+        prompt: 'Clique sur la ligne qui l''emporte sur ton durcissement.'
+        answer: 'PasswordAuthentication'
+        reaction: { who: nadia, expr: neutre, text: 'Dans le fichier lu en premier.' }
+    hints: 2

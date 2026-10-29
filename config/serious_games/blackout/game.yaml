@@ -1,0 +1,82 @@
+# Black-out: networks and cybersecurity, BTS SIO 2e année SISR - the second game of the « scénario »
+# mechanic (design/validated/serious-games-blackout.md).
+#
+# Read by `app:serious-games:sync`, which adds the tickets of `tickets/*.yaml` under `scenario.tickets`
+# and builds `chapters` from the acts, so that the screens common to every game read a ticket as a
+# unit and an act as a chapter. **The right answers live in those files and nowhere in the game's
+# package** (public/serious-games/blackout/), which holds the network simulator, the room of
+# reference, the bugs, the checks, the views to designate, the written hints and the scenes.
+slug: blackout
+title: "Black-out"
+pitch: "Alternant·e du prestataire réseau, relever en une nuit le réseau de la LAN party du lycée tombé à 21 h 47, et démasquer le Ghost qui s'y cache. VLAN, routage, DHCP, DNS, NAT, nftables, Wi-Fi, WireGuard, SSH et gestion d'incident."
+subjects: [Informatique]
+levels: [BTS SIO 2]
+unit_label: tickets
+mechanic: scenario
+# The kinds of step of the scenario: a repair checked by the simulator, a solution to choose, a
+# decision, a line to designate (in a file or a view), the timeline of the report.
+answer_kinds: [fix, choice, line, order]
+version: 1.0.0
+published: false
+
+words:
+  unit: [ticket, tickets]
+  chapter: [acte, actes]
+  lit: [résolu, résolus]
+  unlit: [ouvert, ouverts]
+  level: étoiles
+  skill: notion
+  dim_filter: Beaucoup d'aide
+
+scenario:
+  # A ticket keeps the version it was started with; raise it when a step changes.
+  version: 1
+  # The helpdesk holds four open tickets at most.
+  capacity: 4
+  # Who answers a wrong step that names nobody.
+  helper: nadia
+  # No password: the last ticket ends on the timeline of the report.
+  password: []
+  acts:
+    - { n: 1, title: "Le local technique", tools: [carte, console] }
+    - { n: 2, title: "Un VLAN par usage", tools: [carte, console] }
+    - { n: 3, title: "Les étages se parlent", tools: [carte, console] }
+    - { n: 4, title: "Les adresses tombent du ciel", tools: [carte, console, capture, inventaire] }
+    - { n: 5, title: "Ouverture sur Internet", tools: [carte, console, capture, inventaire] }
+    - { n: 6, title: "Le pare-feu", tools: [carte, console, capture, inventaire, journaux] }
+    - { n: 7, title: "Les invités et les absents", tools: [carte, console, capture, inventaire, journaux] }
+    - { n: 8, title: "Le Ghost frappe", tools: [carte, console, capture, inventaire, journaux] }
+    - { n: 9, title: "L'incident", tools: [carte, console, capture, inventaire, journaux] }
+
+grades:
+  - [0, "Alternant·e"]
+  - [9, "Technicien·ne réseau"]
+  - [18, "Administrateur·rice réseau"]
+  - [27, "Analyste sécurité"]
+  - [36, "Régisseur·se de la nuit"]
+
+rewards:
+  # Brass once the final is closed (ticket 36); silver at two thirds of the tickets with three stars,
+  # gold at 32. Thresholds to review after a first promotion.
+  trophy:
+    code: testeur-cable
+    label: Le Testeur de câble
+    lore: "Le testeur RJ45 de Nadia, ses deux boîtiers et leurs huit diodes, confié à qui a tenu le réseau jusqu'à l'aube."
+    silver_at: 24
+    gold_at: 32
+  pin:
+    code: pin-ghost
+    label: Épinglette Ghost
+  # One card per act done.
+  cards: true
+
+# Played on a computer only: the map, the files and the console side by side need 1 100 px. On a
+# narrower screen the catalogue says so instead of opening the game.
+desktop_only: true
+
+thumbnail:
+  background: "linear-gradient(90deg, transparent 0 46%, rgba(0, 229, 255, .55) 46% 47%, transparent 47% 100%), radial-gradient(ellipse at 50% 120%, #FF2E88 0 18%, transparent 52%), linear-gradient(180deg, #0A0618 0 70%, #1B1236 100%)"
+  font: "'Chakra Petch', 'Trebuchet MS', sans-serif"
+  style: normal
+  weight: 600
+  color: "#F4F2FF"

@@ -1,0 +1,140 @@
+# Black-out - acte 6 : Le pare-feu.
+#
+# The server half of the tickets (design/validated/serious-games-blackout.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Nadia's
+# guided questions, the clue closing gives. The game half (bug, checks run in the network simulator,
+# views, written hints, scenes) is public/serious-games/blackout/tickets/acte6.js. Converted once
+# from the prototype's host/scenario/acte6.js; `hints` counts the written hints the game holds
+# after the guided questions.
+tickets:
+  -
+    id: T21
+    act: 6
+    after: [T18, T19, T20]
+    requester: karim
+    kind: incident
+    priority: haute
+    category: 'Sécurité › Pare-feu'
+    title: 'Les joueurs voient la régie'
+    request: 'Nadia a mis un vrai pare-feu sur r1 : chacun ne va que là où il doit aller. Sauf que quelqu''un a « simplifié » une règle, et les joueurs revoient la régie, ses partages et la liste des inscrits. Le reste marche.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Il y a pourtant une politique « drop » et des règles précises pour les joueurs. Comment ont-ils pu passer ?'
+        options:
+          - { text: 'La règle la plus restrictive l''emporte : il fallait en ajouter une plus restrictive encore.', misconception: plus-restrictive-gagne, reaction: { who: nadia, expr: sourcil, text: 'nftables ne compare pas les règles entre elles : il les lit dans l''ordre et s''arrête à la première qui correspond.' } }
+          - { text: 'nftables lit les règles de bas en haut : la dernière règle, accept, laissait tout passer.', misconception: bas-en-haut, reaction: { who: nadia, expr: neutre, text: 'De haut en bas. Et la dernière règle, c''est un drop.' } }
+          - { text: 'nftables applique la première règle qui correspond. « iifname "ens19.*" accept », placée tôt, acceptait tous les VLAN, joueurs compris, avant les règles des joueurs. Je l''ai remise à « ens19.10 », les seuls orgas.', ok: true, reaction: { who: karim, expr: soulage, text: 'Une étoile de trop, et tout le monde devient organisateur. J''aurais dû m''en douter.' } }
+          - { text: 'La politique drop ne s''applique qu''à Internet, pas entre les VLAN.', misconception: politique-internet, reaction: { who: nadia, expr: sourcil, text: 'La chaîne forward voit tout ce que r1 fait suivre, entre VLAN compris.' } }
+    guide:
+      -
+        id: quelle
+        kind: choice
+        prompt: 'Lance un ping de pc-a01 vers la régie et regarde la carte : il passe. Quelle règle l''a laissé passer ?'
+        options:
+          - { text: 'La première règle « accept » qui correspond à son interface d''entrée, ens19.20', ok: true }
+          - { text: 'La politique par défaut', misconception: politique, reaction: { who: nadia, expr: neutre, text: 'Elle vaut drop. Si le ping passe, c''est qu''une règle l''a accepté avant.' } }
+          - { text: 'La règle « ct state established,related »', misconception: ct-state, reaction: { who: nadia, expr: sourcil, text: 'Elle ne laisse passer que les réponses. Un ping qui part est « new ».' } }
+      -
+        id: localiser
+        kind: line
+        file: 'r1:/etc/nftables.conf'
+        prompt: 'Clique sur la règle trop large.'
+        answer: '"ens19.*"'
+        reaction: { who: nadia, expr: neutre, text: 'Une étoile, dans un nom d''interface.' }
+    hints: 2
+  -
+    id: T22
+    act: 6
+    after: [T21]
+    requester: karim
+    kind: incident
+    priority: tres-haute
+    category: 'Sécurité › Pare-feu'
+    title: 'Depuis le pare-feu, plus rien ne revient'
+    request: 'Quelqu''un a voulu « faire le ménage » dans le pare-feu. Depuis, plus personne n''a Internet, ni les joueurs ni le stream. Le pire : r1 laisse bien partir les requêtes, on le voit sur la carte. Ce sont les réponses qui ne reviennent pas.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Comment des réponses peuvent-elles être bloquées, si on a autorisé les questions ?'
+        options:
+          - { text: 'Il faut ouvrir les ports de retour un par un : j''ai autorisé tous les ports au-dessus de 1024 depuis Internet.', misconception: ports-de-retour, reaction: { who: nadia, expr: sourcil, text: 'Tu n''as rien ouvert de tel, heureusement. Ça reviendrait à tout ouvrir.' } }
+          - { text: 'Le pare-feu ne filtre que ce qui entre : c''est la box qui bloquait les réponses.', misconception: filtre-entree, reaction: { who: nadia, expr: neutre, text: 'La chaîne forward filtre dans les deux sens. Et tu as modifié r1, pas la box.' } }
+          - { text: 'Les réponses arrivent d''Internet, sur ens18 : aucune règle ne les acceptait. La règle « ct state established,related accept » laisse revenir ce que le pare-feu a laissé partir. Elle avait disparu.', ok: true, reaction: { who: karim, expr: soulage, text: 'Un pare-feu qui se souvient des questions qu''il a laissé passer. C''est presque poli.' } }
+          - { text: 'La politique drop bloque tout, même ce qui est autorisé : je l''ai passée à accept.', misconception: policy-accept, reaction: { who: nadia, expr: sourcil, text: 'Tu ne l''as pas fait, heureusement : c''était tout ouvrir.' } }
+    guide:
+      -
+        id: sens
+        kind: choice
+        prompt: 'Ping de pc-a01 vers 203.0.113.80 : la carte dit que la réponse ne revient pas. Par quelle interface la réponse entre-t-elle dans r1 ?'
+        options:
+          - { text: 'ens18, côté Internet', ok: true }
+          - { text: 'ens19.20, côté joueurs', misconception: sens, reaction: { who: nadia, expr: neutre, text: 'Ça, c''est par où elle ressort. Elle entre par où vient Internet.' } }
+    hints: 2
+  -
+    id: T23
+    act: 6
+    after: [T21]
+    requester: nadia
+    kind: incident
+    priority: haute
+    category: 'Sécurité › Pare-feu'
+    title: 'Tous les serveurs atteignent les commutateurs'
+    request: 'L''administration des commutateurs (VLAN 99) ne doit s''ouvrir qu''à la régie. Or depuis srv-jeu, je joins sw-core comme si j''étais chez moi. Si un serveur est compromis cette nuit, il prend la main sur tout le réseau. Une règle a sauté.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Nadia.'
+      -
+        id: solution
+        kind: explain
+        expr: sourcil
+        prompt: 'Pour le cahier de liaison : pourquoi ne pas faire confiance au mot de passe des commutateurs ?'
+        options:
+          - { text: 'Les commutateurs ont un mot de passe, ça suffit : la règle était un excès de prudence.', misconception: mot-de-passe-suffit, reaction: { who: nadia, expr: sourcil, text: 'Un mot de passe se devine, se vole, se réutilise. Ce qu''on ne peut pas atteindre, on ne peut pas l''attaquer.' } }
+          - { text: 'La règle « oifname "ens19.99" drop » arrêtait tout ce qui va vers le VLAN 99, sauf la régie autorisée juste avant. Sans elle, « iifname "ens19.10" accept » laissait passer tous les serveurs. L''administration ne s''ouvre qu''à ceux qui administrent.', ok: true, reaction: { who: nadia, expr: sourire, text: 'Exactement. Deux lignes dans le bon ordre : j''autorise la régie, puis je refuse tout le reste.' } }
+          - { text: 'Il suffit de changer le port d''administration des commutateurs pour qu''on ne le trouve pas.', misconception: changer-de-port, reaction: { who: nadia, expr: neutre, text: 'Un balayage de ports le retrouve en quarante secondes. On l''a vu à 23:47.' } }
+    guide:
+      -
+        id: ordre
+        kind: choice
+        prompt: 'Pour que seule la régie atteigne le VLAN 99, dans quel ordre faut-il les règles ?'
+        options:
+          - { text: 'D''abord autoriser la régie vers ens19.99, puis refuser tout le reste vers ens19.99, puis les règles générales', ok: true }
+          - { text: 'D''abord « iifname ens19.10 accept », puis le refus du VLAN 99', misconception: ordre, reaction: { who: nadia, expr: sourcil, text: 'La première règle qui correspond décide : les serveurs passeraient avant d''arriver au refus.' } }
+    hints: 2
+  -
+    id: T24
+    act: 6
+    after: [T21]
+    requester: roussel
+    kind: demande
+    priority: moyenne
+    category: 'Sécurité › Accès distant'
+    title: '« Le proviseur veut le bureau à distance depuis chez lui »'
+    request: 'Monsieur le proviseur aimerait suivre le tournoi depuis chez lui, sur le PC de la régie. Il a entendu parler du « bureau à distance ». Il suffirait d''ouvrir le port 3389 sur la box vers la régie, d''après son neveu. Pouvez-vous le faire ?'
+    steps:
+      -
+        id: reponse
+        kind: choice
+        label: 'Répondre'
+        prompt: 'Que réponds-tu à Mme Roussel ?'
+        options:
+          - { text: 'Oui, avec un mot de passe très fort, il n''y a aucun risque.', misconception: mot-de-passe-fort, reaction: { who: nadia, expr: sourcil, text: 'Un bureau à distance exposé sur Internet est essayé des milliers de fois par jour, et ses failles aussi. Le mot de passe n''y change rien.' } }
+          - { text: 'Oui, mais sur un autre port que 3389, pour qu''on ne le trouve pas.', misconception: changer-de-port, reaction: { who: nadia, expr: neutre, text: 'Les robots balaient tous les ports. Cacher n''est pas protéger.' } }
+          - { text: 'Non : on n''expose pas un bureau à distance sur Internet. Je propose un accès par VPN, chiffré et réservé aux personnes autorisées. On met justement en place celui de l''arbitre.', ok: true, reaction: { who: roussel, expr: satisfaite, text: 'Un VPN. Je transmettrai, avec la promesse d''un rendez-vous lundi.' } }
+          - { text: 'Oui, mais seulement pendant le tournoi.', misconception: temporaire, reaction: { who: nadia, expr: sourcil, text: 'Ce soir, quelqu''un balaie déjà nos ports. « Temporaire », c''est suffisant pour se faire prendre.' } }
+    hints: 0

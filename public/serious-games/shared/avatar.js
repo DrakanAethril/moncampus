@@ -23,7 +23,8 @@
     { id: 'pin-cave-canem', name: 'Épinglette Cave canem', color: '#9E2B25', glyph: 'C' },
     { id: 'pin-vague', name: 'Épinglette Abysse', color: '#167784', glyph: '≈' },
     { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', glyph: '⌕' },
-    { id: 'pin-neko', name: 'Épinglette Neko', color: '#E8457A', glyph: '^' }
+    { id: 'pin-neko', name: 'Épinglette Neko', color: '#E8457A', glyph: '^' },
+    { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', glyph: '◠' }
   ];
   A.PINS = PINS;
 
@@ -167,6 +168,16 @@
         el('path', sx({ d: 'M79 172 L82 178 M121 172 L118 178', stroke: '#FFFFFF', strokeWidth: 1.6, opacity: .8 })) +
         el('rect', { x: 88, y: 194, width: 24, height: 14, rx: 2.5, fill: '#FBF9FF', stroke: '#2A2440', strokeWidth: 1.6 }) +
         el('rect', { x: 88, y: 194, width: 24, height: 4, fill: '#E8457A' });
+    } },
+    // Black-out: the control room's headset, its band over the head, the ear cups and the boom mic
+    // (design/validated/serious-games-blackout.md §5).
+    blackout: { label: 'Casque de la régie', svg: function () {
+      return el('path', sx({ d: 'M46 112 Q40 34 100 32 Q160 34 154 112', stroke: '#1B1236', strokeWidth: 7 })) +
+        el('path', sx({ d: 'M52 90 Q56 44 100 40 Q144 44 148 90', stroke: '#FF2E88', strokeWidth: 2, opacity: .9 })) +
+        el('rect', { x: 34, y: 98, width: 16, height: 30, rx: 7, fill: '#1B1236', stroke: '#FF2E88', strokeWidth: 2 }) +
+        el('rect', { x: 150, y: 98, width: 16, height: 30, rx: 7, fill: '#1B1236', stroke: '#FF2E88', strokeWidth: 2 }) +
+        el('path', sx({ d: 'M42 126 Q48 150 74 150', stroke: '#1B1236', strokeWidth: 4 })) +
+        el('circle', { cx: 76, cy: 150, r: 4.5, fill: '#00E5FF' });
     } },
     // The Irregulars: the street urchin's flat cap of 1895, its peak and its button.
     irregulars: { label: 'Casquette gavroche', svg: function () {

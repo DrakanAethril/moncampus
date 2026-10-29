@@ -1,0 +1,141 @@
+# Black-out - acte 9 : L'incident.
+#
+# The server half of the tickets (design/validated/serious-games-blackout.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Nadia's
+# guided questions, the clue closing gives. The game half (bug, checks run in the network simulator,
+# views, written hints, scenes) is public/serious-games/blackout/tickets/acte9.js. Converted once
+# from the prototype's host/scenario/acte9.js; `hints` counts the written hints the game holds
+# after the guided questions.
+tickets:
+  -
+    id: T33
+    act: 9
+    after: [T30, T31, T32]
+    requester: roussel
+    kind: incident
+    priority: tres-haute
+    category: 'Sécurité › Incident'
+    title: 'Le Pi sous la table B14'
+    request: 'Un surveillant a trouvé un petit boîtier scotché sous la table B14, branché sur la prise réseau et sur un chargeur. Il me l''apporte. Que fait-on de cet objet ? Je veux qu''on fasse les choses correctement : il y a peut-être un élève derrière.'
+    steps:
+      -
+        id: objet
+        kind: choice
+        label: 'Le boîtier'
+        prompt: 'Que fait-on du Raspberry Pi ?'
+        options:
+          - { text: 'On le formate tout de suite, pour être tranquilles.', misconception: effacer-preuves, reaction: { who: nadia, expr: sourcil, text: 'Et on efface la seule preuve de ce qui s''est passé cette nuit.' } }
+          - { text: 'On l''ouvre et on fouille son contenu nous-mêmes : on en a le droit, il était branché sur notre réseau.', misconception: fouiller-soi-meme, reaction: { who: nadia, expr: neutre, text: 'Ce n''est pas à nous de fouiller l''appareil de quelqu''un. Et chaque manipulation abîme la preuve.' } }
+          - { text: 'On le laisse tel quel, éteint ou non, sans y toucher ; on note qui l''a trouvé, où et à quelle heure ; on le remet à la direction dans une enveloppe fermée.', ok: true, reaction: { who: roussel, expr: satisfaite, text: 'Je le garde dans mon bureau, sous clé, avec votre note. C''est exactement ce qu''il fallait.' } }
+          - { text: 'On affiche son adresse MAC dans la salle pour que le coupable se dénonce.', misconception: afficher, reaction: { who: nadia, expr: sourcil, text: 'Une MAC se change en une commande, et un affichage public accuse sans preuve. Non.' } }
+      -
+        id: port
+        kind: choice
+        label: 'Le réseau'
+        prompt: 'Et sur le réseau, que fait-on de la prise B14 ?'
+        options:
+          - { text: 'On coupe le port de la table B14 sur sw-rang-b et on le note dans le rapport', ok: true, reaction: { who: nadia, expr: neutre, text: 'On le retire du pont. Je m''en charge à la fin de la nuit, ce sera ton dernier ticket.' } }
+          - { text: 'On laisse tout en l''état pour voir s''il revient', misconception: laisser-ouvert, reaction: { who: nadia, expr: sourcil, text: 'On n''appâte pas un attaquant pendant un tournoi.' } }
+          - { text: 'On coupe tout le rang B', misconception: couper-tout, reaction: { who: nadia, expr: neutre, text: 'Vingt joueurs punis pour une prise. Une seule suffit.' } }
+    hints: 0
+  -
+    id: T34
+    act: 9
+    after: [T33]
+    requester: nadia
+    kind: incident
+    priority: haute
+    category: 'Sécurité › Journaux'
+    title: 'Le Pi appelle l''extérieur'
+    request: 'Avant qu''on ne coupe sa prise, le Pi a eu le temps de parler à quelqu''un. Voici les connexions de 10.20.20.66 que r1 a gardées en mémoire. Trouve celle qui sort de la salle vers une machine que nous ne connaissons pas.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: conntrack
+        prompt: 'Clique sur la ligne qui montre où le Pi envoyait ses données.'
+        answer: 'dport=51820'
+        reaction: { who: nadia, expr: sourcil, text: 'Celle-ci reste dans la salle. Cherche une destination sur Internet.' }
+      -
+        id: quoi
+        kind: choice
+        label: 'Comprendre'
+        prompt: 'Qu''est-ce que c''est, d''après le port ?'
+        options:
+          - { text: 'Du trafic de jeu en ligne, comme celui des autres joueurs', misconception: trafic-de-jeu, reaction: { who: nadia, expr: neutre, text: 'Le serveur de jeu est dans la salle, en 10.20.10.10. Ceci sort vers une machine inconnue.' } }
+          - { text: 'Un tunnel WireGuard (UDP 51820) vers une machine extérieure : quelqu''un pilotait le Pi à distance', ok: true, reaction: { who: nadia, expr: sourcil, text: 'Le même genre de tunnel que celui de l''arbitre. Le fantôme n''était pas forcément dans la salle.' } }
+          - { text: 'Des requêtes DNS', misconception: dns, reaction: { who: nadia, expr: neutre, text: 'Le DNS, c''est le port 53, et vers srv-dns.' } }
+    hints: 0
+    reward:
+      clue: 'Le Pi ouvrait un tunnel WireGuard (UDP 51820) vers 198.51.100.23, une machine extérieure : il était piloté à distance.'
+  -
+    id: T35
+    act: 9
+    after: [T33]
+    requester: karim
+    kind: incident
+    priority: haute
+    category: 'Exploitation › Sauvegardes'
+    title: 'Remettre srv-jeu d''aplomb'
+    request: 'Quelqu''un a modifié les scores sur srv-jeu avec mon compte. On a deux sauvegardes : une de 02:00, une de 04:00. Laquelle on restaure ? Et après, on fait quoi pour que ça ne recommence pas ?'
+    steps:
+      -
+        id: laquelle
+        kind: choice
+        label: 'Restaurer'
+        prompt: 'Quelle sauvegarde restaurer ? (l''intrusion date de 03:05)'
+        options:
+          - { text: 'Celle de 04:00 : la plus récente est toujours la meilleure', misconception: plus-recente-meilleure, reaction: { who: nadia, expr: sourcil, text: 'Elle contient les scores truqués, et peut-être ce que l''intrus a laissé derrière lui.' } }
+          - { text: 'Celle de 02:00 : la dernière d''avant l''intrusion, puis on ressaisit les vrais scores depuis les feuilles des arbitres', ok: true }
+          - { text: 'Aucune : on corrige les scores à la main sans rien restaurer', misconception: pas-de-restauration, reaction: { who: nadia, expr: neutre, text: 'On ne sait pas tout ce que l''intrus a touché. On repart d''un état sain.' } }
+      -
+        id: ensuite
+        kind: choice
+        label: 'Ensuite'
+        prompt: 'Et ensuite ?'
+        options:
+          - { text: 'On change le mot de passe de Karim, on garde les connexions par clé seulement (c''est fait), et la sauvegarde part aussi ailleurs que sur srv-jeu', ok: true, reaction: { who: karim, expr: soulage, text: 'Trois copies, deux supports, une hors de la salle. Nadia appelle ça « 3-2-1 ». Je l''écris sur un post-it. Un dernier.' } }
+          - { text: 'On garde la sauvegarde sur le même disque que srv-jeu : c''est le plus rapide à restaurer', misconception: meme-disque, reaction: { who: nadia, expr: sourcil, text: 'Si le disque meurt ou si l''intrus efface tout, la sauvegarde part avec. Une copie au même endroit n''est pas une sauvegarde.' } }
+          - { text: 'Rien : maintenant que le Pi est trouvé, c''est fini', misconception: fini, reaction: { who: nadia, expr: neutre, text: 'Le Pi est trouvé, mais le mot de passe de Karim, lui, est connu de quelqu''un.' } }
+    hints: 0
+  -
+    id: T36
+    act: 9
+    after: [T34, T35]
+    requester: roussel
+    kind: incident
+    priority: tres-haute
+    category: 'Sécurité › Incident'
+    final: true
+    title: 'La finale'
+    request: 'Il est 5 h 30. Le quart de finale reprend à l''aube, les familles arrivent à 9 h. Je veux un réseau propre, la prise du boîtier coupée, et votre rapport sur mon bureau : ce qui s''est passé, dans l''ordre.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Coupe le port de la table B14 et vérifie toute la salle, puis livre à Mme Roussel.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi couper seulement ce port, au lieu de tout redémarrer pour repartir de zéro ?'
+        options:
+          - { text: 'Tout redémarrer efface les traces de l''intrus : c''est plus sûr.', misconception: effacer-preuves, reaction: { who: nadia, expr: sourcil, text: 'Et cela effacerait aussi nos journaux, nos preuves. Et les joueurs.' } }
+          - { text: 'On isole précisément ce qui est compromis, la prise B14, sans casser le reste ni effacer les journaux qui servent de preuves : le tournoi continue, l''enquête aussi.', ok: true, reaction: { who: roussel, expr: satisfaite, text: 'Isoler, conserver, rapporter. Je retiens les trois mots.' } }
+          - { text: 'Un redémarrage n''aurait rien changé : le Pi se serait reconnecté.', misconception: redemarrage-inutile, reaction: { who: nadia, expr: neutre, text: 'Le Pi est dans le bureau de Mme Roussel. Ce n''est pas la question.' } }
+      -
+        id: chronologie
+        kind: order
+        label: 'Le rapport'
+        prompt: 'Remets les événements de la nuit dans l''ordre, pour le rapport.'
+        items:
+          - '02:11 · un serveur DHCP pirate donne une fausse passerelle aux joueurs'
+          - '22:41 · une boucle sur la table B14 fait tomber toute la salle'
+          - '03:05 · quelqu''un entre sur srv-jeu avec le compte de Karim'
+          - '21:52 · GHOST-PC apparaît sur la prise de la table B14'
+          - '23:47 · 10.20.20.66 balaie les ports du site d''inscription'
+          - '03:12 · le Pi ouvre un tunnel vers une machine extérieure'
+        answer: [3, 1, 4, 0, 2, 5]
+        reaction: { who: nadia, expr: sourcil, text: 'Relis les heures : la nuit commence à 21 h 47, et les heures après minuit viennent après celles d''avant.' }
+    hints: 2
