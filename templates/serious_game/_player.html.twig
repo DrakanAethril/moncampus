@@ -39,11 +39,20 @@
                         <div class="cm-sg-player__chapter-name">{{ chapter.label }} <span>{{ chapter.lit }}/{{ chapter.total }}</span></div>
                         <ul class="cm-sg-stars">
                             {% for unit in progress.units|filter(u => u.chapter == chapter.code) %}
+                                {% if game.scenario %}
+                                    {# A ticket: closed or not, and its best stars (1 to 3). #}
+                                    <li class="cm-sg-star cm-sg-star--{{ unit.best is null ? 'never' : (unit.best == 3 ? 'blazing' : (unit.best == 2 ? 'clear' : 'discrete')) }}"
+                                        title="{{ unit.code }} · {{ unit.label }} — {{ unit.best is null ? 'seriousGameTicketNotClosed'|trans : 'seriousGameTicketStars'|trans({'%count%': unit.best}) }}">
+                                        <span class="cm-sg-star__dot" aria-hidden="true"></span>
+                                        <span class="cm-sg-star__label">{{ unit.code }} · {{ unit.label }}</span>
+                                    </li>
+                                {% else %}
                                 <li class="cm-sg-star cm-sg-star--{{ unit.brightness ?? (unit.series > 0 ? 'tried' : 'never') }} {{ unit.hidden ? 'is-hidden' }}"
                                     title="{{ unit.label }} — {{ unit.brightness ? words.brightness[unit.brightness]|capitalize : (unit.series > 0 ? 'seriousGameUnitTried'|trans({'%lit%': words.lit}) : 'seriousGameUnitNever'|trans) }}{{ unit.best is not null ? ' · ' ~ 'seriousGameBestSeries'|trans({'%best%': unit.best}) }}">
                                     <span class="cm-sg-star__dot" aria-hidden="true"></span>
                                     <span class="cm-sg-star__label">{{ unit.label }}</span>
                                 </li>
+                                {% endif %}
                             {% endfor %}
                         </ul>
                     </div>
@@ -60,13 +69,20 @@
                             {% for party in row.history %}
                                 <li>
                                     <span class="cm-sg-history__date">{{ party.endedAt|date('d/m') }}</span>
+                                    {% if party.mode == 'ticket' %}
+                                        <span class="cm-sg-history__what">{{ party.unit }}</span>
+                                        <span class="cm-sg-history__score" title="{{ 'seriousGameTicketStars'|trans({'%count%': party.score}) }}">{{ '★★★'|slice(0, party.score) }}</span>
+                                    {% else %}
                                     <span class="cm-sg-history__what">{{ party.mode == 'series' ? party.unit : (party.mode == 'final' ? progress.final.label : 'seriousGameCometStudyLabel'|trans({'%comet%': words.comet|capitalize, '%unit%': party.unit})) }}</span>
                                     <span class="cm-sg-history__score">{{ party.score }}/{{ party.size }}</span>
+                                    {% endif %}
                                 </li>
                             {% endfor %}
                         </ul>
                     {% endif %}
                 </div>
+                {# A scenario has no comets (design/validated/serious-games-neko-con.md §7). #}
+                {% if not game.scenario %}
                 <div>
                     <h3 class="cm-sg-player__h3">{{ words.comets|capitalize }}</h3>
                     {% if row.comets is empty %}
@@ -83,6 +99,7 @@
                         </ul>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
         </section>
     {% endfor %}

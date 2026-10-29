@@ -30,7 +30,8 @@
     observatoire: { bg: '#101833', paper: '#1B2550', ink: '#EDE6D6', accent: '#D9A441', font: "'Cormorant Garamond', Georgia, serif", italic: true },
     pompei: { bg: '#EFE3CB', paper: '#9E2B25', ink: '#2E1D14', accent: '#C9923E', font: "'Cormorant Garamond', Georgia, serif", italic: false },
     abysse: { bg: '#031319', paper: '#072B36', ink: '#CFF7F1', accent: '#7FF5E3', font: "'Chakra Petch', 'Trebuchet MS', sans-serif", italic: false },
-    irregulars: { bg: '#142820', paper: '#1F3A2E', ink: '#E9D8A6', accent: '#C9A04E', font: "'Libre Caslon Display', Georgia, serif", italic: false }
+    irregulars: { bg: '#142820', paper: '#1F3A2E', ink: '#E9D8A6', accent: '#C9A04E', font: "'Libre Caslon Display', Georgia, serif", italic: false },
+    'neko-con': { bg: '#241F3A', paper: '#3B3266', ink: '#FBF9FF', accent: '#FF6F91', font: "'Trebuchet MS', 'Source Sans 3', sans-serif", italic: false }
   };
   var GAMES = {
     observatoire: { title: "L'Observatoire", chapters: [
@@ -61,13 +62,27 @@
       { id: 'theatre', name: 'The Lyceum', topic: 'Questions et auxiliaires' },
       { id: 'museum', name: 'The Museum', topic: 'Comparatifs et superlatifs' },
       { id: 'station', name: 'Paddington', topic: 'Modaux et futur' }],
-      finale: { id: 'final-case', name: 'The Final Case', topic: 'Toutes les affaires' } }
+      finale: { id: 'final-case', name: 'The Final Case', topic: 'Toutes les affaires' } },
+    // Panique à la Neko-Con: a card per act (design/validated/serious-games-neko-con.md §4); the
+    // last ticket belongs to the last act, so no finale is ever granted.
+    'neko-con': { title: 'Panique à la Neko-Con', chapters: [
+      { id: 'acte1', name: 'Le site brut', topic: 'HTML 01' },
+      { id: 'acte2', name: "La relecture d'Inès", topic: 'HTML 02' },
+      { id: 'acte3', name: 'Le planning', topic: 'HTML 03' },
+      { id: 'acte4', name: 'Les premières inscriptions', topic: 'HTML 04' },
+      { id: 'acte5', name: 'La bascule', topic: 'CSS 01' },
+      { id: 'acte6', name: "L'avalanche", topic: 'CSS 02 à 05' },
+      { id: 'acte7', name: 'Sur mon téléphone…', topic: 'CSS 06' },
+      { id: 'acte8', name: "J'avais oublié…", topic: 'CSS 07' },
+      { id: 'acte9', name: 'Les coulisses', topic: 'Mise en ligne' }],
+      finale: { id: 'none', name: '', topic: '' } }
   };
   var PINS = [
     { id: 'pin-etoile', name: 'Épinglette Étoile', color: '#1B2550' },
     { id: 'pin-cave-canem', name: 'Épinglette Cave canem', color: '#EFE3CB', ink: '#1E1410', ring: '#9E2B25' },
     { id: 'pin-vague', name: 'Épinglette Abysse', color: '#167784' },
-    { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', ink: '#E9D8A6' }
+    { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', ink: '#E9D8A6' },
+    { id: 'pin-neko', name: 'Épinglette Neko', color: '#FBF9FF', ink: '#E8457A' }
   ];
 
   function cardOf(code) {
@@ -117,6 +132,19 @@
 
   /* ---------- trophies (viewBox 0 0 120 120) ---------- */
   var TROPHY = {
+    // Panique à la Neko-Con: the laminated staff badge on its lanyard, « STAFF · Neko-Con », the
+    // metal on its clip and frame.
+    'badge-staff': function (M, g, locked) {
+      return '<path d="M38 6 Q48 30 54 40 M82 6 Q72 30 66 40" fill="none" stroke="#E8457A" stroke-width="5" stroke-linecap="round"/>' +
+        '<rect x="50" y="36" width="20" height="12" rx="3" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.2"/>' +
+        '<rect x="24" y="46" width="72" height="66" rx="7" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.4"/>' +
+        '<rect x="29" y="51" width="62" height="56" rx="4" fill="' + (locked ? 'currentColor' : '#FBF9FF') + '"/>' +
+        '<rect x="29" y="51" width="62" height="15" rx="4" fill="' + (locked ? 'currentColor' : '#E8457A') + '"/>' +
+        '<text x="60" y="62" text-anchor="middle" font-size="10" font-weight="700" letter-spacing="2" font-family="\'Trebuchet MS\', sans-serif" fill="#FBF9FF">STAFF</text>' +
+        '<path d="M50 84 L47 72 L55 79 Z M70 84 L73 72 L65 79 Z" fill="#2A2440"/><ellipse cx="60" cy="86" rx="12" ry="9" fill="#2A2440"/>' +
+        '<path d="M54 85 Q56 82 58 85 M62 85 Q64 82 66 85" fill="none" stroke="#FBF9FF" stroke-width="1.4" stroke-linecap="round"/>' +
+        '<text x="60" y="103" text-anchor="middle" font-size="7.5" font-family="\'Trebuchet MS\', sans-serif" fill="#3B3266">Neko-Con</text>';
+    },
     astrolabe: function (M, g) {
       var ticks = '';
       for (var a = 0; a < 360; a += 10) {
@@ -215,6 +243,7 @@
     if (gameId === 'pompei') s = villaEmblem(idx, P);
     if (gameId === 'abysse') s = abyssEmblem(idx, P);
     if (gameId === 'irregulars') s = londonEmblem(idx, P);
+    if (gameId === 'neko-con') s = nekoEmblem(idx, P);
     return s;
   }
   /* The fresco of a room of the villa, inside the card's red panel (x 9-111, y 22-118): one
@@ -300,6 +329,37 @@
         return roofs + '<circle cx="60" cy="62" r="13" fill="none" stroke="' + ink + '" stroke-width="3"/><line x1="69" y1="71" x2="80" y2="82" stroke="' + ink + '" stroke-width="4" stroke-linecap="round"/>';
     }
   }
+  /* A card of Panique à la Neko-Con: the act's tool or symptom, drawn like the game's own screens -
+     a browser window on the card's purple, the club's pink and turquoise. */
+  function nekoEmblem(idx, P) {
+    var pink = '#FF6F91', teal = '#7FD8D6', gold = '#FFD166', ink = P.ink;
+    var win = '<rect x="22" y="34" width="76" height="64" rx="5" fill="#241F3A" stroke="' + ink + '" stroke-width="1.4"/><rect x="22" y="34" width="76" height="10" rx="5" fill="' + ink + '" opacity=".2"/>' +
+      '<circle cx="29" cy="39" r="1.8" fill="' + pink + '"/><circle cx="35" cy="39" r="1.8" fill="' + gold + '"/><circle cx="41" cy="39" r="1.8" fill="' + teal + '"/>';
+    var code = function (y, w, c) { return '<rect x="30" y="' + y + '" width="' + w + '" height="3" rx="1.5" fill="' + (c || ink) + '" opacity=".75"/>'; };
+    switch (idx) {
+      case 0: // le site brut: the tags, plain
+        return win + '<text x="60" y="78" text-anchor="middle" font-size="18" font-family="\'Fira Code\', monospace" fill="' + teal + '">&lt;/&gt;</text>';
+      case 1: // la relecture d'Inès: the screen reader's speech
+        return win + '<path d="M40 60 h10 l8 -7 v24 l-8 -7 h-10 Z" fill="' + teal + '"/><path d="M64 58 q6 7 0 14 M70 54 q10 11 0 22" fill="none" stroke="' + pink + '" stroke-width="2.4" stroke-linecap="round"/>';
+      case 2: // le planning: the table
+        return win + '<g stroke="' + ink + '" stroke-width="1" opacity=".8"><rect x="32" y="52" width="56" height="38" fill="none"/><line x1="32" y1="62" x2="88" y2="62"/><line x1="32" y1="72" x2="88" y2="72"/><line x1="32" y1="81" x2="88" y2="81"/><line x1="51" y1="52" x2="51" y2="90"/><line x1="70" y1="52" x2="70" y2="90"/></g><rect x="52" y="63" width="17" height="17" fill="' + pink + '" opacity=".8"/>';
+      case 3: // les inscriptions: the form
+        return win + code(54, 22) + '<rect x="30" y="60" width="60" height="8" rx="2" fill="none" stroke="' + teal + '" stroke-width="1.4"/>' + code(73, 18) + '<rect x="30" y="79" width="8" height="8" rx="1.5" fill="none" stroke="' + teal + '" stroke-width="1.4"/><path d="M31.5 83 l2 2 l3 -4" fill="none" stroke="' + gold + '" stroke-width="1.6"/><rect x="66" y="80" width="24" height="9" rx="4" fill="' + pink + '"/>';
+      case 4: // la bascule: the stylesheet switched on, colours at last
+        return win + '<rect x="23" y="45" width="37" height="52" fill="#FBF9FF"/><rect x="60" y="45" width="37" height="52" fill="' + pink + '" opacity=".85"/><path d="M60 50 L54 66 h8 L56 90" fill="none" stroke="' + gold + '" stroke-width="3" stroke-linejoin="round"/>';
+      case 5: // l'avalanche: the boxes of the box model, nested
+        return win + '<rect x="32" y="50" width="56" height="42" fill="none" stroke="' + gold + '" stroke-width="1.6" stroke-dasharray="3 2"/><rect x="38" y="56" width="44" height="30" fill="none" stroke="' + pink + '" stroke-width="2"/><rect x="45" y="63" width="30" height="16" fill="' + teal + '" opacity=".8"/>';
+      case 6: // sur mon téléphone: the phone
+        return '<rect x="42" y="30" width="36" height="70" rx="6" fill="#241F3A" stroke="' + ink + '" stroke-width="1.6"/><rect x="46" y="38" width="28" height="52" rx="2" fill="' + P.paper + '"/>' +
+          '<rect x="49" y="42" width="22" height="6" rx="1" fill="' + pink + '"/><rect x="49" y="51" width="22" height="14" rx="1" fill="' + teal + '" opacity=".8"/><rect x="49" y="68" width="16" height="3" rx="1.5" fill="' + ink + '" opacity=".7"/><rect x="49" y="74" width="20" height="3" rx="1.5" fill="' + ink + '" opacity=".7"/><circle cx="60" cy="95" r="2" fill="' + ink + '"/>';
+      case 7: // j'avais oublié: the grid of the stands
+        return win + '<g fill="' + teal + '" opacity=".85"><rect x="30" y="50" width="26" height="18" rx="2"/><rect x="60" y="50" width="28" height="18" rx="2" fill="' + pink + '"/><rect x="30" y="71" width="16" height="20" rx="2" fill="' + gold + '"/><rect x="49" y="71" width="39" height="20" rx="2"/></g>';
+      default: // les coulisses: the lock opened by the five pieces
+        return '<rect x="40" y="58" width="40" height="34" rx="5" fill="' + gold + '"/><path d="M48 58 V48 Q48 36 60 36 Q72 36 72 48" fill="none" stroke="' + ink + '" stroke-width="4" stroke-linecap="round" transform="rotate(-18 72 50)"/>' +
+          '<circle cx="60" cy="72" r="4" fill="#241F3A"/><rect x="58.5" y="74" width="3" height="9" fill="#241F3A"/>' +
+          '<g fill="' + pink + '"><circle cx="32" cy="102" r="2.4"/><circle cx="46" cy="102" r="2.4"/><circle cx="60" cy="102" r="2.4"/><circle cx="74" cy="102" r="2.4"/><circle cx="88" cy="102" r="2.4"/></g>';
+    }
+  }
   var ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
   /* A card of Les Tablettes de Pompéi: a cream tablet, its fresco on a red panel, the room's name in
      capitals and its Roman numeral. */
@@ -342,6 +402,11 @@
     'pin-etoile': function (c) { return '<path d="M30 14 Q31.5 28.5 46 30 Q31.5 31.5 30 46 Q28.5 31.5 14 30 Q28.5 28.5 30 14 Z" fill="' + c + '"/><circle cx="41" cy="19" r="1.6" fill="' + c + '"/>'; },
     // The dog of the mosaic at the door of the House of the Tragic Poet, running, its red collar.
     'pin-vague': function (c) { return '<path d="M14 26 Q20 20 26 26 T38 26 T48 26 M14 35 Q20 29 26 35 T38 35 T48 35" stroke="' + c + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>'; },
+    // Panique à la Neko-Con: the head of Neko, the convention's cat mascot.
+    'pin-neko': function (c) {
+      return '<path d="M17 24 L19 12 L27 19 Z M43 24 L41 12 L33 19 Z" fill="' + c + '"/><ellipse cx="30" cy="31" rx="15" ry="12.5" fill="' + c + '"/>' +
+        '<path d="M22.5 30 Q25 27 27.5 30 M32.5 30 Q35 27 37.5 30" fill="none" stroke="#2A2440" stroke-width="1.8" stroke-linecap="round"/><path d="M28.5 35 L30 36.5 L31.5 35" fill="none" stroke="#2A2440" stroke-width="1.4" stroke-linecap="round"/>';
+    },
     'pin-loupe': function (c) { return '<circle cx="27" cy="27" r="9" fill="none" stroke="' + c + '" stroke-width="3"/><line x1="34" y1="34" x2="43" y2="43" stroke="' + c + '" stroke-width="4" stroke-linecap="round"/>'; },
     'pin-cave-canem': function (c, accent) {
       return '<path d="M13 31.5 L17.5 28.6 L27 28 L34.5 27.4 L39.6 22.6 L43.4 21.2 L46.8 23.4 L45.8 26 L42.6 26.8 L41.2 30.8 L44.2 36.4 L42.2 37.4 L38.4 32.6 L30.6 33.6 L26.4 38.2 L24.2 37.6 L26.2 33.2 L20.4 34 L16.4 38.6 L14.4 37.6 L17.6 33.2 Z" fill="' + c + '"/>' +

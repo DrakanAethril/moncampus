@@ -50,6 +50,7 @@ class CatalogController extends AbstractController
                 'total' => $total,
                 'status' => 0 === $value ? 'new' : ($value >= $total ? 'done' : 'progress'),
                 'thumbnail' => $manifest->thumbnail(),
+                'desktopOnly' => $manifest->desktopOnly(),
                 'trophy' => null === $trophy || !isset($held[$trophy['code']]) ? null : ['label' => $trophy['label'], 'finish' => $held[$trophy['code']]->getFinish()],
             ];
         }

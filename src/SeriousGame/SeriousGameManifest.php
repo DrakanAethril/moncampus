@@ -79,6 +79,12 @@ final readonly class SeriousGameManifest
         return 'scenario' === ($this->data['mechanic'] ?? null);
     }
 
+    /** Whether the game needs a computer's screen (`desktop_only`): the catalogue says so elsewhere. */
+    public function desktopOnly(): bool
+    {
+        return true === ($this->data['desktop_only'] ?? false);
+    }
+
     public function seriesSize(): int
     {
         return $this->int(['series', 'size'], 12);

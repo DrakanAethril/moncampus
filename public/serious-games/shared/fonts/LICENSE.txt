@@ -1,7 +1,7 @@
 Vendored web fonts of the serious games
 =======================================
 
-The .woff2 files in this directory are the `latin` and `latin-ext` subsets of six families, as
+The .woff2 files in this directory are the `latin` and `latin-ext` subsets of seven families, as
 served by Google Fonts and copied here so that no pupil's browser asks a third party for them:
 
 - Cormorant Garamond (Christian Thalmann, Catharsis Fonts) - a variable font: one file covers the
@@ -10,6 +10,8 @@ served by Google Fonts and copied here so that no pupil's browser asks a third p
 - IBM Plex Sans (IBM Corp.) - a variable font: one file covers the weights 400 to 600.
 - Chakra Petch (Cadson Demak) - weights 500 and 600.
 - Libre Caslon Display and Libre Caslon Text (Impallari Type) - weight 400, and 700 for the Text.
+- Dela Gothic One (artakana) - weight 400: the title of Panique à la Neko-Con on its catalogue
+  card, whose game ships its own copy with the rest of its typefaces.
 
 All are licensed under the SIL Open Font License, Version 1.1 (https://openfontlicense.org).
 The OFL is permissive and imposes nothing on the AGPL licensing of the application; the fonts must

@@ -66,3 +66,14 @@ rewards:
     label: Épinglette Neko
   # One card per act done.
   cards: true
+
+# Played on a computer only (§7): the code and the site side by side need 1 100 px. On a narrower
+# screen the catalogue says so instead of opening the game.
+desktop_only: true
+
+thumbnail:
+  background: "radial-gradient(circle at 82% 26%, #FFE9B0 0 7%, transparent 7.5%), linear-gradient(180deg, #3A3170 0 64%, #E8457A 64% 67%, #241F3A 67% 100%)"
+  font: "'Dela Gothic One', 'Trebuchet MS', sans-serif"
+  style: normal
+  weight: 400
+  color: "#FF6F91"
