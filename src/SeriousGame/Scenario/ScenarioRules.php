@@ -14,8 +14,8 @@ namespace App\SeriousGame\Scenario;
  * - **the stars** of a ticket: 3 with neither error nor help, 2 when errors + help ≤ 2, 1 otherwise.
  *   An error is a refused delivery or a wrong answer to a step; one made **during the help** does
  *   not count (asking already costs), nor does a mistyped password;
- * - **the correction** of what the server corrects - explanations, choices, lines, the password; a
- *   repair is judged by the browser, which sends its failed criteria;
+ * - **the correction** of what the server corrects - explanations, choices, lines, orders, the
+ *   password; a repair is judged by the browser, which sends its failed criteria;
  * - the pieces of the password and the clues of the notebook come from closed tickets; the game
  *   ends when every ticket is closed.
  *
@@ -32,6 +32,9 @@ final class ScenarioRules
 
     /** @var Reaction */
     private const array WRONG_LINE = ['who' => 'ines', 'expr' => 'sourcil', 'text' => 'Ce n’est pas cette ligne. Cherche celle qui provoque le symptôme.'];
+
+    /** @var Reaction */
+    private const array WRONG_ORDER = ['who' => 'ines', 'expr' => 'sourcil', 'text' => 'L’ordre ne tient pas encore. Relis les heures.'];
 
     /** @var Reaction */
     private const array WRONG_PASSWORD = ['who' => 'ines', 'expr' => 'sourcil', 'text' => 'Refusé. Les morceaux sont dans ton carnet, dans l’ordre où tu les as trouvés.'];
@@ -112,9 +115,10 @@ final class ScenarioRules
 
     /**
      * Corrects one step. `$input` is the option's rank for an explanation or a choice, the line's
-     * text for a line, `{passed, failed}` for a delivery, the typed text for the password.
+     * text for a line, `{passed, failed}` for a delivery, the typed text for the password, the
+     * ranks of the items as placed for an order. A default reaction is said by `$helper`.
      */
-    public static function grade(ScenarioStep $step, mixed $input, string $password): ScenarioGrade
+    public static function grade(ScenarioStep $step, mixed $input, string $password, string $helper = 'ines'): ScenarioGrade
     {
         switch ($step->kind) {
             case ScenarioStepKind::Explain:
@@ -125,13 +129,13 @@ final class ScenarioRules
                     return new ScenarioGrade(true, null, $option['reaction'], (string) $rank);
                 }
 
-                return new ScenarioGrade(false, $option['misconception'], $option['reaction'] ?? self::WRONG_CHOICE, (string) $rank);
+                return new ScenarioGrade(false, $option['misconception'], $option['reaction'] ?? self::said(self::WRONG_CHOICE, $helper), (string) $rank);
 
             case ScenarioStepKind::Line:
                 $line = trim(\is_string($input) ? $input : '');
                 $ok = '' !== $line && array_any($step->answers, static fn (string $answer): bool => str_contains($line, $answer));
 
-                return new ScenarioGrade($ok, null, $ok ? null : ($step->reaction ?? self::WRONG_LINE), mb_substr($line, 0, self::STORED_LINE_LENGTH));
+                return new ScenarioGrade($ok, null, $ok ? null : ($step->reaction ?? self::said(self::WRONG_LINE, $helper)), mb_substr($line, 0, self::STORED_LINE_LENGTH));
 
             case ScenarioStepKind::Fix:
                 $failed = [];
@@ -147,8 +151,29 @@ final class ScenarioRules
             case ScenarioStepKind::Password:
                 $ok = '' !== $password && \is_string($input) && hash_equals($password, $input);
 
-                return new ScenarioGrade($ok, null, $ok ? null : self::WRONG_PASSWORD, null);
+                return new ScenarioGrade($ok, null, $ok ? null : self::said(self::WRONG_PASSWORD, $helper), null);
+
+            case ScenarioStepKind::Order:
+                $placed = array_values(array_map(
+                    static fn (mixed $rank): int => \is_int($rank) ? $rank : (\is_string($rank) && ctype_digit($rank) ? (int) $rank : -1),
+                    \is_array($input) ? $input : [],
+                ));
+                $ok = [] !== $step->order && $placed === $step->order;
+
+                return new ScenarioGrade($ok, null, $ok ? null : ($step->reaction ?? self::said(self::WRONG_ORDER, $helper)), mb_substr(implode(',', $placed), 0, self::STORED_LINE_LENGTH));
         }
+    }
+
+    /**
+     * A default reaction, said by the scenario's helper.
+     *
+     * @param Reaction $reaction
+     *
+     * @return Reaction
+     */
+    private static function said(array $reaction, string $helper): array
+    {
+        return ['who' => $helper] + $reaction;
     }
 
     /**

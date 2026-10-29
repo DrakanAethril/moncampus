@@ -7,7 +7,8 @@ namespace App\SeriousGame\Scenario;
 /**
  * One step of a ticket, or one of Inès' guided questions (design/validated/serious-games-neko-con.md
  * §2, §3.1). It carries its answers - which option is right, the misconception of each wrong one,
- * the text the right line holds - and **publicView() is the only thing the game ever receives**.
+ * the text the right line holds, the right order of the items - and **publicView() is the only
+ * thing the game ever receives**.
  *
  * @phpstan-type Reaction array{who: string, expr: string, text: string}
  * @phpstan-type Option array{text: string, ok: bool, misconception: ?string, reaction: ?Reaction}
@@ -17,7 +18,9 @@ final readonly class ScenarioStep
     /**
      * @param list<Option>  $options
      * @param list<string>  $answers  the texts one of which the right line holds
-     * @param Reaction|null $reaction what Inès says of a wrong line
+     * @param Reaction|null $reaction what Inès says of a wrong line or order
+     * @param list<string>  $items    what an « order » step shows, in the order shown
+     * @param list<int>     $order    the right order: the ranks of `items`, first to last
      */
     public function __construct(
         public string $id,
@@ -28,6 +31,10 @@ final readonly class ScenarioStep
         public array $options = [],
         public array $answers = [],
         public ?array $reaction = null,
+        public ?string $label = null,
+        public ?string $view = null,
+        public array $items = [],
+        public array $order = [],
     ) {
     }
 
@@ -56,15 +63,21 @@ final readonly class ScenarioStep
 
         $answer = $data['answer'] ?? [];
         $answers = array_values(array_filter(array_map(self::text(...), \is_array($answer) ? $answer : [$answer]), static fn (string $a): bool => '' !== $a));
-        $expr = self::text($data['expr'] ?? null);
-        $file = self::text($data['file'] ?? null);
+        $order = [];
+        if (ScenarioStepKind::Order === $kind) {
+            $order = array_values(array_filter(\is_array($answer) ? $answer : [], is_int(...)));
+            $answers = [];
+        }
+        $items = array_values(array_map(self::text(...), \is_array($data['items'] ?? null) ? $data['items'] : []));
+        $optional = static fn (string $key): ?string => '' === ($value = self::text($data[$key] ?? null)) ? null : $value;
 
-        return new self($id, $kind, self::text($data['prompt'] ?? null), '' === $expr ? null : $expr, '' === $file ? null : $file, $options, $answers, self::reactionOf($data['reaction'] ?? null));
+        return new self($id, $kind, self::text($data['prompt'] ?? null), $optional('expr'), $optional('file'), $options, $answers, self::reactionOf($data['reaction'] ?? null), $optional('label'), $optional('view'), $items, $order);
     }
 
     /**
-     * What the game is told of the step: its question and its options' texts - never which is
-     * right, never a misconception, never the line's text.
+     * What the game is told of the step: its question, its options' texts, the items to order in
+     * the order written - never which is right, never a misconception, never the line's text, never
+     * the right order.
      *
      * @return array<string, mixed>
      */
@@ -79,6 +92,15 @@ final readonly class ScenarioStep
         }
         if (null !== $this->expr) {
             $view['expr'] = $this->expr;
+        }
+        if (null !== $this->label) {
+            $view['label'] = $this->label;
+        }
+        if (null !== $this->view) {
+            $view['view'] = $this->view;
+        }
+        if (ScenarioStepKind::Order === $this->kind) {
+            $view['items'] = $this->items;
         }
 
         return $view;

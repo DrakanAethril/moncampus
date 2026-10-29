@@ -153,6 +153,8 @@ final readonly class SeriousGameScenarioPlay
                 'from' => $ticket->from,
                 'priority' => $ticket->priority,
                 'duplicates' => $ticket->duplicates,
+                'kind' => $ticket->kind,
+                'category' => $ticket->category,
                 'steps' => array_map(static fn (ScenarioStep $s): array => $s->publicView(), $ticket->steps),
                 'bascule' => $ticket->bascule,
                 'final' => $ticket->final,
@@ -266,13 +268,14 @@ final readonly class SeriousGameScenarioPlay
         if (null !== $ticket->fragment) {
             $out['fragment'] = $ticket->fragment;
         }
-        if (null !== $ticket->clue) {
-            $out['clue'] = $ticket->clue;
-        }
-
         $board = $this->refill($player, $game, $scenario);
         $this->entityManager->flush();
         [$visible, $closed] = self::visibleAndClosed($board);
+        if (null !== $ticket->clue) {
+            $out['clue'] = $ticket->clue;
+            // Its rank in the notebook, which lists the clues in the scenario's order.
+            $out['clueIndex'] = 1 + (int) array_search($ticket->clue, ScenarioRules::clues($scenario, $closed), true);
+        }
         $added = array_values(array_diff($visible, $visibleBefore));
         $stateById = [];
         foreach ($board as $s) {
@@ -457,7 +460,7 @@ final readonly class SeriousGameScenarioPlay
     private function grade(Scenario $scenario, SeriousGameSession $session, SeriousGameUnitState $state, ScenarioStep $step, mixed $input, bool $help): array
     {
         try {
-            $grade = ScenarioRules::grade($step, $input, $scenario->password());
+            $grade = ScenarioRules::grade($step, $input, $scenario->password(), $scenario->helper());
         } catch (ScenarioInputRefused $e) {
             throw new SeriousGamePlayRefused($e->getMessage());
         }
@@ -542,6 +545,8 @@ final readonly class SeriousGameScenarioPlay
                 'from' => $ticket->from,
                 'priority' => $ticket->priority,
                 'duplicates' => $ticket->duplicates,
+                'kind' => $ticket->kind,
+                'category' => $ticket->category,
                 'status' => $state->getStatus()?->value,
                 'step' => $ticket->stepIndex($state->getStepId()),
                 'steps' => \count($ticket->steps),

@@ -15,6 +15,7 @@ use App\Repository\SeriousGameAvatarRepository;
 use App\Repository\SeriousGameProgressRepository;
 use App\Repository\SeriousGameUnitStateRepository;
 use App\SeriousGame\Scenario\ScenarioReadingRules;
+use App\SeriousGame\Scenario\ScenarioStep;
 use App\SeriousGame\Scenario\ScenarioStepKind;
 use App\SeriousGame\Scenario\ScenarioTicket;
 use Doctrine\ORM\EntityManagerInterface;
@@ -206,7 +207,11 @@ final readonly class SeriousGameScenarioReading
                     'help' => $answer['help'],
                     'kind' => $kind->value,
                     'misconception' => null === $answer['misconception'] ? null : $scenario->misconceptionLabel($answer['misconception']),
-                    'input' => ScenarioStepKind::Line === $kind || ScenarioStepKind::Fix === $kind ? $answer['input'] : null,
+                    'input' => match ($kind) {
+                        ScenarioStepKind::Line, ScenarioStepKind::Fix => $answer['input'],
+                        ScenarioStepKind::Order => null === $step ? null : self::firstMisplaced($step, $answer['input']),
+                        default => null,
+                    },
                 ];
             }
             $tickets[] = [
@@ -344,5 +349,21 @@ final readonly class SeriousGameScenarioReading
         usort($students, static fn (User $a, User $b): int => [mb_strtolower((string) $a->getLastname()), mb_strtolower((string) $a->getFirstname())] <=> [mb_strtolower((string) $b->getLastname()), mb_strtolower((string) $b->getFirstname())]);
 
         return $students;
+    }
+
+    /**
+     * The first item an order put in the wrong place, which is what a teacher reads of it - the
+     * stored ranks mean nothing to them.
+     */
+    private static function firstMisplaced(ScenarioStep $step, ?string $stored): ?string
+    {
+        $placed = array_map(intval(...), explode(',', (string) $stored));
+        foreach ($step->order as $position => $rank) {
+            if (($placed[$position] ?? -1) !== $rank) {
+                return $step->items[$placed[$position] ?? -1] ?? null;
+            }
+        }
+
+        return null;
     }
 }

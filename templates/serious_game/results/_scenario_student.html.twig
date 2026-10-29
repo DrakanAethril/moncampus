@@ -25,6 +25,8 @@
                                     {{ 'seriousGameDeliveryRefused'|trans }}{% if event.input %} : <em>{{ event.input }}</em>{% endif %}
                                 {% elseif event.kind == 'line' %}
                                     {{ 'seriousGameWrongLine'|trans }}{% if event.input %} <code>{{ event.input }}</code>{% endif %}
+                                {% elseif event.kind == 'order' %}
+                                    {{ 'seriousGameWrongOrder'|trans }}{% if event.input %} <em>{{ event.input }}</em>{% endif %}
                                 {% elseif event.misconception %}
                                     <twig:Cm:Badge tone="red">{{ event.misconception }}</twig:Cm:Badge>
                                 {% else %}
