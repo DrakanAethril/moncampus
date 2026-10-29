@@ -10,6 +10,12 @@
 
 {% block page_title %}{{ 'seriousGameResultsHeading'|trans }}{% endblock %}
 
+{% block page_actions %}
+    {% if is_granted('SERIOUS_GAME_READ_STATS') %}
+        <twig:Cm:Button variant="outline" href="{{ path('app_serious_games_stats') }}">{{ 'seriousGameStatsHeading'|trans }}</twig:Cm:Button>
+    {% endif %}
+{% endblock %}
+
 {% block main %}
     <div class="cm-sg-results">
         {% if classes is not empty or is_granted('ROLE_TEACHER') %}

@@ -20,7 +20,9 @@
     {% include 'serious_game/_player.html.twig' %}
 
     {% for detail in details %}
-        {% if detail.answers is not empty %}
+        {% if detail.scenario|default(false) %}
+            {% if detail.tickets is not empty %}{% include 'serious_game/results/_scenario_student.html.twig' %}{% endif %}
+        {% elseif detail.answers is not empty %}
             <div class="cm-sg-results__columns">
                 <section class="card">
                     {{ component('Cm:Subhead', {title: 'seriousGameStudentErrorsHeading'|trans({'%game%': detail.game.title}), hint: 'seriousGameDontKnowHint'|trans({'%answers%': detail.errors.dontKnow, '%students%': detail.errors.dontKnowStudents})}) }}
