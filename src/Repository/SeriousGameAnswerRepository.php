@@ -75,4 +75,26 @@ class SeriousGameAnswerRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * Every answer of several sessions, in the order they were written.
+     *
+     * @param list<\App\Entity\SeriousGameSession> $sessions
+     *
+     * @return list<SeriousGameAnswer>
+     */
+    public function findForSessions(array $sessions): array
+    {
+        if ([] === $sessions) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.session IN (:sessions)')
+            ->setParameter('sessions', $sessions)
+            ->orderBy('a.answeredAt', 'ASC')
+            ->addOrderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

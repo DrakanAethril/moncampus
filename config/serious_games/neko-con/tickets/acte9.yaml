@@ -1,0 +1,48 @@
+# Panique à la Neko-Con - acte 9 : Les coulisses.
+#
+# The server half of the tickets (design/validated/serious-games-neko-con.md §3.1): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Inès' guided
+# questions, what closing gives. The game half (bug, criteria, written hints, scenes) is
+# public/serious-games/neko-con/tickets/acte9.js. Converted once from the prototype's
+# host/scenario/acte9.js; `hints` counts the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: T39
+    act: 9
+    after:
+      - T37
+      - T38
+    course: 'HTML 04'
+    requester: ines
+    priority: haute
+    final: true
+    title: 'Mise en ligne'
+    request: "Dernière étape : coulisses.html, le formulaire de connexion de Jordan pour mettre le site en ligne. Avant d'y taper le moindre mot de passe, relis-le. Je connais Jordan."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Relis le formulaire, répare ce qui ne va pas, puis livre ta correction à Inès.'
+      -
+        id: expliquer
+        kind: explain
+        expr: sourcil
+        prompt: 'Bien. Explique-moi ce que tu as évité. Si on avait tapé le mot de passe dans le formulaire de Jordan tel quel, que se serait-il passé ?'
+        options:
+          - { text: 'Rien de bien grave : une fois le site en HTTPS, tout ce que le formulaire envoie est chiffré, adresse comprise, en GET comme en POST. Mes corrections relevaient surtout du confort, pour faire propre.', misconception: https-suffit, reaction: { who: ines, expr: sourcil, text: "HTTPS protège le trajet. Mais l'adresse reste en clair dans l'historique, les marque-pages, les journaux du serveur. Et HTTPS n'empêche personne de lire ton écran par-dessus ton épaule." } }
+          - { text: "Le formulaire envoyait en GET : le mot de passe serait parti dans l'adresse, puis resté dans l'historique et les journaux du serveur. Et son champ type=\"text\" l'aurait affiché en clair.", ok: true, reaction: { who: ines, expr: sourire, text: "Exact. Le mot de passe de Jordan aurait fini dans l'historique, entre deux recherches de recettes de ramen. Je ne dis pas que ce serait une première." } }
+          - { text: "Les <label> n'étaient pas reliés à leurs champs par for et id : le navigateur ne savait pas quel champ contenait le mot de passe, et ne pouvait ni le chiffrer ni le masquer.", misconception: label-securite, reaction: { who: ines, expr: neutre, text: "Relier une étiquette à son champ, c'est de l'accessibilité : un clic sur le texte place le curseur, un lecteur d'écran lit le bon nom. Ce qui protège, c'est la méthode d'envoi et le type du champ, que tu as aussi changés." } }
+          - { text: "L'identifiant « club-manga » était pré-rempli dans l'attribut value du champ : n'importe qui ouvrant la page connaissait la moitié des accès, et il ne manquait plus grand-chose.", misconception: identifiant-secret, reaction: { who: ines, expr: neutre, text: "Un identifiant n'est pas un secret, c'est le mot de passe qui l'est. D'ailleurs, il est toujours pré-rempli, et ton formulaire est sûr." } }
+      - id: mdp
+        kind: password
+        prompt: "Tape le mot de passe de Jordan : les cinq morceaux du carnet, dans l'ordre."
+    guide:
+      -
+        id: danger
+        kind: choice
+        prompt: "Tape un faux mot de passe dans l'aperçu, envoie le formulaire et regarde le moniteur de requêtes. Quel est le danger ?"
+        options:
+          - { text: "Le mot de passe partirait dans l'adresse de la page, et il s'afficherait en clair pendant qu'on le tape", ok: true }
+          - { text: 'Aucun : le site sera en HTTPS, donc tout est chiffré', misconception: https-suffit, reaction: { who: ines, expr: sourcil, text: "HTTPS protège le trajet. Mais une adresse se retrouve dans l'historique, les marque-pages, les journaux du serveur… Et HTTPS n'empêche personne de lire ton écran par-dessus ton épaule." } }
+          - { text: "L'identifiant est pré-rempli : n'importe qui peut le voir", misconception: identifiant-secret, reaction: { who: ines, expr: neutre, text: "Un identifiant n'est pas un secret, c'est le mot de passe qui l'est. Regarde où il atterrit quand tu envoies le formulaire." } }
+          - { text: "L'identifiant n'a pas l'attribut required", misconception: required-securite, reaction: { who: ines, expr: neutre, text: "required empêche d'envoyer un champ vide. C'est du confort, pas de la sécurité." } }
+    hints: 2

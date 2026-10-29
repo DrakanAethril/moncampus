@@ -35,6 +35,10 @@
                                 <td>{{ game.subjects|join(', ') }} · {{ game.levels|join(', ') }}</td>
                                 <td>{{ game.version }}</td>
                                 <td>
+                                    {% if game.scenario %}
+                                        {# A scenario's kinds of step are its tickets', not a setting. #}
+                                        <span class="small">{{ 'seriousGameScenarioKinds'|trans }}</span>
+                                    {% else %}
                                     <form method="post" action="{{ path('app_settings_serious_games_kinds', {slug: game.slug}) }}" class="cm-sg-kinds">
                                         <input type="hidden" name="_token" value="{{ csrf_token('serious-game-kinds-' ~ game.slug) }}">
                                         {% for kind, label in kinds %}
@@ -45,10 +49,16 @@
                                         {% endfor %}
                                         <button type="submit" class="cm-action--positive">{{ 'submitSaveAction'|trans }}</button>
                                     </form>
+                                    {% endif %}
                                 </td>
                                 <td>
+                                    {% if game.scenario %}
+                                        <a href="{{ path('app_settings_serious_games_game', {slug: game.slug}) }}">{{ 'seriousGameSettingsTicketsCount'|trans({'%count%': row.units}) }}</a>
+                                        <div><a class="small" href="{{ path('app_settings_serious_games_ticket_bench', {slug: game.slug}) }}">{{ 'seriousGameTicketBenchAction'|trans }}</a></div>
+                                    {% else %}
                                     <a href="{{ path('app_settings_serious_games_game', {slug: game.slug}) }}">{{ 'seriousGameSettingsTemplatesCount'|trans({'%installed%': row.installed, '%units%': row.units}) }}</a>
                                     {% if row.hidden > 0 %}<div><twig:Cm:Badge tone="gold">{{ 'seriousGameSettingsHiddenUnits'|trans({'%count%': row.hidden}) }}</twig:Cm:Badge></div>{% endif %}
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <form method="post" action="{{ path('app_settings_serious_games_publish', {slug: game.slug}) }}">

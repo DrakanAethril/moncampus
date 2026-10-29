@@ -45,6 +45,14 @@ class SeriousGameVoterTest extends VoterTestCase
         $this->assertDenied($this->voter(), $staff, null, SeriousGameVoter::MANAGE);
     }
 
+    public function testEveryTeacherReadsTheStatisticsAndTheStaffDoesNot(): void
+    {
+        $this->assertGranted($this->voter(), $this->user(['ROLE_TEACHER'], 'teacher'), null, SeriousGameVoter::READ_STATS);
+        $this->assertGranted($this->voter(), $this->user(['ROLE_ADMIN'], 'admin'), null, SeriousGameVoter::READ_STATS);
+        $this->assertDenied($this->voter(), $this->user(['ROLE_STAFF'], 'staff'), null, SeriousGameVoter::READ_STATS);
+        $this->assertDenied($this->voter(), $this->user(['ROLE_STUDENT'], 'student'), null, SeriousGameVoter::READ_STATS);
+    }
+
     public function testAStudentReadsThemselvesAndCollects(): void
     {
         $student = $this->identified($this->user(['ROLE_STUDENT'], 'student'), 7);

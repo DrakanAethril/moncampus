@@ -1,0 +1,59 @@
+{% extends 'layout/app.html.twig' %}
+
+{# A game of the « scénario » mechanic in Paramètres › Serious games (design/validated/serious-games-neko-con.md
+   §3.1, §6): its tickets act by act, the course each one revises, its steps, and the health of each
+   scenario version - the share of answers right, read on every class. The tickets are written in the
+   repository and installed by app:serious-games:sync; nothing here edits them. #}
+
+{% block title %}{{ game.title }}{% endblock %}
+
+{% block page_breadcrumb %}{% include 'settings/serious_game/_breadcrumb.html.twig' with {extra: [{label: game.title, url: path('app_settings_serious_games_game', {slug: game.slug})}]} %}{% endblock %}
+
+{% block page_title %}{{ game.title }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <twig:Cm:ActionBar>
+            <twig:block name="meta">{{ 'seriousGameScenarioVersion'|trans({'%version%': scenario.version, '%count%': scenario.tickets|length}) }}</twig:block>
+            <twig:Cm:Button variant="primary" href="{{ path('app_settings_serious_games_ticket_bench', {slug: game.slug}) }}">{{ 'seriousGameTicketBenchAction'|trans }}</twig:Cm:Button>
+        </twig:Cm:ActionBar>
+        <div class="cm-card-note">{{ 'seriousGameScenarioHelp'|trans }}</div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table cm-sg-templates">
+                <thead>
+                    <tr>
+                        <th>{{ 'seriousGameTicketColumn'|trans }}</th>
+                        <th>{{ 'seriousGameCourseColumn'|trans }}</th>
+                        <th>{{ 'seriousGameStepsColumn'|trans }}</th>
+                        <th>{{ 'seriousGameHealthColumn'|trans }}</th>
+                    </tr>
+                </thead>
+                {% for act in scenario.acts %}
+                    <tbody>
+                        <tr class="cm-sg-templates__chapter"><th colspan="4">{{ 'seriousGameActLabel'|trans({'%n%': act.n}) }} · {{ act.title }}</th></tr>
+                        {% for ticket in scenario.ticketsOfAct(act.n) %}
+                            <tr>
+                                <td>
+                                    <strong>{{ ticket.id }} · {{ ticket.title }}</strong>
+                                    {% if ticket.reassigns %}<div><twig:Cm:Badge tone="purple">{{ 'seriousGameTicketReassigned'|trans }}</twig:Cm:Badge></div>{% endif %}
+                                </td>
+                                <td>{{ ticket.course }}</td>
+                                <td class="small">
+                                    {{ ticket.steps|map(s => s.kind.value)|join(' · ') }}
+                                    {% if ticket.guide is not empty %}<div class="text-secondary">{{ 'seriousGameGuideCount'|trans({'%count%': ticket.guide|length, '%hints%': ticket.hints}) }}</div>{% endif %}
+                                </td>
+                                <td>
+                                    {% for version, h in health[ticket.id]|default({}) %}
+                                        <div class="small">v{{ version }} · {{ h.rate is null ? '—' : (h.rate * 100)|round ~ ' %' }} <span class="text-secondary">({{ 'seriousGameHealthAnswers'|trans({'%count%': h.answered}) }})</span>
+                                            {% if h.flag %}<twig:Cm:Badge tone="red">{{ h.flag|trans }}</twig:Cm:Badge>{% endif %}
+                                        </div>
+                                    {% else %}<span class="text-secondary">{{ 'seriousGameHealthNone'|trans }}</span>{% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+{% endblock %}

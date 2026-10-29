@@ -1,0 +1,246 @@
+# Panique à la Neko-Con - acte 2 : La relecture d'Inès.
+#
+# The server half of the tickets (design/validated/serious-games-neko-con.md §3.1): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Inès' guided
+# questions, what closing gives. The game half (bug, criteria, written hints, scenes) is
+# public/serious-games/neko-con/tickets/acte2.js. Converted once from the prototype's
+# host/scenario/acte2.js; `hints` counts the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: T06
+    act: 2
+    after:
+      - T01
+      - T02
+      - T03
+      - T04
+      - T05
+    course: 'HTML 02'
+    requester: ines
+    priority: normale
+    title: 'Tout ton site est en div'
+    request: "J'ai relu index.html : l'en-tête, le menu, le contenu, le pied de page… tout est en <div>. À l'écran, rien ne se voit. Pour un lecteur d'écran, la page n'a ni en-tête, ni menu, ni contenu principal. Remets les bonnes balises, en gardant les classes."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Inès.'
+      -
+        id: expliquer
+        kind: explain
+        expr: sourcil
+        prompt: "L'aperçu n'a pas bougé d'un pixel. Maëlle va me demander à quoi tu as passé ton temps. Qu'est-ce que je lui réponds ?"
+        options:
+          - { text: "Qu'une <div> est une boîte anonyme. <header>, <nav>, <main> et <footer> annoncent le rôle de chaque zone : le lecteur d'écran s'en sert pour sauter au menu ou au contenu.", ok: true, reaction: { who: ines, expr: sourire, text: 'Je lui dirai ça. Elle hochera la tête comme si elle avait compris, et ce sera déjà un progrès.' } }
+          - { text: "Que <header> et <footer> placent d'eux-mêmes l'en-tête en haut et le pied en bas : avec des <div>, le lecteur d'écran lisait les zones dans le désordre, sans savoir par où commencer.", misconception: semantique-positionne, reaction: { who: ines, expr: sourcil, text: "Aucune balise ne déplace quoi que ce soit : c'est l'ordre du code qui fait l'ordre de lecture. Tu n'as déplacé aucune ligne, et l'aperçu n'a pas bougé." } }
+          - { text: "Que les <div> sont interdites depuis HTML5 : le lecteur d'écran, qui respecte la norme, sautait tout leur contenu sans le lire, et la page entière lui paraissait vide, sans rien à annoncer.", misconception: div-interdite, reaction: { who: ines, expr: neutre, text: "Il lisait très bien tout le texte. Ce qui lui manquait, ce sont des repères. Et la <div> reste utile, pour regrouper sans rien dire, quand aucune balise n'a le bon sens." } }
+          - { text: "Que le lecteur d'écran se repère aux noms des classes, comme « entete » ou « pied » : écrits en français, il ne les reconnaissait pas, et il lui fallait des noms de balises anglais.", misconception: classe-donne-sens, reaction: { who: ines, expr: sourcil, text: "Tu as gardé les classes telles quelles, en français, et il annonce pourtant chaque zone. Les classes servent au CSS ; le lecteur d'écran ne regarde que les balises." } }
+    guide:
+      -
+        id: pourquoi
+        kind: choice
+        prompt: "Le lecteur d'écran ne trouve aucun repère dans la page, alors que l'aperçu est parfait. Pourquoi les <div> ne lui suffisent-elles pas ?"
+        options:
+          - { text: "Parce que les balises sémantiques disent le rôle de chaque zone : le lecteur d'écran et les moteurs de recherche s'en servent", ok: true }
+          - { text: "Parce que <header> et <footer> mettent automatiquement l'en-tête en haut et le pied en bas", misconception: semantique-positionne, reaction: { who: ines, expr: sourcil, text: "Aucune balise ne déplace quoi que ce soit : c'est l'ordre du code qui compte. Regarde l'aperçu, il ne change pas d'un pixel." } }
+          - { text: 'Parce que les <div> sont interdites depuis HTML5', misconception: div-interdite, reaction: { who: ines, expr: neutre, text: "Pas du tout, la <div> reste utile pour regrouper sans rien dire, pour la mise en page. Le souci, c'est de s'en servir là où une balise a un sens." } }
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Commence par le haut de index.html. Par quelle balise remplacer <div class="entete">, qui contient le logo et le menu ?'
+        options:
+          - { text: '<header class="entete">', ok: true }
+          - { text: '<head class="entete">', misconception: head-header, reaction: { who: ines, expr: sourcil, text: "<head> existe déjà, tout en haut : c'est la partie invisible du document, avec le titre et l'encodage. Ce qu'on cherche, c'est l'en-tête visible de la page." } }
+          - { text: '<h1 class="entete">', misconception: h1-entete, reaction: { who: ines, expr: neutre, text: '<h1> est un titre, un bout de texte. Ici, on veut une zone qui contient le logo et tout le menu.' } }
+    hints: 2
+  -
+    id: T07
+    act: 2
+    after:
+      - T01
+      - T02
+      - T03
+      - T04
+      - T05
+    course: 'HTML 02'
+    requester: client
+    from: 'Gérard Dubreuil'
+    priority: haute
+    title: "Mon lecteur d'écran dit « image, image, cliquez ici »"
+    request: "Bonjour. Je suis non-voyant et je consulte les sites avec un lecteur d'écran. Sur votre page d'accueil, j'entends « image », puis « image », puis deux fois « lien, cliquez ici ». Pourriez-vous me dire ce qu'il y a sur ces images, et où mènent ces liens ? Bien cordialement, Gérard Dubreuil."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à M. Dubreuil.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: "Merci, c'est bien plus clair. Par curiosité : qu'est-ce qui clochait ? Vous voyiez ces images et ces liens, et moi, je n'en entendais rien d'utile."
+        options:
+          - { text: "Il manquait aux images l'attribut title, la petite bulle qui apparaît au survol : c'est ce texte que votre lecteur lit. Et « cliquez ici » était trop court pour qu'il annonce le lien en entier.", misconception: title-remplace-alt, reaction: { who: ines, expr: neutre, text: "title ne s'affiche qu'au survol de la souris, et beaucoup de lecteurs l'ignorent. Tu as écrit des alt, pas des title. Et le souci des liens n'était pas leur longueur, mais ce qu'ils disaient." } }
+          - { text: "Vos images sont au format SVG, que les lecteurs d'écran ne savent pas décrire. Et les liens n'étaient pas soulignés : votre lecteur ne pouvait pas savoir où commençait chacun.", misconception: format-image-lisible, reaction: { who: ines, expr: sourcil, text: 'Les images sont toujours en SVG, et le lecteur les décrit maintenant. Il ne regarde aucune image : il lit le code. Quant au soulignement, M. Dubreuil ne le voit pas.' } }
+          - { text: 'Votre lecteur ne voit pas les images : il lit leur attribut alt, qui manquait. Et il liste souvent les liens à part : hors de sa phrase, « cliquez ici » ne disait pas où il menait.', ok: true, reaction: { who: client, expr: neutre, text: "Le alt, donc. Je retiens le mot : la prochaine fois qu'un site ne me dit que « image », je saurai quoi réclamer, et à qui." } }
+          - { text: "Votre lecteur d'écran est sans doute trop ancien pour décrire les images tout seul. Et « cliquez ici » ne vous convenait pas, puisque vous ne cliquez pas : il fallait un autre verbe.", misconception: verbe-du-lien, reaction: { who: ines, expr: sourcil, text: "Son lecteur n'a pas changé, et il décrit pourtant la mascotte : il lit ce que tu as écrit. Et « appuyez ici » ne dirait toujours pas où va le lien." } }
+    guide:
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Un lecteur d'écran ne regarde pas les images : il lit ce que le code en dit. Pourquoi dit-il seulement « image » ?"
+        options:
+          - { text: "Les balises <img> n'ont pas d'attribut alt : l'image n'a pas de texte à annoncer", ok: true }
+          - { text: "Il faut un attribut title sur l'image", misconception: title-remplace-alt, reaction: { who: ines, expr: neutre, text: "title affiche une bulle au survol de la souris, et beaucoup de lecteurs d'écran l'ignorent. Gérard n'a pas de souris. L'attribut prévu pour ça est un autre." } }
+          - { text: "Les images sont des SVG, et un lecteur d'écran ne sait pas les lire", misconception: format-image-lisible, reaction: { who: ines, expr: sourcil, text: "Un lecteur d'écran ne « regarde » aucune image, quel que soit son format. Il lit ce que le code dit de l'image." } }
+      -
+        id: liens
+        kind: choice
+        prompt: 'Passe aux liens. Pourquoi « cliquez ici » gêne-t-il Gérard ?'
+        options:
+          - { text: 'Il parcourt souvent la liste des liens de la page : hors de sa phrase, « cliquez ici » ne dit pas où il mène', ok: true }
+          - { text: 'Il ne clique pas : il faut écrire « appuyez ici »', misconception: verbe-du-lien, reaction: { who: ines, expr: neutre, text: "Changer le verbe ne change rien : le lien ne dit toujours pas sa destination. C'est le texte du lien lui-même qui doit l'annoncer." } }
+          - { text: 'Les liens ne sont pas soulignés, il faut ajouter du CSS', misconception: lien-visuel, reaction: { who: ines, expr: sourcil, text: "Gérard ne voit pas le soulignement. Son lecteur annonce bien des liens ; le problème, c'est ce qu'ils disent." } }
+    hints: 2
+  -
+    id: T08
+    act: 2
+    after:
+      - T01
+      - T02
+      - T03
+      - T04
+      - T05
+    course: 'HTML 02'
+    requester: maelle
+    priority: haute
+    title: "Sur Google, notre site s'appelle « Document »"
+    request: "Ma tante a cherché la convention sur Google. Notre site apparaît sous le nom « Document » et il n'y a aucun texte en dessous, juste un blanc. Personne ne cliquera jamais sur un truc qui s'appelle « Document » !"
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiete
+        prompt: "Mais d'où Google a-t-il sorti « Document » ? Personne ne lui a jamais dit qu'on s'appelait comme ça !"
+        options:
+          - { text: "Google prend le grand titre visible de la page, le <h1>. Ne le trouvant pas en haut du code, il a mis un nom par défaut ; et sans paragraphe d'introduction, rien à écrire dessous.", misconception: h1-resultat-recherche, reaction: { who: ines, expr: neutre, text: "Le <h1>, « Neko-Con », n'a jamais bougé, et tu n'y as pas touché. Ce que Google affiche maintenant, c'est ce que tu as écrit dans le <head>." } }
+          - { text: "Google choisit seul le nom et le résumé des sites, d'après ce qu'il comprend de leur contenu. Il s'était trompé en passant sur notre page : il fallait lui demander de revenir.", misconception: moteur-decide-seul, reaction: { who: ines, expr: sourcil, text: "Tu n'as rien demandé à Google : tu as modifié la page, et le résultat a changé. Il reprend ce que la page lui propose." } }
+          - { text: "Il a pris le nom du fichier : « index.html » ne voulait rien dire pour lui, alors il l'a remplacé par « Document ». Et un fichier n'a pas de résumé, donc il n'a rien affiché dessous.", misconception: nom-fichier-titre, reaction: { who: ines, expr: neutre, text: "Le fichier s'appelle toujours index.html, et le bon nom s'affiche. Le nom d'une page vient d'une balise, pas du nom de son fichier." } }
+          - { text: 'Si, sans le savoir : le <title> du <head> contenait « Document », le titre par défaut de l''éditeur, et Google l''affiche. Le résumé vient de <meta name="description">, qui manquait.', ok: true, reaction: { who: maelle, expr: joie, text: "Donc on s'est présentés à Google sous le nom de « Document ». Super discret. Heureusement que ma tante n'a rien partagé !" } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: index.html
+        prompt: "Le nom que montre Google ne s'affiche nulle part dans la page : il est dans le <head>. Clique sur la ligne qui le donne."
+        answer:
+          - '<title>Document</title>'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Ce nom ne s'affiche pas dans la page : cherche dans la partie invisible du document, le <head>."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Et le petit texte que Google affiche sous le titre, d'où vient-il ?"
+        options:
+          - { text: 'De la balise <meta name="description">, dans le <head> : elle a disparu', ok: true }
+          - { text: 'Du titre <h1> de la page', misconception: h1-resultat-recherche, reaction: { who: ines, expr: neutre, text: "Le <h1>, c'est « Neko-Con », et il est toujours là. Le texte sous le résultat est prévu ailleurs, pour cet usage précis." } }
+          - { text: "Google l'écrit lui-même, on n'y peut rien", misconception: moteur-decide-seul, reaction: { who: ines, expr: sourcil, text: "Faute de mieux, il pioche un bout de page au hasard. Mais la page peut lui proposer son propre résumé, et c'est mieux de le choisir soi-même." } }
+    hints: 2
+  -
+    id: T09
+    act: 2
+    after:
+      - T01
+      - T02
+      - T03
+      - T04
+      - T05
+    course: 'HTML 02'
+    requester: ines
+    priority: normale
+    title: 'Le plan de la page est un vrai bazar'
+    request: "Écoute infos.html avec le lecteur d'écran, filtre sur les titres : trois <h1>, des <h3> qui suivent directement un <h1>, un <h5> qui sort de nulle part… Un seul <h1>, et on ne saute aucun niveau, s'il te plaît."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Inès.'
+      -
+        id: expliquer
+        kind: explain
+        expr: sourcil
+        prompt: "Maëlle trouve que la page a presque la même tête qu'avant. Elle me demande ce que ça change, au fond. Qu'est-ce que je lui dis ?"
+        options:
+          - { text: "Que les numéros des titres règlent leur taille : en <h5>, « Navette » paraissait plus petit que les autres rubriques, et les trois <h1> criaient trop fort. J'ai harmonisé les niveaux.", misconception: niveau-pour-taille, reaction: { who: ines, expr: sourcil, text: "Si ce n'était qu'une affaire de taille, le lecteur d'écran n'annoncerait pas « titre de niveau 5 ». Tu as réparé un plan, pas une taille." } }
+          - { text: "Que les titres sont le sommaire que le lecteur d'écran parcourt, en annonçant leur niveau. Trois <h1> et des niveaux sautés, c'était un sommaire faux. La taille, c'est le rôle du CSS.", ok: true, reaction: { who: ines, expr: sourire, text: "C'est exactement ce que je vais lui dire. Mot pour mot, d'ailleurs : ça m'évite de réfléchir." } }
+          - { text: "Qu'il faut un <h1> par grande partie de la page, mais qu'à trois, le lecteur d'écran ne savait plus lequel annoncer en premier. Avec deux, il retrouve le sujet principal.", misconception: h1-par-section, reaction: { who: ines, expr: neutre, text: "Tu n'en as gardé qu'un, « Infos pratiques », et c'est ce qu'il fallait : le sujet de la page est unique. Ses parties sont des chapitres, un niveau en dessous." } }
+          - { text: "Que les six niveaux de titres se combinent librement, mais que Google pénalise les pages qui ont plusieurs <h1> dans leur code : c'était un souci de référencement, pas de lecture.", misconception: niveaux-libres, reaction: { who: ines, expr: neutre, text: "Les niveaux s'emboîtent comme un sommaire : 1, 1.1, 1.1.1, sans en sauter. Et le premier gêné n'était pas Google, mais quiconque écoutait ce plan au lecteur d'écran." } }
+    guide:
+      -
+        id: combien
+        kind: choice
+        prompt: 'Commence par le sommet du plan. Combien de titres de niveau 1 une page devrait-elle avoir ?'
+        options:
+          - { text: 'Un seul : le sujet de la page', ok: true }
+          - { text: 'Un par grande partie de la page', misconception: h1-par-section, reaction: { who: ines, expr: neutre, text: "Les grandes parties d'une page sont les chapitres de son sujet. Le sujet, lui, est unique : « Infos pratiques »." } }
+          - { text: "Autant qu'on veut : c'est juste une question de taille de texte", misconception: titre-taille, reaction: { who: ines, expr: sourcil, text: "Si ce n'était qu'une question de taille, le lecteur d'écran n'annoncerait pas « titre de niveau 1 ». Le niveau, c'est la place dans le plan." } }
+      -
+        id: navette
+        kind: choice
+        prompt: "Maëlle a mis « Navette » en <h5> parce qu'elle le trouvait trop gros. Bonne idée ?"
+        options:
+          - { text: "Non : le niveau d'un titre dit sa place dans le plan ; la taille, c'est le travail du CSS", ok: true }
+          - { text: "Oui : <h5> est plus petit que <h3>, c'est fait pour ça", misconception: niveau-pour-taille, reaction: { who: ines, expr: sourcil, text: "Plus petit à l'écran, oui. Mais pour le lecteur d'écran, « Navette » devient une sous-sous-rubrique d'une rubrique qui n'existe pas." } }
+          - { text: "Oui, tant qu'on reste entre <h1> et <h6>", misconception: niveaux-libres, reaction: { who: ines, expr: neutre, text: "Les six niveaux existent, mais ils s'emboîtent comme les numéros d'un sommaire : 1, 1.1, 1.1.1. On ne passe pas de 1.1 à 1.1.1.1." } }
+    hints: 2
+    reward:
+      fragment:
+        index: 2
+        value: Senpai
+        where: 'Dans infos.html remise en ordre : les initiales des six sous-titres de niveau 3 — Se restaurer, En transport, Navette, Parking, Accessibilité, Informations — forment SENPAI. Jordan cache ses morceaux là où personne ne relit.'
+  -
+    id: T10
+    act: 2
+    after:
+      - T06
+    course: 'HTML 02'
+    requester: theo
+    priority: basse
+    title: 'Le logo a disparu de la page Planning'
+    request: "Sur la page Planning, en haut, il n'y a plus le logo : juste « Neko-Con, accueil » écrit en petit. Sur l'accueil, il est là. C'est le même logo, pourtant."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiet
+        prompt: "Attends : c'est le même logo, dans le même site. Comment il peut marcher sur une page et pas sur l'autre ? Il boudait ?"
+        options:
+          - { text: "Un chemin relatif part du dossier de la page. Celui du Planning commençait par « ../ », qui fait remonter d'un dossier : le navigateur cherchait img/ hors du site.", ok: true, reaction: { who: theo, expr: joie, text: "Donc « ../ », c'est « sors de la maison et va fouiller chez le voisin ». Pas étonnant qu'il ne trouvait rien." } }
+          - { text: "« ../ » veut dire « le dossier courant », donc le chemin était bon : c'est le fichier du logo qui s'était abîmé en route vers le serveur, il a fallu le remettre en état.", misconception: point-point-courant, reaction: { who: ines, expr: sourcil, text: "Tu n'as pas touché au fichier du logo, et il s'affiche. « Le dossier courant », ce serait « ./ », avec un seul point. « ../ » fait remonter." } }
+          - { text: 'Un chemin court ne marche que sur la page d''accueil. Sur les autres pages, il faut écrire le chemin complet depuis le disque dur, du genre C:\Users\theo\site\img\logo.svg.', misconception: chemin-disque-local, reaction: { who: ines, expr: neutre, text: "Ton chemin est plus court qu'avant, et il marche. Un chemin en C:\\… n'existe que sur un seul ordinateur, pas sur le serveur ni chez les visiteurs." } }
+          - { text: "Le navigateur avait gardé en cache une ancienne version de la page Planning, d'avant le logo : en la rechargeant proprement, il a enfin pris la version à jour.", misconception: cache-navigateur, reaction: { who: ines, expr: neutre, text: 'Tu as changé une ligne de code, pas vidé une mémoire. Et le navigateur cherchait bien une image : seulement, au mauvais endroit.' } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: planning.html
+        prompt: "Sur l'accueil, le logo s'affiche ; pas ici. Dans planning.html, clique sur la ligne qui affiche le logo, et compare-la à celle de index.html."
+        answer:
+          - ../img/logo.svg
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Le logo est dans l'en-tête, juste avant le menu."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'planning.html est dans le même dossier que index.html. Pourquoi « ../img/logo.svg » ne marche-t-il pas ?'
+        options:
+          - { text: "« ../ » fait remonter d'un dossier : le navigateur cherche img/ en dehors du site", ok: true }
+          - { text: '« ../ » veut dire « le dossier courant », le chemin est bon : le fichier doit être abîmé', misconception: point-point-courant, reaction: { who: ines, expr: sourcil, text: "Le même fichier s'affiche très bien sur l'accueil. Et « le dossier courant », ce serait « ./ », avec un seul point." } }
+          - { text: 'Il faut un chemin complet, comme C:\Users\theo\site\img\logo.svg', misconception: chemin-disque-local, reaction: { who: ines, expr: neutre, text: "Ce chemin n'existe que sur l'ordinateur de Théo. Sur le serveur, et chez les visiteurs, il ne mène nulle part." } }
+    hints: 2

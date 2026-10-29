@@ -72,6 +72,7 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
         private readonly SeriousGameAvatars $avatars,
         private readonly AccommodationResolver $accommodations,
         private readonly EntityManagerInterface $entityManager,
+        private readonly SeriousGameScenarioPlay $scenario,
     ) {
     }
 
@@ -91,6 +92,10 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
     /** @return Progress */
     public function progress(User $player, SeriousGame $game): array
     {
+        if ($game->isScenario()) {
+            return $this->scenario->progress($player, $game);
+        }
+
         $manifest = self::manifest($game);
         $source = $this->source($game);
         $servable = $this->engine->servableUnits($manifest, $source, $game->getAnswerKinds());
@@ -377,6 +382,12 @@ final class SeriousGamePlay implements \Symfony\Contracts\Service\ResetInterface
      */
     public function saveProgress(User $player, SeriousGame $game, array $data): void
     {
+        if ($game->isScenario()) {
+            $this->scenario->saveProgress($player, $game, $data);
+
+            return;
+        }
+
         $encoded = json_encode($data);
         if (false === $encoded || \strlen($encoded) > 20000) {
             throw new SeriousGamePlayRefused('data-too-large');

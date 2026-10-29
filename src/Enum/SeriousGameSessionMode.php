@@ -17,4 +17,9 @@ enum SeriousGameSessionMode: string
     case Final = 'final';
     /** 3 questions on one typical error; 2 right out of 3 and the comet is « élucidée ». */
     case Comet = 'comet';
+    /**
+     * One opening of a ticket of a scenario (design/validated/serious-games-neko-con.md §3.4): its
+     * answers are the steps, deliveries and guided questions; its score the stars at closing.
+     */
+    case Ticket = 'ticket';
 }

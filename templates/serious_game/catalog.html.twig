@@ -23,6 +23,9 @@
         {% if readsResults %}
             <a class="cm-sg-pill" href="{{ path('app_serious_games_results') }}">{{ 'seriousGameMyStudentsResultsAction'|trans }}</a>
         {% endif %}
+        {% if is_granted('SERIOUS_GAME_READ_STATS') %}
+            <a class="cm-sg-pill" href="{{ path('app_serious_games_stats') }}">{{ 'seriousGameStatsHeading'|trans }}</a>
+        {% endif %}
         <a class="cm-sg-pill" href="{{ path('app_serious_games_avatar') }}">
             <span data-controller="sg-avatar" data-sg-avatar-config-value="{{ avatar_config|json_encode }}" data-sg-avatar-size-value="28"></span>
             {{ 'seriousGameAvatarHeading'|trans }}
@@ -67,7 +70,7 @@
                 {% for card in cards %}
                     {% set game = card.game %}
                     {% set thumb = card.thumbnail %}
-                    <article class="cm-sg-card" data-sg-catalog-target="card"
+                    <article class="cm-sg-card {{ card.desktopOnly ? 'cm-sg-card--desktop' }}" data-sg-catalog-target="card"
                              data-subjects="{{ game.subjects|json_encode }}" data-levels="{{ game.levels|json_encode }}"
                              data-status="{{ card.status }}" data-text="{{ (game.title ~ ' ' ~ game.pitch)|lower }}">
                         <a class="cm-sg-card__visual" data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}"
@@ -85,6 +88,7 @@
                                 {% for subject in game.subjects %}<span class="cm-sg-tag cm-sg-tag--subject">{{ subject }}</span>{% endfor %}
                                 {% for level in game.levels %}<span class="cm-sg-tag">{{ level }}</span>{% endfor %}
                             </div>
+                            {% if card.desktopOnly %}<p class="cm-sg-card__desktop">{{ 'seriousGameDesktopOnly'|trans }}</p>{% endif %}
                             <div class="cm-sg-card__foot">
                                 <div class="cm-sg-card__progress">
                                     {% if card.value > 0 %}

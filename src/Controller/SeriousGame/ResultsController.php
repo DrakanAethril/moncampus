@@ -16,6 +16,7 @@ use App\Security\Voter\SeriousGameVoter;
 use App\SeriousGame\SeriousGameAggregates;
 use App\SeriousGame\SeriousGameClassReading;
 use App\SeriousGame\SeriousGamePlayerPage;
+use App\SeriousGame\SeriousGameScenarioReading;
 use App\SeriousGame\SeriousGameStudentReading;
 use App\Service\QueryValue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -63,7 +64,7 @@ class ResultsController extends AbstractController
     }
 
     #[Route(path: '/serious-games/results/{program}/{slug}', name: 'app_serious_games_results_class', requirements: ['program' => '\d+'], methods: ['GET'])]
-    public function class(Request $request, Program $program, string $slug, SeriousGameRepository $games, SeriousGameClassReading $reading): Response
+    public function class(Request $request, Program $program, string $slug, SeriousGameRepository $games, SeriousGameClassReading $reading, SeriousGameScenarioReading $scenarioReading): Response
     {
         $game = $games->findOneBySlug($slug);
         if (null === $game || !$this->isGranted(SeriousGameVoter::READ_CLASS, $program)) {
@@ -71,6 +72,18 @@ class ResultsController extends AbstractController
         }
 
         $filter = QueryValue::string($request, 'students');
+        $order = 'activity' === QueryValue::string($request, 'order') ? 'activity' : 'name';
+
+        if ($game->isScenario()) {
+            return $this->render('serious_game/results/scenario_class.html.twig', [
+                'program' => $program,
+                'game' => $game,
+                'reading' => $scenarioReading->forClass($program, $game),
+                'act' => QueryValue::int($request, 'act', 0),
+                'filter' => \in_array($filter, ['blocked', 'help', 'inactive'], true) ? $filter : 'all',
+                'order' => $order,
+            ]);
+        }
 
         return $this->render('serious_game/results/class.html.twig', [
             'program' => $program,
@@ -78,26 +91,47 @@ class ResultsController extends AbstractController
             'reading' => $reading->forClass($program, $game),
             'chapter' => QueryValue::string($request, 'chapter'),
             'filter' => \in_array($filter, ['dim', 'inactive'], true) ? $filter : 'all',
-            'order' => 'activity' === QueryValue::string($request, 'order') ? 'activity' : 'name',
+            'order' => $order,
+        ]);
+    }
+
+    /**
+     * « Notions à reprendre » of a scenario (design/validated/serious-games-neko-con.md §5): per
+     * course revised, the share of tickets resolved without help and the misconceptions the class
+     * holds - the page of the revision in class.
+     */
+    #[Route(path: '/serious-games/results/{program}/{slug}/notions', name: 'app_serious_games_results_notions', requirements: ['program' => '\d+'], methods: ['GET'])]
+    public function notions(Program $program, string $slug, SeriousGameRepository $games, SeriousGameScenarioReading $scenarioReading): Response
+    {
+        $game = $games->findOneBySlug($slug);
+        if (null === $game || !$game->isScenario() || !$this->isGranted(SeriousGameVoter::READ_CLASS, $program)) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->render('serious_game/results/notions.html.twig', [
+            'program' => $program,
+            'game' => $game,
+            'notions' => $scenarioReading->notions($program, $game),
         ]);
     }
 
     #[Route(path: '/serious-games/results/student/{user}', name: 'app_serious_games_results_student', requirements: ['user' => '\d+'], methods: ['GET'])]
-    public function student(User $user, SeriousGamePlayerPage $page, SeriousGameStudentReading $reading, SeriousGameRepository $games): Response
+    public function student(User $user, SeriousGamePlayerPage $page, SeriousGameStudentReading $reading, SeriousGameScenarioReading $scenarioReading, SeriousGameRepository $games): Response
     {
         if (!$this->isGranted(SeriousGameVoter::READ_STUDENT, $user) || $user === $this->getUser()) {
             throw $this->createNotFoundException();
         }
 
         return $this->render('serious_game/results/student.html.twig', $page->build($user, false) + [
-            'details' => array_map(static fn ($game): array => $reading->forStudent($user, $game), $games->findAllOrdered()),
+            'details' => array_map(static fn ($game): array => $game->isScenario() ? $scenarioReading->forStudent($user, $game) : $reading->forStudent($user, $game), $games->findAllOrdered()),
         ]);
     }
 
     #[Route(path: '/serious-games/results/student/{user}/answers/{answer}', name: 'app_serious_games_results_replay', requirements: ['user' => '\d+', 'answer' => '\d+'], methods: ['GET'])]
     public function replay(User $user, SeriousGameAnswer $answer, SeriousGameStudentReading $reading): Response
     {
-        if (!$this->isGranted(SeriousGameVoter::READ_STUDENT, $user) || $answer->getSession()->getPlayer() !== $user) {
+        // A scenario's step is not a generated question: there is nothing to replay.
+        if (!$this->isGranted(SeriousGameVoter::READ_STUDENT, $user) || $answer->getSession()->getPlayer() !== $user || $answer->getSession()->getGame()->isScenario()) {
             throw $this->createNotFoundException();
         }
 

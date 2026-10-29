@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\SeriousGame;
 use App\Entity\SeriousGameUnitState;
 use App\Entity\User;
+use App\Enum\SeriousGameMechanic;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -58,7 +59,8 @@ class SeriousGameUnitStateRepository extends ServiceEntityRepository
     }
 
     /**
-     * How many units each player lit in each game: player id => game id => count.
+     * How many units a player lit in each game: game id => count. A unit of the series is lit at
+     * `$litAt`; a ticket of a scenario once it was closed, whatever its stars.
      *
      * @return array<int, int> game id => lit units, for one player
      */
@@ -67,10 +69,12 @@ class SeriousGameUnitStateRepository extends ServiceEntityRepository
         /** @var list<array{gameId: int|string, lit: int|string}> $rows */
         $rows = $this->createQueryBuilder('s')
             ->select('IDENTITY(s.game) AS gameId', 'COUNT(s.id) AS lit')
+            ->innerJoin('s.game', 'g')
             ->andWhere('s.player = :player')
-            ->andWhere('s.best >= :litAt')
+            ->andWhere('(g.mechanic = :scenario AND s.best IS NOT NULL) OR s.best >= :litAt')
             ->setParameter('player', $player)
             ->setParameter('litAt', $litAt)
+            ->setParameter('scenario', SeriousGameMechanic::Scenario)
             ->groupBy('s.game')
             ->getQuery()
             ->getArrayResult();
@@ -81,5 +85,23 @@ class SeriousGameUnitStateRepository extends ServiceEntityRepository
         }
 
         return $out;
+    }
+
+    /**
+     * The tickets on a player's board in a scenario, in the order they came onto it.
+     *
+     * @return list<SeriousGameUnitState>
+     */
+    public function findBoard(User $player, SeriousGame $game): array
+    {
+        return $this->createQueryBuilder('s')
+            ->andWhere('s.player = :player')
+            ->andWhere('s.game = :game')
+            ->andWhere('s.status IS NOT NULL')
+            ->setParameter('player', $player)
+            ->setParameter('game', $game)
+            ->orderBy('s.id', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 }

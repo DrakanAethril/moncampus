@@ -32,7 +32,8 @@ final readonly class SeriousGameAggregates
      */
     public function perClass(SeriousGame $game, array $programs): array
     {
-        $litAt = SeriousGamePlay::manifest($game)->litAt();
+        // A ticket of a scenario counts once closed, whatever its stars (1 to 3).
+        $litAt = $game->isScenario() ? 1 : SeriousGamePlay::manifest($game)->litAt();
         $weekAgo = new \DateTimeImmutable('-7 days');
         $rows = [];
         foreach ($programs as $program) {
@@ -51,7 +52,7 @@ final readonly class SeriousGameAggregates
                 'students' => \count($students),
                 'players' => \count($sessions),
                 'medianLit' => [] === $lit ? 0 : $lit[intdiv(\count($lit), 2)],
-                'seriesThisWeek' => \count(array_filter($all, static fn (SeriousGameSession $s): bool => SeriousGameSessionMode::Series === $s->getMode() && $s->getEndedAt() >= $weekAgo)),
+                'seriesThisWeek' => \count(array_filter($all, static fn (SeriousGameSession $s): bool => \in_array($s->getMode(), [SeriousGameSessionMode::Series, SeriousGameSessionMode::Ticket], true) && null !== $s->getScore() && $s->getEndedAt() >= $weekAgo)),
                 'finals' => \count(array_filter($all, static fn (SeriousGameSession $s): bool => $s->isFinal())),
             ];
         }

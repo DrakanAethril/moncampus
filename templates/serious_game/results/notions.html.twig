@@ -1,0 +1,48 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Notions à reprendre » of a scenario (design/validated/serious-games-neko-con.md §5): per course
+   revised, the share of the class's tickets resolved without Inès' help, and the misconceptions the
+   class holds with how many students hold them - the page of the revision in class. #}
+
+{% block title %}{{ 'seriousGameNotionsHeading'|trans }} · {{ program.shortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'seriousGameResultsHeading'|trans, url: path('app_serious_games_results')},
+        {label: program.shortName ~ ' · ' ~ game.title, url: path('app_serious_games_results_class', {program: program.id, slug: game.slug})},
+        {label: 'seriousGameNotionsHeading'|trans, url: path('app_serious_games_results_notions', {program: program.id, slug: game.slug})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'seriousGameNotionsHeading'|trans }} · {{ program.shortName }}{% endblock %}
+
+{% block main %}
+    <p class="cm-sg-results__readers">{{ 'seriousGameNotionsIntro'|trans({'%count%': notions.students, '%game%': game.title}) }}</p>
+    <div class="cm-sg-notions">
+        {% for course in notions.courses %}
+            <section class="card">
+                {{ component('Cm:Subhead', {
+                    title: course.course,
+                    hint: course.withoutHelp is null
+                        ? 'seriousGameNotionsNoClosure'|trans({'%count%': course.tickets})
+                        : 'seriousGameNotionsWithoutHelp'|trans({'%share%': (course.withoutHelp * 100)|round, '%closed%': course.closed, '%count%': course.tickets}),
+                }) }}
+                {% if course.withoutHelp is not null %}
+                    <div class="cm-sg-notions__bar" aria-hidden="true"><span style="width: {{ (course.withoutHelp * 100)|round }}%"></span></div>
+                {% endif %}
+                {% if course.misconceptions is empty %}
+                    <div class="card-body"><p class="text-secondary mb-0">{{ 'seriousGameNotionsNoMisconception'|trans }}</p></div>
+                {% else %}
+                    <ul class="cm-sg-errors">
+                        {% for m in course.misconceptions|slice(0, 6) %}
+                            <li>
+                                <strong>{{ m.label }}</strong>
+                                <span class="cm-sg-errors__count">{{ 'seriousGameNotionsHeldBy'|trans({'%count%': m.students, '%total%': notions.students, '%answers%': m.answers}) }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -58,6 +58,40 @@ final class RewardRules
         return $earned;
     }
 
+    /**
+     * The pieces of a game of the « scénario » mechanic (design/validated/serious-games-neko-con.md
+     * §4): a card per act whose tickets were all closed at least once; the trophy in brass once the
+     * final ticket was closed - the site online -, silver at `silver_at` tickets with three stars,
+     * gold at `gold_at`, read on the best stars of each ticket; the pin with it.
+     *
+     * @param array<string, array{0: int, 1: int}>                         $chapters   act => [closed, total]
+     * @param array{code: string, silver_at: int, gold_at: int, ...}|null $trophy
+     * @param array{code: string, ...}|null                                $pin
+     *
+     * @return array<string, SeriousGameFinish|null>
+     */
+    public static function scenarioEarned(string $game, array $chapters, bool $online, int $threeStars, ?array $trophy, ?array $pin): array
+    {
+        $earned = [];
+        foreach ($chapters as $chapter => [$closed, $total]) {
+            if ($total > 0 && $closed >= $total) {
+                $earned[self::card($game, $chapter)] = null;
+            }
+        }
+        if ($online && null !== $trophy) {
+            $earned[$trophy['code']] = match (true) {
+                $threeStars >= $trophy['gold_at'] => SeriousGameFinish::Gold,
+                $threeStars >= $trophy['silver_at'] => SeriousGameFinish::Silver,
+                default => SeriousGameFinish::Brass,
+            };
+            if (null !== $pin) {
+                $earned[$pin['code']] = null;
+            }
+        }
+
+        return $earned;
+    }
+
     public static function card(string $game, string $chapter): string
     {
         return 'card-'.$game.'-'.$chapter;

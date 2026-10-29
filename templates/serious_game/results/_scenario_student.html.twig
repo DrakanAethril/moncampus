@@ -1,0 +1,42 @@
+{# One student's sheet in a scenario (design/validated/serious-games-neko-con.md §5): their tickets in
+   the order they took them up, the stars, the help asked, the named misconceptions, the lines
+   designated and the criteria their deliveries failed. Never their code: it is not kept. #}
+<section class="card">
+    {{ component('Cm:Subhead', {title: 'seriousGameStudentTicketsHeading'|trans({'%game%': detail.game.title}), hint: 'seriousGameStudentTicketsHint'|trans}) }}
+    <ol class="cm-sg-tickets">
+        {% for row in detail.tickets %}
+            <li>
+                <div class="cm-sg-tickets__head">
+                    <strong>{{ row.ticket.id }} · {{ row.ticket.title }}</strong>
+                    <span class="text-secondary">· {{ row.ticket.course }}</span>
+                    {% if row.status %}<twig:Cm:Badge :of="row.status"/>{% endif %}
+                    {% if row.stars %}<span class="cm-sg-tickets__stars" title="{{ 'seriousGameTicketStars'|trans({'%count%': row.stars}) }}">{{ '★★★'|slice(0, row.stars) }}</span>{% endif %}
+                    {% if row.hints > 0 %}<twig:Cm:Badge tone="teal">{{ 'seriousGameHelpCount'|trans({'%count%': row.hints}) }}</twig:Cm:Badge>{% endif %}
+                    <span class="cm-sg-tickets__dates text-secondary small">
+                        {% if row.startedAt %}{{ row.startedAt|date('d/m') }}{% endif %}{% if row.closedAt %} → {{ row.closedAt|date('d/m') }}{% endif %}
+                    </span>
+                </div>
+                {% if row.events is not empty %}
+                    <ul class="cm-sg-tickets__events">
+                        {% for event in row.events %}
+                            <li>
+                                {% if event.help %}<span class="text-secondary">{{ 'seriousGameDuringHelp'|trans }}</span>{% endif %}
+                                {% if event.kind == 'fix' %}
+                                    {{ 'seriousGameDeliveryRefused'|trans }}{% if event.input %} : <em>{{ event.input }}</em>{% endif %}
+                                {% elseif event.kind == 'line' %}
+                                    {{ 'seriousGameWrongLine'|trans }}{% if event.input %} <code>{{ event.input }}</code>{% endif %}
+                                {% elseif event.misconception %}
+                                    <twig:Cm:Badge tone="red">{{ event.misconception }}</twig:Cm:Badge>
+                                {% else %}
+                                    {{ 'seriousGameAnswerWrong'|trans }}
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </li>
+        {% else %}
+            <li class="text-secondary">{{ 'seriousGameNothingPlayed'|trans }}</li>
+        {% endfor %}
+    </ol>
+</section>

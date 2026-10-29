@@ -1,0 +1,118 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The class map of a scenario (design/validated/serious-games-neko-con.md §5): students × tickets
+   grouped by act, each ticket's status and stars, a mark where Inès' help was asked. Filters
+   « Bloqués », « Beaucoup d'aide », « Inactifs depuis 14 jours »; sorted by name or last activity,
+   never by score. #}
+
+{% block title %}{{ game.title }} · {{ program.shortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'seriousGameResultsHeading'|trans, url: path('app_serious_games_results')},
+        {label: program.shortName ~ ' · ' ~ game.title, url: path('app_serious_games_results_class', {program: program.id, slug: game.slug})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ game.title }} · {{ program.shortName }}{% endblock %}
+
+{% block page_actions %}
+    <twig:Cm:Button variant="outline" href="{{ path('app_serious_games_results_notions', {program: program.id, slug: game.slug}) }}">{{ 'seriousGameNotionsHeading'|trans }}</twig:Cm:Button>
+{% endblock %}
+
+{% block main %}
+    {% set kpis = reading.kpis %}
+    {% set rows = reading.rows|filter(r => filter == 'all' or (filter == 'blocked' and r.blocked) or (filter == 'help' and r.help) or (filter == 'inactive' and r.inactive)) %}
+    {% if order == 'activity' %}{% set rows = rows|sort((a, b) => (b.lastPlayedAt ? b.lastPlayedAt|date('U') : 0) <=> (a.lastPlayedAt ? a.lastPlayedAt|date('U') : 0)) %}{% endif %}
+    {% set acts = reading.acts|filter(a => act == 0 or a.n == act) %}
+
+    <p class="cm-sg-results__readers">{{ 'seriousGameClassReaders'|trans({'%count%': kpis.students, '%class%': program.shortName}) }}</p>
+
+    <div class="cm-sg-kpis">
+        <div><b>{{ kpis.playedThisWeek }}</b><span>{{ 'seriousGameKpiPlayedWeek'|trans }}</span></div>
+        <div><b>{{ kpis.medianClosed }}</b><span>{{ 'seriousGameKpiMedianClosed'|trans }}</span></div>
+        <div><b>{{ kpis.blocked }}</b><span>{{ 'seriousGameKpiBlocked'|trans }}</span></div>
+        <div><b>{{ kpis.online }}</b><span>{{ 'seriousGameKpiOnline'|trans }}</span></div>
+    </div>
+
+    <form method="get" class="cm-sg-filters card" data-controller="auto-submit">
+        <label>{{ 'seriousGameActFilter'|trans }}
+            <select name="act" class="form-select" data-action="auto-submit#submit">
+                <option value="">{{ 'seriousGameFilterAll'|trans }}</option>
+                {% for a in reading.acts %}<option value="{{ a.n }}" {{ act == a.n ? 'selected' }}>{{ 'seriousGameActLabel'|trans({'%n%': a.n}) }} · {{ a.title }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>{{ 'seriousGameFilterStudents'|trans }}
+            <select name="students" class="form-select" data-action="auto-submit#submit">
+                <option value="" {{ filter == 'all' ? 'selected' }}>{{ 'seriousGameFilterAllStudents'|trans }}</option>
+                <option value="blocked" {{ filter == 'blocked' ? 'selected' }}>{{ 'seriousGameFilterBlocked'|trans }}</option>
+                <option value="help" {{ filter == 'help' ? 'selected' }}>{{ 'seriousGameFilterMuchHelp'|trans }}</option>
+                <option value="inactive" {{ filter == 'inactive' ? 'selected' }}>{{ 'seriousGameFilterInactive'|trans }}</option>
+            </select>
+        </label>
+        <label>{{ 'seriousGameFilterOrder'|trans }}
+            <select name="order" class="form-select" data-action="auto-submit#submit">
+                <option value="name" {{ order == 'name' ? 'selected' }}>{{ 'seriousGameOrderName'|trans }}</option>
+                <option value="activity" {{ order == 'activity' ? 'selected' }}>{{ 'seriousGameOrderActivity'|trans }}</option>
+            </select>
+        </label>
+        <noscript><button type="submit" class="cm-action--positive">{{ 'submitSaveAction'|trans }}</button></noscript>
+        <div class="cm-sg-legend" aria-hidden="true">
+            <span class="cm-sg-tk cm-sg-tk--done">★★★</span>{{ 'seriousGameTicketDone'|trans }}
+            <span class="cm-sg-tk cm-sg-tk--doing"></span>{{ 'seriousGameTicketDoing'|trans }}
+            <span class="cm-sg-tk cm-sg-tk--todo"></span>{{ 'seriousGameTicketTodo'|trans }}
+            <span class="cm-sg-tk cm-sg-tk--doing is-help"></span>{{ 'seriousGameLegendHelp'|trans }}
+            <span class="cm-sg-tk cm-sg-tk--doing is-blocked"></span>{{ 'seriousGameLegendBlocked'|trans }}
+        </div>
+    </form>
+
+    <section class="card cm-sg-map">
+        <div class="table-responsive">
+            <table class="cm-sg-hm cm-sg-hm--tickets">
+                <thead>
+                    <tr class="cm-sg-hm__cons">
+                        <th></th>
+                        {% for a in acts %}<th colspan="{{ a.tickets|length }}" title="{{ a.title }}">{{ 'seriousGameActLabel'|trans({'%n%': a.n}) }}</th>{% endfor %}
+                        <th></th>
+                    </tr>
+                    <tr class="cm-sg-hm__nums">
+                        <th class="cm-sg-hm__who">{{ 'seriousGameResultsStudentColumn'|trans }}</th>
+                        {% for a in acts %}{% for ticket in a.tickets %}<th title="{{ ticket.id }} · {{ ticket.title }} ({{ ticket.course }})" scope="col"><span class="visually-hidden">{{ ticket.id }} · {{ ticket.title }}</span><span aria-hidden="true">{{ ticket.id|slice(1) }}</span></th>{% endfor %}{% endfor %}
+                        <th>{{ game.unitLabel }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <th scope="row" class="cm-sg-hm__who">
+                                <a href="{{ path('app_serious_games_results_student', {user: row.student.id}) }}">
+                                    {% if row.avatar %}<span data-controller="sg-avatar" data-sg-avatar-config-value="{{ row.avatar.config|json_encode }}" data-sg-avatar-size-value="22"></span>{% endif %}
+                                    {{ row.student.lastname }} {{ row.student.firstname }}
+                                </a>
+                                <small title="{{ 'seriousGameLastActivity'|trans }}">{{ row.lastPlayedAt ? 'seriousGameLastActivityOn'|trans({'%date%': row.lastPlayedAt|date('d/m')}) : '—' }}</small>
+                            </th>
+                            {% for a in acts %}{% for ticket in a.tickets %}
+                                {% set cell = row.cells[ticket.id] %}
+                                {% set label = cell.status ? ('seriousGameTicket' ~ cell.status|capitalize)|trans : 'seriousGameTicketNotOpened'|trans %}
+                                <td class="cm-sg-hm__c">
+                                    <span class="cm-sg-tk cm-sg-tk--{{ cell.status ?? 'none' }} {{ cell.help ? 'is-help' }} {{ cell.blocked ? 'is-blocked' }}"
+                                          title="{{ ticket.id }} · {{ ticket.title }} — {{ label }}{{ cell.stars ? ' · ' ~ 'seriousGameTicketStars'|trans({'%count%': cell.stars}) }}{{ cell.help ? ' · ' ~ 'seriousGameLegendHelp'|trans }}{{ cell.blocked ? ' · ' ~ 'seriousGameLegendBlocked'|trans }}">{{ cell.stars ? '★★★'|slice(0, cell.stars) }}</span>
+                                </td>
+                            {% endfor %}{% endfor %}
+                            <td class="cm-sg-hm__total">{{ row.lit }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="50" class="text-secondary">{{ 'seriousGameNoStudentMatches'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="cm-sg-hm__pct">
+                        <th>{{ 'seriousGameShareClosed'|trans }}</th>
+                        {% for a in acts %}{% for ticket in a.tickets %}<td>{{ (reading.share[ticket.id] * 100)|round }}</td>{% endfor %}{% endfor %}
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+{% endblock %}

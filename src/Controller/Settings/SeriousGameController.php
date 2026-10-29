@@ -13,6 +13,7 @@ use App\Repository\SeriousGameTemplateRepository;
 use App\Security\Voter\SeriousGameVoter;
 use App\SeriousGame\SeriousGameHealth;
 use App\SeriousGame\SeriousGameManifest;
+use App\SeriousGame\SeriousGameScenarioPlay;
 use App\SeriousGame\SeriousGameTemplates;
 use App\SeriousGame\Template\TemplateBench;
 use App\SeriousGame\Template\TemplateDefinition;
@@ -80,6 +81,10 @@ class SeriousGameController extends AbstractController
     {
         $game = $this->managedGame($games, $slug);
         $this->assertToken($request, 'serious-game-kinds-'.$slug);
+        // A scenario's kinds of step are its tickets', not a setting.
+        if ($game->isScenario()) {
+            throw $this->createNotFoundException();
+        }
 
         $kinds = array_values(array_intersect(array_keys(self::ANSWER_KINDS), array_keys($request->request->all('kinds'))));
         if ([] === $kinds) {
@@ -99,6 +104,13 @@ class SeriousGameController extends AbstractController
     public function game(string $slug, SeriousGameRepository $games, SeriousGameTemplateRepository $templates, SeriousGameHealth $health): Response
     {
         $game = $this->managedGame($games, $slug);
+        if ($game->isScenario()) {
+            return $this->render('settings/serious_game/scenario.html.twig', [
+                'game' => $game,
+                'scenario' => SeriousGameScenarioPlay::scenario($game),
+                'health' => $health->forGame($game),
+            ]);
+        }
         $manifest = new SeriousGameManifest($game->getManifest());
         $versions = [];
         foreach ($templates->findForGame($game) as $template) {
@@ -126,6 +138,28 @@ class SeriousGameController extends AbstractController
             'game' => $game,
             'chapters' => $chapters,
             'health' => $health->forGame($game),
+        ]);
+    }
+
+    /**
+     * The ticket bench of a scenario (design/validated/serious-games-neko-con.md §8, lot 2): the
+     * game's bench page renders every ticket's bug and repair; this screen hands it the server's
+     * half of the tickets. `?t=T12` benches one ticket.
+     */
+    #[Route(path: '/settings/serious-games/{slug}/ticket-bench', name: 'app_settings_serious_games_ticket_bench', methods: ['GET'])]
+    public function ticketBench(Request $request, string $slug, SeriousGameRepository $games): Response
+    {
+        $game = $this->managedGame($games, $slug);
+        if (!$game->isScenario()) {
+            throw $this->createNotFoundException();
+        }
+        $scenario = $game->getManifest()['scenario'] ?? [];
+        $only = QueryValue::trimmed($request, 't');
+
+        return $this->render('settings/serious_game/ticket_bench.html.twig', [
+            'game' => $game,
+            'scenario' => \is_array($scenario) ? $scenario : [],
+            'only' => 1 === preg_match('/^[A-Za-z0-9_-]{1,40}$/', $only) ? $only : '',
         ]);
     }
 

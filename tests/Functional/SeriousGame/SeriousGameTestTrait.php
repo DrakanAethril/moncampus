@@ -7,6 +7,8 @@ namespace App\Tests\Functional\SeriousGame;
 use App\Entity\SeriousGame;
 use App\Entity\SeriousGameRoleSetting;
 use App\Entity\SeriousGameTemplate;
+use App\Enum\SeriousGameMechanic;
+use App\SeriousGame\Scenario\ScenarioManifest;
 use App\SeriousGame\SeriousGamePlay;
 use App\SeriousGame\Template\TemplateDefinition;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,6 +39,10 @@ trait SeriousGameTestTrait
         $directory = static::getContainer()->getParameter('kernel.project_dir').'/config/serious_games/'.$slug;
         /** @var array<string, mixed> $manifest */
         $manifest = Yaml::parseFile($directory.'/game.yaml');
+        $scenario = 'scenario' === ($manifest['mechanic'] ?? null);
+        if ($scenario) {
+            $manifest = ScenarioManifest::withTickets($manifest, $directory);
+        }
         $title = \is_string($manifest['title'] ?? null) ? $manifest['title'] : $slug;
         $unitLabel = \is_string($manifest['unit_label'] ?? null) ? $manifest['unit_label'] : '';
         $answerKinds = array_values(array_filter(\is_array($manifest['answer_kinds'] ?? null) ? $manifest['answer_kinds'] : ['short'], is_string(...)));
@@ -48,6 +54,7 @@ trait SeriousGameTestTrait
             ->setAnswerKinds($answerKinds)
             ->setSubjects(array_values(array_filter(\is_array($manifest['subjects'] ?? null) ? $manifest['subjects'] : [], is_string(...))))
             ->setLevels(array_values(array_filter(\is_array($manifest['levels'] ?? null) ? $manifest['levels'] : [], is_string(...))))
+            ->setMechanic($scenario ? SeriousGameMechanic::Scenario : SeriousGameMechanic::Series)
             ->setManifest($manifest);
         $entityManager->persist($game);
         foreach ($roles as $role) {
