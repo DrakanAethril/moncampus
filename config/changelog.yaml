@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.29.3'
+      date: '2026-10-29'
+      summary: "Un troisième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration : une boutique de jeux rétro dont le stock ne tombe jamais juste, pour les bases de données et le SQL en deuxième année de BTS SIO."
+      entries:
+          - type: nouveaute
+            title: "Nouveau jeu d'entraînement, en essai auprès de l'administration : remettre d'aplomb la base d'une boutique de jeux rétro avant l'ouverture de son site"
+            detail: "Pour les bases de données en deuxième année de BTS SIO ; on y écrit des requêtes comme à l'examen, jointures, mises à jour et déclencheurs compris, jusqu'à trouver ce qui fait disparaître le stock."
+          - type: interne
+            title: "Les jeux d'entraînement peuvent embarquer leur propre moteur de base de données, exécuté dans le navigateur"
     - version: '2026.10.29.2'
       date: '2026-10-29'
       summary: "Un deuxième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration : une nuit de LAN party à sauver, pour le réseau et la cybersécurité en deuxième année de BTS SIO."
