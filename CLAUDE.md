@@ -94,7 +94,7 @@ asked — made the second run throw « A lock is already in place ».
 | `app:rncp:fetch` | **Scheduled every minute.** Serves the « Récupérer chez France compétences » requests of the portfolio's Référentiels tab: finds the day's `export-fiches-rncp-v4-1-*.zip` through the data.gouv.fr API (no URL written down), downloads it once into `var/rncp/`, streams through it (`XMLReader` over `zip://`) and writes the fiche into the `RncpImport`. Nothing requested, nothing downloaded. A network failure is « En échec » on screen, never a non-zero exit. `--file=` reads a local export |
 | `app:rncp:check` | **Scheduled Mondays 05:30.** Rereads each référentiel's RNCP fiche - still active, end of registration, a fiche that now replaces it - into `Referential::$rncpWatch`; the Référentiels screen turns a change into a banner, logged at *warning*. Never rewrites a référentiel: a new fiche is a new version |
 | `app:class-board:photo` | **Scheduled every hour at :07.** The virtual board's photograph of the day (« Photo », the default background): the first pass of the day draws a photograph from Wikimedia Commons' featured nature categories (`App\Service\ClassBoard\CommonsNaturePhotos`; `CommonsPhoto::fromImageInfo()` is the whole rule - camera EXIF, 4:3 to 2:1, CC0/PD/BY/BY-SA), copies it into the uploads bucket and records it (`ClassBoardPhoto`), the others only clean: bytes deleted two days after their day, rows kept so nothing repeats within two years. A Commons that does not answer is a *warning*, never a non-zero exit. `--replace` draws another one for today |
-| `app:serious-games:sync` | **Run once after a deploy that adds a serious game or a template, never scheduled.** Creates or updates each game of `config/serious_games/*/game.yaml` (unpublished on creation) and installs the templates the database lacks as version 1, validated, after a bench of 200 seeds - a red bench refuses the template. Never overwrites a version written in the database; `--refresh` rewrites a shipped version still current and never served. See `docs/production.md` |
+| `app:serious-games:sync` | **Run once after a deploy that adds a serious game, a template or a ticket, never scheduled.** Creates or updates each game of `config/serious_games/*/game.yaml` (unpublished on creation) and installs the templates the database lacks as version 1, validated, after a bench of 200 seeds - a red bench refuses the template. A scenario's tickets are read into the manifest, checked whole by `ScenarioValidator`. Never overwrites a version written in the database; `--refresh` rewrites a shipped version still current and never served. See `docs/production.md` |
 | `app:serious-games:bench` | **Diagnostic, not scheduled.** The bench of a game's question templates (1000 seeds by default): answer accepted typed and displayed, every wrong value recognised as its own typical error, no NaN, determinism, series without duplicates, comets. `--files` reads the repository without a database, `--draft` the latest drafts, `--save` stores the reports - which is what makes a draft validatable |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
@@ -263,10 +263,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
 - **Serious games** (`/serious-games`) — `SeriousGame*` entities, `src/SeriousGame/`,
-  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; four games built,
+  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; five games built,
   **L'Observatoire** (automatismes de 1re), **Les Tablettes de Pompéi** (déclinaisons latines,
   4e-2nde, `design/validated/serious-games-pompei.md`), **Station Abysse** (SVT, 2nde-1re,
-  `serious-games-abysse.md`) and **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`). **In the margin of Formatool**: it shares the sign-in
+  `serious-games-abysse.md`), **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`) and **Panique
+  à la Neko-Con** (HTML et CSS, BTS SIO 1, `serious-games-neko-con.md`, the only one of the « scénario » mechanic). **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
   mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus
   one line per game in the « Serious games » block of Paramètres › Fonctionnalités
@@ -320,6 +321,24 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     carries a deadline, read against `serverTime`. The avatar and the reward
     drawings are one JavaScript module each, shared by the platform and the games
     (`public/serious-games/shared/`); students only collect.
+  - **Two mechanics** (`SeriousGame::$mechanic`, the manifest's `mechanic`): the four games above are
+    **series** of generated questions; Neko-Con is a **scenario** (`src/SeriousGame/Scenario/`,
+    `SeriousGameScenarioPlay`, `ScenarioApiController`) - 39 hand-written tickets in
+    `config/serious_games/neko-con/tickets/*.yaml`, played once each, opened by a graph onto a
+    Kanban board of four. A ticket is a unit (`SeriousGameUnitState::$status`, `$stepId`, `$hints`…),
+    each opening a session of mode `ticket`. **The right answers live in those YAML files, never in
+    the game's package**: the server corrects explanations, guided questions and the password; the
+    browser alone measures a repair and sends `{passed, failed}` - **the code delivered is never
+    kept**, only the failed criteria (`ScenarioRules::grade()`). Stars: 3 with neither error nor
+    help, an error made during Inès' help not counted. The sync checks a scenario whole
+    (`ScenarioValidator`); the rendering of each ticket is checked by « Banc des tickets »
+    (Paramètres › Serious games, the game's own `bench.html` in a sandboxed frame, fed the scenario
+    by `sg_ticket_bench_controller.js`). The teachers read it through `SeriousGameScenarioReading`
+    (class map with « Bloqués » / « Beaucoup d'aide », « Notions à reprendre », the student's sheet).
+  - **`/serious-games/stats`** (`StatsController`, `App\SeriousGame\Stats\`): usage, progression,
+    analysis of the units, a class's list and the years, for every game - read by **every teacher**
+    and the administrators with the names (`SeriousGameVoter::READ_STATS`, the user's decision of
+    2026-10-29), students only counted. What each student gets wrong stays the student's sheet.
   - **What keeps a player in the game is one shared module too** (`shared/engage.js` +
     `engage.css`, spec §1.17): the gauge of a series in progress (levels 6/8/10/12, the record,
     « encore N justes pour… »), the « N d'affilée » streak, « Encore une » on Entrée at the end of a
