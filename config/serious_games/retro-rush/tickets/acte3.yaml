@@ -1,0 +1,207 @@
+# Rétro Rush - acte 3 : Les jointures.
+#
+# The server half of the tickets (design/validated/serious-games-retro-rush.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Jade's
+# guided questions, the clue closing gives. The game half (deliverables and their reference answers,
+# starting texts, views, written hints, scenes) is public/serious-games/retro-rush/tickets/acte3.js.
+# Converted from the prototype's host/scenario/acte3.js by its tool/to-yaml.js; `hints` counts
+# the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: R10
+    act: 3
+    after: [R09]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: demande
+    category: 'Requêtes › Jointures'
+    title: 'Le catalogue avec le nom des consoles'
+    request: 'Pour le site, il me faut la liste de tous les jeux avec le nom de leur console, pas son numéro : le titre, puis la console. Rangés par console, puis par titre.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris la requête, essaie-la, puis livre-la à Océane.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Ta jointure entre Jeu et Console : qu''est-ce qu''elle fait, au juste ?'
+        options:
+          - { text: 'Elle associe à chaque jeu la ligne de Console qui a le même idConsole : on obtient une ligne par jeu, avec le nom de sa console. Les tables elles-mêmes ne changent pas.', ok: true, reaction: { who: jade, expr: sourire, text: 'Oui. Une jointure fabrique un résultat ; elle ne touche à aucune table.' } }
+          - { text: 'Elle recopie la table Console dans la table Jeu.', misconception: jointure-copie, reaction: { who: jade, expr: sourcil, text: 'Rien n''est recopié. Ouvre Jeu dans le schéma : elle n''a toujours que idConsole.' } }
+          - { text: 'Le ON est facultatif, il sert juste à aller plus vite.', misconception: jointure-sans-on, reaction: { who: jade, expr: neutre, text: 'Sans condition, chaque jeu serait associé à chaque console : 38 × 12 lignes. C''est le produit cartésien.' } }
+          - { text: 'Elle donne une ligne par console, avec la liste de ses jeux.', misconception: jointure-par-console, reaction: { who: jade, expr: neutre, text: 'Compte tes lignes : une par jeu. Une console revient autant de fois qu''elle a de jeux.' } }
+    guide:
+      -
+        id: lien
+        kind: choice
+        prompt: 'Quelle colonne relie Jeu à Console ?'
+        options:
+          - { text: 'idConsole : clé étrangère dans Jeu, clé primaire dans Console', ok: true }
+          - { text: nom, misconception: lien-nom, reaction: { who: jade, expr: neutre, text: 'Jeu n''a pas de colonne nom. Le lien passe toujours par la clé.' } }
+          - { text: 'idJeu', misconception: lien-pk, reaction: { who: jade, expr: neutre, text: 'Console n''a pas d''idJeu. Cherche la colonne que les deux tables ont en commun.' } }
+    hints: 2
+  -
+    id: R11
+    act: 3
+    after: [R10]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: incident
+    category: 'Requêtes › Jointure externe'
+    title: 'Il manque le Zelda sur ma liste'
+    request: 'Je veux tous mes jeux Super Nintendo, avec les exemplaires que j''ai en rayon : titre, état, stock. Ceux que je n''ai plus en rayon aussi, avec un vide à la place, pour savoir quoi racheter. Il manque le Zelda sur ma liste ! Et Chrono Trigger.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête de Gilles, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi « a.stock > 0 » devait passer du WHERE au ON ?'
+        options:
+          - { text: 'Le LEFT JOIN garde le Zelda en complétant les colonnes d''Article par NULL. Mais le WHERE s''applique ensuite : « NULL > 0 » n''est pas vrai, et la ligne disparaît. Dans le ON, la condition choisit seulement les exemplaires à joindre ; le jeu reste.', ok: true, reaction: { who: jade, expr: sourire, text: 'C''est LE piège des jointures externes. Une condition sur la table de droite, dans le WHERE, refait une jointure interne.' } }
+          - { text: 'Un LEFT JOIN garde toutes les lignes de gauche quoi qu''il arrive : c''est la jointure avec Console qui perdait le Zelda.', misconception: left-join-garde-tout, reaction: { who: jade, expr: sourcil, text: 'Le LEFT JOIN garde la ligne… jusqu''au WHERE. Un WHERE sur la table de droite le transforme en jointure interne.' } }
+          - { text: 'WHERE et ON, c''est pareil ; le ON est juste plus rapide.', misconception: where-on-pareil, reaction: { who: jade, expr: neutre, text: 'Pour une jointure interne, le résultat est le même. Pour une jointure externe, non : tu viens de le voir.' } }
+          - { text: 'Il fallait un RIGHT JOIN, pas un LEFT JOIN.', misconception: right-join, reaction: { who: jade, expr: neutre, text: 'Un RIGHT JOIN garderait tous les articles, pas tous les jeux. Le problème est la place de la condition, pas le sens.' } }
+    guide:
+      -
+        id: ligne
+        kind: line
+        view: requete
+        prompt: 'Clique sur la ligne qui fait disparaître le Zelda.'
+        answer: 'a.stock > 0'
+        reaction: { who: jade, expr: neutre, text: 'Le Zelda a deux exemplaires, tous les deux à 0. Quelle ligne les élimine ?' }
+      -
+        id: place
+        kind: choice
+        prompt: 'Où mettre une condition sur la table de droite d''un LEFT JOIN, pour garder toutes les lignes de gauche ?'
+        options:
+          - { text: 'Dans le ON du LEFT JOIN', ok: true }
+          - { text: 'Dans le WHERE', misconception: left-join-garde-tout, reaction: { who: jade, expr: sourcil, text: 'C''est justement ce que faisait la requête de Gilles.' } }
+          - { text: 'Dans un HAVING', misconception: having-filtre, reaction: { who: jade, expr: neutre, text: 'HAVING filtre des groupes, après un GROUP BY. Il n''y a pas de regroupement ici.' } }
+    hints: 3
+  -
+    id: R12
+    act: 3
+    after: [R10]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: demande
+    category: 'Requêtes › Jointures'
+    title: 'Les ventes de mars, avec les jeux'
+    request: 'Gilles veut revoir les ventes de mars 2026 : pour chaque ligne de vente, la date, le titre du jeu, la quantité et le prix payé. Moi, je n''arrive qu''à sortir des numéros d''articles.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Complète la requête d''Océane, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: neutre
+        prompt: 'Tu as relié quatre tables. L''ordre des JOIN change-t-il le résultat ?'
+        options:
+          - { text: 'Non, pour des jointures internes : le résultat est le même dans n''importe quel ordre. Ce qui compte, c''est que chaque table soit reliée par la bonne condition : de LigneVente à Article, puis d''Article à Jeu.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exact. Suis les clés étrangères comme un chemin : chaque JOIN est une étape.' } }
+          - { text: 'Oui : il faut toujours partir de la table qui a le plus de lignes.', misconception: ordre-from, reaction: { who: jade, expr: sourcil, text: 'Le moteur choisit lui-même par où commencer. L''ordre d''écriture ne change pas les lignes obtenues.' } }
+          - { text: 'Il fallait relier LigneVente directement à Jeu, sans passer par Article.', misconception: chemin-direct, reaction: { who: jade, expr: neutre, text: 'LigneVente n''a pas d''idJeu : le chemin passe forcément par Article, qui le porte.' } }
+          - { text: 'On ne peut filtrer sur la date qu''avant de joindre les autres tables.', misconception: where-jointure, reaction: { who: jade, expr: neutre, text: 'Le WHERE s''écrit après les jointures et peut viser n''importe quelle table jointe.' } }
+    guide:
+      -
+        id: chemin
+        kind: choice
+        prompt: 'Par quelle table passer pour aller de LigneVente à Jeu ?'
+        options:
+          - { text: 'Article', ok: true }
+          - { text: 'Vente', misconception: chemin-vente, reaction: { who: jade, expr: neutre, text: 'Vente porte la date et le client, pas le jeu. Regarde quelle table a idJeu.' } }
+          - { text: 'Console', misconception: chemin-console, reaction: { who: jade, expr: neutre, text: 'Console est au bout du chemin de Jeu, pas entre LigneVente et Jeu.' } }
+    hints: 3
+  -
+    id: R13
+    act: 3
+    after: [R11]
+    course: 'B2 · Requêtes SQL'
+    requester: ferrand
+    kind: incident
+    category: 'Requêtes › Jointures'
+    title: 'Mes jeux en dépôt'
+    request: 'Je veux voir mes jeux en dépôt chez Gilles : le titre, la console, l''état, le prix et le stock. Mon neveu m''a appris le SQL, j''ai écrit la requête moi-même. La machine me répond que « d.nom n''existe pas ». Il existe, mon nom, monsieur.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête de M. Ferrand, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Tu as ajouté une jointure avec Deposant pour filtrer sur le nom. Était-ce vraiment nécessaire ?'
+        options:
+          - { text: 'Oui : une colonne n''est utilisable que si sa table est dans le FROM ou dans un JOIN. Joindre Deposant, puis filtrer sur d.nom, suffit : pas besoin de sous-requête.', ok: true, reaction: { who: jade, expr: sourire, text: 'Voilà. Filtrer sur une table jointe, c''est le cas le plus courant.' } }
+          - { text: 'Non, il aurait fallu une sous-requête : on ne filtre pas sur une table jointe.', misconception: sous-requete-obligatoire, reaction: { who: jade, expr: sourcil, text: 'Si, on filtre très bien sur une table jointe. La sous-requête marcherait aussi, mais elle n''est pas obligatoire.' } }
+          - { text: 'Non : l''alias d existe partout, même sans le déclarer.', misconception: alias-global, reaction: { who: jade, expr: neutre, text: 'Un alias se déclare dans le FROM ou dans un JOIN. Sans ça, d n''existe pas : c''était l''erreur de M. Ferrand.' } }
+          - { text: 'Oui, parce que le nom est la clé primaire de Deposant.', misconception: nom-cle, reaction: { who: jade, expr: neutre, text: 'La clé de Deposant, c''est idDeposant. Le nom n''est même pas unique : deux Ferrand pourraient déposer.' } }
+    hints: 2
+  -
+    id: R14
+    act: 3
+    after: [R12, R13]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: demande
+    category: 'Requêtes › Jointure externe'
+    title: 'Les clients qui n''ont jamais acheté'
+    request: 'Pour l''ouverture, je veux offrir un bon d''achat aux clients inscrits qui n''ont jamais rien acheté. Leur nom et leur prénom. Ma requête me sort au contraire ceux qui achètent, et plusieurs fois les mêmes.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête de Gilles, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi un LEFT JOIN, puis « IS NULL » ?'
+        options:
+          - { text: 'Le LEFT JOIN garde tous les clients et met NULL dans les colonnes de Vente pour ceux qui n''ont aucune vente. IS NULL sur la clé de Vente ne garde que ceux-là.', ok: true, reaction: { who: jade, expr: sourire, text: 'C''est la recette des « jamais » : jointure externe, puis IS NULL sur la clé de droite.' } }
+          - { text: 'Une jointure interne montrait déjà ceux sans vente ; IS NULL les met en premier.', misconception: inner-garde, reaction: { who: jade, expr: sourcil, text: 'Une jointure interne ne garde que les clients qui ont au moins une vente : ceux qu''on cherche disparaissent.' } }
+          - { text: 'IS NULL retire les clients dont la ville n''est pas renseignée.', misconception: null-colonne, reaction: { who: jade, expr: neutre, text: 'IS NULL porte sur la colonne qu''on lui donne : ici, une colonne de Vente, vide quand il n''y a pas de vente.' } }
+          - { text: 'Le LEFT JOIN sert à retirer les doublons.', misconception: left-doublons, reaction: { who: jade, expr: neutre, text: 'Un LEFT JOIN n''enlève rien : il garde en plus les lignes de gauche sans correspondance.' } }
+    hints: 2
+  -
+    id: R15
+    act: 3
+    after: [R14]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: incident
+    category: 'Requêtes › Doublons'
+    title: 'Pourquoi Mario apparaît trois fois ?'
+    request: 'Pour les étiquettes du rayon, je veux chaque article en rayon : le titre, l''état et le prix. Ma requête m''affiche Super Mario World loose trois fois, et il manque des jeux que je vois pourtant sur l''étagère, comme Super Mario Bros. 3 en boîte.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête d''Océane, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Les doublons disparaissent aussi avec un DISTINCT. Pourquoi ne pas l''avoir ajouté ?'
+        options:
+          - { text: 'La jointure avec LigneVente ne servait à rien ici : elle répétait un article une fois par vente, et faisait disparaître ceux qui n''ont jamais été vendus. DISTINCT aurait caché les doublons sans ramener les absents : il faut enlever la jointure.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exactement. Quand un DISTINCT « répare », demande-toi d''abord d''où viennent les doublons.' } }
+          - { text: 'J''aurais pu : DISTINCT règle le problème, c''est juste une question de goût.', misconception: distinct-repare, reaction: { who: jade, expr: sourcil, text: 'Les doublons, oui. Mais Super Mario Bros. 3, jamais vendu, manquerait toujours. DISTINCT cache le symptôme.' } }
+          - { text: 'Les doublons venaient du stock, compté trois fois.', misconception: doublon-stock, reaction: { who: jade, expr: neutre, text: 'Le stock n''est qu''une colonne. Ce qui multiplie les lignes, c''est une jointure qui trouve plusieurs correspondances.' } }
+          - { text: 'Il fallait un LEFT JOIN avec LigneVente.', misconception: left-doublons, reaction: { who: jade, expr: neutre, text: 'Le LEFT JOIN ramènerait les absents, mais garderait les doublons. Cette table n''avait rien à faire là.' } }
+    guide:
+      -
+        id: ligne
+        kind: line
+        view: requete
+        prompt: 'Clique sur la ligne qui n''a rien à faire dans cette requête.'
+        answer: 'LigneVente'
+        reaction: { who: jade, expr: neutre, text: 'Océane veut ce qui est en rayon. Quelle table parle de ce qui a été vendu ?' }
+    hints: 2

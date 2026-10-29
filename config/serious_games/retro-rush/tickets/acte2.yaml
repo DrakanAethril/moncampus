@@ -1,0 +1,166 @@
+# Rétro Rush - acte 2 : Premières requêtes.
+#
+# The server half of the tickets (design/validated/serious-games-retro-rush.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Jade's
+# guided questions, the clue closing gives. The game half (deliverables and their reference answers,
+# starting texts, views, written hints, scenes) is public/serious-games/retro-rush/tickets/acte2.js.
+# Converted from the prototype's host/scenario/acte2.js by its tool/to-yaml.js; `hints` counts
+# the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: R05
+    act: 2
+    after: [R04]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: demande
+    category: 'Requêtes › Sélection'
+    title: 'Les clients de Limoges'
+    request: 'Pour l''ouverture du site, Gilles veut que j''appelle les clients de Limoges. Il me faut leur nom, leur prénom et leur e-mail, rangés par nom.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris la requête, essaie-la, puis livre-la à Océane.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi le ORDER BY ? Sans lui, ta liste sortait déjà dans un ordre.'
+        options:
+          - { text: 'Sans ORDER BY, l''ordre des lignes n''est garanti par rien : il peut changer d''une exécution à l''autre, d''un serveur à l''autre. Seul ORDER BY promet un ordre.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exactement. Une table n''a pas d''ordre ; un résultat n''en a que si on le demande.' } }
+          - { text: 'Sans ORDER BY, les lignes sortent dans l''ordre où on les a saisies, donc par date d''inscription.', misconception: ordre-insertion, reaction: { who: jade, expr: sourcil, text: 'Souvent, oui. Jamais promis : un index, une suppression, un autre moteur, et l''ordre change.' } }
+          - { text: 'ORDER BY filtre les clients de Limoges.', misconception: order-filtre, reaction: { who: jade, expr: neutre, text: 'Le filtre, c''est le WHERE. ORDER BY ne retire aucune ligne : il les range.' } }
+          - { text: 'ORDER BY rend la requête plus rapide.', misconception: order-rapide, reaction: { who: jade, expr: neutre, text: 'Au contraire, trier a un coût. On le paie parce qu''Océane veut une liste rangée.' } }
+    guide:
+      -
+        id: place
+        kind: choice
+        prompt: 'Dans un SELECT, où se place ORDER BY ?'
+        options:
+          - { text: 'À la fin, après le WHERE', ok: true }
+          - { text: 'Juste après SELECT', misconception: ordre-clauses, reaction: { who: jade, expr: neutre, text: 'L''ordre est fixe : SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY.' } }
+          - { text: 'Avant le WHERE', misconception: ordre-clauses, reaction: { who: jade, expr: neutre, text: 'On filtre d''abord, on range ensuite : ORDER BY vient en dernier.' } }
+    hints: 2
+  -
+    id: R06
+    act: 2
+    after: [R04]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: incident
+    category: 'Requêtes › NULL'
+    title: 'Les jeux dont on ignore le genre'
+    request: 'Le site va classer les jeux par genre. J''ai demandé la liste des jeux sans genre, et ma requête ne renvoie rien. Pourtant Jade dit qu''il y en a.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête de Gilles, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi « genre = NULL » ne renvoyait rien, alors qu''il y a des jeux sans genre ?'
+        options:
+          - { text: 'NULL n''est pas une valeur mais l''absence de valeur : toute comparaison avec NULL, même « = NULL », donne « inconnu », jamais vrai. On teste l''absence avec IS NULL.', ok: true, reaction: { who: jade, expr: sourire, text: 'C''est la règle qu''on oublie le plus souvent, à l''examen comme en vrai.' } }
+          - { text: 'Parce qu''il fallait écrire NULL entre guillemets : genre = ''NULL''.', misconception: null-chaine, reaction: { who: jade, expr: sourcil, text: 'Là, tu chercherais un genre qui s''appelle « NULL » en toutes lettres. Ça n''existe pas non plus.' } }
+          - { text: '« = NULL » teste bien l''absence de valeur, mais MySQL l''ignore pour aller plus vite.', misconception: egal-null, reaction: { who: jade, expr: neutre, text: 'Rien n''est ignoré : « genre = NULL » est évalué, et donne « inconnu » pour chaque ligne. Aucune n''est gardée.' } }
+          - { text: 'Parce que NULL vaut 0, et qu''un genre n''est pas un nombre.', misconception: null-zero, reaction: { who: jade, expr: neutre, text: 'NULL n''est ni 0 ni une chaîne vide : c''est « pas de valeur ». C''est pour ça qu''on ne peut pas le comparer.' } }
+    guide:
+      -
+        id: ligne
+        kind: line
+        view: requete
+        prompt: 'Clique sur la ligne qui empêche de trouver les jeux sans genre.'
+        answer: 'genre = NULL'
+        reaction: { who: jade, expr: neutre, text: 'C''est la condition du WHERE qu''il faut regarder.' }
+    hints: 2
+  -
+    id: R07
+    act: 2
+    after: [R05]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: incident
+    category: 'Requêtes › Conditions'
+    title: 'Les loose entre 10 et 30 €'
+    request: 'Je prépare un bac « loose à petit prix » : les articles loose qui coûtent entre 10 et 30 €, bornes comprises. Il me faut le numéro de l''article, son jeu et son prix. Ma requête me sort aussi des jeux en boîte à 45 €.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête d''Océane, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Ta requête de départ mélangeait AND et OR. Qu''est-ce qui se passait ?'
+        options:
+          - { text: 'AND est évalué avant OR : la condition se lisait « loose, OU (entre 10 et 30 €) ». Tous les loose passaient, et tous les articles entre 10 et 30 € aussi. Il faut que les deux conditions soient vraies à la fois.', ok: true, reaction: { who: jade, expr: sourire, text: 'Oui. Dans le doute, mets des parenthèses : elles ne coûtent rien et se relisent bien.' } }
+          - { text: 'SQL lit les conditions de gauche à droite, et le OR arrivait trop tôt.', misconception: gauche-droite, reaction: { who: jade, expr: sourcil, text: 'Ce n''est pas l''ordre de lecture : AND passe avant OR, comme × avant + en calcul.' } }
+          - { text: 'BETWEEN exclut les bornes, il fallait >= et <=.', misconception: between-exclut, reaction: { who: jade, expr: neutre, text: 'BETWEEN 10 AND 30 inclut 10 et 30. Ce n''était pas le problème.' } }
+          - { text: 'OR est plus strict que AND.', misconception: or-strict, reaction: { who: jade, expr: neutre, text: 'C''est l''inverse : OR laisse passer dès qu''une des deux conditions est vraie.' } }
+    guide:
+      -
+        id: priorite
+        kind: choice
+        prompt: 'Dans « A OR B AND C », qu''est-ce qui est calculé d''abord ?'
+        options:
+          - { text: 'B AND C', ok: true }
+          - { text: 'A OR B', misconception: gauche-droite, reaction: { who: jade, expr: neutre, text: 'AND a la priorité sur OR, quel que soit l''ordre d''écriture.' } }
+          - { text: 'Ça dépend du moteur', misconception: moteur, reaction: { who: jade, expr: neutre, text: 'Non, c''est la règle du SQL partout : AND avant OR.' } }
+    hints: 2
+  -
+    id: R08
+    act: 2
+    after: [R06]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: demande
+    category: 'Requêtes › Motifs'
+    title: 'Tous les Mario, du plus récent au plus ancien'
+    request: 'Un client collectionne les Mario. Donne-moi tous les jeux avec « Mario » dans le titre et leur année, du plus récent au plus ancien, et par titre à année égale. Ma requête en oublie la moitié.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête de Gilles, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi « LIKE ''Mario%'' » ratait Super Mario World ?'
+        options:
+          - { text: 'Le % remplace n''importe quelle suite de caractères, mais seulement là où on le met : ''Mario%'' veut dire « commence par Mario ». Pour « contient Mario », il faut un % de chaque côté.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exact. Et _ remplace un seul caractère, si un jour tu en as besoin.' } }
+          - { text: 'LIKE cherche le mot n''importe où ; c''est la majuscule de « Super » qui gênait.', misconception: like-partout, reaction: { who: jade, expr: sourcil, text: 'La casse n''y est pour rien. ''Mario%'', c''est « commence par Mario », et Super Mario ne commence pas par Mario.' } }
+          - { text: 'LIKE se comporte comme = : il faut le titre exact.', misconception: like-egal, reaction: { who: jade, expr: neutre, text: 'Avec un %, LIKE accepte un motif. Sans %, oui, il se comporte comme =.' } }
+          - { text: 'Il fallait * au lieu de %.', misconception: like-etoile, reaction: { who: jade, expr: neutre, text: '* est le joker des fichiers. En SQL, c''est % (et _ pour un seul caractère).' } }
+    hints: 3
+  -
+    id: R09
+    act: 2
+    after: [R07, R08]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: incident
+    category: 'Requêtes › Stock'
+    title: 'Les articles à zéro, ou moins'
+    request: 'Je veux la liste des articles en rupture : stock à zéro, ou en dessous, on ne sait jamais. Le numéro de l''article, son jeu et son stock, du plus petit stock au plus grand, puis par numéro.'
+    reward: { clue: 'Le stock d''un Silent Hill est à −1, et le Zelda : A Link to the Past en boîte est à 0. Gilles en compte deux sur l''étagère. La base perd des jeux que personne n''a emportés.' }
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris la requête, essaie-la, puis livre-la à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Un stock à −1. Qu''est-ce que ça t''apprend ?'
+        options:
+          - { text: 'Qu''aucune personne n''a pu le provoquer en prenant un jeu : on n''emporte pas un exemplaire qui n''existe pas. C''est un calcul de la base qui a retiré trop d''exemplaires.', ok: true, reaction: { who: jade, expr: sourcil, text: 'Voilà. Ce n''est pas une preuve d''innocence, mais c''est une piste. On la note.' } }
+          - { text: 'Que quelqu''un a volé un jeu de plus qu''il n''y en avait.', misconception: vol, reaction: { who: jade, expr: sourcil, text: 'On ne vole pas un jeu qui n''est pas là. −1, c''est un calcul, pas un geste.' } }
+          - { text: 'Qu''il a été vendu une fois de trop en caisse.', misconception: vente-en-trop, reaction: { who: jade, expr: neutre, text: 'Regarde les ventes de Silent Hill : une seule, en septembre. Le compte n''y est pas.' } }
+          - { text: 'Rien de grave : un stock négatif, c''est une commande en attente.', misconception: negatif-normal, reaction: { who: gilles, expr: furieux, text: 'Je ne vends pas ce que je n''ai pas. Jamais.' } }
+    hints: 2

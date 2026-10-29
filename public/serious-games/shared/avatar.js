@@ -24,7 +24,8 @@
     { id: 'pin-vague', name: 'Épinglette Abysse', color: '#167784', glyph: '≈' },
     { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', glyph: '⌕' },
     { id: 'pin-neko', name: 'Épinglette Neko', color: '#E8457A', glyph: '^' },
-    { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', glyph: '◠' }
+    { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', glyph: '◠' },
+    { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', glyph: '✚' }
   ];
   A.PINS = PINS;
 
@@ -178,6 +179,13 @@
         el('rect', { x: 150, y: 98, width: 16, height: 30, rx: 7, fill: '#1B1236', stroke: '#FF2E88', strokeWidth: 2 }) +
         el('path', sx({ d: 'M42 126 Q48 150 74 150', stroke: '#1B1236', strokeWidth: 4 })) +
         el('circle', { cx: 76, cy: 150, r: 4.5, fill: '#00E5FF' });
+    } },
+    // Rétro Rush: the shop's badge, translucent purple plastic clipped on the chest
+    // (design/validated/serious-games-retro-rush.md §4) - on the body, nothing on the head.
+    'retro-rush': { label: 'Badge « Continue ? »', svg: function () {
+      return el('rect', { x: 110, y: 196, width: 34, height: 18, rx: 9, fill: '#6A3EA0', opacity: .78, stroke: '#1E1433', strokeWidth: 1.6 }) +
+        el('path', sx({ d: 'M115 201 Q126 198 138 200', stroke: '#FFFFFF', strokeWidth: 1.6, opacity: .6 })) +
+        el('circle', { cx: 137, cy: 207, r: 3, fill: '#FF8A3D' }) + el('rect', { x: 116, y: 205, width: 14, height: 3, rx: 1.5, fill: '#EDE7F7' });
     } },
     // The Irregulars: the street urchin's flat cap of 1895, its peak and its button.
     irregulars: { label: 'Casquette gavroche', svg: function () {

@@ -1,0 +1,151 @@
+# Rétro Rush - acte 1 : Le tableur de Gilles.
+#
+# The server half of the tickets (design/validated/serious-games-retro-rush.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Jade's
+# guided questions, the clue closing gives. The game half (deliverables and their reference answers,
+# starting texts, views, written hints, scenes) is public/serious-games/retro-rush/tickets/acte1.js.
+# Converted from the prototype's host/scenario/acte1.js by its tool/to-yaml.js; `hints` counts
+# the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: R01
+    act: 1
+    course: 'B2 · Concevoir une base'
+    requester: jade
+    kind: demande
+    category: 'Modélisation › Tableur'
+    title: 'Ce tableur, on en fait quoi ?'
+    request: 'Gilles m''a envoyé son tableur : une seule feuille, quinze ans de boutique. Avant de créer la moindre table, regarde un extrait avec moi. Il y a quelque chose qui cloche, et pas seulement l''orthographe.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: tableur
+        prompt: 'Clique sur la ligne où le téléphone de M. Ferrand est écrit autrement que sur les autres.'
+        answer: '0612345678'
+        reaction: { who: jade, expr: sourcil, text: 'Ce n''est pas cette ligne : regarde la dernière colonne, ligne après ligne.' }
+      -
+        id: probleme
+        kind: choice
+        label: 'Décider'
+        expr: sourcil
+        prompt: 'Le même numéro, écrit deux fois de deux façons. Quel est le vrai problème ?'
+        options:
+          - { text: 'Les informations du déposant sont répétées à chaque ligne : si M. Ferrand change de numéro, il faudra corriger toutes ses lignes, et on en oubliera. Le déposant doit avoir sa propre table, où il n''est écrit qu''une fois.', ok: true, reaction: { who: jade, expr: sourire, text: 'C''est la redondance : la même information à plusieurs endroits. Une base relationnelle l''écrit une fois, et y fait référence.' } }
+          - { text: 'Ça prend de la place pour rien : il suffit de raccourcir les numéros.', misconception: redondance-place, reaction: { who: jade, expr: sourcil, text: 'La place, c''est le moindre souci. Le vrai risque, c''est deux versions du même numéro : laquelle est la bonne ?' } }
+          - { text: 'C''est une question de format : un masque de saisie dans le tableur suffira.', misconception: format-saisie, reaction: { who: jade, expr: neutre, text: 'Le masque évitera les espaces. Pas qu''on corrige trois lignes sur quatre le jour où M. Ferrand change de numéro.' } }
+          - { text: 'Rien de grave : un tableur bien rangé vaut une base de données.', misconception: tableur-suffit, reaction: { who: jade, expr: sourcil, text: 'Bien rangé par qui ? Cinq façons d''écrire « Mega Drive » dans la colonne d''à côté répondent à ta place.' } }
+    hints: 0
+  -
+    id: R02
+    act: 1
+    after: [R01]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: incident
+    category: 'Données › Tableur'
+    title: 'La Mega Drive écrite de cinq façons'
+    request: 'Dans ma colonne console, la Mega Drive s''écrit « Mega Drive », « MEGADRIVE », « mega drive », « Megadrive » et même « MD ». Quand je trie, mes Sonic sont éparpillés partout. Remets tout à « Mega Drive » avant que Jade importe.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris la mise à jour du tableur, essaie-la, puis livre-la à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Ton UPDATE corrige les lignes d''aujourd''hui. Qu''est-ce qui empêchera quelqu''un d''écrire « Mega-Drive » demain ?'
+        options:
+          - { text: 'Rien, dans un tableur. Dans la base, la console devient une table Console, et un jeu ne fait que pointer vers elle par une clé étrangère : le nom n''est écrit qu''une seule fois.', ok: true, reaction: { who: jade, expr: sourire, text: 'Voilà. On ne corrige plus les doublons : on les rend impossibles.' } }
+          - { text: 'Une liste déroulante dans le tableur : on ne pourra plus mal l''écrire.', misconception: menu-deroulant, reaction: { who: jade, expr: sourcil, text: 'Jusqu''au jour où quelqu''un colle une ligne venue d''un autre fichier. La liste protège la saisie, pas les données.' } }
+          - { text: 'Relancer le même UPDATE chaque semaine.', misconception: update-regulier, reaction: { who: jade, expr: neutre, text: 'Et la semaine où quelqu''un écrit « Mega-Drive », ton IN ne la verra pas. On répare après coup au lieu d''empêcher.' } }
+          - { text: 'Tout passer en majuscules avec UPPER : plus de différence possible.', misconception: majuscules, reaction: { who: jade, expr: neutre, text: '« MD » en majuscules reste « MD ». Le problème n''est pas la casse, c''est le même nom écrit plusieurs fois.' } }
+    guide:
+      -
+        id: operateur
+        kind: choice
+        prompt: 'Pour viser plusieurs valeurs exactes dans un WHERE, quel opérateur ?'
+        options:
+          - { text: 'IN (…), avec la liste des valeurs', ok: true }
+          - { text: 'Plusieurs = reliés par AND', misconception: and-or, reaction: { who: jade, expr: sourcil, text: 'Une console ne peut pas valoir « MD » ET « Megadrive » à la fois : AND ne garderait aucune ligne.' } }
+          - { text: 'LIKE', misconception: like-exact, reaction: { who: jade, expr: neutre, text: 'LIKE sert aux motifs avec % ou _. Ici, tu connais les valeurs exactes.' } }
+    hints: 2
+  -
+    id: R03
+    act: 1
+    after: [R01]
+    course: 'B2 · Concevoir une base'
+    requester: jade
+    kind: demande
+    category: 'Modélisation › Schéma'
+    title: 'Lire le schéma de Jade'
+    request: 'Voici le schéma relationnel que je propose pour la migration, écrit comme à l''examen : la clé primaire entre crochets (soulignée sur papier), les clés étrangères précédées de #. Trois questions avant que je lance l''import.'
+    steps:
+      -
+        id: cle
+        kind: line
+        label: 'Désigner'
+        view: schema
+        prompt: 'Clique sur la relation dont la clé primaire est faite de deux colonnes.'
+        answer: 'LigneVente ('
+        reaction: { who: jade, expr: sourcil, text: 'Pas celle-ci. Cherche les crochets qui entourent deux noms.' }
+      -
+        id: diese
+        kind: choice
+        label: 'Décider'
+        expr: neutre
+        prompt: 'Dans Jeu ([idJeu], titre, anneeSortie, genre, #idConsole), que dit le # devant idConsole ?'
+        options:
+          - { text: 'Que idConsole est une clé étrangère : sa valeur doit exister comme clé primaire dans Console.', ok: true }
+          - { text: 'Qu''une console ne peut avoir qu''un seul jeu.', misconception: cle-etrangere-unique, reaction: { who: jade, expr: sourcil, text: 'Au contraire : plusieurs jeux peuvent pointer vers la même console. C''est un lien, pas une limite.' } }
+          - { text: 'Que la colonne est numérotée automatiquement.', misconception: diese-auto, reaction: { who: jade, expr: neutre, text: 'Ça, c''est AUTO_INCREMENT, sur la clé primaire. Le # dit d''où vient la valeur.' } }
+          - { text: 'Que la valeur est facultative.', misconception: diese-facultatif, reaction: { who: jade, expr: neutre, text: 'Rien à voir : obligatoire ou non, ça se décide à part, avec NOT NULL.' } }
+      -
+        id: article
+        kind: choice
+        label: 'Décider'
+        expr: sourcil
+        prompt: 'Pourquoi une table Article à part, au lieu de mettre le prix et le stock dans Jeu ?'
+        options:
+          - { text: 'Parce qu''un même jeu existe en plusieurs exemplaires différents : en boîte, sans notice, loose, déposé ou acheté par la boutique, chacun avec son prix et son stock.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exactement. Un Zelda en boîte à 60 €, un loose à 30 € : un seul prix dans Jeu ne pourrait pas le dire.' } }
+          - { text: 'Pour avoir des tables plus petites, donc plus rapides.', misconception: tables-petites, reaction: { who: jade, expr: sourcil, text: 'La vitesse n''est pas la raison. On découpe selon ce que les données veulent dire.' } }
+          - { text: 'Parce qu''une table ne peut pas avoir plus de cinq colonnes.', misconception: limite-colonnes, reaction: { who: jade, expr: neutre, text: 'Aucune règle de ce genre. Une table peut avoir des dizaines de colonnes.' } }
+          - { text: 'Parce qu''un article, c''est une vente.', misconception: article-vente, reaction: { who: jade, expr: neutre, text: 'Une vente, c''est Vente et LigneVente. Un article, c''est un exemplaire en rayon.' } }
+    hints: 0
+  -
+    id: R04
+    act: 1
+    after: [R02, R03]
+    course: 'B2 · Concevoir une base'
+    requester: jade
+    kind: demande
+    category: 'Modélisation › Tables'
+    title: 'Les tables Console et Jeu'
+    request: 'Écris toi-même les deux premières tables : Console ([idConsole], nom, fabricant, anneeSortie) et Jeu ([idJeu], titre, anneeSortie, genre, #idConsole). Un nom de console ne doit exister qu''une fois, et un jeu doit toujours pointer vers une console qui existe.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris le script de création, essaie-le, puis livre-le à Jade.'
+      -
+        id: revue
+        kind: explain
+        expr: neutre
+        prompt: 'La clé étrangère de Jeu : qu''est-ce qu''elle garantit, exactement ?'
+        options:
+          - { text: 'Qu''un jeu ne peut pas pointer vers une console qui n''existe pas : la base refuse l''insertion, et refusera aussi de supprimer une console qui a encore des jeux.', ok: true, reaction: { who: jade, expr: sourire, text: 'C''est l''intégrité référentielle. La base garde le lien juste, même quand on se trompe.' } }
+          - { text: 'Que la console est créée automatiquement si elle manque.', misconception: fk-cree, reaction: { who: jade, expr: sourcil, text: 'Elle ne crée rien : elle refuse. C''est à toi d''insérer la console d''abord.' } }
+          - { text: 'Qu''on peut faire des jointures : sans clé étrangère, JOIN ne marche pas.', misconception: fk-jointure, reaction: { who: jade, expr: neutre, text: 'Une jointure marche sur n''importe quelles colonnes. La clé étrangère garantit la cohérence, pas la possibilité de joindre.' } }
+          - { text: 'Qu''une console n''a qu''un seul jeu.', misconception: cle-etrangere-unique, reaction: { who: jade, expr: neutre, text: 'Plusieurs jeux peuvent avoir le même idConsole. C''est UNIQUE qui l''interdirait.' } }
+    guide:
+      -
+        id: ordre
+        kind: choice
+        prompt: 'Dans quel ordre créer les deux tables ?'
+        options:
+          - { text: 'Console d''abord, puis Jeu, qui y fait référence', ok: true }
+          - { text: 'L''ordre n''a pas d''importance', misconception: ordre-indifferent, reaction: { who: jade, expr: sourcil, text: 'Jeu fait référence à Console : MySQL refuse une clé étrangère vers une table qui n''existe pas encore.' } }
+          - { text: 'Jeu d''abord, c''est la table principale', misconception: ordre-indifferent, reaction: { who: jade, expr: neutre, text: 'La table « principale », c''est celle qu''on référence : Console. Elle vient d''abord.' } }
+    hints: 3

@@ -1,0 +1,158 @@
+# Rétro Rush - acte 4 : Les chiffres.
+#
+# The server half of the tickets (design/validated/serious-games-retro-rush.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Jade's
+# guided questions, the clue closing gives. The game half (deliverables and their reference answers,
+# starting texts, views, written hints, scenes) is public/serious-games/retro-rush/tickets/acte4.js.
+# Converted from the prototype's host/scenario/acte4.js by its tool/to-yaml.js; `hints` counts
+# the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: R16
+    act: 4
+    after: [R15]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: incident
+    category: 'Requêtes › Regroupements'
+    title: 'Combien de jeux par console ?'
+    request: 'Pour le menu du site, il me faut le nombre de jeux de chaque console, rangé par nom de console. Toutes les consoles, même la Neo Geo, qui n''a aucun jeu. Ma requête lui en compte un. Un fantôme ?'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête d''Océane, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi COUNT(*) comptait un jeu à la Neo Geo, et pas COUNT(j.idJeu) ?'
+        options:
+          - { text: 'Le LEFT JOIN garde la Neo Geo sur une ligne dont les colonnes de Jeu valent NULL. COUNT(*) compte les lignes, celle-ci comprise ; COUNT(j.idJeu) ne compte que les valeurs non NULL, donc 0.', ok: true, reaction: { who: jade, expr: sourire, text: 'Voilà. COUNT(*) compte des lignes, COUNT(colonne) compte des valeurs.' } }
+          - { text: 'COUNT(*) et COUNT(j.idJeu) comptent pareil ; c''est le GROUP BY qui ajoutait une ligne.', misconception: count-pareil, reaction: { who: jade, expr: sourcil, text: 'Remets COUNT(*) et regarde : même GROUP BY, et la Neo Geo repasse à 1. La différence est dans le COUNT.' } }
+          - { text: 'COUNT(colonne) compte aussi les NULL, mais seulement quand la colonne est une clé.', misconception: count-colonne-null, reaction: { who: jade, expr: neutre, text: 'COUNT(colonne) ignore toujours les NULL, clé ou pas. C''est justement ce qui donne 0 ici.' } }
+          - { text: 'Il y avait vraiment un jeu Neo Geo, effacé depuis.', misconception: fantome, reaction: { who: jade, expr: neutre, text: 'Ouvre Jeu : aucun jeu n''a l''idConsole 12. Le « un » venait de la ligne ajoutée par le LEFT JOIN.' } }
+    guide:
+      -
+        id: compte
+        kind: choice
+        prompt: 'Après un LEFT JOIN, la Neo Geo occupe une ligne où j.idJeu vaut NULL. Que renvoie COUNT(j.idJeu) pour elle ?'
+        options:
+          - { text: '0', ok: true }
+          - { text: '1', misconception: count-colonne-null, reaction: { who: jade, expr: neutre, text: '1, c''est ce que renvoie COUNT(*), qui compte la ligne. COUNT(colonne) saute les NULL.' } }
+          - { text: 'NULL', misconception: count-null, reaction: { who: jade, expr: neutre, text: 'COUNT ne renvoie jamais NULL : au pire, 0.' } }
+    hints: 2
+  -
+    id: R17
+    act: 4
+    after: [R16]
+    course: 'B2 · Requêtes SQL'
+    requester: ferrand
+    kind: incident
+    category: 'Requêtes › Sommes'
+    title: 'Ma commission de mars est fausse'
+    request: 'Gilles m''a sorti mon relevé de mars 2026 : total de mes ventes et ce qui me revient, une fois sa commission retirée. 240 € de ventes, il me dit. J''ai mes tickets : 150 €. Il y a 90 € qui ne sont pas de cette année. Je veux mon nom, le total et mon reversement.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête du relevé, essaie-la, puis livre-la à M. Ferrand.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'D''où venaient les 90 € en trop ?'
+        options:
+          - { text: 'MONTH(dateVente) = 3 garde tous les mois de mars, de toutes les années : la vente de mars 2025 était comptée. Il faut aussi YEAR(dateVente) = 2026, ou un BETWEEN entre deux dates.', ok: true, reaction: { who: ferrand, expr: satisfait, text: '150 €, et 120 € pour moi. Comme sur mes tickets. Bien.' } }
+          - { text: 'MONTH() = 3 suffit pour dire mars 2026, puisque nous sommes en 2026.', misconception: mois-sans-annee, reaction: { who: jade, expr: sourcil, text: 'MONTH() ne regarde que le mois. La base garde toutes les années, elle : mars 2025 aussi.' } }
+          - { text: 'SUM additionnait deux fois les ventes de plusieurs jeux.', misconception: sum-double, reaction: { who: jade, expr: neutre, text: 'Chaque ligne de vente est comptée une fois. Les 90 €, c''est une vraie vente… d''une autre année.' } }
+          - { text: 'Le taux de commission était faux dans Deposant.', misconception: taux-faux, reaction: { who: ferrand, expr: tatillon, text: '20 %, comme sur mon contrat. Le taux est juste. C''est le total qui ne l''était pas.' } }
+    guide:
+      -
+        id: mois
+        kind: choice
+        prompt: 'Quelle condition garde mars 2026, et seulement mars 2026 ?'
+        options:
+          - { text: 'YEAR(v.dateVente) = 2026 AND MONTH(v.dateVente) = 3', ok: true }
+          - { text: 'MONTH(v.dateVente) = 3', misconception: mois-sans-annee, reaction: { who: jade, expr: neutre, text: 'C''est la condition de départ : tous les mars de toutes les années.' } }
+          - { text: 'v.dateVente = ''2026-03''', misconception: date-partielle, reaction: { who: jade, expr: neutre, text: 'Une date complète ne vaut jamais « 2026-03 ». Il faut un intervalle, ou YEAR et MONTH.' } }
+    hints: 2
+  -
+    id: R18
+    act: 4
+    after: [R16]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: incident
+    category: 'Requêtes › HAVING'
+    title: 'Les consoles qui rapportent plus de 100 €'
+    request: 'Je veux mettre en avant sur le site les consoles qui m''ont rapporté plus de 100 € de ventes : le nom de la console et le chiffre d''affaires. Ma requête me répond par une erreur.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête de Gilles, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi la condition sur la somme va-t-elle dans un HAVING, et pas dans le WHERE ?'
+        options:
+          - { text: 'Le WHERE filtre les lignes avant le regroupement : la somme n''existe pas encore. HAVING filtre les groupes après le GROUP BY, quand chaque somme est calculée.', ok: true, reaction: { who: jade, expr: sourire, text: 'Oui : WHERE avant le regroupement, HAVING après. Une question qui tombe à tous les coups.' } }
+          - { text: 'WHERE filtre après le regroupement, mais il ne connaît pas les alias.', misconception: where-apres, reaction: { who: jade, expr: sourcil, text: 'Le WHERE passe avant le regroupement, justement : à ce moment-là, il n''y a pas encore de somme à comparer.' } }
+          - { text: 'HAVING est juste une autre façon d''écrire WHERE, plus récente.', misconception: having-synonyme, reaction: { who: jade, expr: neutre, text: 'Les deux existent ensemble et ne font pas la même chose. On peut d''ailleurs avoir les deux dans une requête.' } }
+          - { text: 'Parce que SUM ne marche qu''avec HAVING.', misconception: sum-having, reaction: { who: jade, expr: neutre, text: 'SUM marche très bien dans le SELECT sans HAVING. C''est la condition sur la somme qui a besoin du HAVING.' } }
+    hints: 2
+  -
+    id: R19
+    act: 4
+    after: [R17, R18]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: demande
+    category: 'Requêtes › Moyennes'
+    title: 'Le prix moyen par état'
+    request: 'Je veux montrer sur le site ce que coûte en moyenne un jeu selon son état : en boîte, sans notice, loose. L''état et le prix moyen arrondi au centime, du plus cher au moins cher.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris la requête, essaie-la, puis livre-la à Océane.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Sans ton ORDER BY, les états sortaient déjà rangés, par ordre alphabétique. Pourquoi l''ajouter quand même ?'
+        options:
+          - { text: 'GROUP BY regroupe, mais ne promet aucun ordre : s''il en sort un, c''est un effet du moteur. Océane veut du plus cher au moins cher, et seul un ORDER BY sur la moyenne le garantit.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exact. Et ici l''ordre alphabétique n''était même pas celui qu''elle voulait.' } }
+          - { text: 'Pas besoin, en fait : GROUP BY trie toujours les groupes.', misconception: groupby-trie, reaction: { who: jade, expr: sourcil, text: 'Souvent, par effet de bord. Jamais promis, et pas dans l''ordre qu''Océane demande.' } }
+          - { text: 'AVG range déjà les lignes par moyenne, ORDER BY ne sert qu''à inverser.', misconception: avg-trie, reaction: { who: jade, expr: neutre, text: 'AVG calcule, il ne range rien. L''ordre ne vient que d''ORDER BY.' } }
+          - { text: 'ROUND range les valeurs une fois arrondies.', misconception: round-trie, reaction: { who: jade, expr: neutre, text: 'ROUND arrondit chaque valeur, c''est tout.' } }
+    hints: 2
+  -
+    id: R20
+    act: 4
+    after: [R19]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: incident
+    category: 'Requêtes › Inventaire'
+    title: 'L''écart entre la base et l''étagère'
+    request: 'J''ai compté mes étagères le 1er novembre, tout est dans la table Inventaire. Je veux chaque article où mon comptage et la base ne sont pas d''accord : numéro, titre, stock de la base, quantité comptée et l''écart (compté moins base), du plus gros écart au plus petit, puis par numéro.'
+    reward: { clue: 'Sur huit articles, l''étagère a plus de jeux que la base, jamais moins. Personne ne fait sortir de jeux : c''est la base qui en compte trop peu.' }
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris la requête, essaie-la, puis livre-la à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Tous les écarts sont positifs : l''étagère a plus de jeux que la base. Qu''est-ce que ça change à l''enquête ?'
+        options:
+          - { text: 'Que personne ne fait sortir de jeux en douce : les jeux sont là, c''est la base qui en compte moins. Il faut chercher ce qui fait baisser le stock dans la base sans que rien ne sorte.', ok: true, reaction: { who: gilles, expr: perplexe, text: 'Donc… on ne me vole rien ? C''est ma base qui me ment ?' } }
+          - { text: 'Rien : un écart d''inventaire, c''est forcément un vol.', misconception: ecart-vol, reaction: { who: jade, expr: sourcil, text: 'Un vol ferait baisser l''étagère, pas la base. Ici, c''est l''inverse.' } }
+          - { text: 'Que Gilles a mal compté.', misconception: comptage-faux, reaction: { who: gilles, expr: furieux, text: 'Huit erreurs, toutes dans le même sens ? Je sais compter jusqu''à neuf, merci.' } }
+          - { text: 'Que des ventes n''ont pas été saisies en caisse.', misconception: vente-oubliee, reaction: { who: jade, expr: neutre, text: 'Une vente oubliée laisserait la base trop HAUTE : le jeu serait parti sans que le stock baisse.' } }
+    hints: 2
