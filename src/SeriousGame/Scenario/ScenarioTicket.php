@@ -8,7 +8,9 @@ namespace App\SeriousGame\Scenario;
  * A ticket of a scenario (design/validated/serious-games-neko-con.md §3.1) - the unit of the
  * mechanic. What the server knows of it: where it sits in the graph (`act`, `after`), who asks
  * (`requester`, `from`), the course it revises, its steps and Inès' guided questions with their
- * answers, how many written hints the game holds after them, and what closing it gives.
+ * answers, how many written hints the game holds after them, and what closing it gives. `kind` and
+ * `category` are a helpdesk's words (Black-out's « Incident » / « Demande », « Réseau › DHCP »),
+ * shown and never read.
  *
  * Steps are designated by their identifier, never by their rank (§3.3): a revision that reorders or
  * removes a step does not block a ticket in progress - an unknown step starts it again.
@@ -45,6 +47,8 @@ final readonly class ScenarioTicket
         public int $hints,
         public ?array $fragment,
         public ?string $clue,
+        public ?string $kind = null,
+        public ?string $category = null,
     ) {
     }
 
@@ -63,6 +67,8 @@ final readonly class ScenarioTicket
         $reward = \is_array($data['reward'] ?? null) ? $data['reward'] : [];
         $fragment = \is_array($reward['fragment'] ?? null) ? $reward['fragment'] : null;
         $from = self::text($data['from'] ?? null);
+        $kind = self::text($data['kind'] ?? null);
+        $category = self::text($data['category'] ?? null);
 
         return new self(
             $id,
@@ -83,6 +89,8 @@ final readonly class ScenarioTicket
             \is_int($data['hints'] ?? null) ? max(0, $data['hints']) : 0,
             null === $fragment || !\is_int($fragment['index'] ?? null) ? null : ['index' => $fragment['index'], 'value' => self::text($fragment['value'] ?? null), 'where' => self::text($fragment['where'] ?? null)],
             \is_string($reward['clue'] ?? null) ? $reward['clue'] : null,
+            '' === $kind ? null : $kind,
+            '' === $category ? null : $category,
         );
     }
 

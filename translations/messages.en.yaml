@@ -10424,6 +10424,7 @@ seriousGameHelpCount: '{1}1 help|]1,Inf[%count% helps'
 seriousGameDuringHelp: 'during the help ·'
 seriousGameDeliveryRefused: 'Delivery refused'
 seriousGameWrongLine: 'Wrong line:'
+seriousGameWrongOrder: 'Wrong order from:'
 # Serious games: the statistics of every game (design/validated/serious-games-neko-con.md §6)
 seriousGameStatsHeading: 'Statistics'
 seriousGameStatsScope: 'Scope'

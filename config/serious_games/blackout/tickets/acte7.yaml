@@ -1,0 +1,138 @@
+# Black-out - acte 7 : Les invités et les absents.
+#
+# The server half of the tickets (design/validated/serious-games-blackout.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Nadia's
+# guided questions, the clue closing gives. The game half (bug, checks run in the network simulator,
+# views, written hints, scenes) is public/serious-games/blackout/tickets/acte7.js. Converted once
+# from the prototype's host/scenario/acte7.js; `hints` counts the written hints the game holds
+# after the guided questions.
+tickets:
+  -
+    id: T25
+    act: 7
+    after: [T22, T23, T24]
+    requester: karim
+    kind: incident
+    priority: haute
+    category: 'Sécurité › Wi-Fi'
+    title: 'Le Wi-Fi invités voit les PC des joueurs'
+    request: 'On a ouvert le Wi-Fi « LAN-invites » pour les familles et les spectateurs. Un petit malin m''a montré qu''il voyait, depuis son téléphone, les PC des joueurs, la régie, et même le téléphone de son voisin. Les invités ne devraient avoir qu''Internet.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Il y a un mot de passe sur le Wi-Fi des invités, pourtant. Ça ne les isole pas ?'
+        options:
+          - { text: 'Le mot de passe du Wi-Fi suffit à isoler les invités : il fallait juste le changer.', misconception: mot-de-passe-isole, reaction: { who: nadia, expr: sourcil, text: 'Le mot de passe décide qui entre. Une fois entré, il ne dit rien de qui voit qui.' } }
+          - { text: 'Deux choses manquaient : sur r1, la règle des invités acceptait tout ce qui venait du VLAN 60 au lieu de le limiter à Internet ; et sur le point d''accès, ap_isolate était à 0, donc les invités se voyaient entre eux.', ok: true, reaction: { who: karim, expr: soulage, text: 'Les invités voient Internet, et c''est tout. Même pas leur voisin. Parfait pour une famille.' } }
+          - { text: 'Le VLAN 60 suffit : un VLAN isole tout, il n''y avait rien à faire sur le pare-feu.', misconception: vlan-isole-tout, reaction: { who: nadia, expr: neutre, text: 'Un VLAN sépare les diffusions. Mais r1 route entre les VLAN : c''est le pare-feu qui décide qui passe.' } }
+    guide:
+      -
+        id: deux
+        kind: choice
+        prompt: 'L''invité voit les PC des joueurs ET le téléphone de son voisin. Ce sont deux problèmes différents. Lesquels ?'
+        options:
+          - { text: 'Vers les joueurs, ça passe par r1 (pare-feu) ; vers le voisin, ça reste sur le point d''accès (ap_isolate)', ok: true }
+          - { text: 'Les deux passent par r1', misconception: tout-par-r1, reaction: { who: nadia, expr: neutre, text: 'Le voisin est dans le même réseau : leurs trames ne montent même pas jusqu''à r1.' } }
+          - { text: 'Les deux viennent du mot de passe', misconception: mot-de-passe-isole, reaction: { who: nadia, expr: sourcil, text: 'Le mot de passe n''isole personne une fois qu''on est connecté.' } }
+    hints: 2
+  -
+    id: T26
+    act: 7
+    after: [T25]
+    requester: enzo
+    kind: demande
+    priority: basse
+    category: 'Accès › Wi-Fi'
+    title: 'Un joueur demande le mot de passe du Wi-Fi orga'
+    request: 'Salut ! Je suis Enzo, rang B, Team Kitsune. Karim m''a dit que je pouvais avoir le mot de passe du Wi-Fi des orgas, celui des arbitres, pour mon téléphone. Le Wi-Fi invités rame trop. Tu peux me le donner ? Karim est d''accord, promis.'
+    steps:
+      -
+        id: reponse
+        kind: choice
+        label: 'Répondre'
+        prompt: 'Que fais-tu ?'
+        options:
+          - { text: 'Je le lui donne : il est inscrit au tournoi, c''est quelqu''un de connu.', misconception: inscrit-donc-fiable, reaction: { who: nadia, expr: sourcil, text: 'Inscrit, oui. Autorisé, rien ne le prouve. Et ce Wi-Fi ouvre le réseau des orgas.' } }
+          - { text: 'Je refuse, je l''oriente vers le Wi-Fi invités, et je vérifie auprès de Karim avant toute chose. Un accès ne se donne pas sur parole.', ok: true, reaction: { who: karim, expr: inquiet, text: 'Moi ? Je n''ai jamais dit ça. Je ne connais même pas d''Enzo au rang B…' } }
+          - { text: 'Je lui donne un compte d''arbitre, c''est plus propre qu''un mot de passe partagé.', misconception: compte-pour-tous, reaction: { who: nadia, expr: neutre, text: 'Plus propre, mais toujours un accès qu''il n''a pas à avoir.' } }
+    hints: 0
+  -
+    id: T27
+    act: 7
+    after: [T25]
+    requester: karim
+    kind: incident
+    priority: haute
+    category: 'Sécurité › 802.1X'
+    title: 'Les arbitres ne se connectent plus'
+    request: 'Le Wi-Fi des arbitres marche avec un compte par arbitre, vérifié par un serveur RADIUS. Depuis qu''on a « changé un mot de passe » sur le point d''accès, plus aucun arbitre n''entre : la tablette dit « impossible de se connecter ». Leurs comptes n''ont pas bougé.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Les arbitres tapaient leur bon mot de passe ! Comment pouvaient-ils être refusés ?'
+        options:
+          - { text: 'Le secret RADIUS, c''est le mot de passe du Wi-Fi : les arbitres devaient taper le nouveau.', misconception: secret-radius-mot-de-passe, reaction: { who: nadia, expr: sourcil, text: 'Les arbitres ne connaissent pas ce secret, et n''ont pas à le connaître. Chacun a son compte.' } }
+          - { text: 'Le point d''accès et le serveur RADIUS se reconnaissent par un secret partagé. Celui de hostapd ne correspondait plus à celui de clients.conf : RADIUS ignorait le point d''accès, donc tous les comptes. J''ai remis le même secret des deux côtés.', ok: true, reaction: { who: karim, expr: soulage, text: 'Donc les arbitres avaient raison, c''est le point d''accès qui avait perdu le mot de passe… de son serveur.' } }
+          - { text: 'Les comptes des arbitres avaient expiré à minuit.', misconception: comptes-expires, reaction: { who: nadia, expr: neutre, text: 'Tu n''as touché à aucun compte. Et ils marchent.' } }
+    guide:
+      -
+        id: qui
+        kind: choice
+        prompt: 'Qui doit connaître le secret partagé RADIUS ?'
+        options:
+          - { text: 'Le point d''accès et le serveur RADIUS, et personne d''autre', ok: true }
+          - { text: 'Chaque arbitre', misconception: secret-radius-mot-de-passe, reaction: { who: nadia, expr: sourcil, text: 'Les arbitres ont leur compte et leur mot de passe. Le secret, c''est entre machines.' } }
+      -
+        id: localiser
+        kind: line
+        file: 'ap-salle:/etc/hostapd/hostapd.conf'
+        prompt: 'Clique sur la ligne du secret, côté point d''accès.'
+        answer: 'auth_server_shared_secret'
+        reaction: { who: nadia, expr: neutre, text: 'auth_server_shared_secret, dans hostapd.conf.' }
+    hints: 2
+  -
+    id: T28
+    act: 7
+    after: [T24, T25]
+    requester: karim
+    kind: incident
+    priority: haute
+    category: 'Réseau › VPN'
+    title: 'L''arbitre à distance n''arrive pas à se connecter'
+    request: 'L''arbitre en chef est resté chez lui, malade. Il doit valider les résultats sur srv-jeu par un tunnel WireGuard. Il a installé son côté, Nadia a préparé celui de r1 en vitesse. Rien ne passe : pas de poignée de main.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Les deux côtés ont des clés, pourtant. Qu''est-ce qui clochait ?'
+        options:
+          - { text: 'La clé privée doit être échangée avec le pair : j''ai mis celle de l''arbitre sur r1.', misconception: cle-privee-partagee, reaction: { who: nadia, expr: sourcil, text: 'Une clé privée ne quitte jamais sa machine. On échange les clés publiques, et seulement elles.' } }
+          - { text: 'Chaque côté doit déclarer la clé publique de l''autre. Dans le [Peer] de r1, quelqu''un avait mis la clé publique de r1 lui-même : r1 ne reconnaissait pas l''arbitre. J''ai mis la sienne, celle de arbitre.pub.', ok: true, reaction: { who: karim, expr: soulage, text: 'L''arbitre valide les résultats ! Et le tunnel ne laisse passer que le serveur de jeu, d''après Nadia.' } }
+          - { text: 'Un VPN fait passer tout Internet par le tunnel : il fallait AllowedIPs = 0.0.0.0/0 chez l''arbitre.', misconception: vpn-tout-internet, reaction: { who: nadia, expr: neutre, text: 'Ce n''était pas le problème, et ce n''est pas souhaitable : seul srv-jeu doit passer par le tunnel.' } }
+    guide:
+      -
+        id: quelle
+        kind: choice
+        prompt: 'Sur r1, « wg » montre la clé publique de r1 et celle du pair qu''il attend. Que remarques-tu ?'
+        options:
+          - { text: 'Le pair attendu a la même clé publique que r1', ok: true }
+          - { text: 'Les AllowedIPs sont trop larges', misconception: allowedips, reaction: { who: nadia, expr: neutre, text: 'Ils sont justes : 10.20.200.2/32. Regarde les clés.' } }
+          - { text: 'Le port d''écoute est faux', misconception: port, reaction: { who: nadia, expr: neutre, text: '51820, comme l''Endpoint de l''arbitre.' } }
+    hints: 2

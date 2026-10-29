@@ -31,7 +31,8 @@
     pompei: { bg: '#EFE3CB', paper: '#9E2B25', ink: '#2E1D14', accent: '#C9923E', font: "'Cormorant Garamond', Georgia, serif", italic: false },
     abysse: { bg: '#031319', paper: '#072B36', ink: '#CFF7F1', accent: '#7FF5E3', font: "'Chakra Petch', 'Trebuchet MS', sans-serif", italic: false },
     irregulars: { bg: '#142820', paper: '#1F3A2E', ink: '#E9D8A6', accent: '#C9A04E', font: "'Libre Caslon Display', Georgia, serif", italic: false },
-    'neko-con': { bg: '#241F3A', paper: '#3B3266', ink: '#FBF9FF', accent: '#FF6F91', font: "'Trebuchet MS', 'Source Sans 3', sans-serif", italic: false }
+    'neko-con': { bg: '#241F3A', paper: '#3B3266', ink: '#FBF9FF', accent: '#FF6F91', font: "'Trebuchet MS', 'Source Sans 3', sans-serif", italic: false },
+    blackout: { bg: '#0A0618', paper: '#151029', ink: '#F4F2FF', accent: '#FF2E88', font: "'Chakra Petch', 'Trebuchet MS', sans-serif", italic: false }
   };
   var GAMES = {
     observatoire: { title: "L'Observatoire", chapters: [
@@ -75,6 +76,18 @@
       { id: 'acte7', name: 'Sur mon téléphone…', topic: 'CSS 06' },
       { id: 'acte8', name: "J'avais oublié…", topic: 'CSS 07' },
       { id: 'acte9', name: 'Les coulisses', topic: 'Mise en ligne' }],
+      finale: { id: 'none', name: '', topic: '' } },
+    // Black-out: a card per act (design/validated/serious-games-blackout.md §5), like Neko-Con.
+    blackout: { title: 'Black-out', chapters: [
+      { id: 'acte1', name: 'Le local technique', topic: 'Interfaces et adressage' },
+      { id: 'acte2', name: 'Un VLAN par usage', topic: 'VLAN, trunk et STP' },
+      { id: 'acte3', name: 'Les étages se parlent', topic: 'Routage' },
+      { id: 'acte4', name: 'Les adresses tombent du ciel', topic: 'DHCP, relais et DNS' },
+      { id: 'acte5', name: 'Ouverture sur Internet', topic: 'NAT, DMZ et certificats' },
+      { id: 'acte6', name: 'Le pare-feu', topic: 'nftables' },
+      { id: 'acte7', name: 'Les invités et les absents', topic: 'Wi-Fi, RADIUS et WireGuard' },
+      { id: 'acte8', name: 'Le Ghost frappe', topic: 'DHCP pirate et SSH' },
+      { id: 'acte9', name: "L'incident", topic: "Gestion d'incident" }],
       finale: { id: 'none', name: '', topic: '' } }
   };
   var PINS = [
@@ -82,7 +95,8 @@
     { id: 'pin-cave-canem', name: 'Épinglette Cave canem', color: '#EFE3CB', ink: '#1E1410', ring: '#9E2B25' },
     { id: 'pin-vague', name: 'Épinglette Abysse', color: '#167784' },
     { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', ink: '#E9D8A6' },
-    { id: 'pin-neko', name: 'Épinglette Neko', color: '#FBF9FF', ink: '#E8457A' }
+    { id: 'pin-neko', name: 'Épinglette Neko', color: '#FBF9FF', ink: '#E8457A' },
+    { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', ink: '#F4F2FF', ring: '#FF2E88' }
   ];
 
   function cardOf(code) {
@@ -144,6 +158,18 @@
         '<path d="M50 84 L47 72 L55 79 Z M70 84 L73 72 L65 79 Z" fill="#2A2440"/><ellipse cx="60" cy="86" rx="12" ry="9" fill="#2A2440"/>' +
         '<path d="M54 85 Q56 82 58 85 M62 85 Q64 82 66 85" fill="none" stroke="#FBF9FF" stroke-width="1.4" stroke-linecap="round"/>' +
         '<text x="60" y="103" text-anchor="middle" font-size="7.5" font-family="\'Trebuchet MS\', sans-serif" fill="#3B3266">Neko-Con</text>';
+    },
+    // Black-out: Nadia's RJ45 tester, its two boxes and their eight LEDs, the cable between them.
+    'testeur-cable': function (M, g, locked) {
+      var led = function (x, y, on) { var o = ''; for (var i = 0; i < 8; i++) o += '<circle cx="' + (x + (i % 4) * 7) + '" cy="' + (y + Math.floor(i / 4) * 7) + '" r="2.2" fill="' + (locked ? 'currentColor' : (on ? '#C6FF3D' : '#3A3358')) + '"/>'; return o; };
+      var screen = locked ? 'currentColor' : '#0A0618';
+      return '<path d="M38 92 Q38 110 60 110 Q82 110 82 92" fill="none" stroke="' + (locked ? 'currentColor' : '#00E5FF') + '" stroke-width="4" stroke-linecap="round"/>' +
+        '<rect x="12" y="22" width="44" height="72" rx="8" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.4"/>' +
+        '<rect x="18" y="30" width="32" height="30" rx="3" fill="' + screen + '"/>' + led(23.5, 38, true) +
+        '<rect x="28" y="66" width="12" height="10" rx="2" fill="' + M.dark + '"/><text x="34" y="88" text-anchor="middle" font-size="6.5" font-weight="700" font-family="\'Chakra Petch\', sans-serif" fill="' + M.deep + '">MAIN</text>' +
+        '<rect x="64" y="34" width="44" height="60" rx="8" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.4"/>' +
+        '<rect x="70" y="42" width="32" height="22" rx="3" fill="' + screen + '"/>' + led(75.5, 46, true) +
+        '<rect x="80" y="70" width="12" height="10" rx="2" fill="' + M.dark + '"/><text x="86" y="89" text-anchor="middle" font-size="6.5" font-weight="700" font-family="\'Chakra Petch\', sans-serif" fill="' + M.deep + '">REMOTE</text>';
     },
     astrolabe: function (M, g) {
       var ticks = '';
@@ -244,6 +270,7 @@
     if (gameId === 'abysse') s = abyssEmblem(idx, P);
     if (gameId === 'irregulars') s = londonEmblem(idx, P);
     if (gameId === 'neko-con') s = nekoEmblem(idx, P);
+    if (gameId === 'blackout') s = blackoutEmblem(idx, P);
     return s;
   }
   /* The fresco of a room of the villa, inside the card's red panel (x 9-111, y 22-118): one
@@ -360,6 +387,50 @@
           '<g fill="' + pink + '"><circle cx="32" cy="102" r="2.4"/><circle cx="46" cy="102" r="2.4"/><circle cx="60" cy="102" r="2.4"/><circle cx="74" cy="102" r="2.4"/><circle cx="88" cy="102" r="2.4"/></g>';
     }
   }
+  /* A card of Black-out: the act's piece of the network, drawn like the game's map of the room - a
+     dark control room, the stream's magenta and cyan, the VLANs' colours. */
+  function blackoutEmblem(idx, P) {
+    var mag = '#FF2E88', cyan = '#00E5FF', lime = '#C6FF3D', ink = P.ink, dark = '#0A0618';
+    var V = ['#4D8BFF', '#B26BFF', '#FF9F43', '#FFD23F', '#3DDBB0'];
+    var box = function (x, y, w, hh, c) { return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + hh + '" rx="3" fill="' + dark + '" stroke="' + (c || ink) + '" stroke-width="1.6"/>'; };
+    var leds = function (x, y, n, cols) { var o = ''; for (var i = 0; i < n; i++) o += '<rect x="' + (x + i * 8) + '" y="' + y + '" width="5" height="4" rx="1" fill="' + (cols ? cols[i % cols.length] : lime) + '"/>'; return o; };
+    var wire = function (d, c) { return '<path d="' + d + '" fill="none" stroke="' + (c || cyan) + '" stroke-width="2" stroke-linecap="round"/>'; };
+    switch (idx) {
+      case 0: // le local technique: the router in its rack, one port still dark
+        return box(26, 40, 68, 16) + leds(32, 46, 6) + '<rect x="80" y="46" width="5" height="4" rx="1" fill="' + mag + '"/>' +
+          box(26, 62, 68, 16) + leds(32, 68, 7) + box(26, 84, 68, 16) + '<text x="60" y="95" text-anchor="middle" font-size="8" font-family="\'IBM Plex Mono\', monospace" fill="' + cyan + '">r1 · ens19</text>';
+      case 1: // un VLAN par usage: the switch, its ports in the VLANs' colours, the trunk
+        return box(20, 56, 80, 22) + leds(27, 64, 9, V) + wire('M60 56 V36', mag) + '<circle cx="60" cy="34" r="4" fill="' + mag + '"/>' +
+          wire('M30 78 V98', V[0]) + wire('M50 78 V98', V[1]) + wire('M70 78 V98', V[2]) + wire('M90 78 V98', V[4]);
+      case 2: // les étages se parlent: two networks and the router between them
+        return '<circle cx="34" cy="52" r="14" fill="none" stroke="' + V[0] + '" stroke-width="2"/><circle cx="86" cy="52" r="14" fill="none" stroke="' + V[2] + '" stroke-width="2"/>' +
+          box(48, 80, 24, 18, cyan) + wire('M40 64 L54 80') + wire('M80 64 L66 80') + '<path d="M56 89 h8 m-3 -3 l3 3 l-3 3" fill="none" stroke="' + lime + '" stroke-width="1.6"/>';
+      case 3: // les adresses tombent du ciel: a lease coming down to a PC
+        return '<path d="M38 50 a14 14 0 0 1 26 -8 a10 10 0 0 1 18 8 z" fill="none" stroke="' + ink + '" stroke-width="1.6"/>' +
+          '<rect x="38" y="58" width="44" height="12" rx="2" fill="' + lime + '"/><text x="60" y="67" text-anchor="middle" font-size="6.5" font-family="\'IBM Plex Mono\', monospace" fill="' + dark + '">10.20.30.x</text>' +
+          wire('M60 72 V82', lime) + box(44, 84, 32, 18, cyan) + '<rect x="56" y="102" width="8" height="5" fill="' + ink + '" opacity=".7"/>';
+      case 4: // ouverture sur Internet: the globe, the box's one open door
+        return '<circle cx="60" cy="50" r="18" fill="none" stroke="' + cyan + '" stroke-width="1.8"/><ellipse cx="60" cy="50" rx="8" ry="18" fill="none" stroke="' + cyan + '" stroke-width="1.2"/><line x1="42" y1="50" x2="78" y2="50" stroke="' + cyan + '" stroke-width="1.2"/>' +
+          box(34, 82, 52, 18) + '<rect x="56" y="86" width="8" height="10" fill="' + lime + '"/>' + wire('M60 68 V82', mag) + '<text x="60" y="112" text-anchor="middle" font-size="7" font-family="\'IBM Plex Mono\', monospace" fill="' + ink + '" opacity=".8">:443</text>';
+      case 5: // le pare-feu: the wall, one packet let through, one dropped
+        var bricks = '';
+        for (var r = 0; r < 5; r++) for (var c = 0; c < 3; c++) bricks += '<rect x="' + (46 + c * 10 - (r % 2) * 5) + '" y="' + (38 + r * 12) + '" width="9" height="10" fill="' + (r % 2 ? '#3A3358' : '#2A2342') + '" stroke="' + mag + '" stroke-width=".8"/>';
+        return bricks + wire('M22 56 H40', lime) + '<path d="M80 56 H98 m-4 -4 l4 4 l-4 4" fill="none" stroke="' + lime + '" stroke-width="2"/>' +
+          wire('M22 84 H38', mag) + '<path d="M36 80 l6 8 m0 -8 l-6 8" stroke="' + mag + '" stroke-width="2"/>';
+      case 6: // les invités et les absents: the Wi-Fi and the tunnel's padlock
+        return '<g fill="none" stroke="' + cyan + '" stroke-width="2.4" stroke-linecap="round"><path d="M36 58 a34 34 0 0 1 48 0"/><path d="M43 66 a24 24 0 0 1 34 0"/><path d="M50 74 a14 14 0 0 1 20 0"/></g><circle cx="60" cy="80" r="3" fill="' + cyan + '"/>' +
+          '<rect x="48" y="92" width="24" height="16" rx="3" fill="' + mag + '"/><path d="M53 92 v-5 a7 7 0 0 1 14 0 v5" fill="none" stroke="' + mag + '" stroke-width="2.4"/>';
+      case 7: // le Ghost frappe: the ghost, split by the glitch of the stream
+        return '<path d="M42 96 V58 a18 18 0 0 1 36 0 V96 l-6 -6 l-6 6 l-6 -6 l-6 6 l-6 -6 Z" fill="' + ink + '" opacity=".92"/>' +
+          '<path d="M42 96 V58 a18 18 0 0 1 36 0 V96" fill="none" stroke="' + cyan + '" stroke-width="1.4" transform="translate(-3 0)" opacity=".8"/>' +
+          '<path d="M42 96 V58 a18 18 0 0 1 36 0 V96" fill="none" stroke="' + mag + '" stroke-width="1.4" transform="translate(3 0)" opacity=".8"/>' +
+          '<circle cx="53" cy="62" r="3.2" fill="' + dark + '"/><circle cx="67" cy="62" r="3.2" fill="' + dark + '"/><rect x="30" y="74" width="60" height="3" fill="' + mag + '" opacity=".6"/>';
+      default: // l'incident: the sealed envelope and the night's timeline
+        return '<rect x="34" y="40" width="52" height="34" rx="2" fill="' + dark + '" stroke="' + ink + '" stroke-width="1.6"/><path d="M34 40 L60 60 L86 40" fill="none" stroke="' + ink + '" stroke-width="1.6"/><circle cx="60" cy="62" r="5" fill="' + mag + '"/>' +
+          '<line x1="26" y1="94" x2="94" y2="94" stroke="' + cyan + '" stroke-width="1.6"/>' +
+          '<g fill="' + lime + '"><circle cx="30" cy="94" r="3"/><circle cx="46" cy="94" r="3"/><circle cx="60" cy="94" r="3"/><circle cx="74" cy="94" r="3"/><circle cx="90" cy="94" r="3"/></g>';
+    }
+  }
   var ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
   /* A card of Les Tablettes de Pompéi: a cream tablet, its fresco on a red panel, the room's name in
      capitals and its Roman numeral. */
@@ -406,6 +477,12 @@
     'pin-neko': function (c) {
       return '<path d="M17 24 L19 12 L27 19 Z M43 24 L41 12 L33 19 Z" fill="' + c + '"/><ellipse cx="30" cy="31" rx="15" ry="12.5" fill="' + c + '"/>' +
         '<path d="M22.5 30 Q25 27 27.5 30 M32.5 30 Q35 27 37.5 30" fill="none" stroke="#2A2440" stroke-width="1.8" stroke-linecap="round"/><path d="M28.5 35 L30 36.5 L31.5 35" fill="none" stroke="#2A2440" stroke-width="1.4" stroke-linecap="round"/>';
+    },
+    // Black-out: the Ghost, the intruder of the night, on the stream's black.
+    'pin-ghost': function (c) {
+      return '<path d="M20 44 V27 a10 10 0 0 1 20 0 V44 l-3.4 -3.4 l-3.3 3.4 l-3.3 -3.4 l-3.3 3.4 l-3.3 -3.4 Z" fill="' + c + '"/>' +
+        '<circle cx="26.5" cy="28" r="2" fill="#0A0618"/><circle cx="33.5" cy="28" r="2" fill="#0A0618"/>' +
+        '<rect x="15" y="34" width="30" height="1.8" fill="#00E5FF" opacity=".85"/>';
     },
     'pin-loupe': function (c) { return '<circle cx="27" cy="27" r="9" fill="none" stroke="' + c + '" stroke-width="3"/><line x1="34" y1="34" x2="43" y2="43" stroke="' + c + '" stroke-width="4" stroke-linecap="round"/>'; },
     'pin-cave-canem': function (c, accent) {

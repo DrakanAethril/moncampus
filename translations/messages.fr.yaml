@@ -11690,6 +11690,7 @@ seriousGameHelpCount: '{1}1 aide|]1,Inf[%count% aides'
 seriousGameDuringHelp: 'pendant l''aide ·'
 seriousGameDeliveryRefused: 'Livraison refusée'
 seriousGameWrongLine: 'Mauvaise ligne :'
+seriousGameWrongOrder: 'Ordre faux à partir de :'
 # Serious games: the statistics of every game (design/validated/serious-games-neko-con.md §6)
 seriousGameStatsHeading: 'Statistiques'
 seriousGameStatsScope: 'Périmètre'

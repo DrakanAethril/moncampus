@@ -1,0 +1,167 @@
+# Black-out - acte 3 : Les étages se parlent.
+#
+# The server half of the tickets (design/validated/serious-games-blackout.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Nadia's
+# guided questions, the clue closing gives. The game half (bug, checks run in the network simulator,
+# views, written hints, scenes) is public/serious-games/blackout/tickets/acte3.js. Converted once
+# from the prototype's host/scenario/acte3.js; `hints` counts the written hints the game holds
+# after the guided questions.
+tickets:
+  -
+    id: T09
+    act: 3
+    after: [T05, T06, T07]
+    course: 'SIO1 · net05 Le routage'
+    requester: karim
+    kind: incident
+    priority: tres-haute
+    category: 'Réseau › Routage'
+    title: 'Le rang A ne voit pas le serveur de jeu'
+    request: 'Les PC du rang A ont leur adresse, ils joignent r1… et rien au-delà. Les autres rangs, pareil. La régie, elle, joint srv-jeu sans souci. Quelqu''un a « nettoyé » r1 pendant la coupure, paraît-il.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'r1 répond aux joueurs mais ne les laisse pas passer ? C''est un routeur, non ?'
+        options:
+          - { text: 'Il manquait une route vers chaque PC des rangs : je les ai ajoutées une par une.', misconception: route-par-pc, reaction: { who: nadia, expr: sourcil, text: 'Une route vise un réseau, pas un PC. Et r1 connaissait déjà tous ses réseaux : ils sont branchés sur lui.' } }
+          - { text: 'Un Linux ne fait suivre les paquets d''une interface à l''autre que si on le lui demande : net.ipv4.ip_forward valait 0. Je l''ai remis à 1 dans /etc/sysctl.d/, pour que ça tienne au redémarrage.', ok: true, reaction: { who: karim, expr: soulage, text: 'Donc r1 était un PC avec plein de cartes réseau, pas un routeur. Jusqu''à ce que tu lui dises.' } }
+          - { text: 'Un routeur route tout seul : c''était le pare-feu de r1 qui bloquait les joueurs.', misconception: routeur-route-seul, reaction: { who: nadia, expr: neutre, text: 'Ce soir, r1 n''a pas encore de règle de filtrage. Et tu n''en as touché aucune.' } }
+          - { text: 'Les joueurs avaient une mauvaise passerelle : je l''ai corrigée sur r1.', misconception: passerelle, reaction: { who: nadia, expr: sourcil, text: 'Les joueurs joignaient bien r1, leur passerelle. C''est r1 qui ne faisait pas suivre.' } }
+    guide:
+      -
+        id: ou
+        kind: choice
+        prompt: 'Un joueur joint r1 mais rien au-delà. Où meurt son ping vers srv-jeu, sur la carte ?'
+        options:
+          - { text: 'Sur r1 : il arrive, mais r1 ne le fait pas suivre', ok: true }
+          - { text: 'Sur srv-jeu : il ne répond pas', misconception: serveur, reaction: { who: nadia, expr: neutre, text: 'La régie le joint très bien. Le ping des joueurs n''arrive même pas jusqu''à lui.' } }
+          - { text: 'Sur le PC : il n''a pas d''adresse', misconception: poste-sans-adresse, reaction: { who: nadia, expr: neutre, text: 'Il en a une, et il joint r1.' } }
+      -
+        id: localiser
+        kind: line
+        file: 'r1:/etc/sysctl.d/99-routage.conf'
+        prompt: 'Clique sur la ligne qui décide si r1 fait suivre les paquets.'
+        answer: 'ip_forward'
+        reaction: { who: nadia, expr: neutre, text: 'Un réglage du noyau, dans /etc/sysctl.d/.' }
+    hints: 2
+  -
+    id: T10
+    act: 3
+    after: [T09]
+    course: 'SIO1 · net05 Le routage'
+    requester: lou
+    kind: incident
+    priority: haute
+    category: 'Réseau › Routage'
+    title: 'Le ping part mais ne revient jamais'
+    request: 'Mon encodeur est derrière r-stream, le petit routeur de la régie du stream (réseau 10.20.41.0/24). Depuis la régie, Karim lance un ping vers l''encodeur : rien ne revient. Et l''encodeur ne joint pas le serveur de jeu, donc pas d''images de la partie. Le stream est noir !'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Lou.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiete
+        prompt: 'Le ping arrivait jusqu''à mon encodeur, Karim l''a vu sur la carte. Comment la réponse a pu se perdre ?'
+        options:
+          - { text: 'Le TTL du ping expirait avant le retour : trop de routeurs entre la régie et l''encodeur.', misconception: ttl, reaction: { who: nadia, expr: sourcil, text: 'Trois sauts, sur 64 de TTL. Il en reste de la marge.' } }
+          - { text: 'Si l''aller passe, le retour passe forcément : c''était l''encodeur qui ignorait les pings.', misconception: aller-donc-retour, reaction: { who: nadia, expr: neutre, text: 'L''aller et le retour sont deux trajets, décidés chacun par les routes de ceux qui les envoient.' } }
+          - { text: 'r1 savait aller vers 10.20.41.0/24, mais r-stream ne savait pas revenir : il n''avait pas de route par défaut. Je lui ai donné r1 comme passerelle.', ok: true, reaction: { who: lou, expr: joie, text: 'L''image revient ! Donc chaque routeur doit connaître le chemin du retour. Je le note pour mon tuto.' } }
+          - { text: 'L''encodeur avait une mauvaise adresse : je l''ai changée.', misconception: adresse, reaction: { who: nadia, expr: sourcil, text: 'Tu n''as pas touché à l''encodeur. Son adresse est bonne.' } }
+    guide:
+      -
+        id: qui
+        kind: choice
+        prompt: 'La réponse de l''encodeur part vers r-stream, sa passerelle. Que doit savoir r-stream pour la renvoyer à la régie, en 10.20.10.130 ?'
+        options:
+          - { text: 'Une route vers 10.20.10.0/24, ou une route par défaut vers r1', ok: true }
+          - { text: 'Rien : il la renvoie par où elle est arrivée', misconception: chemin-inverse, reaction: { who: nadia, expr: sourcil, text: 'Un routeur ne se souvient pas d''où vient un paquet. Il regarde la destination, et sa table.' } }
+          - { text: 'L''adresse MAC de la régie', misconception: mac, reaction: { who: nadia, expr: neutre, text: 'La régie n''est pas dans son réseau : il ne connaîtra jamais sa MAC.' } }
+      -
+        id: localiser
+        kind: line
+        file: 'r-stream:/etc/network/interfaces'
+        prompt: 'Clique sur la déclaration de l''interface de r-stream côté r1, celle qui devrait porter sa passerelle.'
+        answer: 'iface ens18 inet static'
+        reaction: { who: nadia, expr: neutre, text: 'L''interface du VLAN 40, ens18 : c''est par elle qu''on rejoint r1.' }
+    hints: 2
+  -
+    id: T11
+    act: 3
+    after: [T09]
+    course: 'SIO1 · net05 Le routage'
+    requester: karim
+    kind: incident
+    priority: haute
+    category: 'Réseau › Routage'
+    title: 'Internet est coupé pour tout le monde'
+    request: 'Plus personne n''a Internet : ni les joueurs, ni la régie, ni le stream. Le jeu en réseau local marche, mais le tournoi doit publier les scores en ligne. Et Lou ne peut pas streamer sans Internet.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Comment r1 peut-il connaître tous nos réseaux et ignorer Internet ?'
+        options:
+          - { text: 'Il faudrait une route vers chaque site d''Internet : j''en ai ajouté pour les sites du tournoi.', misconception: route-par-site, reaction: { who: nadia, expr: sourcil, text: 'Des milliards d''adresses… Non : une seule route suffit pour tout ce qu''on ne connaît pas.' } }
+          - { text: 'La route par défaut, c''est le serveur DNS : sans lui, pas d''Internet.', misconception: defaut-dns, reaction: { who: nadia, expr: neutre, text: 'Le DNS traduit des noms. La route par défaut dit par où envoyer. Deux choses différentes.' } }
+          - { text: 'r1 connaît ses réseaux parce qu''ils sont branchés sur lui. Tout le reste part vers sa route par défaut, la box : la ligne « gateway » manquait sur ens18.', ok: true, reaction: { who: karim, expr: soulage, text: 'Une seule ligne pour tout Internet. C''est presque décevant.' } }
+          - { text: 'La box du lycée avait coupé Internet pendant la coupure de courant.', misconception: faute-box, reaction: { who: nadia, expr: sourcil, text: 'Tu as modifié r1, pas la box. Et ça marche.' } }
+    guide:
+      -
+        id: table
+        kind: choice
+        prompt: 'Sur r1, lance « ip r ». Que manque-t-il ?'
+        options:
+          - { text: 'La ligne « default via … »', ok: true }
+          - { text: 'Une route vers 10.20.20.0/24', misconception: lecture, reaction: { who: nadia, expr: neutre, text: 'Elle y est, branchée directement sur ens19.20.' } }
+          - { text: 'Rien, la table est complète', misconception: table-complete, reaction: { who: nadia, expr: sourcil, text: 'Et pour aller vers 203.0.113.80, r1 prend quelle ligne ?' } }
+      -
+        id: localiser
+        kind: line
+        file: 'r1:/etc/network/interfaces'
+        prompt: 'Clique sur la déclaration de l''interface de r1 côté box.'
+        answer: 'iface ens18 inet static'
+        reaction: { who: nadia, expr: neutre, text: 'Côté lycée : ens18.' }
+    hints: 2
+  -
+    id: T12
+    act: 3
+    after: [T09]
+    requester: nadia
+    kind: demande
+    priority: basse
+    category: 'Formation'
+    title: 'La table de r1'
+    request: 'Petit exercice pendant que le tournoi reprend. Quelqu''un a laissé une vieille route « 10.20.0.0/16 » vers la box dans la table de r1. Pourtant le rang C marche. Dis-moi quelle route r1 prend vraiment pour joindre 10.20.30.15.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: routes
+        prompt: 'Clique sur la route que r1 prend pour joindre 10.20.30.15.'
+        answer: '10.20.30.0/25'
+        reaction: { who: nadia, expr: sourcil, text: 'Plusieurs routes conviennent à 10.20.30.15. r1 prend la plus précise.' }
+      -
+        id: pourquoi
+        kind: choice
+        label: 'Expliquer'
+        prompt: 'Pourquoi celle-là, alors que la route 10.20.0.0/16 convient aussi ?'
+        options:
+          - { text: 'Parce qu''elle est écrite avant dans la table', misconception: premiere-route, reaction: { who: nadia, expr: sourcil, text: 'L''ordre d''écriture ne compte pas : « ip r » trie même les routes à sa façon.' } }
+          - { text: 'Parce que c''est la plus précise : un /25 l''emporte sur un /16', ok: true, reaction: { who: nadia, expr: sourire, text: 'Le plus long préfixe. C''est ce qui sauve le rang C de cette vieille route.' } }
+          - { text: 'Parce que les routes « kernel » passent toujours avant les autres', misconception: kernel-prioritaire, reaction: { who: nadia, expr: neutre, text: 'Non : à longueur égale peut-être, mais c''est la longueur du préfixe qui décide d''abord.' } }
+    hints: 0
