@@ -32,7 +32,8 @@
     abysse: { bg: '#031319', paper: '#072B36', ink: '#CFF7F1', accent: '#7FF5E3', font: "'Chakra Petch', 'Trebuchet MS', sans-serif", italic: false },
     irregulars: { bg: '#142820', paper: '#1F3A2E', ink: '#E9D8A6', accent: '#C9A04E', font: "'Libre Caslon Display', Georgia, serif", italic: false },
     'neko-con': { bg: '#241F3A', paper: '#3B3266', ink: '#FBF9FF', accent: '#FF6F91', font: "'Trebuchet MS', 'Source Sans 3', sans-serif", italic: false },
-    blackout: { bg: '#0A0618', paper: '#151029', ink: '#F4F2FF', accent: '#FF2E88', font: "'Chakra Petch', 'Trebuchet MS', sans-serif", italic: false }
+    blackout: { bg: '#0A0618', paper: '#151029', ink: '#F4F2FF', accent: '#FF2E88', font: "'Chakra Petch', 'Trebuchet MS', sans-serif", italic: false },
+    'retro-rush': { bg: '#1E1433', paper: '#EDE7F7', ink: '#EDE7F7', accent: '#FF8A3D', font: "'Manrope', 'Trebuchet MS', sans-serif", italic: false }
   };
   var GAMES = {
     observatoire: { title: "L'Observatoire", chapters: [
@@ -88,6 +89,18 @@
       { id: 'acte7', name: 'Les invités et les absents', topic: 'Wi-Fi, RADIUS et WireGuard' },
       { id: 'acte8', name: 'Le Ghost frappe', topic: 'DHCP pirate et SSH' },
       { id: 'acte9', name: "L'incident", topic: "Gestion d'incident" }],
+      finale: { id: 'none', name: '', topic: '' } },
+    // Rétro Rush: a card per act (design/validated/serious-games-retro-rush.md §4), like Black-out.
+    'retro-rush': { title: 'Rétro Rush', chapters: [
+      { id: 'acte1', name: 'Le tableur de Gilles', topic: 'Modèle relationnel' },
+      { id: 'acte2', name: 'Premières requêtes', topic: 'SELECT et WHERE' },
+      { id: 'acte3', name: 'Les jointures', topic: 'INNER et LEFT JOIN' },
+      { id: 'acte4', name: 'Les chiffres', topic: 'GROUP BY et HAVING' },
+      { id: 'acte5', name: 'Questions difficiles', topic: 'Sous-requêtes' },
+      { id: 'acte6', name: "Remettre le stock d'aplomb", topic: 'UPDATE, INSERT, DELETE' },
+      { id: 'acte7', name: 'Les automatismes', topic: 'Triggers' },
+      { id: 'acte8', name: 'Le grand rush', topic: 'Transactions, vues, index' },
+      { id: 'acte9', name: "Les accès et l'inventaire", topic: 'Droits, injection, RGPD' }],
       finale: { id: 'none', name: '', topic: '' } }
   };
   var PINS = [
@@ -96,7 +109,8 @@
     { id: 'pin-vague', name: 'Épinglette Abysse', color: '#167784' },
     { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', ink: '#E9D8A6' },
     { id: 'pin-neko', name: 'Épinglette Neko', color: '#FBF9FF', ink: '#E8457A' },
-    { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', ink: '#F4F2FF', ring: '#FF2E88' }
+    { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', ink: '#F4F2FF', ring: '#FF2E88' },
+    { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', ink: '#FF8A3D', ring: '#BFE6FF' }
   ];
 
   function cardOf(code) {
@@ -170,6 +184,18 @@
         '<rect x="64" y="34" width="44" height="60" rx="8" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.4"/>' +
         '<rect x="70" y="42" width="32" height="22" rx="3" fill="' + screen + '"/>' + led(75.5, 46, true) +
         '<rect x="80" y="70" width="12" height="10" rx="2" fill="' + M.dark + '"/><text x="86" y="89" text-anchor="middle" font-size="6.5" font-weight="700" font-family="\'Chakra Petch\', sans-serif" fill="' + M.deep + '">REMOTE</text>';
+    },
+    // Rétro Rush: the Cartouche d'or, a game cartridge in metal, its grip ridges and its label.
+    cartouche: function (M, g, locked) {
+      var ridges = '';
+      for (var i = 0; i < 5; i++) ridges += '<rect x="' + (38 + i * 10) + '" y="16" width="5" height="14" rx="2" fill="' + M.dark + '"/>';
+      return '<path d="M24 12 H96 Q102 12 102 18 V96 L94 106 H26 L18 96 V18 Q18 12 24 12 Z" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.6"/>' + ridges +
+        '<rect x="30" y="38" width="60" height="44" rx="5" fill="' + (locked ? 'currentColor' : '#EDE7F7') + '" stroke="' + M.deep + '" stroke-width="1.2"/>' +
+        '<rect x="30" y="38" width="60" height="12" rx="5" fill="' + (locked ? 'currentColor' : '#6A3EA0') + '"/>' +
+        '<text x="60" y="47.5" text-anchor="middle" font-size="7" font-weight="700" letter-spacing="1.2" font-family="\'Trebuchet MS\', sans-serif" fill="#FFFFFF">RÉTRO RUSH</text>' +
+        '<text x="60" y="66" text-anchor="middle" font-size="8.5" font-weight="700" font-family="\'IBM Plex Mono\', monospace" fill="' + (locked ? 'currentColor' : '#1E1433') + '">SELECT *</text>' +
+        '<rect x="44" y="72" width="32" height="4" rx="2" fill="' + (locked ? 'currentColor' : '#FF8A3D') + '"/>' +
+        '<rect x="34" y="92" width="52" height="8" rx="2" fill="' + M.dark + '"/>';
     },
     astrolabe: function (M, g) {
       var ticks = '';
@@ -271,6 +297,7 @@
     if (gameId === 'irregulars') s = londonEmblem(idx, P);
     if (gameId === 'neko-con') s = nekoEmblem(idx, P);
     if (gameId === 'blackout') s = blackoutEmblem(idx, P);
+    if (gameId === 'retro-rush') s = retroEmblem(idx, P);
     return s;
   }
   /* The fresco of a room of the villa, inside the card's red panel (x 9-111, y 22-118): one
@@ -431,6 +458,38 @@
           '<g fill="' + lime + '"><circle cx="30" cy="94" r="3"/><circle cx="46" cy="94" r="3"/><circle cx="60" cy="94" r="3"/><circle cx="74" cy="94" r="3"/><circle cx="90" cy="94" r="3"/></g>';
     }
   }
+  /* A card of Rétro Rush: the act's piece of SQL, drawn on the frosted lilac of the game - atomic
+     purple, tangerine, raspberry, lime, ink. */
+  function retroEmblem(idx, P) {
+    var atomic = '#6A3EA0', mand = '#FF8A3D', fram = '#E0457B', lime = '#3F7A12', ink = '#1E1433', glacier = '#BFE6FF';
+    var cell = function (x, y, w, c) { return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="10" fill="' + (c || '#FFFFFF') + '" stroke="' + ink + '" stroke-width="1"/>'; };
+    var table = function (x, y, n, head) { var o = cell(x, y, 34, head || atomic); for (var i = 1; i <= n; i++) o += cell(x, y + i * 10, 34); return o; };
+    switch (idx) {
+      case 0: // le tableur de Gilles: a sheet, one cell written twice
+        var g = '';
+        for (var r = 0; r < 6; r++) for (var c = 0; c < 4; c++) g += cell(24 + c * 18, 34 + r * 12, 18, r === 0 ? glacier : ((r === 2 || r === 4) && c === 2 ? '#FFE0E9' : '#FFFFFF'));
+        return g + '<path d="M70 62 L74 70 M70 86 L74 94" stroke="' + fram + '" stroke-width="2"/>';
+      case 1: // premières requêtes: a magnifier over rows
+        return table(30, 34, 5) + '<circle cx="76" cy="74" r="14" fill="' + glacier + '" fill-opacity=".6" stroke="' + ink + '" stroke-width="3"/><path d="M86 84 L98 98" stroke="' + ink + '" stroke-width="5" stroke-linecap="round"/>';
+      case 2: // les jointures: two tables, a link
+        return table(16, 40, 4) + table(70, 52, 4, mand) + '<path d="M50 65 C60 65 60 77 70 77" fill="none" stroke="' + fram + '" stroke-width="2.4"/><circle cx="50" cy="65" r="2.6" fill="' + fram + '"/><circle cx="70" cy="77" r="2.6" fill="' + fram + '"/>';
+      case 3: // les chiffres: bars and a sum
+        return '<rect x="28" y="70" width="12" height="30" fill="' + atomic + '"/><rect x="46" y="54" width="12" height="46" fill="' + mand + '"/><rect x="64" y="62" width="12" height="38" fill="' + fram + '"/><rect x="82" y="44" width="12" height="56" fill="' + atomic + '"/>' +
+          '<line x1="24" y1="100" x2="98" y2="100" stroke="' + ink + '" stroke-width="2"/><text x="40" y="44" font-size="18" font-weight="700" font-family="Georgia, serif" fill="' + ink + '">Σ</text>';
+      case 4: // questions difficiles: a query inside a query
+        return '<rect x="20" y="34" width="80" height="66" rx="8" fill="none" stroke="' + atomic + '" stroke-width="2.4"/><rect x="34" y="50" width="52" height="36" rx="6" fill="' + glacier + '" stroke="' + mand + '" stroke-width="2.4"/><rect x="46" y="62" width="28" height="12" rx="4" fill="' + fram + '"/>';
+      case 5: // remettre le stock d'aplomb: rows, one rewritten
+        return table(28, 36, 5) + '<rect x="28" y="66" width="34" height="10" fill="' + mand + '" stroke="' + ink + '" stroke-width="1"/><path d="M72 64 L90 46 L96 52 L78 70 Z" fill="' + atomic + '"/><path d="M72 64 L70 72 L78 70" fill="' + ink + '"/>';
+      case 6: // les automatismes: the trigger's lightning over a row
+        return table(24, 60, 3) + '<path d="M72 30 L58 64 L70 64 L62 96 L90 54 L76 54 L86 30 Z" fill="' + mand + '" stroke="' + ink + '" stroke-width="2" stroke-linejoin="round"/>';
+      case 7: // le grand rush: two tills, one lock
+        return '<rect x="18" y="56" width="34" height="30" rx="4" fill="' + atomic + '"/><rect x="68" y="56" width="34" height="30" rx="4" fill="' + fram + '"/><rect x="24" y="46" width="22" height="12" rx="2" fill="' + glacier + '"/><rect x="74" y="46" width="22" height="12" rx="2" fill="' + glacier + '"/>' +
+          '<rect x="50" y="82" width="20" height="16" rx="3" fill="' + lime + '"/><path d="M54 82 v-5 a6 6 0 0 1 12 0 v5" fill="none" stroke="' + lime + '" stroke-width="2.6"/>';
+      default: // les accès et l'inventaire: the key and the cartridge back on the shelf
+        return '<rect x="22" y="40" width="40" height="52" rx="5" fill="' + atomic + '" fill-opacity=".85"/><rect x="28" y="52" width="28" height="18" rx="3" fill="' + glacier + '"/><rect x="30" y="34" width="24" height="8" fill="' + ink + '"/>' +
+          '<circle cx="80" cy="56" r="10" fill="none" stroke="' + mand + '" stroke-width="4"/><path d="M80 66 V96 M80 86 H88 M80 94 H90" stroke="' + mand + '" stroke-width="4" stroke-linecap="round"/>';
+    }
+  }
   var ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
   /* A card of Les Tablettes de Pompéi: a cream tablet, its fresco on a red panel, the room's name in
      capitals and its Roman numeral. */
@@ -483,6 +542,11 @@
       return '<path d="M20 44 V27 a10 10 0 0 1 20 0 V44 l-3.4 -3.4 l-3.3 3.4 l-3.3 -3.4 l-3.3 3.4 l-3.3 -3.4 Z" fill="' + c + '"/>' +
         '<circle cx="26.5" cy="28" r="2" fill="#0A0618"/><circle cx="33.5" cy="28" r="2" fill="#0A0618"/>' +
         '<rect x="15" y="34" width="30" height="1.8" fill="#00E5FF" opacity=".85"/>';
+    },
+    // Rétro Rush: the joystick of the shop's arcade corner, its base and its ball.
+    'pin-joystick': function (c) {
+      return '<ellipse cx="30" cy="40" rx="13" ry="5" fill="' + c + '"/><rect x="28" y="22" width="4" height="18" rx="2" fill="' + c + '"/><circle cx="30" cy="20" r="6" fill="' + c + '"/>' +
+        '<circle cx="40" cy="36" r="2.2" fill="#BFE6FF"/>';
     },
     'pin-loupe': function (c) { return '<circle cx="27" cy="27" r="9" fill="none" stroke="' + c + '" stroke-width="3"/><line x1="34" y1="34" x2="43" y2="43" stroke="' + c + '" stroke-width="4" stroke-linecap="round"/>'; },
     'pin-cave-canem': function (c, accent) {

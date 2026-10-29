@@ -1,0 +1,175 @@
+# Rétro Rush - acte 5 : Questions difficiles.
+#
+# The server half of the tickets (design/validated/serious-games-retro-rush.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Jade's
+# guided questions, the clue closing gives. The game half (deliverables and their reference answers,
+# starting texts, views, written hints, scenes) is public/serious-games/retro-rush/tickets/acte5.js.
+# Converted from the prototype's host/scenario/acte5.js by its tool/to-yaml.js; `hints` counts
+# the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: R21
+    act: 5
+    after: [R20]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: demande
+    category: 'Requêtes › Sous-requêtes'
+    title: 'Les articles plus chers que la moyenne'
+    request: 'Pour la vitrine du site, je veux mes articles « haut de gamme » : ceux qui coûtent plus que le prix moyen de toute la boutique. Le numéro, le jeu et le prix, du plus cher au moins cher, puis par numéro. Ma requête ne veut même pas s''exécuter.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête de Gilles, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi « WHERE prixVente > AVG(prixVente) » était refusé, et pourquoi la sous-requête marche ?'
+        options:
+          - { text: 'Le WHERE examine une ligne à la fois : il ne connaît pas encore la moyenne de toutes les lignes. La sous-requête calcule d''abord cette moyenne, une seule valeur, et le WHERE compare chaque prix à elle.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exactement. Une sous-requête scalaire, c''est une valeur calculée avant, qu''on glisse dans la condition.' } }
+          - { text: 'On peut comparer à AVG() directement dans le WHERE ; c''est juste qu''il fallait un alias à la moyenne.', misconception: agregat-dans-where, reaction: { who: jade, expr: sourcil, text: 'Aucun alias n''y changera rien : une fonction d''agrégat ne s''écrit pas dans un WHERE. Il faut une sous-requête, ou un HAVING après un GROUP BY.' } }
+          - { text: 'Il fallait un HAVING à la place du WHERE, sans rien d''autre.', misconception: having-sans-group, reaction: { who: jade, expr: neutre, text: 'Un HAVING filtre des groupes. Ici, tu veux des articles, un par ligne : c''est bien un WHERE, avec la moyenne calculée à part.' } }
+          - { text: 'AVG ne marche que sur des nombres entiers, et les prix ont des centimes.', misconception: avg-entiers, reaction: { who: jade, expr: neutre, text: 'AVG marche sur tous les nombres. Le refus venait de l''endroit où tu l''avais écrit.' } }
+    guide:
+      -
+        id: ligne
+        kind: line
+        view: requete
+        prompt: 'Clique sur la ligne que MySQL refuse.'
+        answer: 'AVG(prixVente)'
+        reaction: { who: jade, expr: neutre, text: 'Regarde la condition : qu''est-ce qu''elle compare ?' }
+    hints: 2
+  -
+    id: R22
+    act: 5
+    after: [R20]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: incident
+    category: 'Requêtes › NOT IN et NULL'
+    title: 'Les clients jamais passés en caisse'
+    request: 'Je veux envoyer un bon de réduction aux clients inscrits qui n''ont jamais rien acheté. Le nom et le prénom. Ma requête répond : personne. Ça m''étonnerait, Yanis Fontaine n''a jamais rien pris.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête de Gilles, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Ta requête de départ, avec NOT IN, ne renvoyait personne. Pourquoi ?'
+        options:
+          - { text: 'Certaines ventes n''ont pas de client : idClient y vaut NULL. « x NOT IN (… , NULL) » n''est jamais vrai, car comparer à NULL donne « inconnu ». NOT EXISTS ne compare rien : il regarde seulement s''il existe une vente du client.', ok: true, reaction: { who: jade, expr: sourire, text: 'C''est le piège le plus vicieux du SQL. Une seule vente anonyme, et NOT IN ne renvoie plus rien.' } }
+          - { text: 'NOT IN se comporte bien avec des NULL ; c''est la sous-requête qui renvoyait trop de lignes.', misconception: not-in-null, reaction: { who: jade, expr: sourcil, text: 'Le nombre de lignes n''y est pour rien. Une seule valeur NULL dans la liste suffit à rendre NOT IN « inconnu » pour tout le monde.' } }
+          - { text: 'NOT IN ne marche pas avec une sous-requête, seulement avec une liste écrite à la main.', misconception: in-liste, reaction: { who: jade, expr: neutre, text: 'IN et NOT IN acceptent très bien une sous-requête. Le problème, c''est ce qu''elle contient.' } }
+          - { text: 'Il manquait un DISTINCT dans la sous-requête.', misconception: distinct-repare, reaction: { who: jade, expr: neutre, text: 'Les doublons ne gênent pas IN. DISTINCT laisserait le NULL dans la liste, et rien ne changerait.' } }
+    guide:
+      -
+        id: 'null'
+        kind: choice
+        prompt: 'Que contient la colonne idClient de Vente, pour une vente au comptoir sans client inscrit ?'
+        options:
+          - { text: 'NULL', ok: true }
+          - { text: '0', misconception: null-zero, reaction: { who: jade, expr: neutre, text: 'Regarde la table Vente dans le schéma : pas de 0, une case vide. NULL.' } }
+          - { text: 'L''identifiant du dernier client', misconception: null-dernier, reaction: { who: jade, expr: neutre, text: 'Rien de tel : une vente anonyme n''a pas de client du tout.' } }
+    hints: 3
+  -
+    id: R23
+    act: 5
+    after: [R21, R22]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: demande
+    category: 'Requêtes › EXISTS'
+    title: 'Les articles qui manquent ont-ils été réservés ?'
+    request: 'Jade a une idée derrière la tête. Elle veut les articles dont l''étagère et la base ne sont pas d''accord, et qui ont eu au moins une réservation annulée ou en cours. Le numéro de l''article, son stock dans la base et ce que j''ai compté. Une fois chacun, pas plus.'
+    reward: { clue: 'Chaque article qui manque dans la base a eu une réservation, annulée ou en cours. Les articles sans réservation tombent tous juste.' }
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris la requête, essaie-la, puis livre-la à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Avec une jointure sur Reservation, Silent Hill sortait deux fois. Pourquoi pas avec EXISTS ?'
+        options:
+          - { text: 'La jointure produit une ligne par réservation trouvée : deux réservations, deux lignes. EXISTS ne renvoie rien de la sous-requête, il répond seulement « il en existe au moins une » : chaque article reste une seule fois.', ok: true, reaction: { who: jade, expr: sourire, text: 'Voilà. Et regarde ta liste : ce sont exactement les articles de l''écart d''inventaire. Tous.' } }
+          - { text: 'EXISTS compare l''identifiant de l''article avec celui de la réservation, et garde la première égalité.', misconception: exists-compare, reaction: { who: jade, expr: sourcil, text: 'EXISTS ne compare aucune valeur : c''est la sous-requête qui filtre. EXISTS demande seulement si elle renvoie au moins une ligne.' } }
+          - { text: 'EXISTS supprime les doublons, comme un DISTINCT.', misconception: exists-distinct, reaction: { who: jade, expr: neutre, text: 'Il n''y a pas de doublon à supprimer : EXISTS ne fabrique jamais la ligne en double, il ne joint pas.' } }
+          - { text: 'La jointure était fausse : il fallait un LEFT JOIN.', misconception: left-join-doublons, reaction: { who: jade, expr: neutre, text: 'Un LEFT JOIN garderait les mêmes doublons, et ajouterait les articles sans réservation.' } }
+    guide:
+      -
+        id: exists
+        kind: choice
+        prompt: 'Que renvoie « EXISTS (sous-requête) » ?'
+        options:
+          - { text: 'Vrai si la sous-requête renvoie au moins une ligne, faux sinon', ok: true }
+          - { text: 'Les lignes de la sous-requête', misconception: exists-compare, reaction: { who: jade, expr: neutre, text: 'Non : EXISTS est une condition, vraie ou fausse. Il ne renvoie aucune ligne.' } }
+          - { text: 'Le nombre de lignes de la sous-requête', misconception: exists-count, reaction: { who: jade, expr: neutre, text: 'Ça, c''est COUNT. EXISTS s''arrête dès la première ligne trouvée.' } }
+    hints: 2
+  -
+    id: R24
+    act: 5
+    after: [R22]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: demande
+    category: 'Requêtes › UNION'
+    title: 'La liste d''appel de l''inauguration'
+    request: 'Pour l''inauguration du site, j''appelle deux sortes de clients : ceux qui ont une réservation en cours, et ceux qui ont acheté en octobre 2026. Une seule liste, nom et prénom, et chaque personne une seule fois : Mme Martin n''a pas besoin de deux coups de fil.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la requête d''Océane, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'UNION ALL, UNION : quelle différence, ici ?'
+        options:
+          - { text: 'UNION ALL met bout à bout les deux résultats, doublons compris. UNION retire les lignes identiques : une cliente qui a réservé ET acheté en octobre n''apparaît qu''une fois.', ok: true, reaction: { who: oceane, expr: soulagee, text: 'Un seul appel par personne. Mme Martin va me remercier.' } }
+          - { text: 'UNION garde les doublons ; UNION ALL les retire.', misconception: union-doublons, reaction: { who: jade, expr: sourcil, text: 'C''est l''inverse : ALL veut dire « tout garder ». UNION seul dédoublonne.' } }
+          - { text: 'UNION fait une jointure entre les deux SELECT.', misconception: union-jointure, reaction: { who: jade, expr: neutre, text: 'Une jointure met des colonnes côte à côte. UNION empile des lignes, à condition que les deux SELECT aient les mêmes colonnes.' } }
+          - { text: 'Aucune : UNION ALL est juste plus explicite.', misconception: union-identique, reaction: { who: jade, expr: neutre, text: 'Regarde ta première version : Léa Martin y était deux fois.' } }
+    hints: 2
+  -
+    id: R25
+    act: 5
+    after: [R21]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: demande
+    category: 'Requêtes › Sous-requête corrélée'
+    title: 'Plus cher que la moyenne de sa console'
+    request: 'Comparer un jeu NES et un jeu PlayStation 2, ça n''a pas de sens. Je veux les articles plus chers que la moyenne des articles de leur propre console : le titre, l''état et le prix.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris la requête, essaie-la, puis livre-la à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Dans ta sous-requête, j.idConsole vient de la requête principale. Comment est-elle exécutée ?'
+        options:
+          - { text: 'C''est une sous-requête corrélée : elle est recalculée pour chaque article de la requête principale, avec la console de cet article. Chaque prix est comparé à la moyenne de sa propre console.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exactement. Une moyenne par console, calculée à la demande. C''est une question classique d''examen.' } }
+          - { text: 'Une sous-requête ne voit pas la requête qui l''entoure : j.idConsole y est remplacé par la première console.', misconception: sous-requete-isolee, reaction: { who: jade, expr: sourcil, text: 'Elle la voit très bien : c''est tout l''intérêt. j.idConsole change à chaque ligne de la requête principale.' } }
+          - { text: 'Elle est calculée une seule fois, comme la moyenne de toute la boutique.', misconception: correlee-une-fois, reaction: { who: jade, expr: neutre, text: 'Ça, c''était la sous-requête du ticket précédent. Celle-ci dépend de la ligne : elle est recalculée.' } }
+          - { text: 'Elle fait un GROUP BY idConsole caché.', misconception: correlee-group-by, reaction: { who: jade, expr: neutre, text: 'Pas de regroupement caché : la condition WHERE j2.idConsole = j.idConsole choisit, pour chaque article, les articles de sa console.' } }
+    guide:
+      -
+        id: lien
+        kind: choice
+        prompt: 'Dans la sous-requête, qu''est-ce qui la relie à l''article de la requête principale ?'
+        options:
+          - { text: 'Une condition qui compare la console de la sous-requête à celle de la requête principale', ok: true }
+          - { text: 'Rien : une sous-requête est toujours indépendante', misconception: sous-requete-isolee, reaction: { who: jade, expr: neutre, text: 'Si elle était indépendante, elle donnerait la même moyenne pour tout le monde.' } }
+          - { text: 'Un GROUP BY dans la sous-requête', misconception: correlee-group-by, reaction: { who: jade, expr: neutre, text: 'Un GROUP BY renverrait une moyenne par console, plusieurs lignes : impossible à comparer à un seul prix.' } }
+    hints: 2

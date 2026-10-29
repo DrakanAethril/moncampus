@@ -1,0 +1,170 @@
+# Rétro Rush - acte 6 : Remettre le stock d'aplomb.
+#
+# The server half of the tickets (design/validated/serious-games-retro-rush.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Jade's
+# guided questions, the clue closing gives. The game half (deliverables and their reference answers,
+# starting texts, views, written hints, scenes) is public/serious-games/retro-rush/tickets/acte6.js.
+# Converted from the prototype's host/scenario/acte6.js by its tool/to-yaml.js; `hints` counts
+# the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: R26
+    act: 6
+    after: [R23, R25]
+    course: 'B2 · Requêtes SQL'
+    requester: gilles
+    kind: incident
+    category: 'Modifications › UPDATE'
+    title: 'Les soldes de la Saturn'
+    request: 'Je fais −30 % sur tous les articles Saturn pour l''ouverture. Océane a lancé la requête sur sa copie de la base : tout le magasin est à −30 %. Écris celle qui ne touche que la Saturn, qu''on la passe sur la vraie.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris la mise à jour, essaie-la, puis livre-la à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'La requête de départ n''avait pas de WHERE. Qu''est-ce qu''elle faisait exactement ?'
+        options:
+          - { text: 'Un UPDATE sans WHERE modifie toutes les lignes de la table : les cinquante articles passaient à −30 %. Le WHERE choisit les lignes ; ici, les articles dont le jeu est sur la console Saturn.', ok: true, reaction: { who: jade, expr: sourire, text: 'Et en vrai, on écrit d''abord le SELECT avec le même WHERE, on regarde les lignes, puis on le transforme en UPDATE.' } }
+          - { text: 'Sans WHERE, un UPDATE ne touche que la ligne affichée à l''écran.', misconception: update-ligne-affichee, reaction: { who: jade, expr: sourcil, text: 'Il n''y a pas de « ligne affichée » pour MySQL. Sans WHERE, c''est la table entière.' } }
+          - { text: 'Sans WHERE, MySQL refuse l''UPDATE par sécurité.', misconception: update-refuse, reaction: { who: jade, expr: neutre, text: 'Certains outils ont un mode prudent, mais MySQL lui-même exécute. Océane l''a vu sur sa copie.' } }
+          - { text: 'Sans WHERE, l''UPDATE modifie la première ligne seulement.', misconception: update-premiere, reaction: { who: jade, expr: neutre, text: 'Toutes les lignes, sans exception. C''est pour ça que le WHERE est vital.' } }
+    guide:
+      -
+        id: chemin
+        kind: choice
+        prompt: 'Article n''a pas de colonne console. Comment retrouver les articles Saturn ?'
+        options:
+          - { text: 'Par l''idJeu de l''article, dont le jeu a l''idConsole de la Saturn : des sous-requêtes imbriquées', ok: true }
+          - { text: 'En écrivant à la main les numéros des articles Saturn', misconception: ids-en-dur, reaction: { who: jade, expr: sourcil, text: 'Et le jour où un Saturn arrive, il échappe aux soldes. Pars du nom de la console.' } }
+          - { text: 'Impossible sans ajouter une colonne console à Article', misconception: redondance-place, reaction: { who: jade, expr: neutre, text: 'On a justement évité cette redondance à l''acte 1. Les clés suffisent à remonter le chemin.' } }
+    hints: 3
+  -
+    id: R27
+    act: 6
+    after: [R24]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: demande
+    category: 'Modifications › INSERT'
+    title: 'Un nouvel arrivage en dépôt'
+    request: 'Camille Roux (déposante n° 6) nous confie deux Shenmue loose (jeu n° 24), à vendre 35 € pièce. C''est un dépôt, donc pas de prix d''achat. La base doit numéroter l''article elle-même. Ma requête se fait refuser.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige l''insertion d''Océane, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'La requête d''Océane mettait idDeposant à 7. Pourquoi la base a-t-elle refusé ?'
+        options:
+          - { text: 'idDeposant est une clé étrangère vers Deposant, et il n''existe pas de déposant n° 7 : la base refuse un article qui pointerait vers personne. Camille Roux est la n° 6.', ok: true, reaction: { who: oceane, expr: soulagee, text: 'J''avais compté les déposants sur mes doigts. Six, pas sept.' } }
+          - { text: 'On peut inventer un identifiant de déposant : il fallait seulement le déclarer avant avec AUTO_INCREMENT.', misconception: inventer-identifiant, reaction: { who: jade, expr: sourcil, text: 'Un identifiant ne s''invente pas : il doit exister dans Deposant. AUTO_INCREMENT numérote les nouvelles lignes de Deposant, pas les références.' } }
+          - { text: 'Parce que prixAchat était vide : un article doit toujours avoir un prix d''achat.', misconception: prix-achat-obligatoire, reaction: { who: jade, expr: neutre, text: 'prixAchat accepte NULL : c''est normal pour un dépôt. Le refus venait du déposant.' } }
+          - { text: 'Parce qu''il y avait déjà un Shenmue en stock.', misconception: doublon-jeu, reaction: { who: jade, expr: neutre, text: 'Un jeu peut avoir autant d''articles qu''on veut. C''est même pour ça que la table Article existe.' } }
+    hints: 2
+  -
+    id: R28
+    act: 6
+    after: [R27]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: incident
+    category: 'Modifications › UPDATE'
+    title: 'Une vente mal saisie'
+    request: 'Le 21 juin, vente n° 15, j''ai tapé 3 Tetris loose (article n° 21) au lieu d''un seul. Le client n''en a pris qu''un. Il faut corriger la ligne de vente, et rendre au stock les deux Tetris qui n''ont jamais quitté le rayon.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris les deux mises à jour, essaie-les, puis livre-les à Océane.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Tu as corrigé la ligne de vente. Pourquoi un deuxième UPDATE sur Article ?'
+        options:
+          - { text: 'Parce que rien ne relie automatiquement les deux : la quantité vendue et le stock sont deux colonnes de deux tables. Corriger la vente ne rend rien au stock ; il faut le faire soi-même, ou qu''un trigger le fasse.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exactement. Et c''est le sujet de la semaine prochaine : faire faire ça à la base, toute seule.' } }
+          - { text: 'Ce n''était pas nécessaire : corriger la vente corrige le stock.', misconception: vente-corrige-stock, reaction: { who: jade, expr: sourcil, text: 'Rien ne relie les deux colonnes pour l''instant. Regarde le stock du Tetris après ton premier UPDATE : il n''a pas bougé.' } }
+          - { text: 'Pour que la clé étrangère entre LigneVente et Article reste valide.', misconception: fk-quantite, reaction: { who: jade, expr: neutre, text: 'La clé étrangère ne regarde que l''idArticle, qui existe toujours. Elle ne s''occupe pas des quantités.' } }
+          - { text: 'Parce que MySQL l''exige après tout UPDATE sur LigneVente.', misconception: update-exige, reaction: { who: jade, expr: neutre, text: 'MySQL n''exige rien de tel. C''est la cohérence de la boutique qui l''exige.' } }
+    guide:
+      -
+        id: cle
+        kind: choice
+        prompt: 'La ligne de vente a une clé primaire composée. Que doit dire le WHERE pour ne viser qu''elle ?'
+        options:
+          - { text: 'idVente = 15 AND idArticle = 21', ok: true }
+          - { text: 'idVente = 15 seulement', misconception: cle-une-colonne, reaction: { who: jade, expr: sourcil, text: 'Une vente peut avoir plusieurs lignes : toutes passeraient à 1. Il faut les deux colonnes de la clé.' } }
+          - { text: 'idArticle = 21 seulement', misconception: cle-une-colonne, reaction: { who: jade, expr: neutre, text: 'Le Tetris a été vendu plusieurs fois : tu corrigerais toutes ses ventes.' } }
+    hints: 3
+  -
+    id: R29
+    act: 6
+    after: [R26]
+    course: 'B2 · Concevoir une base'
+    requester: gilles
+    kind: incident
+    category: 'Modifications › DELETE'
+    title: 'Supprimer un article vendu'
+    request: 'L''article n° 3, le Zelda NES de M. Ferrand, est vendu depuis mars : stock à zéro, il encombre mes listes. J''ai voulu le supprimer, la base m''a craché une erreur en anglais. Explique-moi.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: erreur
+        prompt: 'Clique sur la ligne qui dit quelle table empêche la suppression.'
+        answer: '`boutique`.`LigneVente`'
+        reaction: { who: jade, expr: sourcil, text: 'Cherche, dans le message d''erreur, le nom d''une table entre accents graves.' }
+      -
+        id: decider
+        kind: choice
+        label: 'Décider'
+        expr: perplexe
+        prompt: 'Bon, alors on met ON DELETE CASCADE sur la clé étrangère, et le tour est joué ?'
+        options:
+          - { text: 'Non : CASCADE supprimerait aussi la ligne de la vente du 3 mars. M. Ferrand perdrait la trace de sa vente, et la comptabilité serait fausse. On garde l''article, à stock 0 : il raconte une vente qui a eu lieu.', ok: true, reaction: { who: gilles, expr: neutre, text: 'Garder un article à zéro pour garder la vente. D''accord. Je filtrerai mes listes sur le stock.' } }
+          - { text: 'Oui : ON DELETE CASCADE garde une copie des lignes supprimées, on pourra les retrouver.', misconception: cascade-sauvegarde, reaction: { who: jade, expr: sourcil, text: 'CASCADE ne garde rien : il supprime en chaîne. Ce n''est pas une sauvegarde, c''est l''inverse.' } }
+          - { text: 'Plus simple : désactiver la clé étrangère le temps de supprimer.', misconception: desactiver-fk, reaction: { who: jade, expr: sourcil, text: 'Et la vente pointerait vers un article qui n''existe plus. La clé étrangère existe précisément pour l''empêcher.' } }
+          - { text: 'Supprimer d''abord la ligne de vente, puis l''article.', misconception: supprimer-vente, reaction: { who: gilles, expr: furieux, text: 'Supprimer une vente ? C''est de l''argent que j''ai encaissé, et que je dois à M. Ferrand !' } }
+    hints: 0
+  -
+    id: R30
+    act: 6
+    after: [R28, R29]
+    course: 'B2 · Requêtes SQL'
+    requester: oceane
+    kind: incident
+    category: 'Modifications › NULL'
+    title: '+2 € sur les loose de la boutique'
+    request: 'Gilles augmente de 2 € les jeux loose qui appartiennent à la boutique. Pas ceux des déposants : leur prix, c''est eux qui le fixent. Ma requête dit « 0 ligne modifiée ».'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Corrige la mise à jour d''Océane, essaie-la, puis livre-la.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: '« 0 ligne modifiée », alors que la boutique a des dizaines de loose. Qu''est-ce qui clochait ?'
+        options:
+          - { text: 'Les articles de la boutique n''ont pas de déposant : idDeposant y vaut NULL. « idDeposant = NULL » n''est jamais vrai, dans un UPDATE comme dans un SELECT ; il faut « idDeposant IS NULL ».', ok: true, reaction: { who: oceane, expr: soulagee, text: 'Comme pour les jeux sans genre, la semaine dernière. Je m''en souviendrai, cette fois.' } }
+          - { text: '« = NULL » marche dans un UPDATE ; c''est l''augmentation « prixVente + 2 » qui était mal écrite.', misconception: egal-null-update, reaction: { who: jade, expr: sourcil, text: 'Le SET était juste. C''est le WHERE qui ne gardait aucune ligne : NULL ne se compare pas avec =, nulle part.' } }
+          - { text: 'Un UPDATE ne peut pas modifier un prix avec un calcul, il faut une valeur fixe.', misconception: update-calcul, reaction: { who: jade, expr: neutre, text: 'SET prixVente = prixVente + 2 est parfaitement valide : chaque ligne part de son propre prix.' } }
+          - { text: 'Il fallait écrire idDeposant = 0 pour les articles de la boutique.', misconception: null-zero, reaction: { who: jade, expr: neutre, text: 'Il n''y a pas de déposant n° 0, et la colonne ne contient pas 0 : elle est vide. IS NULL.' } }
+    guide:
+      -
+        id: ligne
+        kind: line
+        view: requete
+        prompt: 'Clique sur la ligne qui fait que rien n''est modifié.'
+        answer: 'idDeposant = NULL'
+        reaction: { who: jade, expr: neutre, text: 'Relis chaque condition du WHERE : laquelle n''est jamais vraie ?' }
+    hints: 2

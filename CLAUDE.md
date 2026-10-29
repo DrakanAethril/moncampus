@@ -263,12 +263,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
 - **Serious games** (`/serious-games`) — `SeriousGame*` entities, `src/SeriousGame/`,
-  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; six games built,
+  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; seven games built,
   **L'Observatoire** (automatismes de 1re), **Les Tablettes de Pompéi** (déclinaisons latines,
   4e-2nde, `design/validated/serious-games-pompei.md`), **Station Abysse** (SVT, 2nde-1re,
   `serious-games-abysse.md`), **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`), **Panique
   à la Neko-Con** (HTML et CSS, BTS SIO 1, `serious-games-neko-con.md`) and **Black-out** (réseau et
-  cybersécurité, BTS SIO 2 SISR, `serious-games-blackout.md`), the two of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
+  cybersécurité, BTS SIO 2 SISR, `serious-games-blackout.md`) and **Rétro Rush** (bases de données
+  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`), the three of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
   mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus
   one line per game in the « Serious games » block of Paramètres › Fonctionnalités
@@ -343,6 +344,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     outside the help, on a `view` of the game (a log, a capture). The host page relays an order's
     ranks (`serious_game_host_controller.js`, `stepInput()`) - a new kind of input must be added
     there too, or it reaches the server mangled.
+    **Rétro Rush** is the third (45 issues in a GitLab-like forge, Jade as the helper) and adds
+    nothing to the server: its repairs are SQL, run in the frame by **sql.js** (SQLite in
+    WebAssembly, `vendor/`, served with the fonts' CORS header) behind a MySQL layer
+    (`sqlcompat.js`: MySQL functions, the ONLY_FULL_GROUP_BY refusal, a bounded translator of
+    MySQL triggers - what it cannot translate is refused, never guessed), each deliverable replayed
+    on a fresh visible base **and a hidden one** (`base.js`, generated) against its reference
+    answer; the game half and the bench share `benchcore.js`.
   - **`/serious-games/stats`** (`StatsController`, `App\SeriousGame\Stats\`): usage, progression,
     analysis of the units, a class's list and the years, for every game - read by **every teacher**
     and the administrators with the names (`SeriousGameVoter::READ_STATS`, the user's decision of

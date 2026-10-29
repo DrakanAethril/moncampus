@@ -1,0 +1,152 @@
+# Rétro Rush - acte 8 : Le grand rush.
+#
+# The server half of the tickets (design/validated/serious-games-retro-rush.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Jade's
+# guided questions, the clue closing gives. The game half (deliverables and their reference answers,
+# starting texts, views, written hints, scenes) is public/serious-games/retro-rush/tickets/acte8.js.
+# Converted from the prototype's host/scenario/acte8.js by its tool/to-yaml.js; `hints` counts
+# the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: R35
+    act: 8
+    after: [R34]
+    course: 'B2 · Administrer une base'
+    requester: oceane
+    kind: incident
+    category: 'Transactions › Concurrence'
+    title: 'Deux caisses, un seul Zelda'
+    request: 'Black Friday. J''ai vendu le dernier Zelda : The Wind Waker en caisse à 10 h 02, et au même moment une cliente l''a réservé sur le site en préouverture. Elle vient le chercher cet après-midi. Le journal de la base est à l''écran : je n''ai rien fait de travers, si ?'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: journal
+        prompt: 'Clique sur l''instant où le stock du Wind Waker passe sous zéro.'
+        answer: 'stock −1'
+        reaction: { who: jade, expr: sourcil, text: 'Pas encore. Suis la colonne de droite : la valeur du stock après chaque écriture.' }
+      -
+        id: remede
+        kind: choice
+        label: 'Décider'
+        expr: inquiete
+        prompt: 'Alors, qu''est-ce qui aurait empêché ça ?'
+        options:
+          - { text: 'Que la vérification du stock et son écriture se fassent dans la base, au même instant : une transaction qui verrouille la ligne en la lisant (SELECT … FOR UPDATE), ou un contrôle comme trg_verif_stock posé aussi sur les réservations.', ok: true, reaction: { who: jade, expr: sourire, text: 'Oui. Lire puis écrire en deux temps, c''est laisser une fenêtre ouverte. Il faut que la base décide au moment d''écrire.' } }
+          - { text: 'Mettre chaque caisse dans une transaction, START TRANSACTION … COMMIT, sans rien d''autre.', misconception: transaction-suffit, reaction: { who: jade, expr: sourcil, text: 'Les deux transactions liraient chacune 1, en même temps. Sans verrou, une transaction garantit le tout ou rien, pas l''exclusivité.' } }
+          - { text: 'Que le site relise le stock juste avant d''enregistrer la réservation.', misconception: relire-suffit, reaction: { who: jade, expr: neutre, text: 'Entre sa lecture et son écriture, la caisse peut encore passer. Lire n''est pas réserver.' } }
+          - { text: 'Rien : avec deux caisses, ça arrivera toujours. On corrige à la main le soir.', misconception: fatalite, reaction: { who: oceane, expr: inquiete, text: 'Et le soir, c''est encore moi qu''on regardera de travers.' } }
+    hints: 0
+  -
+    id: R36
+    act: 8
+    after: [R34]
+    course: 'B2 · Administrer une base'
+    requester: gilles
+    kind: incident
+    category: 'Transactions › Atomicité'
+    title: 'Une vente à moitié écrite'
+    request: 'La caisse a planté ce matin pendant la vente à Manon Faure : la vente 200 existe, sans aucune ligne, et rien n''a été encaissé. Supprime cette vente vide et réenregistre-la proprement sous le numéro 201 : un Sonic 2 en boîte (article 29) à 15 €, deux Tetris loose (article 21) à 8 €. Et cette fois, tout ou rien.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris le script de la vente, essaie-le, puis livre-le à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Sans le COMMIT à la fin, qu''est-ce que la base aurait gardé de ta vente ?'
+        options:
+          - { text: 'Rien : une transaction non validée est annulée à la déconnexion. La vente, ses lignes et la baisse du stock passent ensemble au COMMIT, ou pas du tout.', ok: true, reaction: { who: jade, expr: sourire, text: 'C''est l''atomicité. Exactement ce qui manquait à la caisse ce matin.' } }
+          - { text: 'Tout : MySQL enregistre chaque instruction au fur et à mesure.', misconception: sans-commit-enregistre, reaction: { who: jade, expr: sourcil, text: 'Hors transaction, oui : c''est l''autocommit. Après START TRANSACTION, rien n''est définitif avant COMMIT.' } }
+          - { text: 'La vente seule, puisqu''elle était écrite en premier.', misconception: moitie-gardee, reaction: { who: jade, expr: neutre, text: 'C''est justement la vente à moitié écrite qu''on veut éviter. Dans une transaction, c''est tout ou rien.' } }
+          - { text: 'Les lignes, mais pas la baisse du stock, qui vient d''un trigger.', misconception: trigger-hors-transaction, reaction: { who: jade, expr: neutre, text: 'Ce que fait un trigger appartient à l''instruction qui l''a déclenché, donc à la même transaction.' } }
+    guide:
+      -
+        id: stock
+        kind: choice
+        prompt: 'Faut-il aussi écrire un UPDATE du stock dans ton script ?'
+        options:
+          - { text: 'Non : trg_vente_stock le baisse à chaque ligne de vente', ok: true }
+          - { text: 'Oui, pour chaque article vendu', misconception: double-stock, reaction: { who: jade, expr: sourcil, text: 'Le trigger de l''acte 7 le fait déjà. Le faire en plus, c''est retirer deux fois : le défaut même qu''on traque.' } }
+    hints: 3
+  -
+    id: R37
+    act: 8
+    after: [R35]
+    course: 'B2 · Vues et triggers'
+    requester: gilles
+    kind: incident
+    category: 'Vues › Catalogue'
+    title: 'Le catalogue en ligne montre le prix d''achat'
+    request: 'Le site en préouverture lit la vue CatalogueEnLigne. Un client m''a écrit : « Vous achetez le Zelda 35 € et vous le revendez 60 ? » Il voit mes prix d''achat, et même qui a déposé quoi ! Le site lit cinq colonnes : titre, console, etat, prixVente, stock. Rien d''autre, et seulement ce qui est en stock.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Recrée la vue, essaie-la, puis livre-la à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: neutre
+        prompt: 'Si Gilles change un prix dans Article cet après-midi, faut-il recréer la vue pour que le site le voie ?'
+        options:
+          - { text: 'Non : une vue ne stocke rien, c''est une requête enregistrée sous un nom. Chaque lecture de la vue relit Article, avec le prix du moment.', ok: true, reaction: { who: jade, expr: sourire, text: 'Voilà. Et c''est aussi pour ça qu''elle protège : le site ne voit que ce que la requête choisit de montrer.' } }
+          - { text: 'Oui : la vue est une copie de la table, prise au moment du CREATE VIEW.', misconception: vue-stocke, reaction: { who: jade, expr: sourcil, text: 'Une vue n''a pas de lignes à elle. Lis-la après un UPDATE d''Article : le nouveau prix y est.' } }
+          - { text: 'Non, car MySQL rafraîchit les vues chaque nuit.', misconception: vue-rafraichie, reaction: { who: jade, expr: neutre, text: 'Il n''y a rien à rafraîchir : la requête de la vue est rejouée à chaque lecture.' } }
+          - { text: 'Oui, sinon le site garde l''ancien prix en cache.', misconception: vue-cache, reaction: { who: jade, expr: neutre, text: 'Un cache, ce serait côté site. La vue, elle, ne garde rien.' } }
+    hints: 3
+  -
+    id: R38
+    act: 8
+    after: [R36]
+    course: 'B2 · Administrer une base'
+    requester: oceane
+    kind: incident
+    category: 'Index › Recherche'
+    title: 'La recherche est lente'
+    request: 'Sur le site, la recherche par titre met une éternité depuis que Jade a importé le catalogue complet des déposants. Jade dit qu''il manque un index sur le titre des jeux, et que le site l''attend sous le nom idx_jeu_titre.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Crée l''index, regarde le plan d''exécution avant et après, puis livre-le à Océane.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'L''index accélère « WHERE titre = ''Tetris'' ». Et « WHERE titre LIKE ''%zelda%'' » ?'
+        options:
+          - { text: 'Pas celle-là : l''index range les titres par ordre alphabétique depuis leur début. Un motif qui commence par % oblige à tout parcourir. Et chaque index ralentit un peu les écritures.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exactement. Un index, c''est un choix : on le pose là où on cherche, pas partout.' } }
+          - { text: 'Oui : un index accélère toutes les requêtes sur la table.', misconception: index-tout, reaction: { who: jade, expr: sourcil, text: 'Regarde le plan de la requête avec LIKE ''%zelda%'' : SCAN, l''index ne sert à rien.' } }
+          - { text: 'Oui, et comme un index ne coûte rien, autant en mettre sur toutes les colonnes.', misconception: index-gratuit, reaction: { who: jade, expr: neutre, text: 'Chaque index se met à jour à chaque INSERT, UPDATE ou DELETE. Il a un prix.' } }
+          - { text: 'Non, mais l''index a trié la table une fois pour toutes, ce qui aide quand même.', misconception: index-trie-table, reaction: { who: jade, expr: neutre, text: 'La table ne bouge pas : l''index est une structure à part, maintenue à chaque écriture.' } }
+    hints: 2
+  -
+    id: R39
+    act: 8
+    after: [R37, R38]
+    course: 'B2 · Concevoir une base'
+    requester: gilles
+    kind: incident
+    category: 'Contraintes › CHECK'
+    title: 'Un jeu à 0 € sur le site'
+    request: 'Le Pokémon Rouge loose de Mme Nguyen (article 24) s''affiche à 0 € sur le site ! Remets-le à 35 €. Et fais en sorte que la base refuse désormais tout prix nul ou négatif, quel que soit celui qui l''écrit.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris le script, essaie-le, puis livre-le à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi l''ALTER TABLE était-il refusé tant que le Pokémon était à 0 € ?'
+        options:
+          - { text: 'Une contrainte ne corrige rien : MySQL vérifie que toutes les lignes existantes la respectent avant de l''ajouter, et refuse sinon. On corrige d''abord les données, puis on pose la contrainte.', ok: true, reaction: { who: jade, expr: sourire, text: 'Oui. La base ne promet jamais une règle qu''elle ne tient pas déjà.' } }
+          - { text: 'Il n''aurait pas dû l''être : une contrainte ne regarde que les lignes ajoutées après elle.', misconception: contrainte-future, reaction: { who: jade, expr: sourcil, text: 'MySQL 8 vérifie les lignes existantes. Sinon, la base mentirait sur ce qu''elle garantit.' } }
+          - { text: 'Parce que la contrainte aurait supprimé la ligne fautive, et MySQL demande confirmation.', misconception: contrainte-supprime, reaction: { who: jade, expr: neutre, text: 'Une contrainte ne supprime ni ne corrige rien. Elle refuse.' } }
+          - { text: 'Parce qu''il fallait poser la contrainte d''abord : elle aurait remis le prix à une valeur correcte.', misconception: contrainte-corrige, reaction: { who: jade, expr: neutre, text: 'Elle ne connaît pas le bon prix : c''est Gilles qui le connaît. À toi de l''écrire.' } }
+    hints: 3

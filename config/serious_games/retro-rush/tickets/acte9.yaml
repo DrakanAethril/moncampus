@@ -1,0 +1,216 @@
+# Rétro Rush - acte 9 : Les accès et l'inventaire.
+#
+# The server half of the tickets (design/validated/serious-games-retro-rush.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Jade's
+# guided questions, the clue closing gives. The game half (deliverables and their reference answers,
+# starting texts, views, written hints, scenes) is public/serious-games/retro-rush/tickets/acte9.js.
+# Converted from the prototype's host/scenario/acte9.js by its tool/to-yaml.js; `hints` counts
+# the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: R40
+    act: 9
+    after: [R39]
+    course: 'B2 · Administrer une base'
+    requester: jade
+    kind: demande
+    category: 'Sécurité › Droits'
+    title: 'Le compte du site'
+    request: 'Le site va se connecter à la base avec son propre compte MySQL. L''hébergeur propose un script tout prêt. SQLite, le moteur de l''atelier, n''a pas de comptes : on ne l''exécute pas, on le lit et on le corrige sur le papier, comme à l''examen.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: grant
+        prompt: 'Clique sur la ligne qui donne au site bien plus que ce dont il a besoin.'
+        answer: 'ALL PRIVILEGES'
+        reaction: { who: jade, expr: sourcil, text: 'Pas celle-là. Cherche la ligne qui accorde des droits.' }
+      -
+        id: droits
+        kind: choice
+        label: 'Décider'
+        expr: sourcil
+        prompt: 'Le site affiche le catalogue et enregistre des réservations. Quels droits lui donner ?'
+        options:
+          - { text: 'GRANT SELECT ON boutique.CatalogueEnLigne TO ''site''@''%''; puis GRANT INSERT ON boutique.Reservation TO ''site''@''%''; et rien d''autre : le moindre privilège.', ok: true, reaction: { who: jade, expr: sourire, text: 'Le moindre privilège : chaque compte a juste ce qu''il lui faut. Si le site tombe, le pirate tombe avec lui dans un tout petit placard.' } }
+          - { text: 'ALL PRIVILEGES sur boutique.* : c''est plus simple, et le site est à nous.', misconception: all-privileges, reaction: { who: jade, expr: severe, text: 'Le jour où le site est piraté, le pirate a tout : supprimer les ventes, lire les clients, vider le stock.' } }
+          - { text: 'SELECT sur toute la base : lire, ce n''est pas dangereux.', misconception: lecture-sans-risque, reaction: { who: jade, expr: sourcil, text: 'Lire les e-mails des clients, les prix d''achat, les commissions des déposants ? Si, c''est dangereux.' } }
+          - { text: 'Le compte root, comme ça on n''a aucun droit à gérer.', misconception: compte-root, reaction: { who: jade, expr: severe, text: 'Jamais. Root peut tout, y compris créer d''autres comptes. C''est la clé de toute la maison.' } }
+    hints: 0
+  -
+    id: R41
+    act: 9
+    after: [R39]
+    course: 'B3 · Injection SQL'
+    requester: jade
+    kind: incident
+    category: 'Sécurité › Injection'
+    title: 'Une recherche bizarre dans le journal'
+    request: 'Le site de préouverture garde le journal de ses requêtes. Cette nuit, quelqu''un a tapé une drôle de recherche dans la barre « titre ». Trouve-la, et dis-moi comment on ferme cette porte.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: journal
+        prompt: 'Clique sur la requête où quelqu''un a écrit du SQL à la place d''un titre.'
+        answer: 'UNION SELECT'
+        reaction: { who: jade, expr: sourcil, text: 'Celle-là est une recherche normale. Cherche celle qui contient plus qu''un titre.' }
+      -
+        id: parade
+        kind: choice
+        label: 'Décider'
+        expr: severe
+        prompt: 'Le code PHP construit la requête en recollant la saisie : "… LIKE ''%" . $_GET[''q''] . "%''". Comment fermer la porte pour de bon ?'
+        options:
+          - { text: 'Une requête préparée : $stmt = $pdo->prepare("SELECT titre, prixVente FROM CatalogueEnLigne WHERE titre LIKE ?"); puis $stmt->execute([''%'' . $q . ''%'']). La saisie part comme une valeur, jamais comme du SQL.', ok: true, reaction: { who: jade, expr: sourire, text: 'Voilà. Le code et les données voyagent séparément : rien de ce que tape un visiteur ne peut devenir une instruction.' } }
+          - { text: 'Retirer les apostrophes de la saisie avant de la recoller.', misconception: echapper-suffit, reaction: { who: jade, expr: sourcil, text: 'Et le jour où une saisie contourne ton nettoyage ? On ne bricole pas la chaîne : on sépare le code et les données.' } }
+          - { text: 'Mettre la requête dans une transaction.', misconception: transaction-protege, reaction: { who: jade, expr: neutre, text: 'Une transaction protège des écritures à moitié faites, pas d''une requête écrite par l''attaquant.' } }
+          - { text: 'Ne plus afficher les erreurs SQL sur le site.', misconception: cacher-erreurs, reaction: { who: jade, expr: neutre, text: 'C''est mieux, d''ailleurs. Mais l''injection marche aussi sans message d''erreur.' } }
+      -
+        id: droits
+        kind: choice
+        label: 'Décider'
+        expr: sourcil
+        prompt: 'Avec les droits qu''on a donnés au site dans l''issue #40, cette injection aurait-elle lu les e-mails des clients ?'
+        options:
+          - { text: 'Non : le compte du site ne lit que CatalogueEnLigne, « SELECT email … FROM Client » aurait été refusé. Le moindre privilège limite les dégâts ; la requête préparée empêche l''attaque. Les deux se complètent.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exactement : deux protections, deux chances. C''est ça, la défense en profondeur.' } }
+          - { text: 'Oui : les droits ne servent à rien contre une injection.', misconception: droits-inutiles, reaction: { who: jade, expr: neutre, text: 'Ils ne l''empêchent pas, mais ils limitent ce qu''elle peut lire. Ici, ils auraient sauvé les e-mails.' } }
+          - { text: 'Non, donc la requête préparée est inutile.', misconception: droits-suffisent, reaction: { who: jade, expr: sourcil, text: 'Le pirate pourrait encore réserver en masse, ou lire tout le catalogue autrement. Une seule protection, c''est une seule chance.' } }
+    hints: 0
+  -
+    id: R42
+    act: 9
+    after: [R40]
+    course: 'B3 · Données personnelles'
+    requester: gilles
+    kind: demande
+    category: 'Données › RGPD'
+    title: 'Mme Lefort veut être oubliée'
+    request: 'Mme Lefort m''a écrit : elle exerce son « droit à l''effacement ». J''ai tapé DELETE FROM Client WHERE idClient = 4, la base a refusé. Jade dit d''anonymiser : son nom et son prénom deviennent « Anonyme », son e-mail et sa ville sont vidés (NULL). Ses achats, eux, restent dans les comptes.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris l''anonymisation, essaie-la, puis livre-la à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi anonymiser plutôt que supprimer ?'
+        options:
+          - { text: 'Parce que ses ventes doivent rester dans la comptabilité, et que supprimer la cliente casserait le lien : la clé étrangère le refuse justement. Anonymiser efface ce qui l''identifie et garde les chiffres : c''est ce que demande le RGPD.', ok: true, reaction: { who: jade, expr: sourire, text: 'Oui. Effacer la personne, pas l''histoire de la boutique.' } }
+          - { text: 'Parce que DELETE est interdit par le RGPD.', misconception: delete-interdit, reaction: { who: jade, expr: neutre, text: 'Le RGPD n''interdit pas DELETE. Il demande que la personne ne soit plus identifiable ; ici, supprimer casserait les ventes.' } }
+          - { text: 'Il aurait suffi d''un ON DELETE CASCADE pour supprimer la cliente et ses ventes : c''est encore plus complet.', misconception: cascade-rgpd, reaction: { who: jade, expr: severe, text: 'Et ses ventes disparaîtraient des comptes de l''année, que la boutique doit garder. CASCADE n''est pas la réponse.' } }
+          - { text: 'Anonymiser, c''est cacher son nom à l''écran : la donnée reste dans la base, mais personne ne la voit.', misconception: anonymiser-masquer, reaction: { who: jade, expr: sourcil, text: 'Non : on remplace la donnée elle-même. Après l''UPDATE, son e-mail n''existe plus nulle part.' } }
+    hints: 3
+  -
+    id: R43
+    act: 9
+    after: [R41]
+    course: 'B2 · Vues et triggers'
+    requester: jade
+    kind: incident
+    category: 'Enquête › Triggers'
+    title: 'Qui vole les cartouches ?'
+    request: 'Rassemblons le dossier : le Zelda à 0 avec deux exemplaires sur l''étagère, le Silent Hill à −1, une base qui perd des jeux sans jamais en gagner, chaque article manquant qui a eu une réservation… et deux triggers de 2019. Ouvre trg_annulation.'
+    reward: { clue: 'trg_annulation, écrit en 2019, retire l''article une seconde fois quand une réservation est annulée : « stock - NEW.quantite » au lieu de « stock + NEW.quantite ». Personne n''a volé de cartouches. C''est un signe moins.' }
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: trigger
+        prompt: 'Clique sur la ligne qui fait disparaître les jeux.'
+        answer: 'stock = stock - NEW.quantite'
+        reaction: { who: jade, expr: sourcil, text: 'Pas celle-là. Quelle ligne touche au stock ?' }
+      -
+        id: mobile
+        kind: choice
+        label: 'Décider'
+        expr: sourcil
+        prompt: 'Une réservation retire l''article du stock. Quand elle est annulée, que devrait faire ce trigger ?'
+        options:
+          - { text: 'Rendre l''article au stock : stock = stock + NEW.quantite. Ici, il le retire une deuxième fois : chaque réservation annulée coûte deux exemplaires à la base.', ok: true, reaction: { who: jade, expr: sourire, text: 'Voilà le voleur. Un signe. Et chaque annulation depuis 2019.' } }
+          - { text: 'Ne rien faire : une annulation n''a pas à toucher au stock.', misconception: annulation-rien, reaction: { who: jade, expr: sourcil, text: 'La réservation a retiré l''article. Si l''annulation ne le rend pas, il en manque toujours un.' } }
+          - { text: 'Le trigger est juste : c''est quelqu''un qui annule des réservations exprès.', misconception: coupable-personne, reaction: { who: jade, expr: severe, text: 'Peu importe qui annule : à chaque annulation, ce code retire au lieu de rendre. Le coupable, c''est le code.' } }
+          - { text: 'Ce n''est pas lui : un trigger ne se déclenche qu''une fois par jour.', misconception: trigger-une-fois, reaction: { who: jade, expr: neutre, text: 'FOR EACH ROW : il se déclenche à chaque ligne modifiée, chaque fois qu''on la modifie.' } }
+    hints: 0
+  -
+    id: R44
+    act: 9
+    after: [R43]
+    course: 'B2 · Vues et triggers'
+    requester: jade
+    kind: incident
+    category: 'Triggers › Correction'
+    title: 'Corriger le voleur'
+    request: 'On corrige trg_annulation : une réservation annulée doit rendre l''article au stock, une seule fois. Attention, MySQL ne remplace pas un trigger qui existe déjà.'
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris le script qui remplace le trigger, essaie-le, puis livre-le à Jade.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Le trigger est juste, maintenant. Et le stock ?'
+        options:
+          - { text: 'Il reste faux : corriger le trigger empêche les prochaines erreurs, mais ne répare pas celles du passé. Il faut encore rendre les exemplaires perdus aux articles touchés.', ok: true, reaction: { who: jade, expr: sourire, text: 'Exact. C''est le dernier ticket avant l''ouverture.' } }
+          - { text: 'Il redevient juste tout seul : le nouveau trigger recalcule le stock.', misconception: trigger-repare-passe, reaction: { who: jade, expr: sourcil, text: 'Un trigger agit sur les modifications à venir. Les annulations de 2019 à hier, personne ne les rejouera.' } }
+          - { text: 'Il aurait suffi de supprimer le trigger.', misconception: drop-suffit, reaction: { who: jade, expr: neutre, text: 'Sans trigger, une annulation ne rendrait plus rien : le stock serait faux d''un exemplaire au lieu de deux.' } }
+          - { text: 'Il suffit de supprimer les réservations annulées pour remettre le stock d''aplomb.', misconception: supprimer-historique, reaction: { who: jade, expr: severe, text: 'Supprimer l''historique ne rend aucun exemplaire. Et on perdrait les preuves.' } }
+    guide:
+      -
+        id: remplacer
+        kind: choice
+        prompt: 'Pour remplacer un trigger qui existe déjà en MySQL, que fait-on ?'
+        options:
+          - { text: 'DROP TRIGGER, puis CREATE TRIGGER', ok: true }
+          - { text: 'CREATE TRIGGER une seconde fois : le nouveau écrase l''ancien', misconception: create-ecrase, reaction: { who: jade, expr: neutre, text: 'MySQL refuse : « le trigger existe déjà ». Il faut d''abord le supprimer.' } }
+          - { text: 'ALTER TRIGGER', misconception: alter-trigger, reaction: { who: jade, expr: neutre, text: 'ALTER TRIGGER n''existe pas en MySQL.' } }
+    hints: 3
+  -
+    id: R45
+    act: 9
+    after: [R44, R42]
+    course: 'B2 · Administrer une base'
+    requester: gilles
+    kind: demande
+    category: 'Migration › Ouverture'
+    title: 'Ouverture de la boutique en ligne'
+    request: 'Demain 9 h, le site ouvre, et le stock doit être juste. Chaque réservation annulée a coûté deux exemplaires à tort : rends-les, en une seule transaction. Si quelque chose casse au milieu, rien ne doit rester à moitié fait.'
+    final: true
+    steps:
+      -
+        id: livrer
+        kind: fix
+        prompt: 'Écris la remise à niveau du stock, essaie-la, puis livre-la à Gilles.'
+      -
+        id: revue
+        kind: explain
+        expr: sourcil
+        prompt: 'Pourquoi une seule transaction pour ce script ?'
+        options:
+          - { text: 'Pour que tout passe ou rien : si une instruction échoue au milieu, ROLLBACK annule les autres, et la base n''est jamais à moitié corrigée, avec des articles rendus et d''autres pas.', ok: true, reaction: { who: jade, expr: sourire, text: 'L''atomicité. Le A de ACID, et la meilleure amie d''une veille d''ouverture.' } }
+          - { text: 'Pour que ce soit plus rapide.', misconception: transaction-rapide, reaction: { who: jade, expr: neutre, text: 'Ce n''est pas la raison. C''est l''atomicité : tout ou rien.' } }
+          - { text: 'Pour protéger la base des injections pendant la migration.', misconception: transaction-protege, reaction: { who: jade, expr: sourcil, text: 'Une transaction ne protège pas des injections. Elle protège des écritures à moitié faites.' } }
+          - { text: 'Pour pouvoir oublier le COMMIT : MySQL valide tout seul à la fin du script.', misconception: sans-commit, reaction: { who: jade, expr: severe, text: 'Sans COMMIT, MySQL annule tout à la déconnexion. Le COMMIT, c''est le moment où l''on dit « c''est bon ».' } }
+      -
+        id: migration
+        kind: order
+        label: 'La migration'
+        expr: neutre
+        prompt: 'Jade prépare le script complet de mise en production : le trigger corrigé et le stock remis à niveau. Remets ses instructions dans l''ordre.'
+        items:
+          - 'COMMIT;'
+          - 'DROP TRIGGER trg_annulation;'
+          - 'START TRANSACTION;'
+          - 'UPDATE Article SET stock = stock + 2 * (…) WHERE …;   -- rendre les exemplaires'
+          - 'CREATE TRIGGER trg_annulation … stock + NEW.quantite …;'
+          - 'SELECT idArticle, stock FROM Article WHERE stock < 0;   -- vérifier avant de valider'
+        answer: [1, 4, 2, 3, 5, 0]
+        reaction: { who: jade, expr: sourcil, text: 'Pas encore. Le trigger d''abord, sinon une annulation pendant la migration coûterait encore deux exemplaires ; et un CREATE TRIGGER valide la transaction en cours en MySQL, donc il vient avant de l''ouvrir. On vérifie avant de valider.' }
+    hints: 3
