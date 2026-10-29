@@ -6,9 +6,12 @@ namespace App\Command;
 
 use App\Entity\SeriousGame;
 use App\Entity\SeriousGameTemplate;
+use App\Enum\SeriousGameMechanic;
 use App\Repository\SeriousGameAnswerRepository;
 use App\Repository\SeriousGameRepository;
 use App\Repository\SeriousGameTemplateRepository;
+use App\SeriousGame\Scenario\ScenarioManifest;
+use App\SeriousGame\Scenario\ScenarioValidator;
 use App\SeriousGame\SeriousGameManifest;
 use App\SeriousGame\Template\TemplateBench;
 use App\SeriousGame\Template\TemplateDefinition;
@@ -37,6 +40,10 @@ use Symfony\Component\Yaml\Yaml;
  * - It **never overwrites** a version created in the database. `--refresh` rewrites a shipped
  *   version only while it is still the unit's current one and has served no question - a question
  *   served by it must stay replayable from it.
+ * - A game of the « scénario » mechanic (design/validated/serious-games-neko-con.md §3.1) has no
+ *   templates: its `tickets/*.yaml` are read into `scenario.tickets`, checked whole by
+ *   ScenarioValidator - a game with a problem is not written - and its acts become the manifest's
+ *   `chapters`, a ticket a unit.
  */
 #[AsCommand(
     name: 'app:serious-games:sync',
@@ -76,6 +83,17 @@ class SeriousGameSyncCommand extends Command
             /** @var array<string, mixed> $data */
             $data = Yaml::parseFile($file);
             $slug = \is_string($data['slug'] ?? null) ? $data['slug'] : basename(\dirname($file));
+            $mechanic = SeriousGameMechanic::tryFrom(self::text($data['mechanic'] ?? 'series')) ?? SeriousGameMechanic::Series;
+            if (SeriousGameMechanic::Scenario === $mechanic) {
+                $data = ScenarioManifest::withTickets($data, \dirname($file));
+                $problems = ScenarioValidator::problems(\is_array($data['scenario'] ?? null) ? $data['scenario'] : []);
+                if ([] !== $problems) {
+                    $io->error(\sprintf("%s : scénario refusé\n- %s", $slug, implode("\n- ", $problems)));
+                    ++$refused;
+
+                    continue;
+                }
+            }
             $manifest = new SeriousGameManifest($data);
 
             $game = $this->games->findOneBySlug($slug);
@@ -96,7 +114,14 @@ class SeriousGameSyncCommand extends Command
                 ->setUnitLabel(self::text($data['unit_label'] ?? ''))
                 ->setUnitsTotal(\count($manifest->units()))
                 ->setVersion(self::text($data['version'] ?? '1.0.0'))
+                ->setMechanic($mechanic)
                 ->setManifest($manifest->toArray());
+
+            if (SeriousGameMechanic::Scenario === $mechanic) {
+                $io->text(\sprintf('  scénario : %d tickets', \count($manifest->units())));
+
+                continue;
+            }
 
             foreach ($manifest->unitCodes() as $unit) {
                 $path = \dirname($file).'/templates/'.$unit.'.json';

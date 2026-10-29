@@ -18,6 +18,12 @@ use Doctrine\ORM\Mapping as ORM;
  *
  * The row is written when the question is served (`$servedAt`) and completed when it is answered;
  * an unanswered row is a question shown and left.
+ *
+ * **In a scenario** (design/validated/serious-games-neko-con.md §3.4) a row is one answer to a step,
+ * one delivery or one guided question, written answered: `$stepId` names the step, `$help` says it
+ * was one of Inès' guided questions, `$input` keeps the option or the line - for a delivery, the
+ * failed criteria, never the code; never the password typed. `$templateVersion` carries the
+ * scenario's version, `$seed` is 0.
  */
 #[ORM\Entity(repositoryClass: SeriousGameAnswerRepository::class)]
 #[ORM\Table(name: 'serious_game_answer')]
@@ -67,6 +73,12 @@ class SeriousGameAnswer
     #[ORM\Column(name: 'answered_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $answeredAt = null;
 
+    #[ORM\Column(name: 'step_id', length: 40, nullable: true)]
+    private ?string $stepId = null;
+
+    #[ORM\Column(name: 'help', options: ['default' => false])]
+    private bool $help = false;
+
     public function __construct(SeriousGameSession $session, int $position, string $unitCode, int $templateVersion, int $seed)
     {
         $this->session = $session;
@@ -75,6 +87,30 @@ class SeriousGameAnswer
         $this->templateVersion = $templateVersion;
         $this->seed = $seed;
         $this->servedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * One answer of a scenario, written answered. Its time is counted from `$since` - the previous
+     * answer of the session, or its opening.
+     */
+    public static function forStep(SeriousGameSession $session, int $position, string $ticket, int $scenarioVersion, string $stepId, bool $help, \DateTimeImmutable $since): self
+    {
+        $answer = new self($session, $position, $ticket, $scenarioVersion, 0);
+        $answer->servedAt = $since;
+        $answer->stepId = $stepId;
+        $answer->help = $help;
+
+        return $answer;
+    }
+
+    public function getStepId(): ?string
+    {
+        return $this->stepId;
+    }
+
+    public function isHelp(): bool
+    {
+        return $this->help;
     }
 
     public function getId(): ?int

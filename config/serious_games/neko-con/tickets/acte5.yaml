@@ -1,0 +1,160 @@
+# Panique à la Neko-Con - acte 5 : La bascule.
+#
+# The server half of the tickets (design/validated/serious-games-neko-con.md §3.1): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Inès' guided
+# questions, what closing gives. The game half (bug, criteria, written hints, scenes) is
+# public/serious-games/neko-con/tickets/acte5.js. Converted once from the prototype's
+# host/scenario/acte5.js; `hints` counts the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: T21
+    act: 5
+    after:
+      - T15
+      - T16
+      - T17
+      - T18
+      - T19
+      - T20
+    course: 'CSS 01'
+    requester: ines
+    priority: haute
+    bascule: true
+    title: 'Le site est toujours tout blanc'
+    request: "Maëlle me demande pour la troisième fois pourquoi le site est « toujours tout blanc ». Elle n'a pas tort : il y a une feuille de style complète dans css/, avec les couleurs du club, et aucune page ne l'affiche. Le <link> est bien dans le <head>, pourtant. Commence par la page d'accueil."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Inès.'
+      -
+        id: expliquer
+        kind: explain
+        expr: sourcil
+        prompt: "Maëlle va me demander une quatrième fois ce qui s'est passé. Explique-le-moi : je lui répéterai mot pour mot. Pourquoi tout était blanc, sans le moindre message d'erreur ?"
+        options:
+          - { text: 'La balise <link> n''indiquait pas type="text/css" : sans ce type MIME, le navigateur ne savait pas que le fichier contenait du CSS, et il le chargeait comme du simple texte.', misconception: type-text-css, reaction: { who: ines, expr: neutre, text: "Tu n'as pas ajouté type, et pourtant tout s'est allumé. En HTML5, rel=\"stylesheet\" suffit à dire que c'est du CSS." } }
+          - { text: "Le <link> était placé dans le <head>, lu avant le <body> : ses règles arrivaient avant les éléments qu'elles visaient, ne trouvaient rien à habiller, et le navigateur les jetait.", misconception: link-dans-body, reaction: { who: ines, expr: sourcil, text: "Ton <link> est toujours dans le <head>, tu ne l'as pas déplacé. C'est sa place : le navigateur doit connaître les styles avant d'afficher le corps de la page." } }
+          - { text: "La feuille de Jordan était vide ou cassée : sans aucune règle valide, ni color ni background, le navigateur n'avait rien à appliquer et gardait son fond blanc par défaut.", misconception: feuille-vide, reaction: { who: ines, expr: sourcil, text: "Tu n'as pas écrit une ligne de CSS, et les couleurs sont là : la feuille était complète. Il fallait seulement savoir où aller la chercher." } }
+          - { text: "Le href du <link> visait css/styles.css, avec un s de trop : ce fichier n'existe pas. Une feuille introuvable est ignorée sans message, et la page garde les styles par défaut, noir sur blanc.", ok: true, reaction: { who: ines, expr: sourire, text: 'Une lettre de trop, aucune alerte, trois cents lignes ignorées. Maëlle va dire « tout ça pour un s ». Elle aura raison.' } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: index.html
+        prompt: 'La feuille de style existe, elle est complète. Le problème est donc dans la façon dont la page va la chercher : clique sur la ligne qui relie la page à sa feuille de style.'
+        answer:
+          - 'href="css/styles.css"'
+        reaction:
+          who: ines
+          expr: neutre
+          text: 'C''est une balise du <head>, celle qui a l''attribut rel="stylesheet".'
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Compare l'adresse de ce lien avec le nom de l'onglet css/style.css. Pourquoi la feuille de style ne se charge-t-elle pas ?"
+        options:
+          - { text: "Le lien pointe vers css/styles.css, un fichier qui n'existe pas : la feuille s'appelle css/style.css", ok: true }
+          - { text: 'La feuille de style est vide', misconception: feuille-vide, reaction: { who: ines, expr: sourcil, text: "Ouvre l'onglet css/style.css : elle fait plus de trois cents lignes. Le problème n'est pas dans la feuille, il est dans la façon d'aller la chercher." } }
+          - { text: 'Il manque l''attribut type="text/css" sur la balise <link>', misconception: type-text-css, reaction: { who: ines, expr: neutre, text: 'En HTML5, type est facultatif : rel="stylesheet" suffit pour que le navigateur sache que c''est du CSS. Relis plutôt l''adresse, lettre par lettre.' } }
+          - { text: 'La balise <link> devrait être dans le <body>, pas dans le <head>', misconception: link-dans-body, reaction: { who: ines, expr: sourcil, text: "Non, sa place est bien dans le <head> : le navigateur doit connaître les styles avant d'afficher le corps de la page." } }
+    hints: 2
+  -
+    id: T22
+    act: 5
+    after:
+      - T21
+    course: 'CSS 01'
+    requester: maelle
+    priority: normale
+    title: 'Le titre devait être rose, il est noir'
+    request: "Enfin des couleurs !!! Sauf que « Neko-Con », en haut de l'accueil, devait être en rose bonbon, en énorme, comme sur la maquette. Là, il est noir et tout petit. Je l'avais pourtant bien demandé à Jordan."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiete
+        prompt: "Mais le rose était bien écrit dans le code, je l'ai vu de mes yeux ! Comment le navigateur a-t-il pu l'oublier ? Et la taille, avec ?"
+        options:
+          - { text: 'Le navigateur arrête de lire style.css à la première faute de syntaxe : la règle h1 venait juste après cette faute, donc le titre est resté sans aucun style, ni taille ni couleur.', misconception: erreur-bloque-tout, reaction: { who: ines, expr: sourcil, text: "Le slogan, le bouton et les cartes, plus bas, avaient leurs styles. Le navigateur ne s'arrête pas : il ignore ce qu'il ne comprend pas, et il continue." } }
+          - { text: 'Il manquait un « ; » après font-size: 3.5rem. La valeur lue était donc « 3.5rem color: #e8457a », invalide : le navigateur a jeté toute la déclaration, taille et rose compris.', ok: true, reaction: { who: maelle, expr: joie, text: 'Un point-virgule ! Le plus petit signe du clavier a mangé mon titre géant. Je le respecterai, désormais.' } }
+          - { text: "Le rose était écrit en hexadécimal, #e8457a : certains navigateurs refusent ces codes à six chiffres, alors qu'un mot-clé comme pink ou hotpink est compris partout.", misconception: hex-invalide, reaction: { who: ines, expr: neutre, text: "Ton rose est toujours en #e8457a, tu n'y as pas touché, et il s'affiche. Le fond lavande aussi est en hexadécimal. Le problème était autour de la couleur, pas dedans." } }
+          - { text: "Dans une règle, color doit venir avant font-size : écrites dans le mauvais ordre, les deux déclarations entrent en conflit, et le navigateur n'en garde aucune des deux.", misconception: ordre-declarations, reaction: { who: ines, expr: sourcil, text: "Tu n'as rien déplacé, et tout marche. L'ordre des déclarations ne compte que si deux d'entre elles se contredisent. Regarde plutôt la ponctuation." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: css/style.css
+        prompt: "Le titre a perdu sa couleur ET sa taille : les deux viennent de la règle h1. Lis-la comme le navigateur, ligne par ligne, et clique sur la ligne où se trouve l'erreur."
+        answer:
+          - 'font-size: 3.5rem'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Le navigateur lit les déclarations à la suite. La ligne fautive n'est pas forcément celle dont l'effet a disparu : regarde comment chaque ligne se termine."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'La déclaration color: #e8457a est bien écrite. Pourquoi est-elle ignorée ?'
+        options:
+          - { text: 'Sans « ; », le navigateur lit « 3.5rem color: #e8457a » comme une seule valeur, invalide : il jette la déclaration entière, taille comprise', ok: true }
+          - { text: 'Le navigateur arrête de lire la feuille à la première erreur', misconception: erreur-bloque-tout, reaction: { who: ines, expr: sourcil, text: "Si c'était le cas, rien en dessous du titre n'aurait de style. Or le slogan, le bouton et les cartes ont les leurs. Le navigateur ignore seulement ce qu'il ne comprend pas." } }
+          - { text: 'Une couleur en code hexadécimal ne marche pas : il faut écrire un nom, comme pink', misconception: hex-invalide, reaction: { who: ines, expr: neutre, text: "Les codes hexadécimaux sont parfaitement valides : le fond du site en utilise un, et il s'affiche. Le problème est autour de la couleur, pas dans la couleur." } }
+          - { text: 'Le texte du titre est noir dans le HTML, le CSS ne peut pas le changer', misconception: html-impose-couleur, reaction: { who: ines, expr: sourcil, text: "Le HTML ne donne aucune couleur : <h1>Neko-Con</h1>, c'est tout. La couleur, c'est le travail du CSS." } }
+    hints: 2
+  -
+    id: T23
+    act: 5
+    after:
+      - T21
+    course: 'CSS 01'
+    requester: theo
+    priority: normale
+    title: 'Les horaires sont minuscules'
+    request: "Sur l'accueil, la ligne « Samedi · 10 h – 18 h · gymnase B » devait être en violet et bien lisible. Elle est de la même couleur que le reste et pas plus grosse. Les gens vont venir à 8 h, je le sens."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiet
+        prompt: 'Les horaires étaient bien en gras, mais ni gros ni violets. Comment une règle peut-elle marcher à moitié ? Elle était fatiguée ?'
+        options:
+          - { text: "Le navigateur a lu 18 comme 18 px, l'unité par défaut, plus petit que prévu ; et colour, l'orthographe britannique, n'est reconnue que par certains navigateurs, pas par celui-ci.", misconception: unite-par-defaut, reaction: { who: ines, expr: sourcil, text: "À 18 px, les horaires seraient plus grands que le texte, pas pareils. Le navigateur ne devine aucune unité. Et colour n'existe pour aucun navigateur : tu l'as remplacé, et le violet est arrivé." } }
+          - { text: "Le navigateur lit une règle jusqu'à sa première déclaration fausse, puis abandonne le reste de l'accolade : font-weight était écrit avant l'erreur, font-size et color après.", misconception: erreur-bloque-regle, reaction: { who: ines, expr: neutre, text: "La toute première ligne de la règle, la taille, était déjà fausse, et le gras, juste en dessous, s'appliquait quand même. Le navigateur saute chaque déclaration invalide, une par une." } }
+          - { text: "Le navigateur juge chaque déclaration à part et jette les invalides : « 18 » n'a pas d'unité, et la propriété s'écrit color, pas colour. Seul le gras était valide.", ok: true, reaction: { who: theo, expr: joie, text: 'Donc le navigateur fait le tri sans rien dire, comme moi avec les tickets de caisse froissés. Je comprends tout.' } }
+          - { text: 'Il manquait une balise de présentation autour des horaires, comme <big> ou <font> : sans elle, le CSS ne peut changer que la graisse du texte, pas sa taille ni sa couleur.', misconception: balise-presentation, reaction: { who: ines, expr: sourcil, text: "Tu n'as pas touché au HTML, et la taille comme le violet sont là. La présentation, c'est le travail du CSS : le HTML dit ce qu'est le contenu." } }
+    guide:
+      -
+        id: couche
+        kind: choice
+        prompt: "La ligne des horaires est bien en gras, comme le veut la règle .quand. Qu'est-ce que ça t'apprend : la cause est-elle dans le HTML ou dans le CSS ?"
+        options:
+          - { text: 'Dans le CSS : la règle .quand contient des déclarations que le navigateur ne comprend pas', ok: true }
+          - { text: 'Dans le HTML : la classe « quand » est mal écrite sur le paragraphe', misconception: classe-mal-ecrite, reaction: { who: ines, expr: neutre, text: 'Compare : class="quand" dans le HTML, .quand dans le CSS. Et la ligne est bien en gras, comme demandé par la règle : la règle s''applique donc, au moins en partie.' } }
+          - { text: "Dans le HTML : il faut entourer les horaires d'une balise <big>", misconception: balise-presentation, reaction: { who: ines, expr: sourcil, text: "La taille et la couleur, c'est de la présentation : c'est le rôle du CSS. Le HTML dit ce qu'est le contenu, pas à quoi il ressemble." } }
+      -
+        id: unite
+        kind: choice
+        prompt: 'Dans la règle .quand, que fait le navigateur de la déclaration font-size: 18 ?'
+        options:
+          - { text: 'Rien : une longueur sans unité est invalide, la déclaration est ignorée et le texte garde la taille de son parent', ok: true }
+          - { text: "Il comprend 18 pixels : px est l'unité par défaut", misconception: unite-par-defaut, reaction: { who: ines, expr: sourcil, text: "Si c'était 18 px, les horaires seraient plus grands que le texte normal. L'aperçu te montre le contraire. Le navigateur ne devine pas une unité." } }
+          - { text: 'Il comprend 18 points, comme dans un traitement de texte', misconception: unite-points, reaction: { who: ines, expr: neutre, text: "18 points, ça ferait 24 px : bien visible. Ce n'est pas ce que tu vois. En CSS, à part 0, une longueur s'écrit toujours avec son unité." } }
+          - { text: "Il comprend 18 % de la taille normale, d'où la petite taille", misconception: unite-pourcentage, reaction: { who: ines, expr: neutre, text: "À 18 %, le texte serait illisible, à peine 3 px. Il est simplement à la taille normale : la déclaration n'a eu aucun effet." } }
+      -
+        id: couleur
+        kind: line
+        file: css/style.css
+        prompt: 'Une autre déclaration de .quand est ignorée : celle de la couleur. Clique sur sa ligne.'
+        answer:
+          - colour
+        reaction:
+          who: ines
+          expr: neutre
+          text: 'Les horaires ne sont pas violets. Relis le nom de chaque propriété de la règle .quand, en anglais américain.'
+    hints: 2

@@ -1,0 +1,165 @@
+# Panique à la Neko-Con - acte 7 : « Je l'ai regardé sur mon téléphone… ».
+#
+# The server half of the tickets (design/validated/serious-games-neko-con.md §3.1): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Inès' guided
+# questions, what closing gives. The game half (bug, criteria, written hints, scenes) is
+# public/serious-games/neko-con/tickets/acte7.js. Converted once from the prototype's
+# host/scenario/acte7.js; `hints` counts the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: T34
+    act: 7
+    after:
+      - T24
+      - T25
+      - T26
+      - T27
+      - T28
+      - T29
+      - T30
+      - T31
+      - T32
+      - T33
+    course: 'CSS 06'
+    requester: maelle
+    priority: haute
+    duplicates: 4
+    title: 'Tout est minuscule sur mon téléphone'
+    request: "Sur mon téléphone, la page d'accueil est toute petite : on dirait le site d'ordinateur en miniature, il faut zoomer pour lire quoi que ce soit. Trois membres du club m'ont écrit la même chose. Bizarre : la page Planning, elle, s'affiche normalement."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiete
+        prompt: "Attends, je veux comprendre : pourquoi mon téléphone affichait-il le site d'ordinateur en miniature ? Et pourquoi seulement sur l'accueil ? J'ai cru que mon téléphone me lâchait !"
+        options:
+          - { text: "Les textes étaient réglés en px, une unité fixe : sur l'écran haute densité d'un téléphone, un pixel est minuscule, alors toute la page devenait petite. Il fallait des rem.", misconception: unites-px-mobile, reaction: { who: ines, expr: sourcil, text: "Le planning utilise la même feuille de style, avec les mêmes pixels, et il s'affichait bien. Et tu n'as changé aucune taille de texte." } }
+          - { text: "La media query pour téléphone s'arrêtait à max-width: 600px, alors que les téléphones récents sont plus larges : ses réglages ne s'appliquaient jamais, et la page restait en version ordinateur.", misconception: media-query-elargir, reaction: { who: ines, expr: neutre, text: "Tu n'as pas touché à la media query, et elle marche maintenant. Ce téléphone fait 375 px : c'est lui qui se croyait large de 980." } }
+          - { text: 'Il manquait sur l''accueil la balise <meta name="viewport">, que les autres pages ont. Sans elle, le téléphone dessine la page sur environ 980 px, comme un ordinateur, puis la rétrécit.', ok: true, reaction: { who: maelle, expr: joie, text: 'Donc mon téléphone se prenait pour un ordinateur ! Il a la folie des grandeurs, comme le club théâtre.' } }
+          - { text: "Les téléphones du club avaient le zoom arrière activé dans leurs réglages d'accessibilité : le navigateur affichait la page dézoomée, et il fallait les remettre à la taille normale, un par un.", misconception: faute-utilisateur, reaction: { who: ines, expr: sourcil, text: 'Quatre téléphones avec le même réglage, mais seulement sur une page ? Et tu as tout réparé sans toucher à un seul téléphone.' } }
+    guide:
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Toute la page d'accueil est réduite, images comprises, comme si le téléphone affichait une page d'ordinateur. Que se passe-t-il ?"
+        options:
+          - { text: "La page ne dit pas au téléphone d'utiliser sa vraie largeur : il la met en page sur environ 980 px, puis la rétrécit pour la faire tenir dans l'écran", ok: true }
+          - { text: 'Les tailles de texte sont en px : il faut tout passer en rem', misconception: unites-px-mobile, reaction: { who: ines, expr: sourcil, text: "Si c'était le texte, seules les lettres seraient petites. Là, tout rétrécit d'un bloc : le logo, les images, les marges. C'est la page entière qui est réduite." } }
+          - { text: 'La media query est mal réglée : il faut remplacer max-width: 600px par max-width: 980px', misconception: media-query-elargir, reaction: { who: ines, expr: neutre, text: 'Tu appliquerais les réglages « téléphone » aux petits ordinateurs, sans régler la vraie question : pourquoi ce téléphone se croit-il large de 980 px ?' } }
+          - { text: 'Le zoom est activé dans les réglages du téléphone de Maëlle', misconception: faute-utilisateur, reaction: { who: ines, expr: sourcil, text: "Quatre personnes, quatre téléphones, le même symptôme. Et sur le même téléphone, la page Planning s'affiche bien. Ce n'est pas l'utilisateur." } }
+      -
+        id: ou
+        kind: choice
+        prompt: "Les autres pages partagent la même feuille de style et s'affichent bien. Où se trouve donc ce qui manque ?"
+        options:
+          - { text: 'Dans le <head> de index.html', ok: true }
+          - { text: 'Dans css/style.css, en haut de la feuille', misconception: viewport-en-css, reaction: { who: ines, expr: neutre, text: "Toutes les pages partagent la même feuille de style, et les autres pages s'affichent bien. Qu'est-ce qui diffère entre index.html et planning.html ?" } }
+          - { text: 'Sur la balise <body> de index.html : ajouter style="width: 375px"', misconception: largeur-fixe-telephone, reaction: { who: ines, expr: sourcil, text: "375 px, c'est ce téléphone-là. Les autres font 360, 390, 412 px… Et le téléphone mettrait toujours la page en page sur 980 px avant de la réduire." } }
+    hints: 2
+  -
+    id: T35
+    act: 7
+    after:
+      - T34
+    course: 'CSS 06'
+    requester: theo
+    priority: normale
+    title: "L'affiche sort de l'écran sur mon téléphone"
+    request: "Sur mon téléphone, l'affiche du club dessin est énorme : je ne vois qu'un bout du chat, et toute la page glisse sur le côté quand je fais défiler. Sur l'ordinateur aussi, le bloc « Infos » prend presque toute la place. Le club dessin va me tuer."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiet
+        prompt: "Je ne comprends pas : comment une image peut-elle être plus large que mon téléphone ? Le bord de l'écran, c'est le bord, non ? Il y a un trou dans l'écran ?"
+        options:
+          - { text: "Une image s'affiche à sa vraie taille, ici 900 px, même quand la place manque. Il manquait max-width: 100% pour qu'elle ne dépasse jamais son conteneur, et height: auto pour ses proportions.", ok: true, reaction: { who: theo, expr: joie, text: "Donc l'affiche ne savait pas qu'elle avait le droit de rapetisser. Je connais ça : c'est moi dans le bus, avec mon sac à dos." } }
+          - { text: 'Les attributs width="900" et height="600" du HTML imposaient la taille de l''affiche : le navigateur obéit au HTML avant la largeur de l''écran, et l''affiche gardait ses 900 px sur tous les écrans.', misconception: supprimer-dimensions, reaction: { who: ines, expr: neutre, text: "Ils sont toujours là, tu n'y as pas touché, et pourtant l'affiche tient. Ces attributs réservent la place pendant le chargement ; c'est le CSS qui décide de la taille affichée." } }
+          - { text: "Il manquait overflow: hidden sur le <body> : tout ce qui dépassait de l'écran restait visible, et c'est ce débordement horizontal qui faisait glisser la page sur le côté.", misconception: masquer-debordement, reaction: { who: ines, expr: sourcil, text: "Avec overflow: hidden, la page ne glisserait plus, mais on ne verrait que la moitié du chat. Toi, tu as fait rétrécir l'image : rien n'est caché." } }
+          - { text: "L'affiche était prévue pour un écran d'ordinateur : il fallait lui donner en CSS la largeur exacte de l'écran du téléphone, width: 375px, pour qu'elle tienne pile dedans.", misconception: largeur-fixe-telephone, reaction: { who: ines, expr: neutre, text: "Tu n'as écrit 375 nulle part, et elle tient aussi bien sur téléphone que sur ordinateur. 100 %, c'est la place du conteneur, quelle que soit la taille de l'écran." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: index.html
+        prompt: "Commence par l'image elle-même : clique sur la ligne qui insère l'affiche dans la page, et regarde la taille qu'elle annonce."
+        answer:
+          - 'class="affiche"'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Cherche la balise <img> de l'affiche, dans le bloc « Infos »."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'L''image a les attributs width="900" et height="600", et l''écran fait 375 px. Pourquoi déborde-t-elle ?'
+        options:
+          - { text: "Rien ne l'empêche d'être plus large que son conteneur : aucune règle ne limite les images à la place disponible", ok: true }
+          - { text: 'Les attributs width et height sont interdits sur une image : il faut les supprimer', misconception: supprimer-dimensions, reaction: { who: ines, expr: neutre, text: "Ils sont utiles : le navigateur réserve la bonne place avant que l'image arrive, la page ne saute pas. Et sans eux, l'image prendrait quand même sa taille naturelle… 900 px." } }
+          - { text: "Le corps de la page n'a pas overflow: hidden", misconception: masquer-debordement, reaction: { who: theo, expr: inquiet, text: "Euh… si on cache ce qui dépasse, on ne verra plus que la moitié gauche de l'affiche, non ? Le club dessin va me tuer deux fois." } }
+      -
+        id: regle
+        kind: choice
+        prompt: 'Il faut donc une règle, dans css/style.css, qui vaille pour toutes les images. Laquelle ?'
+        options:
+          - { text: 'img { max-width: 100%; height: auto; }', ok: true }
+          - { text: 'img { width: 100%; }', misconception: width-100-deforme, reaction: { who: ines, expr: sourcil, text: 'Fais-le dans ta tête : la largeur rétrécit, mais l''attribut height="600" reste. Le chat serait aplati. Et les petites images seraient étirées sur toute la largeur.' } }
+          - { text: 'img { max-width: 375px; }', misconception: largeur-fixe-telephone, reaction: { who: ines, expr: neutre, text: "375 px, c'est l'écran de ce téléphone, pas la place disponible dans le bloc, qui a ses marges. Et les autres téléphones n'ont pas tous 375 px." } }
+    hints: 2
+  -
+    id: T36
+    act: 7
+    after:
+      - T34
+    course: 'CSS 06'
+    requester: ines
+    priority: normale
+    title: 'Mes réglages pour téléphone ne servent à rien'
+    request: "J'ai vérifié sur mon téléphone : le menu reste en ligne, le grand titre est énorme et le plan des stands garde ses trois colonnes. Pourtant, la media query pour les écrans de moins de 600 px est bien dans style.css, je l'ai vue. Elle a juste l'air… ignorée. Trouve pourquoi."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Inès.'
+      -
+        id: expliquer
+        kind: explain
+        expr: sourcil
+        prompt: 'Bien. Maintenant, explique-moi. La media query était là, et à 375 px sa condition était vraie. Pourquoi perdait-elle ?'
+        options:
+          - { text: "Les règles d'une @media sont moins prioritaires que les règles normales : le navigateur ne s'en sert que si aucune autre règle ne vise le même élément, ce qui arrive rarement.", misconception: media-moins-prioritaire, reaction: { who: ines, expr: neutre, text: "Si c'était vrai, elles perdraient encore. Tu n'as rien changé à leur contenu, seulement leur place dans le fichier, et maintenant elles gagnent." } }
+          - { text: "Un téléphone récent fait plus de 600 px de large en pixels réels : la condition max-width: 600px n'était donc pas remplie, et le navigateur sautait tout le bloc @media.", misconception: seuil-media, reaction: { who: ines, expr: sourcil, text: "Le pied de page affichait déjà la ligne de Jordan, qui n'existe que dans la media query : elle s'appliquait. Et tu n'as pas touché au seuil." } }
+          - { text: "Les règles d'une media query ont besoin de !important pour battre les règles de base : sans lui, une condition @media est toujours écrasée par le reste de la feuille.", misconception: important-cascade, reaction: { who: ines, expr: soupir, text: 'Le !important était interdit, et tu as réussi sans. Elles gagnent très bien toutes seules, une fois à la bonne place.' } }
+          - { text: 'Elle était tout en haut du fichier. Plus bas, les règles de base visaient les mêmes éléments : à spécificité égale, la dernière lue gagne. En fin de fichier, elle passe enfin après elles.', ok: true, reaction: { who: ines, expr: sourire, text: "Exact. Une media query, c'est une condition, pas un passe-droit. Jordan, lui, la prenait pour un marque-page : il la rangeait où ça tombait." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: css/style.css
+        prompt: "Où est la media query, exactement ? Clique sur la ligne qui l'ouvre."
+        answer:
+          - '@media (max-width: 600px)'
+        reaction:
+          who: ines
+          expr: neutre
+          text: 'Une media query commence par @media. Cherche-la dans tout le fichier, pas seulement à la fin.'
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Elle est en haut du fichier. À 375 px, la condition (max-width: 600px) est vraie. Pourquoi ses règles ne gagnent-elles pas ?'
+        options:
+          - { text: "Elles sont écrites avant les règles de base : à spécificité égale, c'est la règle écrite plus loin dans le fichier qui l'emporte", ok: true }
+          - { text: "Les règles d'une media query ont une priorité plus faible que les règles normales", misconception: media-moins-prioritaire, reaction: { who: ines, expr: neutre, text: "Une media query n'ajoute ni n'enlève de priorité : c'est une condition. Quand elle est vraie, ses règles jouent la cascade comme les autres. Alors qu'est-ce qui les départage ?" } }
+          - { text: "Un téléphone fait plus de 600 px de large : la condition n'est jamais vraie", misconception: seuil-media, reaction: { who: ines, expr: sourcil, text: "L'aperçu est à 375 px. Et regarde le pied de page : une ligne qui n'existe que dans la media query s'affiche. Elle s'applique donc bien." } }
+          - { text: 'Il manque !important sur les règles de la media query', misconception: important-cascade, reaction: { who: ines, expr: soupir, text: "Ça forcerait, oui. Et la prochaine fois, il faudra un !important pour battre le tien. Comprends d'abord pourquoi elles perdent." } }
+    hints: 2
+    reward:
+      fragment:
+        index: 5
+        value: '!'
+        where: "Sur téléphone, sous le pied de page, une ligne de Jordan est apparue : « 5e morceau, un point d'exclamation. Personne ne regarde le pied de page sur téléphone. »"

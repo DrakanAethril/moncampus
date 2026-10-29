@@ -1,0 +1,201 @@
+# Panique à la Neko-Con - acte 1 : Le site brut.
+#
+# The server half of the tickets (design/validated/serious-games-neko-con.md §3.1): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Inès' guided
+# questions, what closing gives. The game half (bug, criteria, written hints, scenes) is
+# public/serious-games/neko-con/tickets/acte1.js. Converted once from the prototype's
+# host/scenario/acte1.js; `hints` counts the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: T01
+    act: 1
+    course: 'HTML 01'
+    requester: maelle
+    priority: haute
+    title: 'Les accents sont devenus des hiéroglyphes'
+    request: "Sur la page d'accueil, « La convention manga du lycée » s'affiche « La convention manga du lycÃ©e ». Et c'est partout pareil. On dirait du japonais, mais en moins joli."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: "Mais au fait, comment des lettres peuvent-elles se transformer toutes seules ? Personne n'a touché au texte !"
+        options:
+          - { text: 'La police du site ne contenait pas les glyphes accentués : faute de mieux, le navigateur a affiché à leur place les caractères qui leur ressemblaient le plus.', misconception: police-accents, reaction: { who: ines, expr: sourcil, text: "Une police sans accents afficherait un carré ou une autre police, pas « Ã© ». Et la feuille de style n'est même pas chargée." } }
+          - { text: 'Le texte était juste, mais la page ne déclarait pas son encodage dans une <meta> : le navigateur a deviné, mal, et a lu chaque lettre accentuée comme deux caractères.', ok: true, reaction: { who: maelle, expr: joie, text: "Donc le texte était juste, c'est la lecture qui était fausse. Comme lire un manga avec le mauvais dictionnaire !" } }
+          - { text: "Il manquait lang=\"fr\" sur la balise <html> : sans lui, le navigateur lit la page avec l'alphabet anglais, qui n'a pas d'accents, et remplace chaque lettre accentuée par des symboles.", misconception: lang-encodage, reaction: { who: ines, expr: neutre, text: "lang sert à la prononciation des lecteurs d'écran et à la traduction. Il ne dit rien de la façon de lire les caractères du fichier." } }
+          - { text: "Le fichier avait été enregistré avec des accents abîmés, octet par octet : il a fallu retaper chaque lettre accentuée dans l'éditeur pour réparer le texte.", misconception: retaper-texte, reaction: { who: ines, expr: sourcil, text: "Tu n'as retapé aucun accent, et pourtant tout est revenu. Une seule ligne a suffi : le texte n'avait rien." } }
+    guide:
+      -
+        id: couche
+        kind: choice
+        prompt: 'La cause est-elle dans le HTML ou dans le CSS ?'
+        options:
+          - { text: 'Dans le HTML : la page ne dit pas au navigateur comment lire ses caractères', ok: true }
+          - { text: 'Dans le CSS : la police ne contient pas les accents', misconception: police-accents, reaction: { who: ines, expr: sourcil, text: "La feuille de style n'est même pas chargée en ce moment. Et une police sans accents afficherait un carré, pas « Ã© »." } }
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Le texte est juste, c'est sa lecture qui déraille. Qu'est-ce qui manque dans le <head> de index.html ?"
+        options:
+          - { text: 'La balise <meta charset="utf-8">', ok: true }
+          - { text: 'L''attribut lang="fr" sur <html>', misconception: lang-encodage, reaction: { who: ines, expr: neutre, text: "lang dit la langue du texte, pour la prononciation et la traduction. Il ne dit rien de l'encodage des caractères." } }
+          - { text: 'La balise <title>', misconception: title-encodage, reaction: { who: ines, expr: sourcil, text: "Le titre est bien là, regarde l'onglet. Ce qui manque, c'est l'information sur l'encodage." } }
+    hints: 2
+  -
+    id: T02
+    act: 1
+    course: 'HTML 01'
+    requester: maelle
+    priority: normale
+    title: "L'affiche de la convention ne s'affiche pas"
+    request: "L'affiche est bien dans le dossier img, je l'ai vue ! Mais sur la page d'accueil, il y a juste un petit carré cassé à la place."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiete
+        prompt: "Je ne comprends pas : l'image était dans le dossier depuis le début. Pourquoi le site ne la trouvait-il pas ?"
+        options:
+          - { text: "L'image pesait trop lourd : le serveur coupe les fichiers au-delà d'une certaine taille, et le navigateur affiche alors l'icône d'image cassée à la place.", misconception: image-trop-lourde, reaction: { who: ines, expr: neutre, text: "Une image lourde finit par s'afficher, lentement. Et ta correction n'a pas touché à l'image : seulement au chemin écrit dans le code." } }
+          - { text: "L'attribut alt de la balise <img> était mal rempli : sans texte alternatif valide, le navigateur refuse de charger l'image et affiche un carré à sa place.", misconception: alt-charge-image, reaction: { who: ines, expr: sourcil, text: "Le texte alternatif remplace l'image quand elle ne se charge pas. Il ne l'empêche jamais de se charger." } }
+          - { text: "Le code demandait « Affiche.SVG », le fichier s'appelle « affiche.svg ». Le serveur distingue majuscules et minuscules : pour lui, ce fichier n'existait pas.", ok: true, reaction: { who: maelle, expr: etoiles, text: "Une majuscule de travers et plus d'affiche… Je dirai au club dessin de nommer ses fichiers en minuscules !" } }
+          - { text: "La balise <img> ne reconnaît le format SVG que si son extension est écrite en majuscules : sinon, elle le prend pour un simple fichier texte et ne l'affiche pas.", misconception: svg-majuscules, reaction: { who: ines, expr: sourcil, text: "C'est l'inverse : tu as tout mis en minuscules, et l'affiche est revenue. <img> accepte très bien le SVG." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: index.html
+        prompt: "Commence par trouver la balise de l'affiche : clique sur sa ligne."
+        answer:
+          - Affiche.SVG
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Cherche la balise <img> de l'affiche. Elle est dans le bloc « Infos »."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Le fichier s'appelle img/affiche.svg. Pourquoi l'image ne se charge-t-elle pas ?"
+        options:
+          - { text: "Le chemin n'a pas la bonne casse : Affiche.SVG n'est pas affiche.svg", ok: true }
+          - { text: "Il manque l'attribut alt", misconception: alt-charge-image, reaction: { who: ines, expr: sourcil, text: "Le texte alternatif est là, d'ailleurs. Et il ne sert pas à charger l'image : il la remplace quand elle ne s'affiche pas." } }
+          - { text: 'Les attributs width et height sont trop grands', misconception: taille-empeche-chargement, reaction: { who: ines, expr: neutre, text: "Une image trop grande s'affiche quand même, en grand. Ici, le navigateur ne trouve pas le fichier." } }
+    hints: 2
+  -
+    id: T03
+    act: 1
+    course: 'HTML 01'
+    requester: maelle
+    priority: haute
+    title: 'Tout le bas de la page est devenu un lien'
+    request: "Depuis ce matin, tout le bas de la page d'accueil est souligné en bleu. Mon cousin dit que c'est « un lien qui fuit ». C'est grave, docteur ?"
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: "Mon cousin parlait d'un « lien qui fuit ». Ça veut dire quoi, en vrai ?"
+        options:
+          - { text: "La balise <p> qui contenait le lien n'était pas fermée : tout le reste de la page est devenu un seul grand paragraphe, souligné comme le lien qu'il contenait.", misconception: mauvaise-balise, reaction: { who: ines, expr: neutre, text: "Un paragraphe n'est ni souligné ni cliquable. Regarde ce que tu as ajouté : une balise de fermeture, mais laquelle ?" } }
+          - { text: 'Il manquait la règle text-decoration: none, qui retire le soulignement des liens : sans elle, le navigateur souligne tout le texte qui suit le premier lien.', misconception: masquer-symptome, reaction: { who: ines, expr: sourcil, text: "Ça aurait caché le soulignement, mais tout le bas de la page serait resté cliquable. Et tu n'as touché à aucun style." } }
+          - { text: "Le lien menait vers planning.html, une page très longue : le navigateur a chargé son contenu sous l'accueil et l'a souligné, puisqu'il venait d'un lien.", misconception: lien-affiche-cible, reaction: { who: ines, expr: sourcil, text: "Un lien n'affiche jamais la page qu'il vise. Il y mène, quand on clique." } }
+          - { text: "Le lien « Voir le planning complet » n'était pas refermé par </a> : le navigateur a rangé tout ce qui suivait dans ce lien, jusqu'en bas de la page.", ok: true, reaction: { who: maelle, expr: joie, text: "Un lien sans fin… Il a l'œil, mon cousin, finalement." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: index.html
+        prompt: "Dans l'aperçu, où commence le soulignement ? Clique sur la ligne du code où le problème commence."
+        answer:
+          - 'Voir le planning complet'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "Regarde l'aperçu : où commence le soulignement ? La ligne responsable est juste avant."
+      -
+        id: couche
+        kind: choice
+        prompt: 'La cause est-elle dans le HTML ou dans le CSS ?'
+        options:
+          - { text: 'Dans le HTML : une balise est mal fermée', ok: true }
+          - { text: 'Dans le CSS : il faut enlever le soulignement des liens', misconception: masquer-symptome, reaction: { who: ines, expr: sourcil, text: "Enlever le soulignement cacherait le symptôme, mais tout le bas de la page resterait un lien. Et la feuille de style n'est pas chargée." } }
+    hints: 2
+    reward:
+      fragment:
+        index: 1
+        value: Neko
+        where: 'Dans un commentaire HTML, tout en haut de index.html : « mot de passe des coulisses, 1er morceau : Neko. Le reste est éparpillé sur le site. »'
+  -
+    id: T04
+    act: 1
+    course: 'HTML 01'
+    requester: theo
+    priority: normale
+    title: 'Le lien « Infos pratiques » ne mène nulle part'
+    request: "Dans le menu, quand je clique sur « Infos pratiques », il ne se passe rien. Les autres liens marchent. J'ai cliqué quinze fois, au cas où."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiet
+        prompt: "J'ai cliqué seize fois, et rien. Pourquoi il n'y avait même pas un message d'erreur ?"
+        options:
+          - { text: "La page infos.html avait disparu du serveur : le navigateur restait en attente de sa réponse, sans afficher la moindre erreur tant qu'elle ne revenait pas.", misconception: page-absente, reaction: { who: ines, expr: neutre, text: "Une page absente donne une erreur 404, bien visible. Et tu n'as créé aucune page : tu as réparé le lien." } }
+          - { text: "L'attribut était écrit « herf » au lieu de « href ». Le navigateur ignore sans rien dire un attribut qu'il ne connaît pas : pour lui, ce lien n'avait pas d'adresse.", ok: true, reaction: { who: theo, expr: joie, text: "Donc le navigateur ne râle jamais, il fait juste comme si de rien n'était. Un peu comme moi en maths." } }
+          - { text: 'Il manquait target="_blank" sur la balise <a> : sans lui, la page s''ouvrait dans le même onglet, et le changement passait inaperçu.', misconception: target-blank, reaction: { who: ines, expr: sourcil, text: 'Dans le même onglet, Théo aurait bien vu la nouvelle page. Encore fallait-il que le lien ait une adresse.' } }
+          - { text: 'Le lien était collé aux autres liens du menu, sans marge : la zone cliquable de son voisin le recouvrait, et les clics de Théo tombaient dessus.', misconception: clic-voisin, reaction: { who: ines, expr: neutre, text: "Si les clics tombaient sur un voisin, Théo serait arrivé ailleurs. Là, il ne se passait rien : il n'y avait aucune adresse à suivre." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: index.html
+        prompt: 'Trouve la ligne du lien qui ne marche pas, et clique dessus. Compare-la à ses voisines.'
+        answer:
+          - 'Infos pratiques</a></li>'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "C'est un lien du menu, dans la balise <nav>."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Pourquoi ce lien ne mène-t-il nulle part ?'
+        options:
+          - { text: "L'attribut est mal écrit : « herf » au lieu de « href »", ok: true }
+          - { text: "La page infos.html n'existe pas", misconception: page-absente, reaction: { who: ines, expr: neutre, text: 'Si la page manquait, le navigateur afficherait une erreur 404. Là, il ne se passe rien du tout : le navigateur ne voit pas de lien.' } }
+          - { text: 'Il faut ajouter target="_blank"', misconception: target-blank, reaction: { who: ines, expr: sourcil, text: 'target="_blank" ouvre un nouvel onglet. Encore faut-il que le lien ait une adresse.' } }
+    hints: 2
+  -
+    id: T05
+    act: 1
+    after:
+      - T01
+    course: 'HTML 01'
+    requester: theo
+    priority: haute
+    closeAs: reassigned
+    title: "Je n'arrive plus à me connecter à l'ENT"
+    request: "Urgent !!! Mon mot de passe de l'ENT du lycée ne marche plus et je dois rendre un devoir de maths ce soir. Tu peux réparer ?"
+    steps:
+      -
+        id: trier
+        kind: choice
+        prompt: 'Ce ticket relève-t-il de ta mission sur le site de la convention ?'
+        options:
+          - { text: "Non : je le réaffecte au support informatique du lycée, qui gère les comptes de l'ENT", ok: true, reaction: { who: theo, expr: inquiet, text: "Ah. Oui. C'est pas le site de la convention, c'est vrai. Je vais voir le support. Merci quand même !" } }
+          - { text: 'Oui : je cherche son mot de passe dans le code du site, là où les comptes sont rangés', misconception: hors-perimetre, reaction: { who: ines, expr: sourcil, text: "Le site de la convention n'a rien à voir avec l'ENT du lycée. Et un mot de passe ne se « cherche » pas dans le code." } }
+          - { text: "Non : je le ferme sans répondre, puisque l'ENT n'a rien à voir avec ce site", misconception: fermer-sans-suite, reaction: { who: ines, expr: neutre, text: "Un ticket qui n'est pas pour toi se réaffecte, il ne se ferme pas en silence : Théo attend une réponse." } }
+    hints: 0

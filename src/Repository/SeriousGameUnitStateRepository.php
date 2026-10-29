@@ -82,4 +82,22 @@ class SeriousGameUnitStateRepository extends ServiceEntityRepository
 
         return $out;
     }
+
+    /**
+     * The tickets on a player's board in a scenario, in the order they came onto it.
+     *
+     * @return list<SeriousGameUnitState>
+     */
+    public function findBoard(User $player, SeriousGame $game): array
+    {
+        return $this->createQueryBuilder('s')
+            ->andWhere('s.player = :player')
+            ->andWhere('s.game = :game')
+            ->andWhere('s.status IS NOT NULL')
+            ->setParameter('player', $player)
+            ->setParameter('game', $game)
+            ->orderBy('s.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\SeriousGameMechanic;
 use App\Repository\SeriousGameRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -22,6 +23,9 @@ use Doctrine\ORM\Mapping as ORM;
  *
  * `$answerKinds` is the administrator's setting of §1.3: the kinds of answer this game accepts
  * (`short` for L'Observatoire). A unit whose template asks for another kind is hidden.
+ *
+ * `$mechanic` is how the game is played (design/validated/serious-games-neko-con.md §3): series of
+ * generated questions, or a scenario of hand-written tickets. Read from the manifest at each sync.
  */
 #[ORM\Entity(repositoryClass: SeriousGameRepository::class)]
 #[ORM\Table(name: 'serious_game')]
@@ -62,6 +66,9 @@ class SeriousGame
 
     #[ORM\Column(name: 'published')]
     private bool $published = false;
+
+    #[ORM\Column(name: 'mechanic', length: 20, enumType: SeriousGameMechanic::class, options: ['default' => 'series'])]
+    private SeriousGameMechanic $mechanic = SeriousGameMechanic::Series;
 
     #[ORM\Column(name: 'version', length: 20)]
     private string $version = '1.0.0';
@@ -191,6 +198,23 @@ class SeriousGame
         $this->published = $published;
 
         return $this;
+    }
+
+    public function getMechanic(): SeriousGameMechanic
+    {
+        return $this->mechanic;
+    }
+
+    public function setMechanic(SeriousGameMechanic $mechanic): static
+    {
+        $this->mechanic = $mechanic;
+
+        return $this;
+    }
+
+    public function isScenario(): bool
+    {
+        return SeriousGameMechanic::Scenario === $this->mechanic;
     }
 
     public function getVersion(): string

@@ -1,0 +1,180 @@
+# Panique à la Neko-Con - acte 3 : Le planning.
+#
+# The server half of the tickets (design/validated/serious-games-neko-con.md §3.1): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Inès' guided
+# questions, what closing gives. The game half (bug, criteria, written hints, scenes) is
+# public/serious-games/neko-con/tickets/acte3.js. Converted once from the prototype's
+# host/scenario/acte3.js; `hints` counts the written hints the game holds after the guided questions.
+tickets:
+  -
+    id: T11
+    act: 3
+    after:
+      - T06
+      - T07
+      - T08
+      - T09
+      - T10
+    course: 'HTML 03'
+    requester: theo
+    priority: haute
+    title: 'À 11 h, une case dépasse du planning'
+    request: "Sur la page Planning, à la ligne de 11 h, il y a une case en trop qui dépasse à droite du tableau, sans salle au-dessus. On ne sait plus qui est dans quelle salle. J'ai compté trois fois, il y a bien une case de trop."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Théo.'
+      -
+        id: expliquer
+        kind: explain
+        expr: inquiet
+        prompt: 'Mais la case « Rétrogaming (suite) », elle était logique, non ? Le rétrogaming continue à 11 h ! Pourquoi elle dépassait ?'
+        options:
+          - { text: "Il manquait une colonne dans l'en-tête du tableau : la case « suite » n'avait pas de salle au-dessus d'elle, alors le navigateur l'a laissée flotter à droite, hors de la grille.", misconception: ajouter-colonne, reaction: { who: ines, expr: sourcil, text: "Tu n'as ajouté aucune colonne, et plus rien ne dépasse. Le tableau avait le bon nombre de lieux : c'est la ligne de 11 h qui en comptait un de trop." } }
+          - { text: 'La case « Défilé libre » était trop étroite : avec colspan="2", elle se serait étirée sur deux colonnes, aurait recouvert la case de trop, et la ligne serait retombée juste.', misconception: colspan-combler, reaction: { who: ines, expr: neutre, text: "Étirer une case ajoute des colonnes à la ligne, ça n'en retire pas. Et tu n'as rien étiré : tu as enlevé une case." } }
+          - { text: 'Il continue, oui, mais c''était déjà dit : sa case de 10 h porte rowspan="2" et occupe encore la Salle 3 à 11 h. La case « suite » était de trop, poussée hors de la grille.', ok: true, reaction: { who: theo, expr: joie, text: "La case de 10 h avait réservé la place, comme une serviette sur un transat. Et « suite » est arrivée trop tard. Elle ne m'a jamais plu, de toute façon." } }
+          - { text: "Le tableau était trop étroit pour l'écran : avec son long titre, « Rétrogaming (suite) » n'avait plus la place de tenir dans la ligne, et le navigateur l'a repoussée dehors.", misconception: tableau-trop-etroit, reaction: { who: ines, expr: neutre, text: "Tu n'as touché à aucune largeur, et plus rien ne dépasse. Un tableau HTML est une grille : une case de trop dépasse, quelle que soit la place." } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: planning.html
+        prompt: 'Compte les cases de la ligne de 11 h dans le code, en te rappelant ce qui descend de la ligne de 10 h. Clique sur la case de trop.'
+        answer:
+          - 'Rétrogaming (suite)'
+        reaction:
+          who: ines
+          expr: neutre
+          text: 'Cherche la ligne <tr> de 11 h, et regarde sa dernière case.'
+      -
+        id: diagnostic
+        kind: choice
+        prompt: 'Pourquoi la ligne de 11 h a-t-elle une case de trop ?'
+        options:
+          - { text: 'La case Rétrogaming de 10 h a rowspan="2" : elle occupe déjà la Salle 3 à 11 h', ok: true }
+          - { text: "Il manque une colonne : il faut ajouter un sixième titre dans l'en-tête", misconception: ajouter-colonne, reaction: { who: ines, expr: sourcil, text: "Une sixième colonne pour une seule case ? Le gymnase n'a que quatre lieux. Le tableau est juste ; c'est la ligne de 11 h qui compte mal." } }
+          - { text: 'Il faut mettre colspan="2" sur « Défilé libre » pour combler', misconception: colspan-combler, reaction: { who: ines, expr: neutre, text: "Ça ajouterait encore une colonne à la ligne, pas l'inverse. Et le défilé n'a pas lieu en Salle 3." } }
+    hints: 2
+    reward:
+      fragment:
+        index: 3
+        value: Ramen
+        where: "Dans la colonne Salle 3 remise d'aplomb, les initiales des activités — Rétrogaming, Atelier origami, Manga-dessin express, Escape room, Nouveautés des éditeurs — forment RAMEN. Jordan avait faim en écrivant le planning."
+  -
+    id: T12
+    act: 3
+    after:
+      - T06
+      - T07
+      - T08
+      - T09
+      - T10
+    course: 'HTML 03'
+    requester: maelle
+    priority: normale
+    title: "La pause déjeuner ne prend qu'une seule case"
+    request: 'Sur le planning, à midi, « Pause déjeuner » est tassé dans la colonne Salle 1, et le reste de la ligne est vide. Avant, ça faisait une grande bande sur toute la largeur. Les gens vont croire que les food trucks sont dans la salle de dessin !'
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Maëlle.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: "Avant, c'était une grande bande, j'en suis sûre ! Comment une case peut-elle rétrécir toute seule, du jour au lendemain ?"
+        options:
+          - { text: 'Il lui manquait rowspan="4", l''attribut qui étire une case sur toute la largeur du tableau. Sans lui, la pause restait coincée dans sa colonne de départ, la Salle 1.', misconception: rowspan-colspan, reaction: { who: ines, expr: neutre, text: "rowspan étire vers le bas, sur les lignes suivantes : la pause aurait mangé tout l'après-midi. Ce que tu as écrit étire vers la droite." } }
+          - { text: "Une case <td> prend la largeur de son texte, et « Pause déjeuner » est court : elle s'est tassée à gauche. Il fallait lui imposer la largeur du tableau entier.", misconception: largeur-texte-case, reaction: { who: ines, expr: sourcil, text: "Tu n'as donné aucune largeur, et elle traverse pourtant tout le planning. Dans un tableau, la longueur du texte ne décide pas du nombre de colonnes qu'une case couvre." } }
+          - { text: "La case doit couvrir les cinq colonnes du tableau, heures comprises : sa fusion avait été réglée sur une seule colonne au lieu de cinq, d'où la Salle 1 seule.", misconception: compter-colonnes, reaction: { who: ines, expr: sourcil, text: "Avec cinq, la ligne dépasserait d'une case : celle de « 12 h » occupe déjà la première colonne. Tu as d'ailleurs écrit 4, et la ligne tombe juste." } }
+          - { text: "Elle a perdu son attribut colspan, qui étire une case vers la droite. Sans lui, elle ne couvre qu'une colonne. Il en faut 4 : l'heure prend la première.", ok: true, reaction: { who: maelle, expr: etoiles, text: "colspan, pour s'étaler sur plusieurs colonnes. Comme moi sur le canapé du club après une journée de convention !" } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: planning.html
+        prompt: 'La pause est dans la ligne de 12 h. Clique sur la ligne de sa case.'
+        answer:
+          - 'class="pause"'
+        reaction:
+          who: ines
+          expr: neutre
+          text: "C'est dans la ligne de 12 h."
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Que faut-il ajouter à cette case pour qu'elle couvre toutes les salles ?"
+        options:
+          - { text: 'colspan="4"', ok: true }
+          - { text: 'colspan="5"', misconception: compter-colonnes, reaction: { who: ines, expr: sourcil, text: 'Compte les colonnes réelles de la ligne : la case « 12 h » en occupe déjà une. Avec 5, la ligne dépasserait.' } }
+          - { text: 'rowspan="4"', misconception: rowspan-colspan, reaction: { who: ines, expr: neutre, text: "rowspan fusionne vers le bas, sur les lignes suivantes : la pause mangerait le planning de l'après-midi." } }
+    hints: 2
+  -
+    id: T13
+    act: 3
+    after:
+      - T11
+    course: 'HTML 03'
+    requester: client
+    from: 'Gérard Dubreuil'
+    priority: normale
+    title: "Le lecteur d'écran lit les horaires sans dire quelle salle"
+    request: "Rebonjour. Merci pour la page d'accueil. Sur le planning, mon lecteur d'écran me lit les activités les unes après les autres, « Conférence shōjo », « Défilé libre »… mais jamais la salle, ni l'heure. Je ne peux pas deviner la colonne. Bien cordialement, Gérard Dubreuil."
+    steps:
+      - id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à M. Dubreuil.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Merci beaucoup. Je suis curieux : les salles et les heures étaient bien écrites, en haut et à gauche du tableau. Pourquoi mon lecteur ne faisait-il pas le lien avec les activités ?'
+        options:
+          - { text: "Les noms des salles n'étaient pas en gras, comme il se doit pour des titres : sans cette mise en valeur, votre lecteur ne pouvait pas savoir que la première ligne contenait des titres.", misconception: gras-entete, reaction: { who: ines, expr: sourcil, text: "Le gras est apparu, c'est vrai, mais comme une conséquence : une case de titre est en gras par défaut. Le lecteur, lui, se fie à la balise, pas à l'apparence." } }
+          - { text: 'Le code doit dire quelles cases sont des titres. Les salles étaient en cases ordinaires, <td>, et non en cases de titre, <th>. Et aux heures manquait scope="row", qui les relie à leur ligne.', ok: true, reaction: { who: client, expr: neutre, text: "Un tableau doit donc dire lui-même lesquelles de ses cases sont des titres, et de quoi. C'est d'une logique presque administrative. J'adore." } }
+          - { text: "Le tableau n'avait pas de légende <caption> pour présenter ses colonnes : sans elle, votre lecteur ignorait que la première ligne donnait les salles et la première colonne les heures.", misconception: caption-entete, reaction: { who: ines, expr: neutre, text: "La légende était là depuis le début : « Programme salle par salle ». Elle nomme le tableau entier, pas chaque colonne, et tu n'y as pas touché." } }
+          - { text: "Les heures étaient rangées dans le <tbody> au lieu d'être en haut, dans le <thead>, avec les salles : or votre lecteur ne cherche les titres que dans la première ligne.", misconception: thead-ligne, reaction: { who: ines, expr: neutre, text: "Les heures sont restées à leur place, en début de ligne, et le lecteur les annonce maintenant. Un titre de ligne n'a pas à monter dans l'en-tête du tableau." } }
+    guide:
+      -
+        id: diagnostic
+        kind: choice
+        prompt: "Commence par la ligne des salles, en haut du tableau. Pourquoi le lecteur n'annonce-t-il pas la salle ?"
+        options:
+          - { text: 'Les titres des colonnes sont écrits en <td>, comme des cases ordinaires : rien ne dit que ce sont des titres', ok: true }
+          - { text: 'Les titres des colonnes ne sont pas en gras', misconception: gras-entete, reaction: { who: ines, expr: sourcil, text: "Gérard n'entend pas le gras. Le lecteur se fie à la balise, pas à l'apparence." } }
+          - { text: 'Il manque une légende <caption> au tableau', misconception: caption-entete, reaction: { who: ines, expr: neutre, text: 'La légende est là : « Programme salle par salle ». Elle nomme le tableau entier, pas chaque colonne.' } }
+      -
+        id: heures
+        kind: choice
+        prompt: 'Les heures, elles, sont bien en <th>. Pourquoi le lecteur ne les annonce-t-il pas ?'
+        options:
+          - { text: 'Il leur manque scope="row" : le lecteur ne sait pas qu''elles sont le titre de leur ligne', ok: true }
+          - { text: 'Il faut déplacer les heures dans le <thead>', misconception: thead-ligne, reaction: { who: ines, expr: neutre, text: '<thead> regroupe les lignes de titres du haut. Les heures sont en début de chaque ligne : elles restent dans <tbody>.' } }
+          - { text: 'Il faut écrire les heures en <td>, comme le reste de la ligne', misconception: th-td-indifferent, reaction: { who: ines, expr: sourcil, text: "Ce serait pire : une case ordinaire n'est le titre de rien du tout." } }
+    hints: 2
+  -
+    id: T14
+    act: 3
+    after:
+      - T06
+      - T07
+      - T08
+      - T09
+      - T10
+    course: 'HTML 03'
+    requester: theo
+    priority: haute
+    closeAs: reassigned
+    title: 'Le distributeur de boissons du gymnase est vide'
+    request: "URGENT : le distributeur de boissons du gymnase B est complètement vide, même plus d'eau. Samedi il va faire chaud, avec les cosplays et tout. Tu peux arranger ça ?"
+    steps:
+      -
+        id: trier
+        kind: choice
+        prompt: "Qui doit traiter ce ticket, et qu'en fais-tu ?"
+        options:
+          - { text: "Je le prends : j'ajoute sur le plan des stands un message qui signale le distributeur vide", misconception: tout-est-le-site, reaction: { who: ines, expr: sourcil, text: "Écrire sur le site que le distributeur est vide ne le remplira pas. La panne n'est pas dans le code." } }
+          - { text: "Je le ferme : le distributeur n'a aucun rapport avec le site de la convention", misconception: fermer-sans-suite, reaction: { who: ines, expr: neutre, text: "Aucun rapport avec le site, c'est juste. Mais fermer sans suite laisse Théo sans réponse, et le distributeur toujours vide. Un ticket hors périmètre se transmet." } }
+          - { text: "Je le réaffecte à l'intendance du lycée, qui s'occupe du distributeur du gymnase", ok: true, reaction: { who: theo, expr: neutre, text: "Ah oui, l'intendance… C'est vrai que ce n'est pas un problème de site. J'y passe ce midi. Et je note : prévoir de l'eau à la buvette." } }
+          - { text: "Je le garde pour moi : j'irai acheter des packs d'eau au supermarché avant samedi", misconception: sortir-de-son-role, reaction: { who: ines, expr: neutre, text: "Gentil, mais ce n'est ni ton rôle ni ton budget. Un ticket hors périmètre se transmet à la bonne personne." } }
+    hints: 0

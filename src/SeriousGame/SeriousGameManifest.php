@@ -73,6 +73,12 @@ final readonly class SeriousGameManifest
         return null;
     }
 
+    /** Whether the game is played as a scenario of tickets (design/validated/serious-games-neko-con.md §3). */
+    public function isScenario(): bool
+    {
+        return 'scenario' === ($this->data['mechanic'] ?? null);
+    }
+
     public function seriesSize(): int
     {
         return $this->int(['series', 'size'], 12);

@@ -27,7 +27,10 @@ final class SeriousGameRewardCatalog
             foreach ($manifest->chapters() as $chapter) {
                 $codes[] = RewardRules::card($game, $chapter['code']);
             }
-            $codes[] = RewardRules::card($game, $manifest->finalCode());
+            // A scenario's last ticket is one of its last act's: no card of its own.
+            if (!$manifest->isScenario()) {
+                $codes[] = RewardRules::card($game, $manifest->finalCode());
+            }
         }
 
         return $codes;

@@ -15,6 +15,10 @@ import { Controller } from '@hotwired/stimulus';
  *   host → game  { sg: 1, type: 'reward.granted', rewards }
  *   game → host  { sg: 1, type: 'exit' }  - back to the catalogue
  *
+ * A game of the « scénario » mechanic (design/validated/serious-games-neko-con.md §3.3) has its own
+ * calls - the board, the tickets, their steps and Inès' help. A delivery is relayed as its result
+ * and its failed criteria only: the code the student wrote never leaves the frame (§3.4).
+ *
  * It also holds two things every game gets from the platform rather than from itself (the user's
  * decision of 2026-10-18):
  *
@@ -262,6 +266,7 @@ export default class extends Controller {
     route(method, params) {
         const session = Number.parseInt(params.session, 10);
         const sessionPath = (action) => (Number.isInteger(session) && session > 0 ? { method: 'POST', path: `/sessions/${session}/${action}` } : null);
+        const ticketPath = (action) => (Number.isInteger(session) && session > 0 ? { method: 'POST', path: `/ticket-sessions/${session}/${action}` } : null);
 
         switch (method) {
             case 'getUser': return { method: 'GET', path: '/user' };
@@ -284,8 +289,45 @@ export default class extends Controller {
 
                 return null === route ? null : { ...route, ends: true };
             }
+            // The « scénario » mechanic.
+            case 'getScenario': return { method: 'GET', path: '/scenario' };
+            case 'markActSeen': return { method: 'POST', path: '/scenario/act-seen', body: { act: Number.parseInt(params.act, 10) || 0 } };
+            case 'newGame': return { method: 'POST', path: '/scenario/new-game' };
+            case 'startTicket': return { method: 'POST', path: '/tickets', body: { ticket: String(params.ticket ?? '').slice(0, 40) } };
+            case 'submitStep':
+            case 'submitGuide': {
+                const route = ticketPath('submitStep' === method ? 'step' : 'guide');
+
+                return null === route ? null : { ...route, body: { step: String(params.step ?? '').slice(0, 40), input: this.stepInput(params.input) } };
+            }
+            case 'useHint': return ticketPath('hint');
+            case 'endTicket': {
+                const route = ticketPath('end');
+
+                return null === route ? null : { ...route, ends: true };
+            }
             default: return null;
         }
+    }
+
+    /**
+     * What is relayed of a step's input: an option's rank, a line's or a password's text, or a
+     * delivery's result - `{passed, failed}`, never the files the game sends along with it.
+     */
+    stepInput(input) {
+        if ('number' === typeof input) {
+            return Number.isInteger(input) ? input : null;
+        }
+        if ('string' === typeof input) {
+            return input.slice(0, 500);
+        }
+        if (input && 'object' === typeof input) {
+            const failed = Array.isArray(input.failed) ? input.failed.filter((f) => 'string' === typeof f).slice(0, 30).map((f) => f.slice(0, 300)) : [];
+
+            return { passed: true === input.passed, failed };
+        }
+
+        return null;
     }
 
     post(message) {
