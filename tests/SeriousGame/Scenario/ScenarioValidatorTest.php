@@ -66,4 +66,29 @@ class ScenarioValidatorTest extends TestCase
         self::assertContains('T1 : ticket en double', $problems);
         self::assertContains('aucun morceau de mot de passe', $problems);
     }
+
+    public function testALineOutsideTheHelpDesignatesAView(): void
+    {
+        $line = ['id' => 'designer', 'kind' => 'line', 'prompt' => 'Clique.', 'answer' => 'dport=51820'];
+        $data = ScenarioFixture::data(['T2' => ['steps' => [$line]]]);
+        self::assertSame(['T2/designer : une étape « ligne » hors de l’aide désigne une vue (« view »)'], ScenarioValidator::problems($data));
+
+        $data = ScenarioFixture::data(['T2' => ['steps' => [$line + ['view' => 'conntrack']]]]);
+        self::assertSame([], ScenarioValidator::problems($data));
+    }
+
+    public function testAnOrderPlacesEveryItemOnce(): void
+    {
+        $order = ['id' => 'chronologie', 'kind' => 'order', 'prompt' => 'Dans l’ordre.', 'items' => ['a', 'b', 'c']];
+        self::assertSame([], ScenarioValidator::problems(ScenarioFixture::data(['T2' => ['steps' => [$order + ['answer' => [2, 0, 1]]]]])));
+        self::assertSame(['T2/chronologie : l’ordre attendu ne place pas chaque élément une fois'], ScenarioValidator::problems(ScenarioFixture::data(['T2' => ['steps' => [$order + ['answer' => [2, 0, 0]]]]])));
+        self::assertSame(['T2/chronologie : l’ordre attendu ne place pas chaque élément une fois'], ScenarioValidator::problems(ScenarioFixture::data(['T2' => ['steps' => [$order + ['answer' => [1, 0]]]]])));
+    }
+
+    public function testAScenarioThatNeverAsksForThePasswordNeedsNoPieces(): void
+    {
+        $data = ScenarioFixture::data(['T1' => ['reward' => []], 'T4' => ['reward' => [], 'steps' => [['id' => 'trier', 'kind' => 'choice', 'prompt' => '?', 'options' => [['text' => 'Oui', 'ok' => true]]]]]], ['password' => []]);
+
+        self::assertSame([], ScenarioValidator::problems($data));
+    }
 }

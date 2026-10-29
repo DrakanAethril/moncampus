@@ -263,11 +263,12 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
 - **Serious games** (`/serious-games`) — `SeriousGame*` entities, `src/SeriousGame/`,
-  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; five games built,
+  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; six games built,
   **L'Observatoire** (automatismes de 1re), **Les Tablettes de Pompéi** (déclinaisons latines,
   4e-2nde, `design/validated/serious-games-pompei.md`), **Station Abysse** (SVT, 2nde-1re,
-  `serious-games-abysse.md`), **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`) and **Panique
-  à la Neko-Con** (HTML et CSS, BTS SIO 1, `serious-games-neko-con.md`, the only one of the « scénario » mechanic). **In the margin of Formatool**: it shares the sign-in
+  `serious-games-abysse.md`), **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`), **Panique
+  à la Neko-Con** (HTML et CSS, BTS SIO 1, `serious-games-neko-con.md`) and **Black-out** (réseau et
+  cybersécurité, BTS SIO 2 SISR, `serious-games-blackout.md`), the two of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
   mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus
   one line per game in the « Serious games » block of Paramètres › Fonctionnalités
@@ -335,6 +336,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     (Paramètres › Serious games, the game's own `bench.html` in a sandboxed frame, fed the scenario
     by `sg_ticket_bench_controller.js`). The teachers read it through `SeriousGameScenarioReading`
     (class map with « Bloqués » / « Beaucoup d'aide », « Notions à reprendre », the student's sheet).
+    **Black-out** is the second scenario (36 tickets in a GLPI-like helpdesk, Nadia as the helper -
+    `scenario.helper`): its repairs are checked by a network simulator in the package (`net.js`,
+    Debian configuration files), it has no password, and it added the **« order » step** (the
+    report's timeline, corrected by the server, the right order never sent) and the « line » step
+    outside the help, on a `view` of the game (a log, a capture). The host page relays an order's
+    ranks (`serious_game_host_controller.js`, `stepInput()`) - a new kind of input must be added
+    there too, or it reaches the server mangled.
   - **`/serious-games/stats`** (`StatsController`, `App\SeriousGame\Stats\`): usage, progression,
     analysis of the units, a class's list and the years, for every game - read by **every teacher**
     and the administrators with the names (`SeriousGameVoter::READ_STATS`, the user's decision of

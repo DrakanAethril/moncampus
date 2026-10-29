@@ -11,9 +11,11 @@ namespace App\SeriousGame\Scenario;
  *
  * - the ticket identifiers are unique and the graph names known tickets and lets every one open;
  * - every explanation or choice has exactly one right answer, an explanation at least three;
- * - a guided « line » names the text of the right line;
+ * - a « line » names the text of the right line, and outside the help, the view it is clicked in;
+ * - an « order » has items, and its answer places each of them once;
  * - a ticket to repair starts with the repair, followed by the explanation to the requester;
- * - the password has its pieces, and each piece given by a ticket has a slot.
+ * - a scenario that asks for the password has its pieces, and each piece given by a ticket has a
+ *   slot (Black-out asks for none).
  *
  * A pure function: it reads the `scenario` array as the manifest carries it.
  */
@@ -40,7 +42,14 @@ final class ScenarioValidator
         }
 
         $scenario = Scenario::fromArray($data);
-        if (0 === $scenario->passwordPieces()) {
+        $asksPassword = false;
+        foreach ($scenario->tickets() as $ticket) {
+            foreach ($ticket->steps as $step) {
+                $asksPassword = $asksPassword || ScenarioStepKind::Password === $step->kind;
+            }
+            $asksPassword = $asksPassword || null !== $ticket->fragment;
+        }
+        if ($asksPassword && 0 === $scenario->passwordPieces()) {
             $problems[] = 'aucun morceau de mot de passe';
         }
 
@@ -67,8 +76,8 @@ final class ScenarioValidator
             }
 
             foreach ($ticket->steps as $step) {
-                if (ScenarioStepKind::Line === $step->kind) {
-                    $problems[] = $ticket->id.'/'.$step->id.' : une étape « ligne » n’existe que dans l’aide d’Inès';
+                if (ScenarioStepKind::Line === $step->kind && null === $step->view) {
+                    $problems[] = $ticket->id.'/'.$step->id.' : une étape « ligne » hors de l’aide désigne une vue (« view »)';
                 }
                 if (ScenarioStepKind::Password === $step->kind && '' === $scenario->password()) {
                     $problems[] = $ticket->id.'/'.$step->id.' : mot de passe vide';
@@ -117,6 +126,13 @@ final class ScenarioValidator
         }
         if (ScenarioStepKind::Line === $step->kind && [] === $step->answers) {
             return [$where.' : aucune ligne attendue'];
+        }
+        if (ScenarioStepKind::Order === $step->kind) {
+            $ranks = $step->order;
+            sort($ranks);
+            if (\count($step->items) < 2 || $ranks !== range(0, \count($step->items) - 1)) {
+                return [$where.' : l’ordre attendu ne place pas chaque élément une fois'];
+            }
         }
 
         return [];

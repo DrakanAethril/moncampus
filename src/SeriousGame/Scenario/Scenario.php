@@ -32,6 +32,7 @@ final readonly class Scenario
         private array $password,
         private array $tickets,
         private array $misconceptions,
+        private string $helper,
     ) {
     }
 
@@ -71,12 +72,19 @@ final readonly class Scenario
             array_values(array_map(static fn (mixed $p): string => \is_scalar($p) ? (string) $p : '', \is_array($data['password'] ?? null) ? $data['password'] : [])),
             $tickets,
             $misconceptions,
+            \is_string($data['helper'] ?? null) && '' !== $data['helper'] ? $data['helper'] : 'ines',
         );
     }
 
     public function version(): int
     {
         return $this->version;
+    }
+
+    /** Who answers a wrong step when the step names nobody: Inès at the Neko-Con, Nadia in Black-out. */
+    public function helper(): string
+    {
+        return $this->helper;
     }
 
     public function capacity(): int

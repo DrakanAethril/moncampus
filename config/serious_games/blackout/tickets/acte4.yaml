@@ -1,0 +1,169 @@
+# Black-out - acte 4 : Les adresses tombent du ciel.
+#
+# The server half of the tickets (design/validated/serious-games-blackout.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Nadia's
+# guided questions, the clue closing gives. The game half (bug, checks run in the network simulator,
+# views, written hints, scenes) is public/serious-games/blackout/tickets/acte4.js. Converted once
+# from the prototype's host/scenario/acte4.js; `hints` counts the written hints the game holds
+# after the guided questions.
+tickets:
+  -
+    id: T13
+    act: 4
+    after: [T10, T11, T12]
+    course: 'SIO2 · Le service DHCP'
+    requester: karim
+    kind: incident
+    priority: tres-haute
+    category: 'Réseau › DHCP'
+    title: 'Le rang C n''a pas d''adresse'
+    request: 'On a passé le rang C en DHCP, comme les autres : fini les post-it. Résultat : les vingt PC du fond tournent en rond sur « Obtention d''une adresse ». Les rangs A et B, eux, en ont une. Le quart de finale attend.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Le serveur DHCP connaît le réseau du rang C, je l''ai vu dans sa configuration. Alors pourquoi personne ne leur répondait ?'
+        options:
+          - { text: 'Le serveur n''avait plus d''adresses à distribuer : la plage du rang C était épuisée, et je l''ai agrandie.', misconception: plage-epuisee, reaction: { who: nadia, expr: sourcil, text: 'Tu n''as pas touché à Kea. Et la plage du rang C n''avait encore rien donné.' } }
+          - { text: 'Les PC du rang C demandent une adresse en diffusion, et une diffusion ne passe pas un routeur. Le relais de r1 n''écoutait pas sur ens19.30 : je l''ai ajouté à ses interfaces.', ok: true, reaction: { who: karim, expr: soulage, text: 'Les PC criaient « une adresse ! » dans une pièce fermée. Le relais, c''est celui qui ouvre la porte.' } }
+          - { text: 'Le DHCP traverse les routeurs, mais le pare-feu de r1 bloquait le port 67 pour le VLAN 30 : je l''ai ouvert.', misconception: dhcp-traverse-routeurs, reaction: { who: nadia, expr: sourcil, text: 'Tu n''as pas touché au pare-feu, et le rang C a ses adresses. Une diffusion ne traverse jamais un routeur : quelqu''un doit la porter.' } }
+          - { text: 'Le VLAN 30 n''était pas déclaré sur le commutateur du rang C : les PC n''étaient reliés à rien.', misconception: vlan, reaction: { who: nadia, expr: neutre, text: 'Le VLAN 30 marchait déjà avec les adresses fixes : on l''a branché à l''acte 2.' } }
+    guide:
+      -
+        id: ou
+        kind: choice
+        prompt: 'Sur pc-c12, « dhclient -v ens18 ». Où s''arrête la demande d''adresse ?'
+        options:
+          - { text: 'Sur r1 : elle part en diffusion et personne ne la porte plus loin', ok: true }
+          - { text: 'Sur srv-dhcp : il refuse de répondre', misconception: serveur-refuse, reaction: { who: nadia, expr: neutre, text: 'srv-dhcp ne la voit même pas passer. Elle s''arrête avant.' } }
+          - { text: 'Sur le commutateur du rang C', misconception: commutateur, reaction: { who: nadia, expr: neutre, text: 'Elle traverse bien sw-rang-c et sw-core : c''est en arrivant sur r1 qu''elle se perd.' } }
+      -
+        id: localiser
+        kind: line
+        file: 'r1:/etc/default/isc-dhcp-relay'
+        prompt: 'Clique sur la ligne qui dit où le relais écoute.'
+        answer: 'INTERFACES='
+        reaction: { who: nadia, expr: neutre, text: 'Le relais écoute sur une liste d''interfaces : INTERFACES.' }
+    hints: 2
+  -
+    id: T14
+    act: 4
+    after: [T13]
+    course: 'SIO2 · Le service DHCP'
+    requester: karim
+    kind: incident
+    priority: basse
+    category: 'Réseau › DHCP'
+    title: 'L''imprimante des badges a changé d''adresse'
+    request: 'On a passé l''imprimante des badges en DHCP aussi, pour faire propre. Depuis, la régie ne la trouve plus : le logiciel des badges l''attend en 10.20.10.20, et elle a pris une autre adresse.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Comment être sûr qu''elle garde la même adresse, même si on la redémarre cent fois ?'
+        options:
+          - { text: 'Il suffit de mettre 10.20.10.20 dans la plage du serveur : elle la reprendra.', misconception: adresse-dans-plage, reaction: { who: nadia, expr: sourcil, text: 'Dans la plage, l''adresse va au premier qui la demande. Pas forcément à l''imprimante.' } }
+          - { text: 'Une réservation dans Kea lie l''adresse 10.20.10.20 à la MAC de l''imprimante : c''est toujours elle qui la reçoit, et personne d''autre.', ok: true, reaction: { who: karim, expr: soulage, text: 'Comme une place réservée à son nom. Et le logiciel des badges est content.' } }
+          - { text: 'Il faut lui fixer son adresse à la main sur l''imprimante : le DHCP ne sait pas faire ça.', misconception: dhcp-ne-reserve-pas, reaction: { who: nadia, expr: neutre, text: 'Ça marcherait, mais le serveur pourrait donner la même adresse à quelqu''un d''autre. La réservation, c''est le DHCP qui sait.' } }
+          - { text: 'Il suffit de redémarrer l''imprimante jusqu''à ce qu''elle tombe sur la bonne adresse.', misconception: redemarrer, reaction: { who: nadia, expr: sourcil, text: 'Bonne chance pour les cent prochains redémarrages.' } }
+    guide:
+      -
+        id: mac
+        kind: choice
+        prompt: 'Une réservation se fait sur quel identifiant de l''imprimante ?'
+        options:
+          - { text: 'Son adresse MAC (ip a sur l''imprimante, ligne link/ether)', ok: true }
+          - { text: 'Son nom', misconception: nom, reaction: { who: nadia, expr: neutre, text: 'Kea peut afficher un nom, mais il reconnaît une machine à sa MAC.' } }
+          - { text: 'Son adresse IP actuelle', misconception: ip-actuelle, reaction: { who: nadia, expr: sourcil, text: 'Son adresse change : c''est justement le problème.' } }
+    hints: 2
+    reward:
+      clue: 'En relisant les baux, 10.20.20.66 répond au ping mais n''a aucun bail : quelqu''un a posé cette adresse à la main, hors de la plage DHCP.'
+  -
+    id: T15
+    act: 4
+    after: [T13]
+    course: 'SIO2 · Le DNS'
+    requester: karim
+    kind: incident
+    priority: haute
+    category: 'Réseau › DNS'
+    title: 'bracket.tournoi.lan ne répond plus'
+    request: 'Le tableau du tournoi est sur bracket.tournoi.lan, tout le monde le regarde. J''ai ajouté ce nom dans la zone DNS tout à l''heure, en alias du serveur de jeu. Il ne répond pas : « nom introuvable ». srv-jeu.tournoi.lan, lui, marche.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'J''avais écrit le nom en entier, srv-jeu.tournoi.lan ! C''est plus précis, non ?'
+        options:
+          - { text: 'Le DNS met du temps à se propager : il fallait attendre.', misconception: propagation, reaction: { who: nadia, expr: sourcil, text: 'Ta modification a marché tout de suite. Ce n''était pas une question de temps.' } }
+          - { text: 'Dans une zone, un nom sans point final est complété par $ORIGIN : « srv-jeu.tournoi.lan » devenait srv-jeu.tournoi.lan.tournoi.lan. Il fallait le point final, ou le nom court « srv-jeu ».', ok: true, reaction: { who: karim, expr: soulage, text: 'Un point. Un seul point. J''ai perdu vingt minutes pour un point.' } }
+          - { text: 'Le point final est décoratif : c''était un alias interdit, j''ai mis une adresse à la place.', misconception: point-decoratif, reaction: { who: nadia, expr: neutre, text: 'Le point final dit « ce nom est complet ». Sans lui, bind9 ajoute l''origine de la zone.' } }
+          - { text: 'bind9 ne connaissait pas le serveur de jeu : je l''ai ajouté.', misconception: serveur-absent, reaction: { who: nadia, expr: sourcil, text: 'srv-jeu.tournoi.lan répondait déjà. C''est l''alias qui pointait dans le vide.' } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: 'srv-dns:/etc/bind/db.tournoi.lan'
+        prompt: 'Clique sur la ligne de l''alias.'
+        answer: bracket
+        reaction: { who: nadia, expr: neutre, text: 'L''alias, c''est un enregistrement CNAME.' }
+      -
+        id: complet
+        kind: choice
+        prompt: 'Lance « dig bracket.tournoi.lan ». Vers quel nom pointe l''alias, une fois complété par bind9 ?'
+        options:
+          - { text: 'srv-jeu.tournoi.lan.tournoi.lan.', ok: true }
+          - { text: 'srv-jeu.tournoi.lan.', misconception: point-decoratif, reaction: { who: nadia, expr: sourcil, text: 'Il n''y a pas de point final dans la zone : bind9 ajoute l''origine.' } }
+          - { text: 'srv-jeu.', misconception: lecture, reaction: { who: nadia, expr: neutre, text: 'Relis le résultat de dig.' } }
+    hints: 2
+  -
+    id: T16
+    act: 4
+    after: [T13]
+    course: 'SIO2 · Le service DHCP'
+    requester: lou
+    kind: incident
+    priority: haute
+    category: 'Réseau › DHCP'
+    title: 'Les noms ne marchent pas, les adresses si'
+    request: 'Les joueurs du rang C ne trouvent plus rien par son nom : « srv-jeu.tournoi.lan : nom inconnu ». Mais quand je tape l''adresse, 10.20.10.10, ça marche ! Les rangs A et B, pareil depuis qu''ils ont renouvelé leur bail.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Lou.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiete
+        prompt: 'Pourquoi les adresses marchent et pas les noms ? Le serveur DNS n''est pas en panne, la régie s''en sert.'
+        options:
+          - { text: 'Si le ping par adresse marche, le DNS marche aussi : c''était le cache des PC qu''il fallait vider.', misconception: ping-donc-dns, reaction: { who: nadia, expr: sourcil, text: 'Le ping par adresse ne demande rien au DNS. Ça prouve le routage, pas la résolution des noms.' } }
+          - { text: 'Le DHCP donne aussi aux PC l''adresse de leur serveur DNS : Kea annonçait 10.20.10.5, srv-dhcp, qui n''est pas un serveur DNS. Je l''ai remplacé par 10.20.10.6.', ok: true, reaction: { who: lou, expr: joie, text: 'Donc le DHCP donne l''adresse, la passerelle ET le serveur de noms. Le paquet complet !' } }
+          - { text: 'bind9 était planté : je l''ai redémarré.', misconception: redemarrer-bind, reaction: { who: nadia, expr: neutre, text: 'La régie l''utilisait sans problème. Il n''était pas planté.' } }
+          - { text: 'Les PC du rang C n''avaient pas de passerelle : je l''ai ajoutée.', misconception: passerelle, reaction: { who: nadia, expr: sourcil, text: 'Ils joignaient 10.20.10.10 : leur passerelle était bonne.' } }
+    guide:
+      -
+        id: quel
+        kind: choice
+        prompt: 'Sur pc-c12, « dhclient -v ens18 » affiche le DNS reçu. Qu''en penses-tu ?'
+        options:
+          - { text: 'C''est 10.20.10.5, srv-dhcp : ce n''est pas le serveur DNS', ok: true }
+          - { text: 'C''est 10.20.10.6, le bon', misconception: lecture, reaction: { who: nadia, expr: neutre, text: 'Relis bien la dernière ligne de dhclient.' } }
+          - { text: 'Il n''y en a pas', misconception: lecture, reaction: { who: nadia, expr: neutre, text: 'Il y en a un. Le mauvais.' } }
+    hints: 2

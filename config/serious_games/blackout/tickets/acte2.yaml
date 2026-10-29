@@ -1,0 +1,162 @@
+# Black-out - acte 2 : Un VLAN par usage.
+#
+# The server half of the tickets (design/validated/serious-games-blackout.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Nadia's
+# guided questions, the clue closing gives. The game half (bug, checks run in the network simulator,
+# views, written hints, scenes) is public/serious-games/blackout/tickets/acte2.js. Converted once
+# from the prototype's host/scenario/acte2.js; `hints` counts the written hints the game holds
+# after the guided questions.
+tickets:
+  -
+    id: T05
+    act: 2
+    after: [T01, T02, T03]
+    course: 'SIO1 · net04 Ethernet et commutation'
+    requester: roussel
+    kind: incident
+    priority: haute
+    category: 'Réseau › VLAN'
+    title: 'Le rang B est tombé chez les orgas'
+    request: 'Un joueur du rang B m''a montré son écran : son PC a une adresse en 10.20.10, comme ceux de la régie, et il voit le serveur DHCP et la régie « juste à côté de lui ». Les joueurs ne devraient pas être dans le réseau des organisateurs. Les autres rangs, eux, sont normaux.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Mme Roussel.'
+      -
+        id: solution
+        kind: explain
+        expr: severe
+        prompt: 'Comment un PC peut-il changer de réseau tout seul ? Personne n''a touché aux PC, je vous l''assure.'
+        options:
+          - { text: 'Les PC du rang B avaient un mauvais VLAN dans leur configuration ; je l''ai corrigé depuis le commutateur, pour tous à la fois.', misconception: vlan-sur-pc, reaction: { who: nadia, expr: sourcil, text: 'Les PC ne savent même pas qu''il y a des VLAN : ils envoient des trames sans étiquette. Ce n''est pas eux qui choisissent.' } }
+          - { text: 'Le serveur DHCP s''était trompé de plage et leur avait donné des adresses d''orgas.', misconception: dhcp-choisit-vlan, reaction: { who: nadia, expr: neutre, text: 'Le DHCP donne une adresse du réseau où il entend la demande. Il a répondu juste : c''est la demande qui arrivait dans le mauvais réseau.' } }
+          - { text: 'Ce n''est pas le PC qui choisit son VLAN, c''est le port du commutateur : celui du rang B rangeait tout ce qu''il recevait dans le VLAN 10 (bridge-pvid 10). Je l''ai remis dans le VLAN 20.', ok: true, reaction: { who: roussel, expr: satisfaite, text: 'C''est donc la prise qui décide. Je retiendrai l''image.' } }
+          - { text: 'Les VLAN 10 et 20 étaient sur le même commutateur, ce qui ne peut pas marcher : en attendant un commutateur par VLAN, j''ai bricolé.', misconception: un-switch-par-vlan, reaction: { who: nadia, expr: sourcil, text: 'Tout l''intérêt des VLAN, c''est justement d''en faire passer plusieurs par le même commutateur.' } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: 'sw-rang-b:/etc/network/interfaces'
+        prompt: 'Clique sur la ligne qui range dans un VLAN le port où sont branchés les PC du rang B.'
+        answer: 'bridge-pvid 10'
+        reaction: { who: nadia, expr: neutre, text: 'Cherche le port des PC du rang B, ens19, et ce qui le range dans un VLAN.' }
+      -
+        id: quel-vlan
+        kind: choice
+        prompt: 'Dans quel VLAN ce port range-t-il les trames des PC ?'
+        options:
+          - { text: 'Le 10, celui des orgas', ok: true }
+          - { text: 'Le 20, celui des joueurs', misconception: lecture, reaction: { who: nadia, expr: sourcil, text: 'Relis le nombre après bridge-pvid.' } }
+          - { text: 'Aucun : chaque PC choisit le sien', misconception: vlan-sur-pc, reaction: { who: nadia, expr: neutre, text: 'Les PC ne savent rien des VLAN. C''est le port qui range.' } }
+    hints: 2
+  -
+    id: T06
+    act: 2
+    after: [T05]
+    course: 'SIO1 · net04 Ethernet et commutation'
+    requester: karim
+    kind: demande
+    priority: haute
+    category: 'Réseau › VLAN'
+    title: 'Brancher le rang C'
+    request: 'Le rang C est installé ! sw-rang-c est branché sur sw-core, les PC ont des adresses fixes en attendant le DHCP (10.20.30.x, passerelle 10.20.30.126). Mais aucun ne joint quoi que ce soit, même pas r1. Les deux commutateurs sont allumés, j''ai vérifié trois fois.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Le câble est branché, les deux commutateurs s''allument. Pourquoi rien ne passait ?'
+        options:
+          - { text: 'Un trunk transporte tous les VLAN tout seul : c''était un conflit d''adresses entre les PC du rang C.', misconception: trunk-tout, reaction: { who: nadia, expr: sourcil, text: 'Si un trunk transportait tout tout seul, tu n''aurais rien eu à modifier. Et les adresses n''ont pas bougé.' } }
+          - { text: 'Le câble entre sw-core et sw-rang-c est un trunk : il ne transporte que les VLAN qu''on lui déclare. Le VLAN 30 manquait dans la liste du port de sw-core (bridge-vids) : les trames du rang C s''arrêtaient là.', ok: true, reaction: { who: karim, expr: soulage, text: 'Le câble était là, mais il n''avait pas le droit de transporter le rang C. Comme un bus qui ne s''arrête pas à ton arrêt.' } }
+          - { text: 'Il faut un câble par VLAN entre deux commutateurs : j''ai fait passer le rang C par le câble de l''administration.', misconception: cable-par-vlan, reaction: { who: nadia, expr: neutre, text: 'Un seul câble suffit pour tous les VLAN : c''est ce qu''on appelle un trunk.' } }
+          - { text: 'Les PC du rang C avaient une mauvaise passerelle ; je l''ai corrigée sur le commutateur.', misconception: passerelle, reaction: { who: nadia, expr: sourcil, text: 'Un commutateur ne règle pas la passerelle des PC. Et 10.20.30.126, c''est bien r1.' } }
+    guide:
+      -
+        id: quel-bout
+        kind: choice
+        prompt: 'Les deux bouts du câble doivent laisser passer le VLAN 30. Lequel ne le fait pas ?'
+        options:
+          - { text: 'Le port ens21 de sw-core', ok: true }
+          - { text: 'Le port ens18 de sw-rang-c', misconception: mauvais-bout, reaction: { who: nadia, expr: neutre, text: 'Ouvre sw-rang-c : son lien montant porte bien le 30. Regarde l''autre bout.' } }
+          - { text: 'Aucun : le problème est dans r1', misconception: routeur, reaction: { who: nadia, expr: sourcil, text: 'Un PC du rang C ne joint même pas r1 : ça coince avant.' } }
+      -
+        id: localiser
+        kind: line
+        file: 'sw-core:/etc/network/interfaces'
+        prompt: 'Clique sur la ligne qui dit quels VLAN passent sur le port ens21 de sw-core.'
+        answer: 'bridge-vids 99'
+        reaction: { who: nadia, expr: neutre, text: 'Le port ens21, et sa ligne bridge-vids.' }
+    hints: 2
+  -
+    id: T07
+    act: 2
+    after: [T05]
+    course: 'SIO1 · net04 Ethernet et commutation'
+    requester: karim
+    kind: incident
+    priority: tres-haute
+    category: 'Réseau › STP'
+    title: 'Tout s''effondre à 22 h 41'
+    request: 'TOUT est tombé d''un coup. Les trois rangs, la régie, le stream. Les voyants des commutateurs clignotent comme des fous. Un joueur a vu un câble « qui faisait une boucle » sur une table du rang B, mais personne ne le retrouve. Fais quelque chose, le quart de finale est en pause !'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: panique
+        prompt: 'Un câble. Un seul câble, et tout le réseau tombe ? Comment c''est possible ?'
+        options:
+          - { text: 'Le STP sert à accélérer le réseau : sans lui, sw-rang-b était trop lent pour suivre.', misconception: stp-vitesse, reaction: { who: nadia, expr: sourcil, text: 'Au contraire : le STP fait patienter un port quelques secondes avant de l''ouvrir. C''est d''ailleurs pour ça que quelqu''un l''avait coupé.' } }
+          - { text: 'Une boucle ralentit juste un peu le rang B ; c''est la coupure de courant qui a fait le reste.', misconception: boucle-ralentit, reaction: { who: nadia, expr: neutre, text: 'Une boucle sans STP, ce n''est pas « un peu ». Les diffusions tournent sans fin et se multiplient jusqu''à tout saturer.' } }
+          - { text: 'Le câble reliait deux prises du même commutateur : les diffusions tournaient en rond sans fin, se multipliaient et saturaient tous les commutateurs. Le STP était coupé sur sw-rang-b ; rallumé, il bloque un des deux ports de la boucle.', ok: true, reaction: { who: karim, expr: soulage, text: 'Donc le câble peut rester là, le réseau s''en protège tout seul. Le quart reprend !' } }
+          - { text: 'Il suffisait de débrancher le câble : le STP n''y est pour rien.', misconception: debrancher-suffit, reaction: { who: nadia, expr: sourcil, text: 'Ce soir, oui. Mais la prochaine boucle tombera pareil. Le STP, lui, reste allumé.' } }
+    guide:
+      -
+        id: ou
+        kind: choice
+        prompt: 'Sur la carte, où est la boucle ?'
+        options:
+          - { text: 'Sur sw-rang-b, entre deux de ses propres prises', ok: true }
+          - { text: 'Entre sw-core et r1', misconception: pas-de-boucle-la, reaction: { who: nadia, expr: neutre, text: 'Un seul câble entre eux : pas de boucle possible. Regarde du côté du rang B.' } }
+          - { text: 'Il n''y a pas de boucle, c''est une panne de courant', misconception: panne, reaction: { who: nadia, expr: sourcil, text: 'Les voyants clignotent comme des fous : ils sont bien alimentés.' } }
+      -
+        id: localiser
+        kind: line
+        file: 'sw-rang-b:/etc/network/interfaces'
+        prompt: 'Clique sur la ligne qui, sur sw-rang-b, devrait empêcher une boucle de tout faire tomber.'
+        answer: 'bridge-stp off'
+        reaction: { who: nadia, expr: neutre, text: 'C''est une option du pont, br0.' }
+    hints: 2
+    reward:
+      clue: 'La boucle était branchée sur la table B14, entre les prises B13 et B15. Personne n''est inscrit à cette place.'
+  -
+    id: T08
+    act: 2
+    after: [T05]
+    requester: roussel
+    kind: demande
+    priority: moyenne
+    category: 'Organisation'
+    title: '« Un seul grand réseau, ce sera plus simple »'
+    request: 'Monsieur le proviseur trouve vos VLAN bien compliqués. Il propose qu''on mette tout le monde dans un seul grand réseau, « comme à la maison ». Ce serait plus simple pour tout le monde, non ? Répondez-moi, je transmettrai.'
+    steps:
+      -
+        id: reponse
+        kind: choice
+        label: 'Répondre'
+        prompt: 'Que réponds-tu à Mme Roussel ?'
+        options:
+          - { text: 'Oui : les VLAN ralentissent le réseau, on gagnerait en vitesse.', misconception: vlan-lents, reaction: { who: nadia, expr: sourcil, text: 'Un VLAN, c''est une étiquette de quatre octets sur une trame. Personne ne la sent passer.' } }
+          - { text: 'Oui, à condition de mettre des mots de passe partout : ça suffira à protéger la régie.', misconception: mots-de-passe-suffisent, reaction: { who: nadia, expr: neutre, text: 'Les mots de passe protègent les comptes, pas le réseau : dans un seul réseau, un tricheur entend tout et peut se faire passer pour n''importe qui.' } }
+          - { text: 'Non : séparer les joueurs des orgas limite ce que chacun voit et ce qu''une panne ou un tricheur peut toucher. Dans un seul réseau, chaque joueur serait à côté de la régie et du serveur DHCP.', ok: true, reaction: { who: roussel, expr: satisfaite, text: 'Je transmettrai. Avec vos mots, pas les miens.' } }
+          - { text: 'Oui : à la maison, tout est dans un seul réseau, et ça marche très bien.', misconception: comme-a-la-maison, reaction: { who: nadia, expr: sourcil, text: 'À la maison, il n''y a pas deux cents joueurs, dont un qui sabote le tournoi.' } }
+    hints: 0

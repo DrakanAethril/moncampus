@@ -1,0 +1,141 @@
+# Black-out - acte 5 : Ouverture sur Internet.
+#
+# The server half of the tickets (design/validated/serious-games-blackout.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Nadia's
+# guided questions, the clue closing gives. The game half (bug, checks run in the network simulator,
+# views, written hints, scenes) is public/serious-games/blackout/tickets/acte5.js. Converted once
+# from the prototype's host/scenario/acte5.js; `hints` counts the written hints the game holds
+# after the guided questions.
+tickets:
+  -
+    id: T17
+    act: 5
+    after: [T14, T15, T16]
+    course: 'SIO1 · net07 Transport et HTTP'
+    requester: karim
+    kind: incident
+    priority: haute
+    category: 'Réseau › NAT'
+    title: 'Le site d''inscription est injoignable de l''extérieur'
+    request: 'Les parents doivent s''inscrire ce soir pour assister à la finale demain. Le site est en ligne dans la DMZ, je le vois depuis la régie. Mais depuis chez eux, rien : « le délai d''attente est dépassé ». Ça marchait cet après-midi, avant qu''on « range » r1.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Le site tourne, la box laisse passer le 443… Qu''est-ce qui manquait ?'
+        options:
+          - { text: 'Il suffisait d''ouvrir le port 443 sur r1 : un port ouvert, c''est un site joignable.', misconception: ouvrir-suffit, reaction: { who: nadia, expr: sourcil, text: 'Ouvert vers qui ? Le paquet arrive sur l''adresse de r1 : il faut lui dire à quelle machine le confier.' } }
+          - { text: 'La redirection de r1 confiait le 443 à 10.20.50.11, une machine qui n''existe pas : le site est en 10.20.50.10. J''ai corrigé l''adresse du dnat.', ok: true, reaction: { who: karim, expr: soulage, text: 'Les inscriptions tombent ! Douze parents en une minute. Dont ma mère.' } }
+          - { text: 'Le NAT protège le site : il fallait le désactiver pour que les parents passent.', misconception: nat-protege, reaction: { who: nadia, expr: neutre, text: 'Le NAT traduit des adresses ; il ne protège rien. Et sans lui, aucune adresse privée ne serait joignable depuis Internet.' } }
+          - { text: 'Le site écoutait sur le mauvais port : je l''ai mis sur le 80.', misconception: port-du-site, reaction: { who: nadia, expr: sourcil, text: 'Tu n''as pas touché au site, et les parents arrivent en HTTPS, sur le 443.' } }
+    guide:
+      -
+        id: quoi
+        kind: choice
+        prompt: 'Depuis Internet, un parent vise 203.0.113.2:443. La box le confie à r1. Que doit faire r1 de ce paquet ?'
+        options:
+          - { text: 'Changer sa destination pour l''adresse du site, dans la DMZ (dnat)', ok: true }
+          - { text: 'Le garder pour lui', misconception: garder, reaction: { who: nadia, expr: neutre, text: 'r1 n''héberge pas le site. Il doit le confier à www.' } }
+          - { text: 'Changer sa source (masquerade)', misconception: masquerade, reaction: { who: nadia, expr: sourcil, text: 'Ça, c''est pour sortir. Pour entrer vers un serveur, on change la destination.' } }
+      -
+        id: localiser
+        kind: line
+        file: 'r1:/etc/nftables.conf'
+        prompt: 'Clique sur la règle qui redirige le 443.'
+        answer: 'dnat to'
+        reaction: { who: nadia, expr: neutre, text: 'Dans la table nat, chaîne prerouting.' }
+    hints: 2
+  -
+    id: T18
+    act: 5
+    after: [T17]
+    course: 'SIO2 · Le service HTTP'
+    requester: roussel
+    kind: incident
+    priority: haute
+    category: 'Sécurité › Certificats'
+    title: 'Le certificat est au mauvais nom'
+    request: 'Trois parents m''ont appelée : leur navigateur affiche « Votre connexion n''est pas privée » sur le site d''inscription. Deux ont renoncé, le troisième m''a demandé si nous étions piratés. Je voudrais pouvoir lui répondre non.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Mme Roussel.'
+      -
+        id: solution
+        kind: explain
+        expr: severe
+        prompt: 'Le site a bien un cadenas, il est en HTTPS. Pourquoi cette alerte ?'
+        options:
+          - { text: 'Le cadenas garantit que le site est honnête : l''alerte venait d''un antivirus trop zélé chez les parents.', misconception: cadenas-honnete, reaction: { who: nadia, expr: sourcil, text: 'Le cadenas garantit que la connexion est chiffrée, et avec qui. Pas que le site est honnête.' } }
+          - { text: 'Un certificat n''est valable que pour les noms qu''il contient. nginx présentait celui de www.tournoi.example sur inscriptions.tournoi.example : je lui ai donné le bon fichier.', ok: true, reaction: { who: roussel, expr: satisfaite, text: 'Donc le site prouvait être un autre site. Je comprends l''inquiétude du parent. Merci.' } }
+          - { text: 'Il faut un certificat par adresse IP : j''en ai demandé un pour 203.0.113.2.', misconception: certificat-par-ip, reaction: { who: nadia, expr: neutre, text: 'Les certificats web portent des noms, pas des adresses. Et tu n''en as demandé aucun.' } }
+          - { text: 'Le certificat avait expiré pendant la coupure de courant.', misconception: expire, reaction: { who: nadia, expr: sourcil, text: 'Regarde ses dates : il est valable jusqu''en décembre.' } }
+    guide:
+      -
+        id: quel
+        kind: choice
+        prompt: 'Depuis la console de la régie, « curl -I https://inscriptions.tournoi.example » ne marchera pas (la box ne boucle pas). Lis plutôt les deux certificats du serveur. Lequel nginx présente-t-il ?'
+        options:
+          - { text: 'Celui de www.tournoi.example', ok: true }
+          - { text: 'Celui de inscriptions.tournoi.example', misconception: lecture, reaction: { who: nadia, expr: neutre, text: 'Relis la ligne ssl_certificate de nginx.' } }
+          - { text: 'Aucun : le site n''est pas en HTTPS', misconception: pas-https, reaction: { who: nadia, expr: sourcil, text: 'listen 443 ssl : il l''est.' } }
+    hints: 2
+  -
+    id: T19
+    act: 5
+    after: [T17]
+    requester: lou
+    kind: demande
+    priority: moyenne
+    category: 'Sécurité › Pare-feu'
+    title: '« Ouvre tous les ports vers ma machine »'
+    request: 'Le stream a coupé deux fois tout à l''heure. Sur un forum, on m''a dit d''ouvrir tous les ports vers mon encodeur, « comme ça le stream est sûr de sortir ». Tu peux me faire ça vite ? Une DMZ, c''est fait pour ça, non ?'
+    steps:
+      -
+        id: reponse
+        kind: choice
+        label: 'Répondre'
+        prompt: 'Que réponds-tu à Lou ?'
+        options:
+          - { text: 'D''accord : je redirige tous les ports de la box vers l''encodeur.', misconception: tout-ouvrir, reaction: { who: nadia, expr: sourcil, text: 'Et l''encodeur se retrouve exposé à tout Internet, pour un flux qui ne fait que sortir.' } }
+          - { text: 'Non : le stream sort de l''encodeur vers la plateforme. C''est une connexion sortante : elle n''a besoin d''aucun port entrant. Ouvrir n''apporterait que des risques.', ok: true, reaction: { who: lou, expr: joie, text: 'Donc mon flux part comme un appel que je passe, pas comme un appel que je reçois. Le forum disait n''importe quoi.' } }
+          - { text: 'Oui, mais seulement le port du stream en entrée : pour envoyer, il faut toujours un port ouvert en entrée.', misconception: port-entrant-pour-envoyer, reaction: { who: nadia, expr: neutre, text: 'Pour envoyer, on ouvre une connexion sortante ; le NAT laisse revenir les réponses. Rien à ouvrir en entrée.' } }
+          - { text: 'Oui : une DMZ, c''est justement là où l''on ouvre tout.', misconception: dmz-tout-ouvert, reaction: { who: nadia, expr: sourcil, text: 'Une DMZ isole ce qui est exposé. On y ouvre le strict nécessaire, pas tout.' } }
+    hints: 0
+  -
+    id: T20
+    act: 5
+    after: [T17]
+    requester: nadia
+    kind: incident
+    priority: haute
+    category: 'Sécurité › Journaux'
+    title: 'Quelqu''un frappe à toutes les portes'
+    request: 'Le serveur du site d''inscription s''est mis à ramer. En regardant les connexions vers la DMZ, j''en vois de bien étranges, et pas seulement depuis Internet. Regarde le résumé et trouve d''où vient le balayage.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Désigner'
+        view: conntrack
+        prompt: 'Clique sur la ligne qui montre d''où vient le balayage des ports du site.'
+        answer: '10.20.20.66'
+        reaction: { who: nadia, expr: sourcil, text: 'Un parent qui s''inscrit vise le 443, et rien d''autre. Cherche quelqu''un qui essaie tous les ports.' }
+      -
+        id: dou
+        kind: choice
+        label: 'Conclure'
+        prompt: 'D''où vient le balayage ?'
+        options:
+          - { text: 'D''Internet : un pirate attaque le site d''inscription', misconception: balayage-internet, reaction: { who: nadia, expr: neutre, text: 'Regarde l''adresse source : 10.20.20.66, c''est une adresse de la salle.' } }
+          - { text: 'De l''intérieur : d''un poste du VLAN des joueurs, 10.20.20.66', ok: true, reaction: { who: nadia, expr: sourcil, text: 'L''adresse sans bail, encore elle. Notre fantôme s''intéresse à la DMZ.' } }
+          - { text: 'Du site lui-même, qui se teste', misconception: auto-test, reaction: { who: nadia, expr: neutre, text: 'Le site est en 10.20.50.10. La source est ailleurs.' } }
+    hints: 0
+    reward:
+      clue: 'À 23:47, 10.20.20.66 a balayé un millier de ports du site d''inscription, dans la DMZ.'

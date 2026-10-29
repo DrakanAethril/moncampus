@@ -1,0 +1,169 @@
+# Black-out - acte 1 : Le local technique.
+#
+# The server half of the tickets (design/validated/serious-games-blackout.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Nadia's
+# guided questions, the clue closing gives. The game half (bug, checks run in the network simulator,
+# views, written hints, scenes) is public/serious-games/blackout/tickets/acte1.js. Converted once
+# from the prototype's host/scenario/acte1.js; `hints` counts the written hints the game holds
+# after the guided questions.
+tickets:
+  -
+    id: T01
+    act: 1
+    course: 'SIO1 · net02 Adressage IPv4'
+    requester: nadia
+    kind: incident
+    priority: tres-haute
+    category: 'Réseau › Interfaces'
+    title: 'Le routeur ne s''est pas relevé'
+    request: 'Le courant est revenu, r1 a redémarré, et plus rien ne passe entre la salle et les serveurs. Les joueurs n''atteignent plus srv-jeu, la régie n''atteint même plus sa passerelle. Avant la coupure, tout marchait. Commence par la configuration réseau de r1.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Nadia.'
+      -
+        id: solution
+        kind: explain
+        expr: sourcil
+        prompt: 'Écris-moi la solution du ticket, pour le cahier de liaison. Pourquoi ça n''est tombé qu''au redémarrage ?'
+        options:
+          - { text: 'r1 avait mal redémarré après la coupure : un second redémarrage aurait suffi, la configuration n''y était pour rien.', misconception: redemarrer-encore, reaction: { who: nadia, expr: sourcil, text: 'Redémarre-le dix fois : sans sa ligne « auto », l''interface reste éteinte dix fois.' } }
+          - { text: 'La ligne « auto ens19.10 » manquait : sans elle, l''interface du VLAN 10 n''est pas montée au démarrage. Quelqu''un l''avait sans doute montée à la main avant la coupure, et ça ne survit pas à un redémarrage.', ok: true, reaction: { who: nadia, expr: sourire, text: 'Exactement. Un « ifup » à la main, c''est une réparation qui meurt au prochain redémarrage. Le fichier, lui, reste.' } }
+          - { text: 'Le câble du trunk entre r1 et sw-core s''était débranché pendant la coupure : je l''ai rebranché.', misconception: cable, reaction: { who: nadia, expr: sourcil, text: 'Tu n''as touché à aucun câble. Et les VLAN 20 et 40 passaient par ce même câble pendant tout ce temps.' } }
+          - { text: 'L''adresse 10.20.10.254 s''était effacée pendant la coupure : il a fallu la réécrire dans le fichier.', misconception: adresse-effacee, reaction: { who: nadia, expr: neutre, text: 'L''adresse était dans le fichier, intacte. Elle n''était juste jamais appliquée.' } }
+    guide:
+      -
+        id: quel-vlan
+        kind: choice
+        prompt: 'Depuis la régie, ping 10.20.10.254 ne répond pas, alors que les PC du rang A joignent 10.20.20.254. Qu''est-ce que ça dit ?'
+        options:
+          - { text: 'Que r1 marche, sauf son interface du VLAN 10', ok: true }
+          - { text: 'Que r1 est éteint', misconception: routeur-eteint, reaction: { who: nadia, expr: sourcil, text: 'Éteint, il ne répondrait pas non plus au rang A. Il marche, à moitié.' } }
+          - { text: 'Que la régie est en panne', misconception: poste-en-panne, reaction: { who: nadia, expr: neutre, text: 'La régie joint l''imprimante, juste à côté. C''est plus loin que ça coince.' } }
+      -
+        id: localiser
+        kind: line
+        file: 'r1:/etc/network/interfaces'
+        prompt: 'Clique sur la déclaration de l''interface qui ne monte pas.'
+        answer: 'iface ens19.10'
+        reaction: { who: nadia, expr: neutre, text: 'C''est l''interface du VLAN 10, celle des orgas : ens19.10.' }
+    hints: 2
+  -
+    id: T02
+    act: 1
+    after: [T01]
+    course: 'SIO1 · net02 Adressage IPv4'
+    requester: karim
+    kind: incident
+    priority: haute
+    category: 'Réseau › Adressage'
+    title: 'La régie ne voit pas l''imprimante des badges'
+    request: 'On imprime les badges des joueurs à la régie, et l''imprimante ne répond plus depuis la coupure. Elle est allumée, elle clignote, elle est branchée. Le boîtier qui la pilote a été réinitialisé par quelqu''un « pour aider ».'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Mais l''imprimante et la régie sont dans le même réseau, non ? 10.20.10.quelque chose, toutes les deux !'
+        options:
+          - { text: 'Le masque ne sert qu''aux routeurs, l''imprimante l''ignore : le vrai problème était un conflit d''adresses avec la régie.', misconception: masque-routeur, reaction: { who: nadia, expr: sourcil, text: 'Chaque machine se sert de son masque pour savoir qui est « chez elle ». Et il n''y avait aucun conflit : tu n''as changé aucune adresse.' } }
+          - { text: 'Un /25 contient plus d''adresses qu''un /24 : l''imprimante cherchait la régie dans un réseau trop grand et s''y perdait.', misconception: '25-plus-grand', reaction: { who: nadia, expr: neutre, text: 'C''est l''inverse : chaque bit de masque en plus coupe le réseau en deux. /24, 256 adresses ; /25, 128.' } }
+          - { text: 'Pas pour l''imprimante : avec un /25, son réseau s''arrêtait à 10.20.10.127. La régie, en .130, était ailleurs pour elle, et sa passerelle aussi. Avec /24, tout le 10.20.10.x redevient son réseau.', ok: true, reaction: { who: karim, expr: soulage, text: 'Donc elles étaient côte à côte, mais l''imprimante croyait la régie à l''autre bout du monde. D''accord !' } }
+          - { text: 'Deux adresses qui commencent par 10.20.10 sont toujours dans le même réseau : il suffisait de redémarrer l''imprimante.', misconception: meme-debut, reaction: { who: nadia, expr: sourcil, text: 'Le début commun ne compte que sur la longueur du masque. Avec /25, il faut aussi le même premier bit du dernier octet.' } }
+    guide:
+      -
+        id: localiser
+        kind: line
+        file: 'imprimante:/etc/network/interfaces'
+        prompt: 'Clique sur la ligne qui définit le réseau de l''imprimante.'
+        answer: 'address 10.20.10.20/25'
+        reaction: { who: nadia, expr: neutre, text: 'L''adresse et son masque, sur la même ligne : c''est la ligne « address ».' }
+      -
+        id: etendue
+        kind: choice
+        prompt: 'Avec /25, jusqu''où va le réseau de l''imprimante ?'
+        options:
+          - { text: 'De 10.20.10.0 à 10.20.10.127', ok: true }
+          - { text: 'De 10.20.10.0 à 10.20.10.255', misconception: '25-plus-grand', reaction: { who: nadia, expr: neutre, text: 'Ça, c''est un /24. Un bit de plus, et le réseau est coupé en deux.' } }
+          - { text: 'De 10.20.0.0 à 10.20.255.255', misconception: masque-a-l-envers, reaction: { who: nadia, expr: sourcil, text: 'Ça, c''est un /16 : un masque plus court, pas plus long.' } }
+    hints: 2
+  -
+    id: T03
+    act: 1
+    after: [T01]
+    course: 'SIO1 · net05 Le routage'
+    requester: karim
+    kind: incident
+    priority: tres-haute
+    category: 'Réseau › Passerelle'
+    title: 'Le serveur de jeu ne répond qu''à la régie'
+    request: 'srv-jeu répond depuis la régie, mais aucun PC joueur n''arrive à s''y connecter. Les joueurs ont leur adresse, ils voient r1… Le serveur a été réinstallé hier soir par l''ancien bénévole, celui qui a tout monté.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Trouve la cause, répare-la, puis livre ta correction à Karim.'
+      -
+        id: solution
+        kind: explain
+        expr: inquiet
+        prompt: 'Pourquoi la régie y arrivait et pas les joueurs ? C''est le même serveur !'
+        options:
+          - { text: 'La passerelle ne sert qu''à aller sur Internet : le problème était un pare-feu sur srv-jeu qui bloquait les joueurs.', misconception: passerelle-internet, reaction: { who: nadia, expr: sourcil, text: 'La passerelle sert pour tout ce qui n''est pas dans ton réseau : Internet, mais aussi les autres VLAN.' } }
+          - { text: 'La régie est dans le même réseau que srv-jeu : il lui répond directement. Les joueurs sont dans un autre réseau : pour leur répondre, srv-jeu passe par sa passerelle, et 10.20.10.1 n''existe pas. C''est r1, en .254.', ok: true, reaction: { who: karim, expr: soulage, text: 'Le serveur entendait les joueurs, mais il leur répondait dans le vide. Génial, ça va me hanter.' } }
+          - { text: 'La passerelle doit être dans un autre réseau que le serveur : 10.20.10.1 était trop proche.', misconception: passerelle-autre-reseau, reaction: { who: nadia, expr: neutre, text: 'Au contraire : une passerelle est toujours dans ton réseau, sinon tu ne pourrais pas lui parler. .254 est dans le même réseau que .1.' } }
+          - { text: 'Les joueurs étaient bloqués par le pare-feu de r1 ; la passerelle n''était qu''un détail.', misconception: pare-feu, reaction: { who: nadia, expr: sourcil, text: 'Tu n''as touché à aucun pare-feu. Et ce soir, r1 n''en a pas encore.' } }
+    guide:
+      -
+        id: sens
+        kind: choice
+        prompt: 'Lance un ping de pc-a01 vers srv-jeu et regarde la carte. Qu''est-ce qui ne passe pas ?'
+        options:
+          - { text: 'L''aller arrive à srv-jeu : c''est sa réponse qui ne revient pas', ok: true }
+          - { text: 'r1 ne fait pas suivre le ping vers srv-jeu', misconception: routeur-bloque, reaction: { who: nadia, expr: neutre, text: 'Regarde mieux la carte : le ping arrive jusqu''à srv-jeu.' } }
+          - { text: 'pc-a01 n''a pas d''adresse', misconception: poste-sans-adresse, reaction: { who: nadia, expr: neutre, text: 'Il en a une : « ip a » sur pc-a01.' } }
+      -
+        id: localiser
+        kind: line
+        file: 'srv-jeu:/etc/network/interfaces'
+        prompt: 'Clique sur la ligne par laquelle srv-jeu renvoie ce qui n''est pas pour son réseau.'
+        answer: 'gateway 10.20.10.1'
+        reaction: { who: nadia, expr: neutre, text: 'Ce qui n''est pas pour son réseau part vers… sa passerelle.' }
+    hints: 2
+  -
+    id: T04
+    act: 1
+    after: [T01]
+    course: 'SIO1 · net06 Sous-réseaux et VLSM'
+    requester: karim
+    kind: demande
+    priority: moyenne
+    category: 'Réseau › Plan d''adressage'
+    title: 'Combien d''adresses pour le rang C ?'
+    request: 'On ajoute le rang C dans la nuit : 60 PC, deux imprimantes de scores, et la passerelle. Nadia veut le réseau le plus petit possible, « pour que le plan reste lisible ». Tu me dis quel masque ?'
+    steps:
+      -
+        id: compter
+        kind: choice
+        label: 'Compter'
+        prompt: 'Combien d''adresses faut-il pouvoir donner, au minimum ?'
+        options:
+          - { text: '62 : les 60 PC et les deux imprimantes', misconception: oubli-passerelle, reaction: { who: nadia, expr: sourcil, text: 'Et la passerelle ? Elle aussi prend une adresse dans le réseau.' } }
+          - { text: '63 : les 60 PC, les deux imprimantes et la passerelle', ok: true }
+          - { text: '65 : il faut compter l''adresse du réseau et celle de diffusion', misconception: reseau-diffusion-comptees, reaction: { who: nadia, expr: neutre, text: 'Pas dans ce qu''on donne : aucune machine ne les prend. On les retirera du bloc, pas du besoin.' } }
+      -
+        id: masque
+        kind: choice
+        label: 'Choisir'
+        prompt: 'Quel masque pour le réseau du rang C ?'
+        options:
+          - { text: '/26 : 64 adresses, ça tombe pile', misconception: '26-64-machines', reaction: { who: nadia, expr: sourcil, text: '64 adresses, dont la première est celle du réseau et la dernière celle de diffusion : il en reste 62. Il en manque une.' } }
+          - { text: '/25 : 128 adresses, dont 126 utilisables', ok: true, reaction: { who: karim, expr: soulage, text: '/25, noté. Nadia a déjà prévu 10.20.30.0/25, passerelle en .126. Vous vous êtes concertés ?' } }
+          - { text: '/24 : on ne sait jamais', misconception: '24-par-principe', reaction: { who: nadia, expr: neutre, text: 'Ça marcherait, mais j''ai demandé le plus petit. Un /24, c''est le double de ce qu''il faut.' } }
+          - { text: '/27 : 32 adresses, on en rajoutera', misconception: '27-trop-petit', reaction: { who: nadia, expr: sourcil, text: '30 adresses utilisables pour 63 machines : la moitié du rang resterait dehors.' } }
+    hints: 0

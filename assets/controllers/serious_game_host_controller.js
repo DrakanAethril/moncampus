@@ -311,12 +311,16 @@ export default class extends Controller {
     }
 
     /**
-     * What is relayed of a step's input: an option's rank, a line's or a password's text, or a
-     * delivery's result - `{passed, failed}`, never the files the game sends along with it.
+     * What is relayed of a step's input: an option's rank, a line's or a password's text, the
+     * ranks of an order's items as placed, or a delivery's result - `{passed, failed}`, never the
+     * files the game sends along with it.
      */
     stepInput(input) {
         if ('number' === typeof input) {
             return Number.isInteger(input) ? input : null;
+        }
+        if (Array.isArray(input)) {
+            return input.slice(0, 30).map((rank) => (Number.isInteger(rank) ? rank : -1));
         }
         if ('string' === typeof input) {
             return input.slice(0, 500);

@@ -6,6 +6,7 @@ namespace App\Tests\SeriousGame\Scenario;
 
 use App\SeriousGame\Scenario\ScenarioInputRefused;
 use App\SeriousGame\Scenario\ScenarioRules;
+use App\SeriousGame\Scenario\ScenarioStep;
 use App\SeriousGame\Scenario\ScenarioStepKind;
 use PHPUnit\Framework\TestCase;
 
@@ -149,6 +150,36 @@ class ScenarioRulesTest extends TestCase
         self::assertFalse($wrong->ok);
         self::assertNull($wrong->stored);
         self::assertNotNull($wrong->reaction);
+    }
+
+    public function testAnOrderIsRightOnlyInTheExpectedOrderAndNeverShowsIt(): void
+    {
+        $step = ScenarioStep::fromArray(['id' => 'chronologie', 'kind' => 'order', 'prompt' => 'Dans l’ordre.', 'items' => ['02:11', '21:52', '23:47'], 'answer' => [1, 2, 0]]);
+        self::assertNotNull($step);
+
+        self::assertTrue(ScenarioRules::grade($step, [1, 2, 0], '')->ok);
+        self::assertTrue(ScenarioRules::grade($step, ['1', '2', '0'], '')->ok, 'ranks may come as strings');
+        $wrong = ScenarioRules::grade($step, [0, 1, 2], '', 'nadia');
+        self::assertFalse($wrong->ok);
+        self::assertSame('0,1,2', $wrong->stored);
+        self::assertSame('nadia', $wrong->reaction['who'] ?? null);
+        self::assertFalse(ScenarioRules::grade($step, [1, 2], '')->ok);
+        self::assertFalse(ScenarioRules::grade($step, 'tout', '')->ok);
+
+        $view = $step->publicView();
+        self::assertSame(['02:11', '21:52', '23:47'], $view['items']);
+        self::assertArrayNotHasKey('answer', $view);
+        self::assertArrayNotHasKey('order', $view);
+    }
+
+    public function testADefaultReactionIsSaidByTheScenarioHelper(): void
+    {
+        $step = ScenarioFixture::scenario()->ticket('T1')?->step('expliquer');
+        self::assertNotNull($step);
+
+        self::assertSame('ines', ScenarioRules::grade($step, 2, 'Neko')->reaction['who'] ?? null);
+        self::assertSame('nadia', ScenarioRules::grade($step, 2, 'Neko', 'nadia')->reaction['who'] ?? null);
+        self::assertSame('ines', ScenarioRules::grade($step, 0, 'Neko', 'nadia')->reaction['who'] ?? null, 'a written reaction keeps its speaker');
     }
 
     public function testThePiecesOfThePasswordAndTheCluesComeFromClosedTickets(): void
