@@ -127,10 +127,29 @@
       var again = h('<button type="button" class="btn btn-cyan">REVOIR LE PROLOGUE<small>La coupure de 21 h 47</small></button>');
       again.addEventListener('click', function () { playScene(STORY.prologue, { tag: 'PROLOGUE', sub: 'VENDREDI · 21:46' }); });
       nav.appendChild(again);
+      // Two clicks, never a confirm(): the first one only says what the second will do.
+      var restart = h('<button type="button" class="btn btn-fantome">RECOMMENCER DEPUIS LE DÉBUT<small>Les tickets repartent de zéro ; ta collection et ton grade restent</small></button>');
+      restart.addEventListener('click', function () {
+        if (!restart.classList.contains('armed')) {
+          restart.classList.add('armed');
+          restart.innerHTML = 'CONFIRMER : TOUT RECOMMENCER<small>Les tickets clos et en cours repartent de zéro</small>';
+          return;
+        }
+        SND.click(); newGame(restart);
+      });
+      nav.appendChild(restart);
     }
     nav.appendChild(soundButton());
     app.appendChild(view);
     first.focus();
+  }
+  // « Nouvelle partie »: the platform puts the tickets back to zero, the game its display state.
+  function newGame(button) {
+    button.disabled = true;
+    api('newGame').then(function () {
+      G.data = { seen: {}, drafts: {}, mute: SND.muted() }; save(true);
+      return refreshScenario();
+    }).then(showTitle).catch(function (e) { button.disabled = false; notice('Impossible de recommencer la partie : ' + e.message); });
   }
   function soundButton() {
     var b = h('<button type="button" class="btn btn-fantome" aria-pressed="' + (!SND.muted()) + '">' + (SND.muted() ? 'SON COUPÉ' : 'SON ACTIVÉ') + '</button>');
@@ -904,13 +923,7 @@
       var inv = h('<button type="button" class="btn btn-cyan">L\'INVENTAIRE DE L\'ENQUÊTE<small>Les cinq indices</small></button>');
       inv.addEventListener('click', showInventory);
       var fresh = h('<button type="button" class="btn btn-fantome">NOUVELLE PARTIE<small>Les tickets repartent de zéro ; ta collection et ton grade restent</small></button>');
-      fresh.addEventListener('click', function () {
-        fresh.disabled = true;
-        api('newGame').then(function () {
-          G.data = { seen: {}, drafts: {}, mute: SND.muted() }; save(true);
-          return refreshScenario();
-        }).then(showTitle).catch(function (e) { fresh.disabled = false; say('nadia', 'sourcil', 'Erreur de la plateforme : ' + e.message); });
-      });
+      fresh.addEventListener('click', function () { newGame(fresh); });
       nav.appendChild(again); nav.appendChild(inv); nav.appendChild(fresh);
       app.appendChild(v);
     });

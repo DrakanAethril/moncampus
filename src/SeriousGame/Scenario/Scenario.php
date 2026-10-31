@@ -33,6 +33,7 @@ final readonly class Scenario
         private array $tickets,
         private array $misconceptions,
         private string $helper,
+        private bool $restartAnytime,
     ) {
     }
 
@@ -73,6 +74,7 @@ final readonly class Scenario
             $tickets,
             $misconceptions,
             \is_string($data['helper'] ?? null) && '' !== $data['helper'] ? $data['helper'] : 'ines',
+            true === ($data['restart_anytime'] ?? null),
         );
     }
 
@@ -85,6 +87,15 @@ final readonly class Scenario
     public function helper(): string
     {
         return $this->helper;
+    }
+
+    /**
+     * Whether « Nouvelle partie » is offered before the end too. The Neko-Con rule (§3.5) waits for
+     * the certificate; a game whose manifest says `restart_anytime: true` starts again at any time.
+     */
+    public function restartAnytime(): bool
+    {
+        return $this->restartAnytime;
     }
 
     public function capacity(): int
