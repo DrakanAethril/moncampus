@@ -42,6 +42,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visib
 .btn-cyan { border: 2px solid var(--cyan); color: var(--texte); }
 .btn-blanc { background: var(--texte); color: var(--fond); clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%); padding-right: 30px; }
 .btn-fantome { color: var(--texte-3); }
+.btn-fantome.armed { color: var(--magenta-2); }
 .btn:hover:not([disabled]) { filter: brightness(1.08); }
 .btn[disabled] { opacity: .45; cursor: not-allowed; }
 .chip { display: inline-flex; align-items: center; padding: 2px 10px; font-family: var(--titre); font-weight: 700; font-size: 12px; letter-spacing: .06em; transform: skewX(-12deg); white-space: nowrap; }
