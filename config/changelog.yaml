@@ -26,6 +26,16 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.31'
+      date: '2026-10-31'
+      summary: "Le jeu d'entraînement de la nuit de LAN party, toujours en essai auprès de l'administration, gagne une carte de la salle en grand et la possibilité de recommencer la nuit depuis le début."
+      entries:
+          - type: modification
+            title: "Jeu de la nuit de LAN party : la carte de la salle s'agrandit, avec la console à côté"
+            detail: "Cliquer une machine s'y connecte, et un test de connexion trace son chemin sur la carte jusqu'à l'endroit où il s'arrête."
+          - type: modification
+            title: "Jeu de la nuit de LAN party : recommencer la nuit depuis le début à tout moment"
+            detail: "Les tickets repartent de zéro ; la collection et le grade atteint restent."
     - version: '2026.10.29.3'
       date: '2026-10-29'
       summary: "Un troisième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration : une boutique de jeux rétro dont le stock ne tombe jamais juste, pour les bases de données et le SQL en deuxième année de BTS SIO."

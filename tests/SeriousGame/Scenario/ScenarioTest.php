@@ -27,6 +27,13 @@ class ScenarioTest extends TestCase
         self::assertSame(['T1', 'T2', 'T3', 'T4'], $scenario->ticketIds());
     }
 
+    public function testAGameRestartsOnlyOnceFinishedUnlessItsManifestSaysOtherwise(): void
+    {
+        self::assertFalse(ScenarioFixture::scenario()->restartAnytime(), 'the Neko-Con rule: after the certificate');
+        self::assertTrue(Scenario::fromArray(['restart_anytime' => true])->restartAnytime());
+        self::assertFalse(Scenario::fromArray(['restart_anytime' => 'yes'])->restartAnytime(), 'a boolean, nothing else');
+    }
+
     public function testATicketTakesItsDefaults(): void
     {
         $ticket = ScenarioFixture::scenario()->ticket('T1');

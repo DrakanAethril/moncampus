@@ -37,6 +37,9 @@ scenario:
   helper: nadia
   # No password: the last ticket ends on the timeline of the report.
   password: []
+  # « Recommencer depuis le début » on the title screen, before the end too (the user's request of
+  # 2026-10-31); the Neko-Con waits for the certificate.
+  restart_anytime: true
   acts:
     - { n: 1, title: "Le local technique", tools: [carte, console] }
     - { n: 2, title: "Un VLAN par usage", tools: [carte, console] }

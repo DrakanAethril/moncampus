@@ -127,10 +127,29 @@
       var again = h('<button type="button" class="btn btn-cyan">REVOIR LE PROLOGUE<small>La coupure de 21 h 47</small></button>');
       again.addEventListener('click', function () { playScene(STORY.prologue, { tag: 'PROLOGUE', sub: 'VENDREDI · 21:46' }); });
       nav.appendChild(again);
+      // Two clicks, never a confirm(): the first one only says what the second will do.
+      var restart = h('<button type="button" class="btn btn-fantome">RECOMMENCER DEPUIS LE DÉBUT<small>Les tickets repartent de zéro ; ta collection et ton grade restent</small></button>');
+      restart.addEventListener('click', function () {
+        if (!restart.classList.contains('armed')) {
+          restart.classList.add('armed');
+          restart.innerHTML = 'CONFIRMER : TOUT RECOMMENCER<small>Les tickets clos et en cours repartent de zéro</small>';
+          return;
+        }
+        SND.click(); newGame(restart);
+      });
+      nav.appendChild(restart);
     }
     nav.appendChild(soundButton());
     app.appendChild(view);
     first.focus();
+  }
+  // « Nouvelle partie »: the platform puts the tickets back to zero, the game its display state.
+  function newGame(button) {
+    button.disabled = true;
+    api('newGame').then(function () {
+      G.data = { seen: {}, drafts: {}, mute: SND.muted() }; save(true);
+      return refreshScenario();
+    }).then(showTitle).catch(function (e) { button.disabled = false; notice('Impossible de recommencer la partie : ' + e.message); });
   }
   function soundButton() {
     var b = h('<button type="button" class="btn btn-fantome" aria-pressed="' + (!SND.muted()) + '">' + (SND.muted() ? 'SON COUPÉ' : 'SON ACTIVÉ') + '</button>');
@@ -337,12 +356,15 @@
   function consoleDevices(M) {
     return Object.keys(M.devices).filter(function (id) { var d = M.devices[id]; return !d.def.hidden && ['internet', 'box'].indexOf(d.kind) === -1; });
   }
+  var consoleSeq = 0;
   function consolePanel(getWorld, onTrace) {
     var M = getWorld();
     var devs = consoleDevices(M);
     if (devs.indexOf(G.consoleDev) === -1) G.consoleDev = devs[0];
+    // Two consoles can be on screen (the workstation's and the enlarged map's): each its own input id.
+    var cmdId = 'cmd' + (++consoleSeq);
     var panel = h('<section class="panneau outils" aria-label="Console"><div class="tabs" role="tablist"><button type="button" role="tab" aria-selected="true">CONSOLE</button><select aria-label="Machine"></select></div>' +
-      '<div class="console"><div class="sortie" aria-live="polite"></div><div class="entree"><label for="cmd"></label><input id="cmd" autocomplete="off" spellcheck="false" placeholder="ping srv-jeu, ip a, ip r, dhclient -v ens18, dig bracket… (aide)"></div></div></section>');
+      '<div class="console"><div class="sortie" aria-live="polite"></div><div class="entree"><label for="' + cmdId + '"></label><input id="' + cmdId + '" autocomplete="off" spellcheck="false" placeholder="ping srv-jeu, ip a, ip r, dhclient -v ens18, dig bracket… (aide)"></div></div></section>');
     var sel = $('select', panel);
     devs.forEach(function (id) { var o = document.createElement('option'); o.value = id; o.textContent = id; if (id === G.consoleDev) o.selected = true; sel.appendChild(o); });
     sel.addEventListener('change', function () { G.consoleDev = sel.value; $('label', panel).textContent = 'root@' + G.consoleDev + ':~#'; });
@@ -721,19 +743,24 @@
     var col = $('.droite-col');
     if (!col) return;
     col.innerHTML = '';
-    col.appendChild(h('<section class="panneau carte-panneau" aria-label="Carte de la salle"><div class="tete"><b>CARTE DE LA SALLE</b><span class="note">Clique une machine pour t\'y connecter</span></div></section>'));
+    var cp = h('<section class="panneau carte-panneau" aria-label="Carte de la salle"><div class="tete"><b>CARTE DE LA SALLE</b><span class="note">Clique une machine</span><button type="button" class="agrandir" aria-haspopup="dialog" title="Agrandir la carte, avec sa console">⤢ AGRANDIR</button></div></section>');
+    $('.agrandir', cp).addEventListener('click', function () { SND.click(); openBigMap(); });
+    col.appendChild(cp);
     renderMap();
     col.appendChild(consolePanel(world, function (trace) { G.trace = trace; renderMap(); }));
   }
-  function renderMap() {
-    var cp = $('.carte-panneau');
+  // The map of a panel, and what clicking a machine does there: the console beside it (`scope`)
+  // connects to that machine. Without arguments, the workstation's own map and console.
+  function renderMap(cp, scope) {
+    scope = scope || $('.droite-col');
+    cp = cp || (scope && $('.carte-panneau', scope));
     if (!cp) return;
     $$('.carte, .legende, .raison', cp).forEach(function (x) { x.remove(); });
     var M = world();
     cp.appendChild(mapSVG(M, G.trace, function (dev) {
       G.consoleDev = dev;
-      var sel = $('.outils select'); if (sel) { sel.value = dev; sel.dispatchEvent(new Event('change')); }
-      var inp = $('.outils input'); if (inp) inp.focus();
+      var sel = $('.outils select', scope); if (sel) { sel.value = dev; sel.dispatchEvent(new Event('change')); }
+      var inp = $('.outils input', scope); if (inp) inp.focus();
     }));
     if (M.errors.length) {
       var e = M.errors[0];
@@ -742,6 +769,26 @@
       cp.appendChild(legend(M));
       var r = traceLine(G.trace); if (r) cp.appendChild(r);
     }
+  }
+  /* The map of the room, enlarged over the workstation with its own console beside it: every machine
+     still connects the console when clicked, every ping and traceroute still draws its path and says
+     where it died. The console's history is the workstation's (G.consoleLog), so closing loses
+     nothing; Escape or « Réduire » closes. */
+  function openBigMap() {
+    var v = h('<div class="voile carte-grande" role="dialog" aria-modal="true" aria-label="Carte de la salle, agrandie"><div class="grande">' +
+      '<section class="panneau carte-panneau"><div class="tete"><b>CARTE DE LA SALLE</b><span class="note">Clique une machine pour t\'y connecter</span><button type="button" class="agrandir reduire">✕ RÉDUIRE</button></div></section>' +
+      '<div class="grande-console"></div></div></div>');
+    app.appendChild(v);
+    var cp = $('.carte-panneau', v);
+    var draw = function () { renderMap(cp, v); };
+    draw();
+    var cons = consolePanel(world, function (trace) { G.trace = trace; draw(); });
+    $('.grande-console', v).appendChild(cons);
+    function close() { document.removeEventListener('keydown', key); v.remove(); renderRight(); var b = $('.droite-col .agrandir'); if (b) b.focus(); }
+    function key(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
+    $('.reduire', v).addEventListener('click', close);
+    document.addEventListener('keydown', key);
+    cons.focusInput();
   }
 
   // ——— Solution, decision, order ———
@@ -876,13 +923,7 @@
       var inv = h('<button type="button" class="btn btn-cyan">L\'INVENTAIRE DE L\'ENQUÊTE<small>Les cinq indices</small></button>');
       inv.addEventListener('click', showInventory);
       var fresh = h('<button type="button" class="btn btn-fantome">NOUVELLE PARTIE<small>Les tickets repartent de zéro ; ta collection et ton grade restent</small></button>');
-      fresh.addEventListener('click', function () {
-        fresh.disabled = true;
-        api('newGame').then(function () {
-          G.data = { seen: {}, drafts: {}, mute: SND.muted() }; save(true);
-          return refreshScenario();
-        }).then(showTitle).catch(function (e) { fresh.disabled = false; say('nadia', 'sourcil', 'Erreur de la plateforme : ' + e.message); });
-      });
+      fresh.addEventListener('click', function () { newGame(fresh); });
       nav.appendChild(again); nav.appendChild(inv); nav.appendChild(fresh);
       app.appendChild(v);
     });

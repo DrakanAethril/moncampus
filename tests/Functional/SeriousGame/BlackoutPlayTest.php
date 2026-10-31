@@ -52,6 +52,26 @@ class BlackoutPlayTest extends FunctionalTestCase
         self::assertSame('Réseau › Interfaces', $ticket['category']);
     }
 
+    public function testTheNightStartsAgainFromTheBeginningAtAnyTime(): void
+    {
+        $this->call('GET', 'scenario');
+        $this->playTicket('T01');
+        $this->call('POST', 'tickets', ['ticket' => 'T02']);
+        $this->call('POST', 'progress', ['data' => ['prologue' => true, 'mute' => true]]);
+        $before = $this->call('GET', 'progress');
+
+        $this->call('POST', 'scenario/new-game');
+
+        $board = $this->call('GET', 'scenario');
+        self::assertFalse($board['finished']);
+        self::assertSame(1, $board['act']);
+        self::assertSame([], array_column(array_filter(self::arr($board, 'cards'), static fn (mixed $c): bool => \is_array($c) && \in_array($c['status'], ['done', 'doing'], true)), 'id'), 'no ticket closed nor under way');
+        self::assertContains('T01', array_column(array_filter(self::arr($board, 'cards'), static fn (mixed $c): bool => \is_array($c) && 'todo' === $c['status']), 'id'));
+        $progress = $this->call('GET', 'progress');
+        self::assertSame(['mute' => true], $progress['data'], 'the game starts on its title again, the sound as it was');
+        self::assertSame($before['rewards'], $progress['rewards'], 'the collection stays');
+    }
+
     public function testTheWholeNightEndsOnTheTimelineOfTheReport(): void
     {
         $board = $this->call('GET', 'scenario');

@@ -297,14 +297,15 @@ final readonly class SeriousGameScenarioPlay
     }
 
     /**
-     * « Nouvelle partie », after the certificate (§3.5): the tickets leave the board. Rewards, the
-     * grade reached, the best stars and the history stay.
+     * « Nouvelle partie », after the certificate (§3.5) - or at any time when the manifest says so
+     * (`restart_anytime`, Black-out): the tickets leave the board. Rewards, the grade reached, the
+     * best stars and the history stay.
      */
     public function newGame(User $player, SeriousGame $game): void
     {
         $scenario = self::scenario($game);
         [, $closed] = self::visibleAndClosed($this->states->findBoard($player, $game));
-        if (!ScenarioRules::finished($scenario, $closed)) {
+        if (!$scenario->restartAnytime() && !ScenarioRules::finished($scenario, $closed)) {
             throw new SeriousGamePlayRefused('game-not-finished');
         }
 
