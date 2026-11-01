@@ -80,20 +80,12 @@ class EcoleDirecteGradebookWriter
         $date = $evaluation->getDate()?->format('Y-m-d') ?? '';
 
         if (null === $found) {
-            $session = $this->client->send($session, $stem.'/devoirs.awp', 'post', ['devoir' => [
-                'libelle' => $evaluation->getName(),
-                'commentaire' => '',
-                'coef' => $options->coefficient,
-                'noteSur' => $options->scale($evaluation->getScale()),
-                'nonSignificatif' => false,
-                'ccf' => false,
-                'notationLettre' => false,
-                'noteNegative' => false,
-                'avecNote' => true,
-                'elementsProgramme' => [],
-                'date' => $date,
-                'dateAffichage' => '',
-            ]])->session;
+            $session = $this->client->send($session, $stem.'/devoirs.awp', 'post', EcoleDirecteGradePlanner::evaluationBody(
+                $evaluation->getName(),
+                $date,
+                $options->coefficient,
+                $options->scale($evaluation->getScale()),
+            ))->session;
             $created = true;
         }
 

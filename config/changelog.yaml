@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.01'
+      date: '2026-11-01'
+      summary: "Les évaluations envoyées vers École Directe, toujours en essai auprès de l'administration, acceptent de nouveau leurs notes."
+      entries:
+          - type: fix
+            title: "École Directe : une évaluation créée depuis la plateforme accepte de nouveau ses notes"
+            detail: "Elle est désormais publiée aux familles et aux élèves trois jours après sa date, comme une évaluation créée sur École Directe."
     - version: '2026.10.31'
       date: '2026-10-31'
       summary: "Le jeu d'entraînement de la nuit de LAN party, toujours en essai auprès de l'administration, gagne une carte de la salle en grand et la possibilité de recommencer la nuit depuis le début."
