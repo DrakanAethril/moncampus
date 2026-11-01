@@ -263,13 +263,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
 - **Serious games** (`/serious-games`) — `SeriousGame*` entities, `src/SeriousGame/`,
-  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; seven games built,
+  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; eight games built,
   **L'Observatoire** (automatismes de 1re), **Les Tablettes de Pompéi** (déclinaisons latines,
   4e-2nde, `design/validated/serious-games-pompei.md`), **Station Abysse** (SVT, 2nde-1re,
   `serious-games-abysse.md`), **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`), **Panique
   à la Neko-Con** (HTML et CSS, BTS SIO 1, `serious-games-neko-con.md`) and **Black-out** (réseau et
   cybersécurité, BTS SIO 2 SISR, `serious-games-blackout.md`) and **Rétro Rush** (bases de données
-  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`), the three of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
+  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`), the four of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
   mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus
   one line per game in the « Serious games » block of Paramètres › Fonctionnalités
@@ -344,6 +344,15 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     outside the help, on a `view` of the game (a log, a capture). The host page relays an order's
     ranks (`serious_game_host_controller.js`, `stepInput()`) - a new kind of input must be added
     there too, or it reaches the server mangled.
+    **Radio-Comète** is the fourth (40 steps in five acts, the fader rack of a radio's desk, Colette as the
+    helper) and adds nothing to the server either: a script is a `fix` step, written in the game's editor
+    and tested in a **Bash interpreter written for the game** (`public/serious-games/radio-comete/`
+    `shell.js`, `bashparse.js`, `builtins.js`, `utils*.js`, `sed.js`, `awk.js` over a virtual file system
+    with mount points of fixed capacity, thirteen machines in `world.js`), then replayed on **hidden
+    machines** (3 to 6 per script, each a trap: names with spaces, a full disk, a muted host, a held lock…)
+    against the reference script the bench keeps; only `{passed, failed}` leaves the browser. The reference
+    scripts stay in the package for the bench (like Black-out's repairs). The source of the game, its
+    engine tests (98) and its bench live in the Cours repository, `Games/Radio-Comete/`.
     **Rétro Rush** is the third (45 issues in a GitLab-like forge, Jade as the helper) and adds
     nothing to the server: its repairs are SQL, run in the frame by **sql.js** (SQLite in
     WebAssembly, `vendor/`, served with the fonts' CORS header) behind a MySQL layer

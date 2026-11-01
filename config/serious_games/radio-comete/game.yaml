@@ -1,0 +1,81 @@
+# Radio-Comète: Bash scripts, BTS SIO SISR - the fourth game of the « scénario » mechanic
+# (design/validated/serious-games-radio-comete.md).
+#
+# Read by `app:serious-games:sync`, which adds the tickets of `tickets/*.yaml` under `scenario.tickets`
+# and builds `chapters` from the acts, so that the screens common to every game read a ticket as a
+# unit and an act as a chapter. **The right answers live in those files and nowhere in the game's
+# package** (public/serious-games/radio-comete/), which holds the Bash simulator, the thirteen
+# machines of the radio, the scripts to start from and to check, the hidden machines, the views to
+# designate, the written hints and the scenes. A ticket is an « étape » in the game's words.
+slug: radio-comete
+title: "Radio-Comète"
+pitch: "Alternant·e du prestataire, remonter jusqu'à la tâche qui supprime chaque nuit à 3 h les archives de Radio Comète. Du Bash écrit, testé dans un terminal, rejoué sur des machines cachées : guillemets, codes de retour, ssh, find, sed, awk, flock, systemd."
+subjects: [Informatique]
+levels: [BTS SIO 1, BTS SIO 2]
+unit_label: étapes
+mechanic: scenario
+# The kinds of step of the scenario: a script checked by the simulator, an explanation to choose, a
+# question, a line to designate in a view, the timeline of the report.
+answer_kinds: [fix, choice, line, order]
+version: 1.0.0
+published: false
+
+words:
+  unit: [étape, étapes]
+  chapter: [acte, actes]
+  lit: [close, closes]
+  unlit: [ouverte, ouvertes]
+  level: étoiles
+  skill: notion
+  dim_filter: Beaucoup d'aide
+
+scenario:
+  # A ticket keeps the version it was started with; raise it when a step changes.
+  version: 1
+  # The rack holds four open steps at most.
+  capacity: 4
+  # Who answers a wrong step that names nobody.
+  helper: colette
+  # No password: the last step ends on the timeline of the report.
+  password: []
+  # « Recommencer depuis le début » on the title screen, before the end too, like Black-out.
+  restart_anytime: true
+  acts:
+    - { n: 1, title: "Le mot de Marc", tools: [editeur, terminal] }
+    - { n: 2, title: "Les douze crontabs", tools: [editeur, terminal] }
+    - { n: 3, title: "Un script qui n'est pas le sien", tools: [editeur, terminal] }
+    - { n: 4, title: "Le parc", tools: [editeur, terminal] }
+    - { n: 5, title: "La nuit de 3 h", tools: [editeur, terminal] }
+
+grades:
+  - [0, "Bénévole"]
+  - [10, "Technicien·ne"]
+  - [20, "Administrateur·rice"]
+  - [30, "Scripteur·rice"]
+  - [40, "Gardien·ne de la nuit"]
+
+rewards:
+  # Brass once the final is closed (step 40); silver at two thirds of the steps with three stars,
+  # gold at 36. Thresholds to review after a first promotion.
+  trophy:
+    code: fader-or
+    label: Le Fader d'or
+    lore: "Un fader de la console de la régie, son pion rouge tout en haut, confié à qui a tenu la nuit de 3 h sans rien supprimer de ce qu'il ne fallait pas."
+    silver_at: 27
+    gold_at: 36
+  pin:
+    code: pin-comete
+    label: Épinglette Comète
+  # One card per act done.
+  cards: true
+
+# Played on a computer only: the request, the script and the terminal side by side need 1 100 px. On
+# a narrower screen the catalogue says so instead of opening the game.
+desktop_only: true
+
+thumbnail:
+  background: "linear-gradient(90deg, transparent 0 62%, rgba(232, 163, 61, .5) 62% 63%, transparent 63% 100%), radial-gradient(ellipse at 80% 30%, rgba(232, 163, 61, .45) 0 14%, transparent 40%), linear-gradient(180deg, #14181C 0 72%, #232A30 100%)"
+  font: "'Barlow Condensed', 'Trebuchet MS', sans-serif"
+  style: normal
+  weight: 700
+  color: "#E8A33D"

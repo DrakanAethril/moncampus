@@ -25,7 +25,8 @@
     { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', glyph: '⌕' },
     { id: 'pin-neko', name: 'Épinglette Neko', color: '#E8457A', glyph: '^' },
     { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', glyph: '◠' },
-    { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', glyph: '✚' }
+    { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', glyph: '✚' },
+    { id: 'pin-comete', name: 'Épinglette Comète', color: '#14181C', glyph: '☄' }
   ];
   A.PINS = PINS;
 
@@ -186,6 +187,13 @@
       return el('rect', { x: 110, y: 196, width: 34, height: 18, rx: 9, fill: '#6A3EA0', opacity: .78, stroke: '#1E1433', strokeWidth: 1.6 }) +
         el('path', sx({ d: 'M115 201 Q126 198 138 200', stroke: '#FFFFFF', strokeWidth: 1.6, opacity: .6 })) +
         el('circle', { cx: 137, cy: 207, r: 3, fill: '#FF8A3D' }) + el('rect', { x: 116, y: 205, width: 14, height: 3, rx: 1.5, fill: '#EDE7F7' });
+    } },
+    // Radio-Comète: the studio's ON AIR badge, a red lamp on the chest
+    // (design/validated/serious-games-radio-comete.md §4) - on the body, nothing on the head.
+    'radio-comete': { label: 'Badge « ON AIR »', svg: function () {
+      return el('rect', { x: 108, y: 196, width: 38, height: 18, rx: 4, fill: '#5A1D16', stroke: '#D8503F', strokeWidth: 1.8 }) +
+        el('rect', { x: 111, y: 199, width: 32, height: 12, rx: 2, fill: '#D8503F', opacity: .35 }) +
+        el('path', sx({ d: 'M115 205 H139', stroke: '#FF8A78', strokeWidth: 2.4 }));
     } },
     // The Irregulars: the street urchin's flat cap of 1895, its peak and its button.
     irregulars: { label: 'Casquette gavroche', svg: function () {

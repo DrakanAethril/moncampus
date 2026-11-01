@@ -1,0 +1,279 @@
+# Radio-Comète - acte 3 : Un script qui n'est pas le sien.
+#
+# The server half of the tickets (design/validated/serious-games-radio-comete.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Colette's
+# guided questions, the clue closing gives. The game half (the scripts to start from and to check,
+# the hidden machines, the views, the written hints, the scenes) is public/serious-games/radio-comete/
+# steps/acte3.js. Converted from the prototype's host/scenario/acte3.js by tool/to-yaml.js;
+# `hints` counts the written hints the game holds after the guided questions. A ticket is an « étape »
+# in the game's words.
+tickets:
+  -
+    id: E17
+    act: 3
+    after: [E15, E16]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Archives › Lecture d''un script'
+    title: 'Ouvrir nettoyage-nuit'
+    request: 'On sait maintenant qu''une ligne de crontab, sur le serveur « archives », lance /usr/local/bin/nettoyage-nuit chaque nuit à 3 h. Marc l''a signé en 2019 et n''y a mis presque aucun commentaire. Le voici : où supprime-t-il, et que fait sa fonction purge ?'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Le script'
+        prompt: 'Clique sur la ligne qui supprime des fichiers.'
+        view: script
+        answer: '-mtime +"$2" -delete'
+        reaction: { who: colette, expr: sourcil, text: 'Celle-ci prépare ou note. Cherche la commande qui efface vraiment : find avec -delete.' }
+      -
+        id: purge
+        kind: choice
+        label: 'La fonction purge'
+        prompt: 'Que fait la fonction purge, appelée avec deux valeurs ?'
+        options:
+          - { text: 'Elle cherche sous le premier dossier les fichiers .wav modifiés il y a plus de N jours (le second argument), et les supprime.', ok: true, reaction: { who: odile, expr: sourire, text: 'Un dossier, un nombre de jours, des .wav. Je suis rassurée : c''est lisible.' } }
+          - { text: 'Elle s''exécute dès qu''elle est écrite, avant le reste du script.', misconception: definir-executer, reaction: { who: colette, expr: sourcil, text: 'Écrire une fonction ne l''exécute pas : elle ne s''exécute que quand on l''appelle, plus bas.' } }
+          - { text: 'Elle supprime tout ce qu''il y a dans le dossier, sans condition.', misconception: tout-supprimer, reaction: { who: colette, expr: sourcil, text: 'Relis les conditions de find : -type f, -name ''*.wav'', -mtime. Ce n''est pas « tout ».' } }
+          - { text: 'Elle compresse les vieux fichiers pour gagner de la place.', misconception: compresser, reaction: { who: colette, expr: sourcil, text: 'Rien ne compresse ici. L''action est -delete.' } }
+  -
+    id: E18
+    act: 3
+    after: [E17]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Archives › Valeurs par défaut'
+    title: '${A:-B}'
+    request: 'Je lis dans le script « RACINE="${EXPORT_ROOT:-/srv/data}" » et « JOURS=${RETENTION:-30} ». Colette dit que ces deux lignes sont le cœur du problème, mais je ne sais pas les lire. Que valent RACINE et JOURS dans chaque cas ?'
+    reward:
+      clue: 'nettoyage-nuit (Marc, 2019) supprime les .wav de plus de RETENTION jours sous ${EXPORT_ROOT:-/srv/data} : sans EXPORT_ROOT, il nettoie tout /srv/data, archives comprises.'
+    steps:
+      -
+        id: absente
+        kind: choice
+        label: 'Variable absente'
+        prompt: 'RETENTION n''est définie nulle part. Que vaut JOURS ?'
+        options:
+          - { text: '30 : la valeur après « :- » sert quand la variable n''existe pas.', ok: true, reaction: { who: colette, expr: sourire, text: 'Exactement : « :- » donne une valeur de secours.' } }
+          - { text: 'Rien : JOURS reste vide.', misconception: reste-vide, reaction: { who: colette, expr: sourcil, text: 'Ce serait vrai sans « :- ». Avec lui, le shell remplace par 30.' } }
+          - { text: 'Le script s''arrête avec une erreur.', misconception: erreur, reaction: { who: colette, expr: sourcil, text: 'Seul « ${VAR:?message} » arrête le script. « :- » ne se plaint jamais.' } }
+          - { text: '0 : une variable absente vaut zéro.', misconception: zero, reaction: { who: colette, expr: sourcil, text: 'Une variable absente n''est pas zéro. Elle est absente, donc la valeur de secours s''applique.' } }
+      -
+        id: vide
+        kind: choice
+        label: 'Variable vide'
+        prompt: 'Dans chemins.conf, la ligne est « EXPORT_ROOT= » : la variable existe, mais elle est vide. Que vaut RACINE ?'
+        options:
+          - { text: 'Une chaîne vide : la variable existe, la valeur de secours ne sert pas.', misconception: defini-donc-garde, reaction: { who: colette, expr: sourcil, text: 'C''est le piège. Avec « :- » (deux-points), une variable vide compte comme absente.' } }
+          - { text: '/srv/data : avec « :- », une variable vide est traitée comme une variable absente.', ok: true, reaction: { who: colette, expr: sourcil, text: 'Voilà le piège : « :- » remplace aussi le vide. C''est ce qui rend cette ligne dangereuse.' } }
+          - { text: '/ : la racine du disque.', misconception: racine, reaction: { who: colette, expr: sourcil, text: 'Le script ne remonte pas jusqu''à la racine. La valeur de secours est écrite : /srv/data.' } }
+          - { text: 'Le script s''arrête : une variable vide est une erreur.', misconception: erreur-vide, reaction: { who: colette, expr: sourcil, text: 'Le shell ne s''arrête pas sur une variable vide, sauf si on le lui demande avec « :? ».' } }
+      -
+        id: sans-deux-points
+        kind: choice
+        label: 'Sans les deux-points'
+        prompt: 'Et avec « ${EXPORT_ROOT-/srv/data} » (sans les deux-points), pour la même ligne « EXPORT_ROOT= » ?'
+        options:
+          - { text: '/srv/data aussi, c''est la même chose.', misconception: meme-chose, reaction: { who: colette, expr: sourcil, text: 'Les deux-points changent tout : sans eux, seul le cas « absente » déclenche la valeur de secours.' } }
+          - { text: 'Une chaîne vide : la variable existe, donc la valeur de secours est ignorée.', ok: true, reaction: { who: colette, expr: sourire, text: 'Sans « : », vide reste vide. find tomberait alors sur un dossier sans nom et s''arrêterait.' } }
+          - { text: 'Une erreur de syntaxe.', misconception: syntaxe, reaction: { who: colette, expr: sourcil, text: 'La forme sans deux-points existe aussi et elle est valide.' } }
+          - { text: '30, la durée de rétention.', misconception: confusion, reaction: { who: colette, expr: sourcil, text: 'Rien à voir avec RETENTION : c''est la variable EXPORT_ROOT qu''on lit ici.' } }
+  -
+    id: E19
+    act: 3
+    after: [E17]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Archives › find'
+    title: 'find … -delete'
+    request: 'Je veux savoir exactement ce que la commande « find "$1" -type f -name ''*.wav'' -mtime +"$2" -delete » peut atteindre, selon ce qu''on met dans $1. Les émissions de Yanis y passent-elles ?'
+    steps:
+      -
+        id: portee
+        kind: choice
+        label: 'La portée'
+        prompt: 'Avec $1 = /srv/data et $2 = 30, que supprime la commande ?'
+        options:
+          - { text: 'Seulement le dossier /srv/data/exports.', misconception: seul-exports, reaction: { who: colette, expr: sourcil, text: 'find descend dans tous les sous-dossiers de ce qu''on lui donne. Et on lui a donné /srv/data.' } }
+          - { text: 'Tous les fichiers .wav modifiés il y a plus de 30 jours, dans /srv/data et dans tous ses sous-dossiers : exports et archives.', ok: true, reaction: { who: odile, expr: surprise, text: 'Donc les archives de Yanis sont sur le chemin de la commande.' } }
+          - { text: 'Tous les fichiers de plus de 30 jours, quelle que soit leur extension.', misconception: toute-extension, reaction: { who: colette, expr: sourcil, text: 'Le motif -name ''*.wav'' limite aux .wav.' } }
+          - { text: 'Rien : -delete ne supprime pas sans confirmation.', misconception: confirmation, reaction: { who: colette, expr: sourcil, text: 'find ne demande aucune confirmation avec -delete. C''est ce qui le rend dangereux.' } }
+      -
+        id: limite
+        kind: choice
+        label: 'La limite'
+        prompt: 'Un fichier a été modifié il y a exactement 30 jours (30 jours révolus, pas 31). Est-il supprimé par « -mtime +30 » ?'
+        options:
+          - { text: 'Oui : +30 veut dire « 30 jours ou plus ».', misconception: ou-plus, reaction: { who: colette, expr: sourcil, text: '+30 signifie « strictement plus de 30 jours entiers », donc 31 ou plus.' } }
+          - { text: 'Non : +30 veut dire strictement plus de 30 jours entiers.', ok: true, reaction: { who: colette, expr: sourire, text: 'Un fichier de 30 jours pile est épargné. Il sera supprimé demain.' } }
+          - { text: 'Oui : -mtime compte en heures.', misconception: heures, reaction: { who: colette, expr: sourcil, text: '-mtime compte en jours entiers (-mmin compte en minutes).' } }
+          - { text: 'Ça dépend de l''heure du lancement.', misconception: heure, reaction: { who: colette, expr: sourcil, text: 'find calcule l''âge en jours entiers : l''heure n''entre pas en jeu.' } }
+      -
+        id: filtre
+        kind: choice
+        label: 'Le filtre'
+        prompt: 'Un fichier « ancien.WAV » (majuscules) et un dossier « vieux.wav » existent, tous deux très anciens. Que devient chacun ?'
+        options:
+          - { text: 'Les deux sont supprimés.', misconception: les-deux, reaction: { who: colette, expr: sourcil, text: 'Le dossier n''est pas un fichier (-type f), et « .WAV » ne correspond pas à ''*.wav''.' } }
+          - { text: 'Le fichier est supprimé, le dossier est épargné.', misconception: majuscules, reaction: { who: colette, expr: sourcil, text: '-name est sensible à la casse : « .WAV » n''est pas « .wav ».' } }
+          - { text: 'Aucun des deux : -name est sensible à la casse, et -type f écarte les dossiers.', ok: true, reaction: { who: odile, expr: sourire, text: 'Un filtre précis. Un peu trop précis pour me rassurer, mais précis.' } }
+          - { text: 'Le dossier est supprimé, le fichier est épargné.', misconception: dossier, reaction: { who: colette, expr: sourcil, text: '-type f limite aux fichiers réguliers : les dossiers ne sont pas visés.' } }
+  -
+    id: E20
+    act: 3
+    after: [E18, E19]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: moyenne
+    category: 'Archives › Déroulé'
+    title: 'L''ordre d''exécution'
+    request: 'Avant de toucher à ce script, je veux le suivre dans l''ordre, comme le fait la machine à 3 h 00 : qu''est-ce qui se passe en premier, et à quel moment la suppression a-t-elle lieu ?'
+    steps:
+      -
+        id: ordre
+        kind: order
+        label: 'Le déroulé'
+        prompt: 'Remets dans l''ordre ce que fait nettoyage-nuit quand cron le lance.'
+        items:
+          - 'journal « purge de … » : une ligne est écrite dans nettoyage.log'
+          - 'purge appelle find … -delete : les vieux fichiers disparaissent'
+          - 'le fichier /etc/radio/chemins.conf est lu (source)'
+          - 'RACINE, JOURS et LOG reçoivent leur valeur'
+          - 'journal « termine » : la dernière ligne est écrite'
+          - 'les fonctions journal et purge sont définies (rien n''est exécuté)'
+        answer: [2, 3, 5, 0, 1, 4]
+        reaction: { who: colette, expr: sourcil, text: 'Relis le script de haut en bas : une fonction n''agit que lorsqu''on l''appelle, et le chemin vient avant tout le reste.' }
+  -
+    id: E21
+    act: 3
+    after: [E20]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Archives › Simulation'
+    title: 'Rejouer à blanc'
+    request: 'Je ne veux pas lancer le script de Marc pour voir ce qu''il fait : il supprime ! Écris-moi un petit script « a-blanc.sh » : on lui donne un script de nettoyage, il en fabrique une copie qui affiche au lieu de supprimer, la lance, et me montre ce qui aurait disparu. Rien ne doit être supprimé, ni l''original modifié, ni le vrai journal alimenté.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Corrige a-blanc.sh : il laisse des traces dans le vrai journal et il ne supporte ni les chemins à espaces, ni un script sans -delete.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi remplacer -delete par -print rend-il la simulation fidèle ?'
+        options:
+          - { text: 'Parce que -print est plus rapide que -delete.', misconception: vitesse, reaction: { who: colette, expr: sourcil, text: 'La vitesse n''a rien à voir : on cherche la fidélité du filtre.' } }
+          - { text: 'find applique les mêmes conditions dans les deux cas : seul l''effet change. -print affiche ce que -delete aurait supprimé.', ok: true, reaction: { who: odile, expr: sourire, text: 'Le même filtre, sans l''effet. Voilà ce qu''il me fallait.' } }
+          - { text: 'Parce que -print copie les fichiers dans /tmp avant de les supprimer.', misconception: copie, reaction: { who: colette, expr: sourcil, text: '-print n''écrit rien dans /tmp : il affiche seulement les chemins.' } }
+          - { text: 'Parce que -delete ne fonctionne qu''avec les droits d''administrateur.', misconception: droits, reaction: { who: colette, expr: sourcil, text: 'Les droits ne changent pas ce que find sélectionne, seulement ce qu''il a le droit de supprimer.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quelle commande fabrique une copie d''un fichier en remplaçant un texte, sans toucher à l''original ?'
+        options:
+          - { text: 'sed ''s/-delete/-print/'' original > copie', ok: true }
+          - { text: 'sed -i ''s/-delete/-print/'' original', misconception: sed-i, reaction: { who: colette, expr: sourcil, text: 'L''option -i modifie le fichier lui-même : c''est l''original qui serait abîmé.' } }
+          - { text: 'cp original copie, puis rm original', misconception: cp-rm, reaction: { who: colette, expr: sourcil, text: 'Cela déplace le fichier, sans rien remplacer.' } }
+    hints: 3
+  -
+    id: E22
+    act: 3
+    after: [E21]
+    course: 'SIO · scripts Bash'
+    requester: yanis
+    kind: demande
+    priority: haute
+    category: 'Archives › Comparaison de listes'
+    title: 'Une liste trop longue'
+    request: 'La liste de ce qui serait supprimé est immense, et je ne vais pas la lire ligne à ligne. J''ai ma propre liste de ce que j''ai perdu, au format « émission/fichier ». Écris un script qui compare les deux et me dise si tout ce que j''ai perdu s''y trouve.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Termine comparer.sh : il compare mal (chemins complets contre « émission/fichier »), ne gère pas la liste de Yanis (fins de ligne Windows) et ne conclut pas.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi trier les deux listes avant de les passer à comm ?'
+        options:
+          - { text: 'Pour que le résultat soit plus joli.', misconception: esthetique, reaction: { who: colette, expr: sourcil, text: 'Le tri n''est pas une question d''apparence : sans lui, le résultat est faux.' } }
+          - { text: 'comm suppose deux listes triées de la même façon : sur des listes non triées, il rate des lignes communes.', ok: true, reaction: { who: yanis, expr: sourire, text: 'Triées pareil, sinon il compare dans le vide. Je note.' } }
+          - { text: 'Parce que comm refuse de lire un fichier non trié et s''arrête avec une erreur.', misconception: comm-refuse, reaction: { who: colette, expr: sourcil, text: 'Il ne s''arrête pas toujours : il peut afficher un résultat faux sans le dire, et c''est pire.' } }
+          - { text: 'Pour supprimer les doublons.', misconception: doublons, reaction: { who: colette, expr: sourcil, text: 'Les doublons se retirent avec -u ou uniq, ce n''est pas la raison du tri avant comm.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quelle option de comm affiche seulement les lignes présentes dans les deux fichiers ?'
+        options:
+          - { text: 'comm -12 (cache les colonnes 1 et 2)', ok: true }
+          - { text: 'comm -3', misconception: moins-trois, reaction: { who: colette, expr: sourcil, text: '-3 cache les lignes communes : l''inverse.' } }
+          - { text: 'comm -13', misconception: treize, reaction: { who: colette, expr: sourcil, text: '-13 affiche ce qui n''est que dans le second fichier.' } }
+    hints: 3
+  -
+    id: E23
+    act: 3
+    after: [E17]
+    course: 'SIO · administration système'
+    requester: samir
+    kind: demande
+    priority: moyenne
+    category: 'Archives › Configuration'
+    title: 'D''où vient $EXPORT_ROOT ?'
+    request: 'Le script commence par « . /etc/radio/chemins.conf » : il lit ce fichier comme s''il en recopiait les lignes. Voici celui du serveur archives. Quelle ligne donne sa valeur à EXPORT_ROOT, et qu''a-t-elle de particulier ?'
+    reward:
+      clue: 'Sur archives, /etc/radio/chemins.conf contient EXPORT_ROOT= vide : le repli /srv/data s''applique.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'chemins.conf'
+        prompt: 'Clique sur la ligne qui définit EXPORT_ROOT.'
+        view: conf
+        answer: 'EXPORT_ROOT='
+        reaction: { who: colette, expr: sourcil, text: 'Cherche le nom exact : EXPORT_ROOT, pas ARCHIVE_ROOT.' }
+      -
+        id: valeur
+        kind: choice
+        label: 'Sa valeur'
+        prompt: 'Que vaut EXPORT_ROOT après la lecture du fichier ?'
+        options:
+          - { text: 'Elle n''existe pas : la ligne est incomplète.', misconception: inexistante, reaction: { who: colette, expr: sourcil, text: 'Elle existe : la ligne l''affecte. C''est sa valeur qui est vide.' } }
+          - { text: 'Elle existe, mais elle est vide : rien ne suit le signe =.', ok: true, reaction: { who: samir, expr: sourcil, text: 'Vide, mais présente. Ça, nettoyage-nuit ne le distingue pas d''une variable absente.' } }
+          - { text: 'Elle vaut /srv/data/archives, comme la ligne du dessus.', misconception: ligne-du-dessus, reaction: { who: colette, expr: sourcil, text: 'Chaque ligne affecte sa variable. ARCHIVE_ROOT est une autre variable.' } }
+          - { text: 'Elle vaut 0.', misconception: zero, reaction: { who: colette, expr: sourcil, text: 'Rien ne met 0 ici : après le signe =, il n''y a rien.' } }
+  -
+    id: E24
+    act: 3
+    after: [E22, E23]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Archives › Hypothèse'
+    title: 'L''hypothèse'
+    request: 'On a tout lu, tout rejoué, tout comparé. Je veux une seule explication, que je puisse répéter à la direction : pourquoi les émissions de Yanis disparaissent-elles à 3 h 00 ?'
+    steps:
+      -
+        id: hypothese
+        kind: choice
+        label: 'L''explication'
+        prompt: 'Quelle explication tient avec tout ce qu''on a vu ?'
+        options:
+          - { text: 'Cron est cassé et lance le script au hasard.', misconception: cron-casse, reaction: { who: colette, expr: sourcil, text: 'Cron fait exactement ce qu''on lui a demandé : une fois par nuit, à 3 h 00.' } }
+          - { text: 'find a un bug qui supprime des fichiers qu''il ne devrait pas.', misconception: find-bugue, reaction: { who: colette, expr: sourcil, text: 'find applique à la lettre les conditions qu''on lui donne, et ces conditions couvrent les archives.' } }
+          - { text: 'Le disque de archives est défaillant.', misconception: disque, reaction: { who: colette, expr: sourcil, text: 'Un disque défaillant ne produirait pas des « unlink » ordonnés, aux mêmes heures, par find.' } }
+          - { text: 'EXPORT_ROOT est vide dans chemins.conf, « :- » prend alors /srv/data, et ce dossier contient aussi les archives : le nettoyage de 3 h 00 les prend pour des exports anciens.', ok: true, reaction: { who: odile, expr: surprise, text: 'Une variable vide, un dossier trop large. Pas un coupable : une configuration restée en l''état.' } }
+          - { text: 'Marc a voulu tout supprimer avant de partir.', misconception: marc, reaction: { who: colette, expr: sourcil, text: 'Rien ne le prouve, et la liste des fichiers perdus s''explique sans intention : seulement par une valeur vide.' } }

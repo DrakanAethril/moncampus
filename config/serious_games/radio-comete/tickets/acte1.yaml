@@ -1,0 +1,287 @@
+# Radio-Comète - acte 1 : Le mot de Marc.
+#
+# The server half of the tickets (design/validated/serious-games-radio-comete.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Colette's
+# guided questions, the clue closing gives. The game half (the scripts to start from and to check,
+# the hidden machines, the views, the written hints, the scenes) is public/serious-games/radio-comete/
+# steps/acte1.js. Converted from the prototype's host/scenario/acte1.js by tool/to-yaml.js;
+# `hints` counts the written hints the game holds after the guided questions. A ticket is an « étape »
+# in the game's words.
+tickets:
+  -
+    id: E01
+    act: 1
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Sauvegardes › Lecture d''un script'
+    title: 'Le mot de Marc'
+    request: 'Marc est parti du jour au lendemain. Sur le bureau, un mot : « Tout est dans les scripts. » Voici celui des sauvegardes, sur le serveur « sauvegarde ». Je ne sais pas le lire. Où crée-t-il les archives, et que fait-il au juste ?'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Le script'
+        prompt: 'Clique sur la ligne qui crée une archive.'
+        view: script
+        answer: 'tar -czf $DEST/$dossier-$DATE.tgz'
+        reaction: { who: colette, expr: sourcil, text: 'Celle-ci prépare ou annonce. Cherche la commande qui fabrique un fichier .tgz : tar.' }
+      -
+        id: comprendre
+        kind: choice
+        label: 'Ce qu''il fait'
+        prompt: 'Que fait ce script quand on le lance ?'
+        options:
+          - { text: 'Pour chaque émission de /srv/emissions, il crée dans /srv/sauvegardes une archive dont le nom porte la date du jour.', ok: true, reaction: { who: odile, expr: sourire, text: 'Une archive par émission, datée. C''est exactement ce qu''il me fallait comprendre.' } }
+          - { text: 'Il copie tout /srv/emissions dans un seul gros fichier.', misconception: un-seul-fichier, reaction: { who: colette, expr: sourcil, text: 'Regarde la boucle for : tar est lancé une fois par dossier, pas une fois pour tout.' } }
+          - { text: 'Il supprime les émissions de plus de sept jours.', misconception: confond-rotation, reaction: { who: colette, expr: sourcil, text: 'Ce script ne supprime rien. Le tri des anciennes copies, c''est une autre affaire.' } }
+          - { text: 'Il attend qu''on lui donne un dossier en argument.', misconception: argument-inconnu, reaction: { who: colette, expr: sourcil, text: 'Les chemins sont écrits en dur dans les premières lignes : DEST et SRC. Il n''attend rien.' } }
+  -
+    id: E02
+    act: 1
+    after: [E01]
+    course: 'SIO · scripts Bash'
+    requester: yanis
+    kind: incident
+    priority: haute
+    category: 'Sauvegardes › Noms de fichiers'
+    title: '« Émission du matin »'
+    request: 'Le script de Marc ne sauvegarde pas « Émission du matin » : il se plaint de fichiers qu''il ne trouve pas. Les noms avec des espaces, c''est tout ce que j''ai ! Peux-tu le réparer ? Je regarderai que toutes mes émissions ont leur archive.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Répare sauvegarde.sh, teste-le dans le terminal, puis livre-le à Yanis.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi « Émission du matin » posait-elle problème ?'
+        options:
+          - { text: 'Les accents ne sont pas reconnus par tar.', misconception: accents, reaction: { who: colette, expr: sourcil, text: 'tar lit très bien les accents. Regarde plutôt ce qui se passe avec les espaces.' } }
+          - { text: 'Sans guillemets, le shell coupe le nom à chaque espace : tar reçoit trois noms au lieu d''un.', ok: true, reaction: { who: yanis, expr: sourire, text: 'Trois mots, trois arguments. Avec les guillemets, un nom reste un nom.' } }
+          - { text: 'Le dossier est trop long pour une archive.', misconception: trop-long, reaction: { who: colette, expr: sourcil, text: 'Aucune limite de ce genre ici : l''archive plante parce que le nom est mal transmis.' } }
+          - { text: 'Il fallait remplacer les espaces par des tirets dans les dossiers.', misconception: renommer, reaction: { who: colette, expr: sourcil, text: 'Renommer les dossiers de Yanis ? Le script doit s''adapter aux noms, pas l''inverse.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Que devient $dossier quand il vaut « Émission du matin » et qu''il n''est pas entre guillemets ?'
+        options:
+          - { text: 'Trois mots séparés : Émission, du, matin.', ok: true }
+          - { text: 'Un seul mot, comme avant.', misconception: un-mot, reaction: { who: colette, expr: sourcil, text: 'Le shell coupe les mots sur les espaces avant de lancer la commande.' } }
+          - { text: 'Rien : la variable est vidée.', misconception: vide, reaction: { who: colette, expr: sourcil, text: 'Elle n''est pas vidée, elle est découpée.' } }
+    hints: 3
+  -
+    id: E03
+    act: 1
+    after: [E02]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: incident
+    priority: tres-haute
+    category: 'Sauvegardes › Variables'
+    title: 'La destination oubliée'
+    request: 'Quelqu''un a lancé le script sans rien derrière, et des archives sont tombées à la racine du disque. Je veux que le script refuse de travailler sans destination, avec un message qui dit comment l''appeler.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Le script prend maintenant la destination en argument. Fais-le refuser un appel sans destination (ou avec une destination vide), puis livre-le.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi les archives sont-elles tombées à la racine du disque ?'
+        options:
+          - { text: 'tar écrit toujours à la racine quand on ne lui dit pas où écrire.', misconception: tar-racine, reaction: { who: colette, expr: sourcil, text: 'On lui a dit où écrire : « $DEST/$nom.tgz ». C''est $DEST qui posait problème.' } }
+          - { text: '$DEST était vide : "$DEST/$nom.tgz" est devenu "/nom.tgz", donc la racine.', ok: true, reaction: { who: odile, expr: sourcil, text: 'Une variable vide qui se glisse dans un chemin : voilà la source de tous les dégâts. Je veux le garde-fou.' } }
+          - { text: 'Le script était lancé en root.', misconception: root, reaction: { who: colette, expr: sourcil, text: 'Être root change qui peut écrire, pas où le script écrit.' } }
+          - { text: 'mkdir -p a créé la racine.', misconception: mkdir, reaction: { who: colette, expr: sourcil, text: 'mkdir -p "" échoue, mais le script continue : il n''a rien créé.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quelle valeur prend "$DEST/$nom.tgz" quand $DEST est vide ?'
+        options:
+          - { text: '/nom.tgz : le chemin commence à la racine.', ok: true }
+          - { text: 'nom.tgz, dans le dossier courant.', misconception: courant, reaction: { who: colette, expr: sourcil, text: 'Le slash reste : "/" suivi du nom.' } }
+          - { text: 'Une erreur : le shell refuse.', misconception: refuse, reaction: { who: colette, expr: sourcil, text: 'Le shell ne refuse rien. Il remplace par du vide et continue.' } }
+    hints: 3
+  -
+    id: E04
+    act: 1
+    after: [E01]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: incident
+    priority: haute
+    category: 'Sauvegardes › Rotation'
+    title: 'Garder les sept dernières'
+    request: 'Le disque des sauvegardes se remplit : personne ne supprime les vieilles archives. Marc avait écrit un petit script de rotation, mais il supprime les mauvaises. Je veux qu''il garde les sept archives les plus récentes de chaque émission, et rien d''autre.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Répare rotation.sh : sept archives gardées par émission, les plus récentes, sans toucher aux autres fichiers.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Que faisait le script de départ avec « ls -t | head -7 | xargs rm » ?'
+        options:
+          - { text: 'Il gardait les sept plus anciennes archives.', misconception: inverse-anciennes, reaction: { who: colette, expr: sourcil, text: 'Presque : ls -t met les plus récentes en premier, donc head -7 prend les plus récentes… et rm les supprimait.' } }
+          - { text: 'Il supprimait les sept plus récentes : head garde les premières lignes, qui sont celles qu''on voulait conserver.', ok: true, reaction: { who: odile, expr: sourcil, text: 'Voilà pourquoi mon disque restait plein et mes copies fraîches disparaissaient.' } }
+          - { text: 'Il ne supprimait rien : xargs ne marche pas sans option.', misconception: xargs-rien, reaction: { who: colette, expr: sourcil, text: 'xargs rm lance bien rm. Le problème est dans la sélection des lignes.' } }
+          - { text: 'Il supprimait toutes les archives de toutes les émissions.', misconception: tout, reaction: { who: colette, expr: sourcil, text: 'Seules sept archives étaient visées, mais les mauvaises.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quelle commande affiche toutes les lignes à partir de la huitième ?'
+        options:
+          - { text: 'tail -n +8', ok: true }
+          - { text: 'head -n +8', misconception: head, reaction: { who: colette, expr: sourcil, text: 'head prend le début. On veut ce qui reste après les sept premières.' } }
+          - { text: 'head -n -8', misconception: head-moins, reaction: { who: colette, expr: sourcil, text: 'head -n -8 enlève les huit dernières lignes : l''inverse.' } }
+    hints: 3
+  -
+    id: E05
+    act: 1
+    after: [E04]
+    course: 'SIO · scripts Bash'
+    requester: yanis
+    kind: demande
+    priority: moyenne
+    category: 'Sauvegardes › Options'
+    title: 'À blanc'
+    request: 'Je n''ose pas lancer la rotation si je ne sais pas ce qu''elle va supprimer. Ajoute une option -n : avec elle, le script écrit « à supprimer : … » pour chaque archive concernée, et ne supprime rien.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Termine la gestion de l''option -n dans rotation.sh : le script de départ la lit mais ne s''en sert pas bien.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi faut-il « shift $((OPTIND - 1)) » après la boucle getopts ?'
+        options:
+          - { text: 'Pour supprimer les options du disque.', misconception: disque, reaction: { who: colette, expr: sourcil, text: 'On parle des arguments du script, pas du disque.' } }
+          - { text: 'getopts ne retire pas les options de $1, $2… : le shift les fait disparaître pour que $1 devienne la destination.', ok: true, reaction: { who: yanis, expr: sourire, text: 'Je comprends. Sinon $1 vaut « -n » et le script cherche un dossier qui s''appelle comme ça.' } }
+          - { text: 'Pour que getopts relise les options une deuxième fois.', misconception: relire, reaction: { who: colette, expr: sourcil, text: 'getopts a déjà tout lu quand la boucle se termine.' } }
+          - { text: 'Pour compter les options.', misconception: compter, reaction: { who: colette, expr: sourcil, text: 'Le nombre d''options se déduit de $OPTIND, ce n''est pas le rôle du shift.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Avec « set -u », que se passe-t-il quand le script ne reçoit pas -n et lit "$SIMULATION" ?'
+        options:
+          - { text: 'Le script s''arrête : variable non définie.', ok: true }
+          - { text: 'Elle vaut 0 par défaut.', misconception: zero, reaction: { who: colette, expr: sourcil, text: 'Le shell n''invente pas de valeur : elle n''existe pas.' } }
+          - { text: 'Elle vaut une chaîne vide, sans erreur.', misconception: chaine-vide, reaction: { who: colette, expr: sourcil, text: 'C''est le comportement sans set -u. Avec set -u, c''est une erreur.' } }
+    hints: 3
+  -
+    id: E06
+    act: 1
+    after: [E03, E05]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: incident
+    priority: tres-haute
+    category: 'Sauvegardes › Codes de retour'
+    title: 'Un code de retour qui dit vrai'
+    request: 'Ce matin le disque était plein : le script a écrit « sauvegardé », il a lancé la rotation, et il a supprimé de vieilles copies alors que la nouvelle n''existait pas. Je veux un script qui échoue franchement, ne laisse pas d''archive tronquée et ne touche pas aux anciennes copies après un échec.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Rassemble le tout : sauvegarde.sh doit détecter l''échec de tar, nettoyer ce qu''il laisse, sortir en erreur, et ne lancer la rotation que si tout a réussi.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi écrire sous un nom provisoire, puis renommer ?'
+        options:
+          - { text: 'Parce que tar refuse d''écrire directement le nom final.', misconception: tar-refuse, reaction: { who: colette, expr: sourcil, text: 'tar écrit où on lui dit. Le nom provisoire sert à autre chose.' } }
+          - { text: 'Pour que l''archive soit compressée deux fois.', misconception: compression, reaction: { who: colette, expr: sourcil, text: 'Rien à voir avec la compression.' } }
+          - { text: 'Une archive à moitié écrite n''est jamais prise pour une archive valable : le renommage (mv) n''arrive qu''après la réussite de tar.', ok: true, reaction: { who: odile, expr: sourire, text: 'Voilà : on ne trouve jamais de fichier douteux avec le nom d''une sauvegarde.' } }
+          - { text: 'Pour que la rotation ne la supprime pas.', misconception: rotation, reaction: { who: colette, expr: sourcil, text: 'La rotation lit aussi les noms provisoires. Elle n''est pas la raison.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Une commande échoue au milieu d''un script sans « set -e ». Que se passe-t-il ?'
+        options:
+          - { text: 'Le script continue, et son code de retour final est celui de sa dernière commande.', ok: true }
+          - { text: 'Le script s''arrête immédiatement.', misconception: arret, reaction: { who: colette, expr: sourcil, text: 'Seulement avec set -e. Ici, il continue.' } }
+          - { text: 'Le script renvoie toujours 1.', misconception: toujours-1, reaction: { who: colette, expr: sourcil, text: 'Pas du tout : il renvoie le code de sa dernière commande, souvent 0.' } }
+    hints: 3
+  -
+    id: E07
+    act: 1
+    after: [E02]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: moyenne
+    category: 'Sauvegardes › Vérification'
+    title: 'Vérifier une sauvegarde'
+    request: 'Une sauvegarde qu''on n''a jamais relue n''existe pas. Je veux un rapport : quelles archives se lisent, lesquelles non. Un fichier rapport.txt, une ligne par archive (« OK nom » ou « KO nom »), et un code de retour qui dit si tout va bien.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Corrige verifier.sh : il écrit « OK » pour toutes les archives, même celles qui ne se lisent pas.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Comment sait-on qu''une archive se relit ?'
+        options:
+          - { text: 'Elle existe et n''est pas vide.', misconception: existe, reaction: { who: colette, expr: sourcil, text: 'Un fichier peut exister et être corrompu. Il faut la relire.' } }
+          - { text: 'Elle a la même taille que la veille.', misconception: taille, reaction: { who: colette, expr: sourcil, text: 'La taille change avec le contenu. Elle ne prouve rien.' } }
+          - { text: 'On la lit vraiment : tar -tzf liste son contenu, et son code de retour dit si la lecture s''est bien passée.', ok: true, reaction: { who: odile, expr: sourire, text: 'Relire, c''est la seule preuve. Je garde cette règle.' } }
+          - { text: 'Son nom se termine bien par .tgz.', misconception: extension, reaction: { who: colette, expr: sourcil, text: 'Le nom n''est qu''une étiquette. Un fichier mal écrit garde son nom.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Comment tester le code de retour d''une commande sans afficher sa sortie ?'
+        options:
+          - { text: 'if tar -tzf "$a" > /dev/null 2>&1; then …', ok: true }
+          - { text: 'if [ tar -tzf "$a" ]; then …', misconception: crochets, reaction: { who: colette, expr: sourcil, text: 'Les crochets testent une condition, ils ne lancent pas de commande.' } }
+          - { text: 'if $(tar -tzf "$a"); then …', misconception: sous-shell, reaction: { who: colette, expr: sourcil, text: 'Cela essaie d''exécuter le texte que tar affiche.' } }
+    hints: 3
+  -
+    id: E08
+    act: 1
+    after: [E01]
+    course: 'SIO · administration système'
+    requester: yanis
+    kind: incident
+    priority: tres-haute
+    category: 'Archives › Disparition'
+    title: 'Que dit le journal ?'
+    request: 'Mes émissions de 2019 ont disparu du serveur « archives ». Je numérise des cassettes depuis janvier : chaque semaine, ce que je dépose finit par s''évaporer. Voici le journal d''audit du serveur pour ce matin. Qui supprime, et quand ?'
+    reward:
+      clue: 'Les fichiers sont supprimés à 3 h 00 pile, par la commande find : une tâche planifiée, pas une panne de disque.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Le journal'
+        prompt: 'Clique sur la ligne qui prouve que « la-matinale » de novembre 2019 a été supprimée.'
+        view: audit
+        answer: 'la-matinale/2019-11-04.wav'
+        reaction: { who: colette, expr: sourcil, text: 'Cherche un « unlink » sur un fichier de 2019 de la-matinale.' }
+      -
+        id: conclure
+        kind: choice
+        label: 'Que conclure ?'
+        prompt: 'Que conclure du journal ?'
+        options:
+          - { text: 'Le disque est défaillant : il perd des fichiers.', misconception: panne-disque, reaction: { who: colette, expr: sourcil, text: 'Un disque défaillant ne supprime pas des fichiers par ordre : ici tout est « unlink », à la seconde près.' } }
+          - { text: 'Yanis a supprimé les fichiers lui-même, par erreur.', misconception: utilisateur, reaction: { who: colette, expr: sourcil, text: 'Le journal montre la commande find, lancée par une tâche à 3 h 00 : Yanis n''y est pour rien.' } }
+          - { text: 'C''est un virus.', misconception: virus, reaction: { who: colette, expr: sourcil, text: 'Un virus ne cible pas les émissions de plus de 30 jours en laissant les récentes. Cherche un horaire.' } }
+          - { text: 'Une tâche planifiée lance find à 3 h 00 et supprime des fichiers : il faut trouver laquelle.', ok: true, reaction: { who: yanis, expr: sourcil, text: 'Trois heures pile, chaque nuit. Donc quelque chose est programmé, quelque part.' } }
