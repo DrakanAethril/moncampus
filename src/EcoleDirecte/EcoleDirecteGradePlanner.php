@@ -30,6 +30,13 @@ final class EcoleDirecteGradePlanner
     private const string NOT_EVALUATED = 'ne';
 
     /**
+     * The days between an evaluation's date and the day École Directe shows its grades to families
+     * and students: the establishment's own setting (`nbreJoursDecalage` in its gradebook
+     * parameters), which its website applies when it creates an evaluation.
+     */
+    private const int DISPLAY_DELAY_DAYS = 3;
+
+    /**
      * @param list<EcoleDirecteGradeEntry> $grades
      * @param array<array-key, mixed>      $grid        the `data` of École Directe's notes route
      * @param float                        $scale       the scale the grades are sent out of
@@ -156,6 +163,30 @@ final class EcoleDirecteGradePlanner
         }
 
         return null;
+    }
+
+    /**
+     * The body École Directe's website posts to create an evaluation. Its display date is required:
+     * left empty, École Directe still creates the evaluation, but no grade can then be entered on it.
+     *
+     * @return array{devoir: array<string, mixed>}
+     */
+    public static function evaluationBody(string $name, string $date, float $coefficient, float $scale): array
+    {
+        return ['devoir' => [
+            'libelle' => $name,
+            'commentaire' => '',
+            'coef' => $coefficient,
+            'noteSur' => $scale,
+            'nonSignificatif' => false,
+            'ccf' => false,
+            'notationLettre' => false,
+            'noteNegative' => false,
+            'avecNote' => true,
+            'elementsProgramme' => [],
+            'date' => $date,
+            'dateAffichage' => (new \DateTimeImmutable($date))->modify(\sprintf('+%d days', self::DISPLAY_DELAY_DAYS))->format('Y-m-d'),
+        ]];
     }
 
     /**

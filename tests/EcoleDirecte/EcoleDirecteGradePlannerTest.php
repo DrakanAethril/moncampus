@@ -183,6 +183,17 @@ class EcoleDirecteGradePlannerTest extends TestCase
         self::assertSame('ecoleDirecteEvaluationLockedMessage', $planner->plan([], $grid, 'Contrôle réseaux', '2026-09-22', 20.0)['refusal']);
     }
 
+    public function testACreatedEvaluationIsShownToFamiliesThreeDaysAfterItsDate(): void
+    {
+        $body = EcoleDirecteGradePlanner::evaluationBody('Contrôle 01 - Séquence Bash', '2026-10-30', 2.0, 20.0);
+
+        self::assertSame('Contrôle 01 - Séquence Bash', $body['devoir']['libelle']);
+        self::assertSame('2026-10-30', $body['devoir']['date']);
+        self::assertSame('2026-11-02', $body['devoir']['dateAffichage'], 'an empty display date leaves an evaluation no grade can be entered on');
+        self::assertSame(2.0, $body['devoir']['coef']);
+        self::assertSame(20.0, $body['devoir']['noteSur']);
+    }
+
     public function testTheNotesBodyListsEveryStudentAndKeepsTheGradesNotSent(): void
     {
         $grid = $this->grid(existing: true);
