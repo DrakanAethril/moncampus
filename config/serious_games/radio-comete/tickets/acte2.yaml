@@ -1,0 +1,310 @@
+# Radio-Comète - acte 2 : Les douze crontabs.
+#
+# The server half of the tickets (design/validated/serious-games-radio-comete.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Colette's
+# guided questions, the clue closing gives. The game half (the scripts to start from and to check,
+# the hidden machines, the views, the written hints, the scenes) is public/serious-games/radio-comete/
+# steps/acte2.js. Converted from the prototype's host/scenario/acte2.js by tool/to-yaml.js;
+# `hints` counts the written hints the game holds after the guided questions. A ticket is an « étape »
+# in the game's words.
+tickets:
+  -
+    id: E09
+    act: 2
+    after: [E06, E07, E08]
+    course: 'SIO · administration système'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Planification › Lire cron'
+    title: 'Lire 0 3 * * *'
+    request: 'Le journal dit que quelque chose supprime nos fichiers à 3 h 00 pile. Une tâche planifiée, donc. Sur les serveurs, ça s''écrit en cinq champs, du genre « 0 3 * * * ». Je ne sais pas les lire. Apprends-moi : je ne veux pas me tromper d''heure.'
+    steps:
+      -
+        id: champs
+        kind: choice
+        label: 'Cinq champs'
+        prompt: 'Quand s''exécute une ligne qui commence par « 0 3 * * * » ?'
+        options:
+          - { text: 'Chaque jour, à 3 h 00 précises.', ok: true, reaction: { who: odile, expr: sourire, text: 'Minute 0, heure 3, tous les jours : 3 h pile. Je lis enfin ces cinq champs.' } }
+          - { text: 'Toutes les 3 heures.', misconception: toutes-les-3, reaction: { who: colette, expr: sourcil, text: 'Pour « toutes les 3 heures », on écrit */3 dans le champ des heures. Ici, 3 est une heure fixe.' } }
+          - { text: 'À minuit, le 3 de chaque mois.', misconception: ordre-champs, reaction: { who: colette, expr: sourcil, text: 'L''ordre est : minute, heure, jour du mois, mois, jour de la semaine. Le 3 est dans le deuxième champ : l''heure.' } }
+          - { text: 'Le troisième jour de la semaine, à minuit.', misconception: jour-semaine, reaction: { who: colette, expr: sourcil, text: 'Le jour de la semaine est le cinquième champ, et il vaut * : tous les jours.' } }
+      -
+        id: rythme
+        kind: choice
+        label: 'Un rythme'
+        prompt: 'Et « */15 1-5 * * 1-5 » ?'
+        options:
+          - { text: 'Tous les quinze jours, de janvier à mai.', misconception: plage-mois, reaction: { who: colette, expr: sourcil, text: '*/15 est dans le champ des minutes, 1-5 dans celui des heures.' } }
+          - { text: 'Toutes les quinze heures, du lundi au vendredi.', misconception: quinze-heures, reaction: { who: colette, expr: sourcil, text: 'Le premier champ compte des minutes : */15, c''est « toutes les quinze minutes ».' } }
+          - { text: 'Toutes les quinze minutes, entre 1 h et 5 h, du lundi au vendredi.', ok: true, reaction: { who: odile, expr: neutre, text: 'Minutes, heures, jours de la semaine : une plage chacun. Je suis.' } }
+          - { text: 'Tous les jours, mais seulement de 1 h à 5 h, sans condition sur le jour.', misconception: oubli-jour, reaction: { who: colette, expr: sourcil, text: 'Le dernier champ, 1-5, restreint aux jours de la semaine : lundi (1) à vendredi (5).' } }
+      -
+        id: lundi
+        kind: choice
+        label: 'Un jour'
+        prompt: 'Laquelle de ces lignes s''exécute seulement le lundi, à 2 h 30 ?'
+        options:
+          - { text: '30 2 1 * *', misconception: jour-du-mois, reaction: { who: colette, expr: sourcil, text: 'Le troisième champ est le jour du mois : cette ligne tourne le 1er de chaque mois.' } }
+          - { text: '2 30 * * *', misconception: ordre-inverse, reaction: { who: colette, expr: sourcil, text: 'Les minutes viennent avant les heures : cette ligne vise la 30e heure, qui n''existe pas.' } }
+          - { text: '30 2 * * 1', ok: true, reaction: { who: odile, expr: sourire, text: 'Minute 30, heure 2, lundi : voilà ce que fait export-emissions chaque semaine.' } }
+          - { text: '30 2 * 1 *', misconception: mois, reaction: { who: colette, expr: sourcil, text: 'Le quatrième champ est le mois : cette ligne tourne tous les jours de janvier.' } }
+      -
+        id: audit
+        kind: choice
+        label: 'Le rapport avec le journal'
+        prompt: 'Le journal d''audit montre des suppressions chaque nuit à 3 h 00. Quelle ligne de crontab a cet horaire ?'
+        options:
+          - { text: '3 0 * * *', misconception: minute-heure, reaction: { who: colette, expr: sourcil, text: 'Celle-ci tourne à 0 h 03 : minute 3, heure 0. Ce n''est pas 3 h 00.' } }
+          - { text: '0 3 * * 0', misconception: dimanche, reaction: { who: colette, expr: sourcil, text: 'Le dernier champ vaut 0 : dimanche seulement. Les suppressions ont lieu toutes les nuits.' } }
+          - { text: '*/3 * * * *', misconception: toutes-les-3-min, reaction: { who: colette, expr: sourcil, text: 'Elle tourne toutes les trois minutes, à toute heure.' } }
+          - { text: '0 3 * * *', ok: true, reaction: { who: odile, expr: sourcil, text: 'Voilà l''horaire que je cherche. Reste à savoir sur quel serveur cette ligne se cache.' } }
+  -
+    id: E10
+    act: 2
+    after: [E09]
+    course: 'SIO · scripts Bash'
+    requester: samir
+    kind: demande
+    priority: haute
+    category: 'Planification › Rapatriement'
+    title: 'Rapatrier les crontabs'
+    request: 'Pour savoir ce qui tourne la nuit sur nos douze serveurs, il me faut leurs crontabs au même endroit. À la main, c''est douze connexions. La liste des serveurs est dans hotes.txt, un nom par ligne. Fais-moi un script qui range la crontab de chaque serveur dans crontabs/<serveur>.cron.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Répare rapatrier.sh : il écrase tout dans un seul fichier et se laisse tromper par les lignes vides. Teste-le, puis livre-le.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi lire hotes.txt avec « while read -r h … done < hotes.txt » plutôt que « for h in $(cat hotes.txt) » ?'
+        options:
+          - { text: 'Parce que for ne sait pas lire un fichier.', misconception: for-impossible, reaction: { who: colette, expr: sourcil, text: 'for sait parcourir ce que cat affiche. Le problème est la façon dont le shell découpe cette sortie.' } }
+          - { text: 'Parce que while est toujours plus rapide.', misconception: plus-rapide, reaction: { who: colette, expr: sourcil, text: 'Sur douze lignes, personne ne verra la différence. Cherche une raison de fond.' } }
+          - { text: 'La boucle while lit une ligne entière à la fois : un nom reste un nom, même avec des espaces ou une ligne vide au milieu. $(cat …) découpe sur chaque espace.', ok: true, reaction: { who: samir, expr: sourire, text: 'Une ligne, un serveur. C''est exactement ce que je voulais garantir.' } }
+          - { text: 'Parce que read vérifie que le serveur existe.', misconception: read-verifie, reaction: { who: colette, expr: sourcil, text: 'read lit simplement du texte. C''est ssh qui découvrira un serveur inconnu.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Chaque tour de boucle écrit dans « crontabs/cron ». Que contient ce fichier à la fin ?'
+        options:
+          - { text: 'Seulement la crontab du dernier serveur : chaque écriture écrase la précédente.', ok: true }
+          - { text: 'Les douze crontabs, l''une après l''autre.', misconception: concatene, reaction: { who: colette, expr: sourcil, text: 'Il faudrait >> pour ajouter. Avec >, chaque tour repart d''un fichier vide.' } }
+          - { text: 'Rien : le fichier n''est jamais créé.', misconception: jamais-cree, reaction: { who: colette, expr: sourcil, text: 'La redirection crée le fichier dès le premier tour.' } }
+    hints: 3
+  -
+    id: E11
+    act: 2
+    after: [E10]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: incident
+    priority: haute
+    category: 'Planification › Serveur injoignable'
+    title: 'L''hôte muet'
+    request: 'Hier soir, ton script s''est arrêté net : « relais » ne répond plus depuis une semaine, et les serveurs d''après n''ont pas été lus. Je veux que le script continue, qu''il note dans injoignables.txt les serveurs qui ne répondent pas, qu''il ne laisse pas de crontabs/<serveur>.cron trompeur, et qu''il sorte avec le code 0 si tout a répondu, 1 sinon.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Rends rapatrier.sh robuste : un serveur muet est noté, ne casse rien, et le code de retour le dit.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi comparer le code de retour de ssh à 255 plutôt qu''à « différent de 0 » ?'
+        options:
+          - { text: 'Parce que 255 est le code de « tout va bien ».', misconception: zero-ok, reaction: { who: colette, expr: sourcil, text: 'C''est 0 qui veut dire « tout va bien ». 255 est un code d''échec bien précis.' } }
+          - { text: 'ssh renvoie 255 quand la connexion elle-même échoue. Les autres codes sont ceux de la commande distante : un serveur sans crontab répond, il renvoie 1 à crontab -l, mais il est joignable.', ok: true, reaction: { who: odile, expr: sourire, text: 'Muet et vide, ce n''est pas la même chose. Je veux pouvoir les distinguer.' } }
+          - { text: 'Parce qu''un code supérieur à 128 signale un délai dépassé.', misconception: delai, reaction: { who: colette, expr: sourcil, text: 'Les codes au-dessus de 128 signalent plutôt qu''un programme a été interrompu. Pour ssh, 255 veut dire : connexion impossible.' } }
+          - { text: 'Parce qu''il n''y a aucun autre code possible pour ssh.', misconception: un-seul-code, reaction: { who: colette, expr: sourcil, text: 'ssh renvoie aussi le code de la commande qu''il lance à l''autre bout.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Avec « set -e », que fait le script quand ssh échoue sur « relais » ?'
+        options:
+          - { text: 'Il s''arrête : les serveurs qui suivent ne sont pas lus.', ok: true }
+          - { text: 'Il passe au serveur suivant.', misconception: continue, reaction: { who: colette, expr: sourcil, text: 'Sans set -e, oui. Avec, la première commande en échec arrête le script.' } }
+          - { text: 'Il affiche l''erreur et continue.', misconception: affiche-continue, reaction: { who: colette, expr: sourcil, text: 'L''erreur s''affiche, mais le script s''arrête tout de même.' } }
+    hints: 3
+  -
+    id: E12
+    act: 2
+    after: [E09]
+    course: 'SIO · scripts Bash'
+    requester: samir
+    kind: demande
+    priority: moyenne
+    category: 'Planification › Comparer'
+    title: 'Deux crontabs'
+    request: 'J''aimerais voir ce que la crontab d''antenne a de plus que celle de studio-a. diff m''affiche tout, même des lignes identiques qui changent de place. Fais-moi ecart.sh A B : il n''écrit que les lignes de B qui ne sont pas dans A, sans rien devant.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Répare ecart.sh : il laisse apparaître les signes de diff et se trompe quand l''ordre change.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi trier les fichiers avant de les passer à comm ?'
+        options:
+          - { text: 'Pour que le résultat soit plus joli.', misconception: joli, reaction: { who: colette, expr: sourcil, text: 'Le tri change le résultat, pas seulement sa présentation.' } }
+          - { text: 'Parce que comm ne lit que des fichiers de moins de 100 lignes.', misconception: taille, reaction: { who: colette, expr: sourcil, text: 'comm n''a pas de limite de taille.' } }
+          - { text: 'comm avance dans les deux fichiers en parallèle en supposant qu''ils sont triés : si l''ordre diffère, il rate des lignes identiques et les croit différentes.', ok: true, reaction: { who: samir, expr: sourire, text: 'Deux fichiers triés, et plus aucun faux écart.' } }
+          - { text: 'Parce que sort supprime aussi les espaces inutiles.', misconception: espaces, reaction: { who: colette, expr: sourcil, text: 'sort ne modifie pas les lignes. -u retire seulement les doublons.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quelle option de comm n''affiche que les lignes présentes uniquement dans le deuxième fichier ?'
+        options:
+          - { text: '-13 : on retire la colonne 1 (seulement dans A) et la colonne 3 (communes).', ok: true }
+          - { text: '-12', misconception: colonnes-12, reaction: { who: colette, expr: sourcil, text: '-12 retire les colonnes « seulement dans A » et « seulement dans B » : il reste les lignes communes.' } }
+          - { text: '-23', misconception: colonnes-23, reaction: { who: colette, expr: sourcil, text: '-23 retire « seulement dans B » et les communes : il reste ce qui n''est que dans A.' } }
+    hints: 3
+  -
+    id: E13
+    act: 2
+    after: [E12]
+    course: 'SIO · scripts Bash'
+    requester: samir
+    kind: demande
+    priority: moyenne
+    category: 'Planification › Lignes rares'
+    title: 'Les douze à la fois'
+    request: 'À deux, ça va. Mais à douze, comment trouver ce que chaque serveur est seul à faire ? Il me faut rares.sh : à partir de crontabs/*.cron, il écrit « serveur: ligne » pour chaque ligne portée par un seul serveur, triées.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Répare rares.sh : il trouve bien les lignes rares, mais ne dit pas quel serveur les porte.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi « sort | uniq -c » ne suffit-il pas à trouver les lignes portées par un seul serveur ?'
+        options:
+          - { text: 'Parce que uniq ne compte que les lignes numérotées.', misconception: numerotees, reaction: { who: colette, expr: sourcil, text: 'uniq -c compte bien toutes les lignes identiques consécutives.' } }
+          - { text: 'Il compte combien de fois la ligne apparaît, pas dans combien de serveurs : une ligne répétée dans un seul fichier paraît « commune ». Et le nom du serveur est perdu en route.', ok: true, reaction: { who: samir, expr: sourcil, text: 'Compter des lignes, ce n''est pas compter des serveurs. Bien vu.' } }
+          - { text: 'Parce que sort mélange les lignes des différents fichiers.', misconception: melange, reaction: { who: colette, expr: sourcil, text: 'sort les trie, c''est justement ce qui permet à uniq de les regrouper.' } }
+          - { text: 'Parce que uniq -c ignore les lignes qui commencent par une étoile.', misconception: etoiles, reaction: { who: colette, expr: sourcil, text: 'uniq traite le texte tel quel, étoiles comprises.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Comment obtenir le nom du serveur à partir du fichier « crontabs/studio-a.cron » ?'
+        options:
+          - { text: 'basename "$f" .cron', ok: true }
+          - { text: 'dirname "$f"', misconception: dirname, reaction: { who: colette, expr: sourcil, text: 'dirname donne le dossier : « crontabs ».' } }
+          - { text: 'echo "$f" | cut -d- -f1', misconception: cut-tiret, reaction: { who: colette, expr: sourcil, text: 'Cela couperait « studio-a » en deux au tiret.' } }
+    hints: 3
+  -
+    id: E14
+    act: 2
+    after: [E13]
+    course: 'SIO · scripts Bash'
+    requester: samir
+    kind: incident
+    priority: moyenne
+    category: 'Planification › Normaliser'
+    title: 'Commentaires et espaces'
+    request: 'studio-b ressort toujours en premier dans ta liste de lignes rares, alors que je vois les mêmes lignes que studio-a. Il y a quelque chose d''invisible : son fichier vient de Windows. Fais-moi normaliser.sh FICHIER : sans commentaires, sans lignes vides, sans fin de ligne Windows, sans espaces en trop.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Complète normaliser.sh : il retire les commentaires, mais pas le reste.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi deux lignes qui paraissent identiques à l''écran peuvent-elles être jugées différentes ?'
+        options:
+          - { text: 'Parce que le terminal affiche mal certains caractères.', misconception: affichage, reaction: { who: colette, expr: sourcil, text: 'Le terminal affiche fidèlement. C''est un caractère qu''on ne voit pas qui fait la différence.' } }
+          - { text: 'Parce que sort ne distingue pas les majuscules.', misconception: casse, reaction: { who: colette, expr: sourcil, text: 'Ici il n''y a pas de majuscules en jeu.' } }
+          - { text: 'Un caractère invisible (le retour chariot \r d''une fin de ligne Windows, une espace en fin de ligne) fait partie du texte : pour comm, uniq ou sort, ce sont deux lignes différentes.', ok: true, reaction: { who: samir, expr: sourire, text: 'Le texte, ce n''est pas ce qu''on voit : c''est tous les octets.' } }
+          - { text: 'Parce que le fichier de studio-b est plus ancien.', misconception: date, reaction: { who: colette, expr: sourcil, text: 'La date du fichier n''entre pas dans la comparaison des lignes.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quelle commande retire les retours chariot d''un fichier Windows ?'
+        options:
+          - { text: 'tr -d ''\r'' < fichier', ok: true }
+          - { text: 'sed ''s/^M//'' fichier', misconception: sed-m, reaction: { who: colette, expr: sourcil, text: '^M écrit à la main n''est pas un retour chariot : le motif ne trouve rien.' } }
+          - { text: 'cut -d''\r'' -f1 fichier', misconception: cut-r, reaction: { who: colette, expr: sourcil, text: 'cut ne gère pas de séparateur de deux caractères comme \r tel quel.' } }
+    hints: 3
+  -
+    id: E15
+    act: 2
+    after: [E11, E14]
+    course: 'SIO · administration système'
+    requester: odile
+    kind: demande
+    priority: tres-haute
+    category: 'Planification › Lecture d''un écart'
+    title: 'La ligne en trop'
+    request: 'Voici, sur les crontabs normalisées des douze serveurs, ce que chaque serveur est seul à faire. Beaucoup de lignes sont normales : antenne synchronise ses playlists, web fait tourner ses journaux, podcast son flux… Moi, je cherche celle qui tourne à 3 h 00, l''heure des suppressions. Laquelle est-ce ?'
+    reward:
+      clue: 'Sur archives, la crontab porte une ligne que les onze autres n''ont pas : 0 3 * * * /usr/local/bin/nettoyage-nuit.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Les lignes rares'
+        prompt: 'Clique sur la ligne qui s''exécute à 3 h 00 chaque nuit.'
+        view: rares
+        answer: 'nettoyage-nuit'
+        reaction: { who: colette, expr: sourcil, text: 'Regarde le deuxième champ de chaque ligne : celui des heures. Et le premier, celui des minutes.' }
+      -
+        id: conclure
+        kind: choice
+        label: 'Que conclure ?'
+        prompt: 'Pourquoi les autres lignes rares ne sont-elles pas la piste ?'
+        options:
+          - { text: 'Parce qu''elles sont toutes des erreurs, qu''on corrigera plus tard.', misconception: rare-egale-faux, reaction: { who: colette, expr: sourcil, text: 'Une ligne rare n''est pas une erreur : chaque serveur a son métier. Ce qui compte ici, c''est l''horaire.' } }
+          - { text: 'Parce que planning a une minute différente : c''est lui, le coupable.', misconception: minute-differente, reaction: { who: colette, expr: sourcil, text: 'planning fait sa copie à 2 h 45 au lieu de 2 h 30, mais ni à 3 h 00, ni sur une tâche qui supprime.' } }
+          - { text: 'Parce que sauvegarde lance une tâche à 3 h 10, trop près de 3 h 00 pour être innocente.', misconception: trois-heures-dix, reaction: { who: colette, expr: sourcil, text: 'À 3 h 10, ce n''est pas 3 h 00. Et les suppressions du journal commencent à la seconde 01.' } }
+          - { text: 'Elles tournent à d''autres heures ou font un métier propre au serveur ; une seule, sur archives, a l''horaire des suppressions et un nom qui parle de nettoyage.', ok: true, reaction: { who: odile, expr: sourcil, text: 'Un script « nettoyage-nuit » à 3 h 00 sur archives. Il faut maintenant lire ce qu''il fait.' } }
+  -
+    id: E16
+    act: 2
+    after: [E11, E14]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Planification › Rapport'
+    title: 'Le rapport d''Odile'
+    request: 'Je ne lirai pas douze fichiers. Je veux une page : combien de serveurs répondent, lesquels sont muets, et ce que chaque serveur est seul à faire. Fais-moi compare-crontabs.sh [-q] [-o FICHIER] : -o écrit le rapport dans un fichier, -q n''écrit rien à l''écran. Code de retour : 0 si tous les serveurs ont répondu, 1 si l''un d''eux est muet, 2 si le script est mal appelé.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Termine compare-crontabs.sh : il appelle les bons scripts, mais ignore ses options et ne normalise pas.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi poser « trap ''rm -rf "$propres"'' EXIT » dès la création du dossier temporaire ?'
+        options:
+          - { text: 'Pour que le dossier soit supprimé avant d''avoir servi.', misconception: avant-usage, reaction: { who: colette, expr: sourcil, text: 'Un trap EXIT ne s''exécute qu''à la fin du script.' } }
+          - { text: 'Pour accélérer l''exécution du script.', misconception: rapidite, reaction: { who: colette, expr: sourcil, text: 'Cela n''a aucun effet sur la vitesse.' } }
+          - { text: 'Le dossier temporaire est nettoyé quelle que soit la façon dont le script se termine : fin normale, exit au milieu, erreur.', ok: true, reaction: { who: odile, expr: sourire, text: 'Rien ne traîne derrière lui, même quand il s''arrête en route.' } }
+          - { text: 'Parce que mktemp ne peut pas créer un dossier sans trap.', misconception: mktemp, reaction: { who: colette, expr: sourcil, text: 'mktemp -d crée le dossier sans aucune condition ; le trap ne s''occupe que du ménage.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Que renvoie « exit $((echec != 0)) » quand $echec vaut 1 ?'
+        options:
+          - { text: '1 : la comparaison vaut vrai, l''arithmétique la transforme en 1.', ok: true }
+          - { text: '0 : il inverse la valeur.', misconception: inverse, reaction: { who: colette, expr: sourcil, text: '!= veut dire « différent de » : 1 est bien différent de 0.' } }
+          - { text: 'Une erreur : exit n''accepte pas d''expression.', misconception: pas-expression, reaction: { who: colette, expr: sourcil, text: '$(( )) est remplacé par un nombre avant que exit ne s''exécute.' } }
+    hints: 3

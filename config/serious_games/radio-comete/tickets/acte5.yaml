@@ -1,0 +1,305 @@
+# Radio-Comète - acte 5 : La nuit de 3 h.
+#
+# The server half of the tickets (design/validated/serious-games-radio-comete.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Colette's
+# guided questions, the clue closing gives. The game half (the scripts to start from and to check,
+# the hidden machines, the views, the written hints, the scenes) is public/serious-games/radio-comete/
+# steps/acte5.js. Converted from the prototype's host/scenario/acte5.js by tool/to-yaml.js;
+# `hints` counts the written hints the game holds after the guided questions. A ticket is an « étape »
+# in the game's words.
+tickets:
+  -
+    id: E33
+    act: 5
+    after: [E31, E32]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: incident
+    priority: tres-haute
+    category: 'Nettoyage › Garde-fous'
+    title: 'Des garde-fous'
+    request: 'On sait ce qui supprime nos archives. Je veux que le script de nettoyage ne puisse plus jamais viser autre chose que le dossier des exports : pas de repli sur /srv/data, pas de racine vide, pas de « / », pas de durée absurde. S''il a le moindre doute, il refuse et il le dit.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Réécris nettoyage-nuit.sh : il vérifie ce qu''il va nettoyer avant de supprimer, et sort avec le code 2 et un message sur stderr quand quelque chose ne va pas.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi retirer le repli « ${EXPORT_ROOT:-/srv/data} » ?'
+        options:
+          - { text: 'Parce que /srv/data n''existe plus.', misconception: repli-inexistant, reaction: { who: colette, expr: sourcil, text: 'Il existe très bien : c''est même pour cela que la purge y trouvait des fichiers.' } }
+          - { text: 'Un repli transforme une erreur de configuration en suppression silencieuse : mieux vaut refuser quand la variable est vide.', ok: true, reaction: { who: odile, expr: sourcil, text: 'Un script qui continue « avec une valeur raisonnable » alors que la configuration est vide, voilà notre nuit de mars.' } }
+          - { text: 'Parce que :- est une syntaxe obsolète.', misconception: syntaxe, reaction: { who: colette, expr: sourcil, text: 'La syntaxe est parfaite. C''est son usage ici qui est dangereux.' } }
+          - { text: 'Pour que le script soit plus rapide.', misconception: rapidite, reaction: { who: colette, expr: sourcil, text: 'Aucun gain de vitesse : la question est la sûreté.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quelle commande donne le chemin réel d''un dossier, liens symboliques et « .. » résolus ?'
+        options:
+          - { text: 'realpath', ok: true }
+          - { text: 'basename', misconception: basename, reaction: { who: colette, expr: sourcil, text: 'basename ne garde que le dernier mot du chemin.' } }
+          - { text: 'dirname', misconception: dirname, reaction: { who: colette, expr: sourcil, text: 'dirname enlève le dernier mot, il ne résout rien.' } }
+    hints: 3
+  -
+    id: E34
+    act: 5
+    after: [E33]
+    course: 'SIO · scripts Bash'
+    requester: yanis
+    kind: demande
+    priority: haute
+    category: 'Nettoyage › Simulation'
+    title: 'Simuler par défaut'
+    request: 'Je veux voir la liste avant que quoi que ce soit disparaisse. Sans option, le script annonce « à supprimer : … » pour chaque fichier ; avec --apply, il supprime vraiment. Toute autre option : un message d''usage et le code 2.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Le script lit déjà --apply mais supprime toujours. Fais-le décrire par défaut et refuser les options inconnues.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi décrire par défaut et supprimer seulement avec --apply ?'
+        options:
+          - { text: 'Parce que la simulation est plus rapide.', misconception: rapide, reaction: { who: colette, expr: sourcil, text: 'Elle fait le même travail de recherche. Le but est ailleurs.' } }
+          - { text: 'Parce que --apply est une option standard de find.', misconception: option-find, reaction: { who: colette, expr: sourcil, text: 'C''est l''option que nous avons choisie, ce n''est pas une option de find.' } }
+          - { text: 'Une erreur de frappe ou un oubli ne détruit rien : l''action irréversible doit être demandée explicitement.', ok: true, reaction: { who: yanis, expr: sourire, text: 'Voilà. Le geste dangereux demande un mot de plus, pas un mot de moins.' } }
+          - { text: 'Pour pouvoir lancer le script sans être root.', misconception: root, reaction: { who: colette, expr: sourcil, text: 'Les droits n''ont rien à voir avec le mode simulation.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Que doit faire le script quand il reçoit « --appliquer » (une faute de frappe) ?'
+        options:
+          - { text: 'Afficher un usage et sortir avec le code 2, sans rien supprimer.', ok: true }
+          - { text: 'Le traiter comme --apply : l''intention est claire.', misconception: intention, reaction: { who: colette, expr: sourcil, text: 'Deviner l''intention d''une faute de frappe, c''est supprimer des fichiers sur une supposition.' } }
+          - { text: 'L''ignorer et lancer la simulation.', misconception: ignorer, reaction: { who: colette, expr: sourcil, text: 'Une option qu''on ne comprend pas doit être refusée, pas ignorée.' } }
+    hints: 3
+  -
+    id: E35
+    act: 5
+    after: [E33]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: incident
+    priority: haute
+    category: 'Nettoyage › Verrou'
+    title: 'Un seul à la fois'
+    request: 'Hier, quelqu''un a lancé la purge à la main pendant celle de 3 h. Je veux qu''une seule purge tourne à la fois : si une autre est déjà en cours, le script le dit et s''arrête sans rien supprimer, sans que ce soit une erreur.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Le script prend un verrou, mais attend indéfiniment quand il est pris. Fais-le s''arrêter proprement.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi « flock -n » plutôt que « flock » tout court ?'
+        options:
+          - { text: '-n rend le verrou plus solide.', misconception: solide, reaction: { who: colette, expr: sourcil, text: 'Le verrou est le même. -n change seulement ce qui se passe quand il est déjà pris.' } }
+          - { text: 'Sans -n, la seconde purge attendrait la fin de la première (parfois très longtemps) ; avec -n, elle échoue tout de suite et peut le dire.', ok: true, reaction: { who: odile, expr: sourire, text: 'Je préfère un message tout de suite à un script qui dort jusqu''à demain.' } }
+          - { text: '-n crée le fichier de verrou.', misconception: cree, reaction: { who: colette, expr: sourcil, text: 'Le fichier est créé par la redirection exec 9>…, pas par l''option.' } }
+          - { text: '-n ferme le descripteur à la fin.', misconception: ferme, reaction: { who: colette, expr: sourcil, text: 'La libération du verrou arrive toute seule à la sortie du script.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quand la seconde purge trouve le verrou pris, quel code de retour est le plus juste ?'
+        options:
+          - { text: '0 : ce n''est pas une erreur, l''autre purge fait le travail.', ok: true }
+          - { text: '1 : il y a un conflit.', misconception: conflit, reaction: { who: colette, expr: sourcil, text: 'Un conflit détecté et géré n''est pas un échec. Un cron qui renvoie 1 chaque nuit finit par ne plus être lu.' } }
+          - { text: '2 : c''est un mauvais usage.', misconception: usage, reaction: { who: colette, expr: sourcil, text: 'Le script a été bien appelé. Il n''y a pas de mauvais usage.' } }
+    hints: 3
+  -
+    id: E36
+    act: 5
+    after: [E34, E35]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Nettoyage › Journal'
+    title: 'Garder une trace'
+    request: 'Demain matin, je veux pouvoir dire à Yanis ce qui a été supprimé cette nuit, fichier par fichier, à quelle heure. Un journal daté, qu''on complète sans jamais l''écraser, qui note aussi les refus et les simulations.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Écris le journal : « début », une ligne par fichier, « fin : N fichiers », les refus, le mode simulation.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi la boucle doit-elle se terminer par « done < <(find …) » plutôt que « find … | while … » ?'
+        options:
+          - { text: 'Parce que le tube ralentit find.', misconception: tube-lent, reaction: { who: colette, expr: sourcil, text: 'La vitesse n''a rien à voir.' } }
+          - { text: 'Parce que find ne sait pas écrire dans un tube.', misconception: find-tube, reaction: { who: colette, expr: sourcil, text: 'find sait très bien écrire dans un tube.' } }
+          - { text: 'Derrière un tube, la boucle tourne dans un sous-shell : les variables comme le compteur ne survivent pas à la boucle.', ok: true, reaction: { who: colette, expr: sourire, text: 'Le compteur serait toujours à zéro à la fin : tu aurais écrit « fin : 0 fichiers » après en avoir supprimé trois.' } }
+          - { text: 'Parce que < <( ) est la seule façon de lire un fichier.', misconception: seule, reaction: { who: colette, expr: sourcil, text: 'Il y en a d''autres. Mais celle-ci garde la boucle dans le shell courant.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quel opérateur ajoute une ligne à la fin d''un fichier sans effacer le reste ?'
+        options:
+          - { text: '>>', ok: true }
+          - { text: '>', misconception: redirection-simple, reaction: { who: colette, expr: sourcil, text: '> remplace tout le contenu du fichier à chaque fois.' } }
+          - { text: '|', misconception: tube, reaction: { who: colette, expr: sourcil, text: 'Le tube relie deux commandes, il n''écrit pas dans un fichier.' } }
+    hints: 3
+  -
+    id: E37
+    act: 5
+    after: [E36]
+    course: 'SIO · scripts Bash'
+    requester: yanis
+    kind: incident
+    priority: haute
+    category: 'Nettoyage › Noms de fichiers'
+    title: 'L''épreuve des machines cachées'
+    request: 'Samir exporte en .WAV majuscules, et un stagiaire a un jour nommé un fichier sur deux lignes. Le script va tourner sur des dossiers que nous ne voyons pas : il doit tenir, sans supprimer un fichier récent par erreur ni toucher aux archives.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Rends le script robuste aux noms de fichiers étranges, puis livre-le.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi find -print0 avec read -d '''' ?'
+        options:
+          - { text: 'Parce que -print0 trie les noms.', misconception: tri, reaction: { who: colette, expr: sourcil, text: 'Aucun tri : -print0 ne change que le séparateur.' } }
+          - { text: 'Parce que -print0 supprime les espaces des noms.', misconception: espaces, reaction: { who: colette, expr: sourcil, text: 'Les noms restent intacts, c''est justement le but.' } }
+          - { text: 'Le caractère nul est le seul qui ne peut pas figurer dans un nom de fichier : il sépare les noms sans ambiguïté, même avec des espaces ou des retours à la ligne.', ok: true, reaction: { who: yanis, expr: sourire, text: 'Le seul séparateur sûr est celui que personne ne peut mettre dans un nom.' } }
+          - { text: 'Parce que read ne lit que du texte sans espace.', misconception: read-espace, reaction: { who: colette, expr: sourcil, text: 'read lit très bien des espaces avec IFS= et -r ; le problème, ce sont les retours à la ligne.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Que fait une boucle « une ligne = un fichier » avec un fichier nommé « a<retour>b.wav » ?'
+        options:
+          - { text: 'Elle voit deux noms, « a » et « b.wav » : elle peut supprimer un autre fichier qui s''appelle b.wav.', ok: true }
+          - { text: 'Elle voit un seul nom, comme prévu.', misconception: un-nom, reaction: { who: colette, expr: sourcil, text: 'read s''arrête au retour à la ligne : elle en voit deux.' } }
+          - { text: 'Elle plante avec une erreur.', misconception: plante, reaction: { who: colette, expr: sourcil, text: 'Elle ne plante pas : c''est pire, elle continue avec de mauvais noms.' } }
+    hints: 3
+  -
+    id: E38
+    act: 5
+    after: [E37]
+    course: 'SIO · administration système'
+    requester: odile
+    kind: demande
+    priority: moyenne
+    category: 'Planification › systemd'
+    title: 'Un timer, pas un cron'
+    request: 'La crontab de Marc, je ne la lis plus qu''en cachant mes yeux. Colette dit qu''un timer systemd dit au moins s''il a marché. On remplace la ligne de cron par un service et un timer : la purge de 3 h, tous les jours, activée au démarrage.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Corrige nettoyage.service et nettoyage.timer : l''installation est automatique, mais systemd les refuse.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Qu''est-ce qui empêchait le timer de partir ?'
+        options:
+          - { text: 'Il fallait redémarrer la machine.', misconception: redemarrer, reaction: { who: colette, expr: sourcil, text: 'systemctl daemon-reload et enable --now suffisent.' } }
+          - { text: 'Il n''est pas possible de lancer un script avec systemd.', misconception: script, reaction: { who: colette, expr: sourcil, text: 'C''est tout l''objet d''un service : lancer une commande.' } }
+          - { text: 'Le calendrier était écrit à la mode de cron (« 0 3 * * * ») au lieu de la syntaxe de systemd (« *-*-* 03:00:00 »), et il manquait [Install] pour l''activer.', ok: true, reaction: { who: colette, expr: sourire, text: 'Deux langues différentes pour dire la même heure. Garde la tienne : *-*-* 03:00:00.' } }
+          - { text: 'Le timer s''appelle nettoyage au lieu de nettoyage-nuit.', misconception: nom, reaction: { who: colette, expr: sourcil, text: 'Le nom du timer et du service doivent seulement correspondre, pas ressembler au script.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quelle valeur de OnCalendar signifie « tous les jours à 3 h » ?'
+        options:
+          - { text: '*-*-* 03:00:00', ok: true }
+          - { text: '0 3 * * *', misconception: cron, reaction: { who: colette, expr: sourcil, text: 'C''est la syntaxe de cron, pas celle de systemd.' } }
+          - { text: 'daily 3h', misconception: daily, reaction: { who: colette, expr: sourcil, text: 'daily est un raccourci à minuit ; « 3h » ne veut rien dire.' } }
+    hints: 3
+  -
+    id: E39
+    act: 5
+    after: [E32]
+    course: 'SIO · scripts Bash'
+    requester: yanis
+    kind: demande
+    priority: tres-haute
+    category: 'Sauvegardes › Restauration'
+    title: 'Restaurer les archives'
+    request: 'La sauvegarde de cette nuit a tout ce que la purge a emporté. Remets-le en place, mais ne touche pas à ce que j''ai déjà retrouvé : si un fichier est déjà là, il reste tel quel, même s''il est plus récent. Et si je relance, il ne doit rien se passer.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Écris restaurer.sh : il lit l''archive, ne restaure que ce qui manque et dit combien.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Qu''est-ce qu''un script idempotent ?'
+        options:
+          - { text: 'Un script qui s''exécute une seule fois dans sa vie.', misconception: une-fois, reaction: { who: colette, expr: sourcil, text: 'On peut le lancer autant de fois qu''on veut : c''est tout l''intérêt.' } }
+          - { text: 'Un script que l''on peut relancer sans risque : un deuxième lancement ne change plus rien.', ok: true, reaction: { who: yanis, expr: sourire, text: 'Je peux le relancer sans trembler. C''est exactement ça.' } }
+          - { text: 'Un script qui n''écrit que dans /tmp.', misconception: tmp, reaction: { who: colette, expr: sourcil, text: 'Il écrit où il veut, c''est son résultat qui doit être stable.' } }
+          - { text: 'Un script qui n''a pas besoin d''arguments.', misconception: arguments, reaction: { who: colette, expr: sourcil, text: 'Les arguments n''ont rien à voir avec l''idempotence.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Comment ne restaurer que les fichiers qui manquent ?'
+        options:
+          - { text: 'Extraire dans un dossier temporaire, puis copier seulement ceux qui n''existent pas à destination.', ok: true }
+          - { text: 'Extraire directement dans la destination avec tar -xzf.', misconception: tar-direct, reaction: { who: colette, expr: sourcil, text: 'tar remplace sans demander ce qui existe déjà.' } }
+          - { text: 'Supprimer la destination et tout restaurer.', misconception: supprimer, reaction: { who: colette, expr: sourcil, text: 'On perdrait justement ce que Yanis a déjà retrouvé.' } }
+    hints: 3
+  -
+    id: E40
+    act: 5
+    after: [E38, E39]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: tres-haute
+    category: 'Rapport › Conseil d''administration'
+    final: true
+    title: 'La nuit de 3 h'
+    request: 'Dernière demande. Le conseil d''administration ne lira pas un script : il lira trois lignes. Combien de fichiers ont disparu cette nuit, combien sont revenus aujourd''hui, et quand la purge a-t-elle tourné pour la dernière fois ? Puis tu me remets la nuit dans l''ordre, pour le rapport.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Écris rapport.sh : trois lignes chiffrées, lues dans les journaux, qu''il écrit à l''écran et dans rapport.txt.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Qu''est-ce qui rend une purge nocturne digne de confiance ?'
+        options:
+          - { text: 'Qu''elle tourne la nuit, quand personne ne regarde.', misconception: nuit, reaction: { who: colette, expr: sourcil, text: 'C''est l''inverse : la nuit, personne ne vérifie, donc le script doit se vérifier lui-même.' } }
+          - { text: 'Qu''elle supprime vite et beaucoup.', misconception: vite, reaction: { who: colette, expr: sourcil, text: 'La vitesse n''a jamais rendu un script fiable.' } }
+          - { text: 'Qu''elle soit écrite par quelqu''un d''expérimenté.', misconception: experience, reaction: { who: colette, expr: sourcil, text: 'Marc l''était. Il lui a manqué des garde-fous, une simulation et un journal.' } }
+          - { text: 'Qu''elle vérifie ce qu''elle va toucher, décrive avant d''agir, ne tourne qu''une fois à la fois et laisse une trace lisible.', ok: true, reaction: { who: odile, expr: sourire, text: 'Des garde-fous, une simulation, un verrou, un journal : je garde ces quatre mots.' } }
+      -
+        id: chronologie
+        kind: order
+        label: 'Le rapport'
+        prompt: 'Remets les événements de cette affaire dans l''ordre, pour le rapport d''Odile.'
+        items:
+          - '12 mars 2026, 10 h 20 · l''audit montre que find supprime les fichiers à 3 h 00'
+          - '3 septembre 2025 · la migration déplace les exports sans mettre à jour EXPORT_ROOT sur « archives »'
+          - '14 septembre 2025 · la ligne de crontab de nettoyage-nuit est réactivée'
+          - '12 mars 2026 · nettoyage-nuit est réécrit, avec garde-fous, verrou et journal'
+          - '12 mars 2026 · le timer systemd remplace la ligne de cron'
+          - '12 mars 2026 · les émissions sont restaurées depuis la sauvegarde de la nuit'
+          - '2019 · Marc écrit nettoyage-nuit pour vider les exports'
+        answer: [6, 1, 2, 0, 3, 4, 5]
+        reaction: { who: colette, expr: sourcil, text: 'Remonte à l''origine : le script est de 2019. Ensuite, c''est la migration qui oublie une variable, puis la crontab qui la réveille.' }
+    hints: 3
