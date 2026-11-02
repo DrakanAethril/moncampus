@@ -178,6 +178,14 @@ button { font-family: inherit; }
 .code pre { color: var(--code-texte); pointer-events: none; }
 .code textarea { color: transparent; caret-color: #FFFFFF; background: transparent; border: 0; resize: none; outline: none; }
 .code.lecture pre { pointer-events: auto; }
+/* macOS overlay scrollbars are dark and hidden until scrolling: on this dark editor nothing showed that a long script went on.
+   The pre carries the same (invisible) bar so both layers keep one scroll area. */
+.code pre::-webkit-scrollbar, .code textarea::-webkit-scrollbar { width: 12px; height: 12px; }
+.code pre::-webkit-scrollbar-track, .code textarea::-webkit-scrollbar-track, .code pre::-webkit-scrollbar-corner, .code textarea::-webkit-scrollbar-corner { background: transparent; }
+.code textarea::-webkit-scrollbar-thumb { background: #6E6290; border-radius: 6px; border: 3px solid var(--code-fond); }
+.code textarea::-webkit-scrollbar-thumb:hover { background: #A99CC8; }
+.code pre::-webkit-scrollbar-thumb { background: transparent; }
+@supports not selector(::-webkit-scrollbar) { .code textarea { scrollbar-color: #6E6290 transparent; } .code pre { scrollbar-color: transparent transparent; } }
 .hl-k { color: #C9A8FF; font-weight: 600; }
 .hl-s { color: #A8E36F; }
 .hl-n { color: #FFB27A; }
