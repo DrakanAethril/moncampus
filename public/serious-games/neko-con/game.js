@@ -337,6 +337,9 @@
       (intro ? playScene(intro, { decor: 'club' }) : Promise.resolve()).then(function () {
         G.data.seen[id] = true; save();
         renderWorkstation();
+        // Every step answered, the closing interrupted (the tab closed during the requester's
+        // last line): the ticket closes now rather than stay stuck, all ticked.
+        if (G.step >= G.ticket.steps.length) { finishTicket(); return; }
         var last = intro ? intro[intro.length - 1] : { who: G.ticket.requester, expr: 'neutre', text: G.ticket.request };
         if (st && st.kind === 'explain') last = { who: G.ticket.requester, expr: st.expr, text: st.prompt };
         say(last.who, last.expr, last.text);

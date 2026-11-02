@@ -537,6 +537,14 @@
     if (st.kind === 'fix') {
       p.appendChild(h('<p class="consigne">' + esc(st.prompt) + '</p>'));
       p.appendChild(h('<p class="note">Lis le ticket, teste depuis la console, regarde la carte, puis corrige les fichiers au centre. Modifiables : ' + G.def.edit.map(function (f) { return esc(f.replace(':', ' · ')); }).join(', ') + '.</p>'));
+      var reset = h('<button type="button" class="btn btn-cyan" style="align-self:flex-start;min-height:36px;padding:0 14px;font-size:12px">Remettre la configuration de départ</button>');
+      reset.addEventListener('click', function () {
+        var orig = N.ticketFiles(G.def);
+        G.def.edit.forEach(function (f) { G.files[f] = orig[f]; });
+        delete G.data.drafts[G.ticket.id]; save();
+        G.world = null; G.results = null; renderEditor(); renderRight(); renderLeft();
+      });
+      p.appendChild(reset);
       p.appendChild(criteriaEl());
     } else if (st.kind === 'line') {
       p.appendChild(h('<p class="consigne">' + esc(st.prompt) + '</p>'));
@@ -547,14 +555,6 @@
     var foot = h('<div class="pied-gauche"></div>');
     foot.appendChild(h('<div class="ligne-jauge"><span>Étoiles en jeu</span>' + jauge(stars(G.errors, G.hints)) + '</div>'));
     if (st.kind === 'fix') {
-      var reset = h('<button type="button" class="btn btn-fantome" style="min-height:34px;font-size:12px;justify-content:flex-start;padding:0">Remettre la configuration de départ</button>');
-      reset.addEventListener('click', function () {
-        var orig = N.ticketFiles(G.def);
-        G.def.edit.forEach(function (f) { G.files[f] = orig[f]; });
-        delete G.data.drafts[G.ticket.id]; save();
-        G.world = null; G.results = null; renderEditor(); renderRight(); renderLeft();
-      });
-      foot.appendChild(reset);
       var deliverBtn = h('<button type="button" class="btn btn-magenta">LIVRER LA CORRECTION À ' + esc(nameOf(t.requester).toUpperCase()) + '</button>');
       deliverBtn.addEventListener('click', deliver);
       foot.appendChild(deliverBtn);
