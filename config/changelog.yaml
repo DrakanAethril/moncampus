@@ -26,6 +26,17 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.02.2'
+      date: '2026-11-02'
+      summary: "Trois corrections dans les jeux d'entraînement en essai auprès de l'administration : un ticket qui ne pouvait plus se fermer, un éditeur dont on ne voyait pas qu'il défilait, un bouton de remise à zéro que personne ne trouvait."
+      entries:
+          - type: fix
+            title: "Neko-Con : un ticket quitté pendant la dernière réplique se ferme quand on le rouvre"
+            detail: "Il restait « en cours », sans plus rien à répondre ni moyen de le terminer."
+          - type: fix
+            title: "Rétro Rush : l'éditeur SQL montre sa barre de défilement quand la requête dépasse"
+          - type: fix
+            title: "Black-out : « Remettre la configuration de départ » est visible sous la consigne du ticket"
     - version: '2026.11.02'
       date: '2026-11-02'
       summary: "Un quatrième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration : la régie d'une radio associative, pour apprendre à écrire des scripts Bash en BTS SIO option SISR."
