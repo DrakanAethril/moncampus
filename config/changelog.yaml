@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.02'
+      date: '2026-11-02'
+      summary: "Un quatrième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration : la régie d'une radio associative, pour apprendre à écrire des scripts Bash en BTS SIO option SISR."
+      entries:
+          - type: nouveaute
+            title: "Radio-Comète : un jeu d'entraînement aux scripts Bash, en quarante étapes"
+            detail: "Les scripts s'écrivent et se testent dans un terminal simulé, puis sont rejoués sur des machines que l'élève ne voit pas ; la lecture de l'enseignant montre les étapes où la classe bloque."
     - version: '2026.11.01'
       date: '2026-11-01'
       summary: "Les évaluations envoyées vers École Directe, toujours en essai auprès de l'administration, acceptent de nouveau leurs notes."

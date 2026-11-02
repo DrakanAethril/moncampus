@@ -33,7 +33,8 @@
     irregulars: { bg: '#142820', paper: '#1F3A2E', ink: '#E9D8A6', accent: '#C9A04E', font: "'Libre Caslon Display', Georgia, serif", italic: false },
     'neko-con': { bg: '#241F3A', paper: '#3B3266', ink: '#FBF9FF', accent: '#FF6F91', font: "'Trebuchet MS', 'Source Sans 3', sans-serif", italic: false },
     blackout: { bg: '#0A0618', paper: '#151029', ink: '#F4F2FF', accent: '#FF2E88', font: "'Chakra Petch', 'Trebuchet MS', sans-serif", italic: false },
-    'retro-rush': { bg: '#1E1433', paper: '#EDE7F7', ink: '#EDE7F7', accent: '#FF8A3D', font: "'Manrope', 'Trebuchet MS', sans-serif", italic: false }
+    'retro-rush': { bg: '#1E1433', paper: '#EDE7F7', ink: '#EDE7F7', accent: '#FF8A3D', font: "'Manrope', 'Trebuchet MS', sans-serif", italic: false },
+    'radio-comete': { bg: '#14181C', paper: '#232A30', ink: '#E9E1CF', accent: '#E8A33D', font: "'Barlow Condensed', 'Trebuchet MS', sans-serif", italic: false }
   };
   var GAMES = {
     observatoire: { title: "L'Observatoire", chapters: [
@@ -101,6 +102,14 @@
       { id: 'acte7', name: 'Les automatismes', topic: 'Triggers' },
       { id: 'acte8', name: 'Le grand rush', topic: 'Transactions, vues, index' },
       { id: 'acte9', name: "Les accès et l'inventaire", topic: 'Droits, injection, RGPD' }],
+      finale: { id: 'none', name: '', topic: '' } },
+    // Radio-Comète: a card per act (design/validated/serious-games-radio-comete.md §4).
+    'radio-comete': { title: 'Radio-Comète', chapters: [
+      { id: 'acte1', name: 'Le mot de Marc', topic: 'Sauvegardes, guillemets, codes de retour' },
+      { id: 'acte2', name: 'Les douze crontabs', topic: 'ssh, comm, sort et uniq' },
+      { id: 'acte3', name: "Un script qui n'est pas le sien", topic: 'find, ${A:-B}, lecture à blanc' },
+      { id: 'acte4', name: 'Le parc', topic: 'while read, awk, tests de fichiers' },
+      { id: 'acte5', name: 'La nuit de 3 h', topic: 'Garde-fous, flock, systemd' }],
       finale: { id: 'none', name: '', topic: '' } }
   };
   var PINS = [
@@ -110,7 +119,8 @@
     { id: 'pin-loupe', name: 'Épinglette Loupe', color: '#1F3A2E', ink: '#E9D8A6' },
     { id: 'pin-neko', name: 'Épinglette Neko', color: '#FBF9FF', ink: '#E8457A' },
     { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', ink: '#F4F2FF', ring: '#FF2E88' },
-    { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', ink: '#FF8A3D', ring: '#BFE6FF' }
+    { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', ink: '#FF8A3D', ring: '#BFE6FF' },
+    { id: 'pin-comete', name: 'Épinglette Comète', color: '#14181C', ink: '#E8A33D', ring: '#5FB37C' }
   ];
 
   function cardOf(code) {
@@ -196,6 +206,15 @@
         '<text x="60" y="66" text-anchor="middle" font-size="8.5" font-weight="700" font-family="\'IBM Plex Mono\', monospace" fill="' + (locked ? 'currentColor' : '#1E1433') + '">SELECT *</text>' +
         '<rect x="44" y="72" width="32" height="4" rx="2" fill="' + (locked ? 'currentColor' : '#FF8A3D') + '"/>' +
         '<rect x="34" y="92" width="52" height="8" rx="2" fill="' + M.dark + '"/>';
+    },
+    // Radio-Comète: the Fader d'or, a console fader in metal, its slot and its red mark.
+    'fader-or': function (M, g, locked) {
+      var tick = '';
+      for (var i = 0; i < 7; i++) tick += '<rect x="' + (28 + i * 11) + '" y="' + (i % 2 ? 88 : 84) + '" width="3" height="' + (i % 2 ? 6 : 10) + '" fill="' + (locked ? 'currentColor' : '#E9E1CF') + '"/>';
+      return '<rect x="12" y="18" width="96" height="84" rx="8" fill="' + (locked ? 'currentColor' : '#232A30') + '" stroke="' + M.deep + '" stroke-width="2"/>' +
+        '<rect x="54" y="26" width="12" height="62" rx="6" fill="' + (locked ? 'currentColor' : '#0E1114') + '"/>' + tick +
+        '<rect x="38" y="36" width="44" height="26" rx="4" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.6"/>' +
+        '<rect x="42" y="47" width="36" height="4" fill="' + (locked ? 'currentColor' : '#D8503F') + '"/>';
     },
     astrolabe: function (M, g) {
       var ticks = '';
@@ -298,6 +317,7 @@
     if (gameId === 'neko-con') s = nekoEmblem(idx, P);
     if (gameId === 'blackout') s = blackoutEmblem(idx, P);
     if (gameId === 'retro-rush') s = retroEmblem(idx, P);
+    if (gameId === 'radio-comete') s = radioEmblem(idx, P);
     return s;
   }
   /* The fresco of a room of the villa, inside the card's red panel (x 9-111, y 22-118): one
@@ -488,6 +508,28 @@
       default: // les accès et l'inventaire: the key and the cartridge back on the shelf
         return '<rect x="22" y="40" width="40" height="52" rx="5" fill="' + atomic + '" fill-opacity=".85"/><rect x="28" y="52" width="28" height="18" rx="3" fill="' + glacier + '"/><rect x="30" y="34" width="24" height="8" fill="' + ink + '"/>' +
           '<circle cx="80" cy="56" r="10" fill="none" stroke="' + mand + '" stroke-width="4"/><path d="M80 66 V96 M80 86 H88 M80 94 H90" stroke="' + mand + '" stroke-width="4" stroke-linecap="round"/>';
+    }
+  }
+  /* A card of Radio-Comète: the act's piece of the desk, drawn on the charcoal of the game - amber,
+     VU green, the red of the ON AIR lamp, cream paper. */
+  function radioEmblem(idx, P) {
+    var amb = '#E8A33D', vert = '#5FB37C', rouge = '#D8503F', papier = '#E9E1CF', alu = '#2D353C', noir = '#0E1114';
+    switch (idx) {
+      case 0: // le mot de Marc: a sheet of listing, a tape archive
+        return '<rect x="26" y="34" width="52" height="64" rx="3" fill="' + papier + '" stroke="' + noir + '" stroke-width="2"/><path d="M34 48 H70 M34 58 H64 M34 68 H70 M34 78 H58" stroke="' + alu + '" stroke-width="3" stroke-linecap="round"/><rect x="62" y="70" width="38" height="28" rx="4" fill="' + amb + '" stroke="' + noir + '" stroke-width="2"/><circle cx="73" cy="84" r="5" fill="' + noir + '"/><circle cx="89" cy="84" r="5" fill="' + noir + '"/>';
+      case 1: { // les douze crontabs: twelve cards, one stands out
+        var o = '';
+        for (var i = 0; i < 12; i++) { var x = 22 + (i % 4) * 20, y = 38 + Math.floor(i / 4) * 22; o += '<rect x="' + x + '" y="' + y + '" width="16" height="18" rx="2" fill="' + (i === 11 ? rouge : papier) + '" stroke="' + noir + '" stroke-width="1.6"/><path d="M' + (x + 3) + ' ' + (y + 6) + ' H' + (x + 13) + ' M' + (x + 3) + ' ' + (y + 11) + ' H' + (x + 10) + '" stroke="' + (i === 11 ? papier : alu) + '" stroke-width="1.6"/>'; }
+        return o;
+      }
+      case 2: // un script qui n'est pas le sien: a page and a magnifier
+        return '<rect x="22" y="32" width="56" height="68" rx="3" fill="' + papier + '" stroke="' + noir + '" stroke-width="2"/><path d="M30 46 H62 M30 56 H70 M30 66 H56 M30 76 H66" stroke="' + alu + '" stroke-width="3" stroke-linecap="round"/><circle cx="78" cy="78" r="16" fill="' + vert + '" fill-opacity=".25" stroke="' + noir + '" stroke-width="3.2"/><path d="M89 90 L102 104" stroke="' + noir + '" stroke-width="6" stroke-linecap="round"/><rect x="26" y="52" width="40" height="8" fill="' + amb + '" fill-opacity=".55"/>';
+      case 3: // le parc: a panel of green and amber lights, one dark
+        var l = '';
+        for (var k = 0; k < 12; k++) l += '<circle cx="' + (30 + (k % 4) * 20) + '" cy="' + (44 + Math.floor(k / 4) * 22) + '" r="7" fill="' + (k === 5 ? alu : (k === 9 ? amb : vert)) + '" stroke="' + noir + '" stroke-width="2"/>';
+        return '<rect x="16" y="28" width="88" height="78" rx="6" fill="' + alu + '" stroke="' + noir + '" stroke-width="2"/>' + l;
+      default: // la nuit de 3 h: a clock at three, the ON AIR lamp
+        return '<circle cx="60" cy="66" r="34" fill="' + papier + '" stroke="' + noir + '" stroke-width="3"/><path d="M60 66 V42 M60 66 H80" stroke="' + noir + '" stroke-width="5" stroke-linecap="round"/><circle cx="60" cy="66" r="4" fill="' + rouge + '"/><rect x="40" y="26" width="40" height="14" rx="3" fill="' + rouge + '" stroke="' + noir + '" stroke-width="2"/><text x="60" y="37" text-anchor="middle" font-size="9" font-weight="700" letter-spacing="1.5" font-family="\'Trebuchet MS\', sans-serif" fill="#FFE2DC">ON AIR</text>';
     }
   }
   var ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];

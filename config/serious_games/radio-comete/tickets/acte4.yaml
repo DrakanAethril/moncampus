@@ -1,0 +1,294 @@
+# Radio-Comète - acte 4 : Le parc.
+#
+# The server half of the tickets (design/validated/serious-games-radio-comete.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Colette's
+# guided questions, the clue closing gives. The game half (the scripts to start from and to check,
+# the hidden machines, the views, the written hints, the scenes) is public/serious-games/radio-comete/
+# steps/acte4.js. Converted from the prototype's host/scenario/acte4.js by tool/to-yaml.js;
+# `hints` counts the written hints the game holds after the guided questions. A ticket is an « étape »
+# in the game's words.
+tickets:
+  -
+    id: E25
+    act: 4
+    after: [E22, E24]
+    course: 'SIO · scripts Bash'
+    requester: samir
+    kind: demande
+    priority: moyenne
+    category: 'Configuration › Lecture'
+    title: 'Lire chemins.conf'
+    request: 'Chaque serveur a un fichier /etc/radio/chemins.conf, une variable par ligne. Avant de contrôler le parc, il me faut un script qui le lise proprement : une ligne « CLE<tabulation>VALEUR » par variable, sans les commentaires ni les lignes vides. Mon essai affiche même les commentaires et perd la fin des valeurs.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Répare lire-conf.sh : fichier par défaut, commentaires et lignes vides ignorés, valeurs entières, dernière ligne comprise.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi « cut -d= -f2 » ne convenait-il pas pour la valeur ?'
+        options:
+          - { text: 'cut ne sait pas lire les fichiers de configuration.', misconception: cut-lecture, reaction: { who: colette, expr: sourcil, text: 'cut lit très bien des fichiers. Le souci tient à la façon dont il découpe la ligne.' } }
+          - { text: 'cut supprime les espaces autour du « = ».', misconception: cut-espaces, reaction: { who: colette, expr: sourcil, text: 'cut ne touche pas aux espaces : il découpe sur le séparateur, c''est tout.' } }
+          - { text: 'cut -f2 s''arrête au deuxième champ : une valeur qui contient elle-même un « = » est tronquée.', ok: true, reaction: { who: samir, expr: sourire, text: 'URL=http://x/?a=b : avec cut je perdais « =b ». Avec ${ligne#*=}, je garde tout après le premier « = ».' } }
+          - { text: 'cut affiche toujours la clé avant la valeur.', misconception: cut-ordre, reaction: { who: colette, expr: sourcil, text: 'Non : -f2 n''affiche que le deuxième champ. La clé a disparu, ce n''est pas ça non plus.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Que vaut ${ligne#*=} quand ligne vaut « URL=http://x/?a=b » ?'
+        options:
+          - { text: 'http://x/?a=b : on retire le plus court préfixe qui finit par « = ».', ok: true }
+          - { text: 'b : la partie après le dernier « = ».', misconception: dernier, reaction: { who: colette, expr: sourcil, text: 'Avec un seul #, c''est le plus court préfixe qui est retiré : donc le premier « = ». Le dernier se trouverait avec ##.' } }
+          - { text: 'URL : la partie avant le « = ».', misconception: avant, reaction: { who: colette, expr: sourcil, text: 'Le # retire un début de chaîne, il garde ce qui reste : la fin.' } }
+    hints: 3
+  -
+    id: E26
+    act: 4
+    after: [E25]
+    course: 'SIO · scripts Bash'
+    requester: samir
+    kind: demande
+    priority: moyenne
+    category: 'Configuration › Clés'
+    title: 'Extraire une clé'
+    request: 'J''ai besoin de la valeur d''une seule variable, par exemple « valeur.sh RETENTION ». Mon petit grep m''en rend parfois deux, parce que RETENTION_MAX existe aussi. Je veux la valeur, ou rien du tout avec un code de retour qui le dise.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Répare valeur.sh : une clé exacte, une valeur entière, un code de retour 1 si la clé est absente.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi « grep RETENTION » renvoyait-il plusieurs lignes ?'
+        options:
+          - { text: 'Parce que le fichier contient la variable en double.', misconception: doublon, reaction: { who: colette, expr: sourcil, text: 'Pas du tout : ce sont des lignes différentes qui contiennent le même mot.' } }
+          - { text: 'Parce que grep affiche toujours trois lignes de contexte.', misconception: contexte, reaction: { who: colette, expr: sourcil, text: 'Le contexte n''est affiché qu''avec -A, -B ou -C.' } }
+          - { text: 'grep cherche un morceau de texte n''importe où dans la ligne : RETENTION_MAX et un commentaire qui cite le mot correspondent aussi.', ok: true, reaction: { who: samir, expr: sourire, text: 'Une clé, c''est exactement le texte avant le premier « = » : voilà pourquoi awk avec $1 == cle est plus sûr.' } }
+          - { text: 'Parce que RETENTION est une expression régulière spéciale.', misconception: regex, reaction: { who: colette, expr: sourcil, text: 'RETENTION est un mot ordinaire. C''est son emplacement dans la ligne que grep ne regarde pas.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Avec « awk -F= », que contient $1 pour la ligne « # RETENTION=30 » ?'
+        options:
+          - { text: '« # RETENTION » : le texte avant le « = », espace et dièse compris.', ok: true }
+          - { text: 'RETENTION, la clé sans le commentaire.', misconception: sans-diese, reaction: { who: colette, expr: sourcil, text: 'awk ne connaît pas les commentaires : $1 contient tout ce qui précède le « = ».' } }
+          - { text: '30', misconception: valeur, reaction: { who: colette, expr: sourcil, text: '30 est dans $2, après le séparateur.' } }
+    hints: 3
+  -
+    id: E27
+    act: 4
+    after: [E26]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Configuration › Contrôle'
+    title: 'Contrôler un serveur'
+    request: 'Je voudrais un script qui dise, pour un serveur, si ses variables de chemins sont renseignées : RADIO_ROOT, LOG_DIR et RETENTION partout, et ARCHIVE_ROOT ou EXPORT_ROOT là où elles existent. Un mot par variable : OK, VIDE ou ABSENT. Le code de retour doit dire si tout va bien.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Répare controle.sh : il écrit OK pour toutes les variables, quelle que soit leur valeur.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi « if [ $cle ] » répondait-il toujours OK ?'
+        options:
+          - { text: 'Parce que les crochets sont toujours vrais.', misconception: crochets, reaction: { who: colette, expr: sourcil, text: 'Les crochets testent bien quelque chose : ici, le mauvais texte.' } }
+          - { text: '$cle contient le nom (« RADIO_ROOT »), jamais vide : on testait le nom de la variable, pas sa valeur.', ok: true, reaction: { who: odile, expr: sourcil, text: 'On teste donc un mot qui existe toujours. Je comprends l''erreur.' } }
+          - { text: 'Parce que le fichier de configuration n''était pas lu.', misconception: non-lu, reaction: { who: colette, expr: sourcil, text: 'Il était bien lu (avec « . »). Mais la valeur n''était jamais regardée.' } }
+          - { text: 'Parce que set -u n''était pas activé.', misconception: set-u, reaction: { who: colette, expr: sourcil, text: 'set -u ne change pas ce test : le nom d''une variable n''est jamais vide.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quel test distingue une variable ABSENTE du fichier d''une variable VIDE ?'
+        options:
+          - { text: 'grep -q "^$cle=" dit si la ligne existe ; ce qui suit le « = » dit si elle est vide.', ok: true }
+          - { text: '[ -z "$cle" ]', misconception: nom, reaction: { who: colette, expr: sourcil, text: 'Ce test regarde le nom de la variable, pas sa valeur.' } }
+          - { text: 'Un fichier « sourcé » dit tout : une variable vide ou absente, c''est pareil.', misconception: source, reaction: { who: colette, expr: sourcil, text: 'Une fois le fichier sourcé, on ne sait plus si la ligne existait : absente et vide sont confondues.' } }
+    hints: 3
+  -
+    id: E28
+    act: 4
+    after: [E27]
+    course: 'SIO · scripts Bash'
+    requester: samir
+    kind: demande
+    priority: moyenne
+    category: 'Configuration › Dossiers'
+    title: 'Le répertoire existe-t-il ?'
+    request: 'Une variable renseignée, c''est bien. Mais si elle désigne un dossier qui n''existe pas, le script de nuit tombe dans le vide. Pour toute variable en _ROOT ou _DIR, je veux savoir si le dossier existe (INTROUVABLE sinon) et si on peut y écrire (LECTURE-SEULE sinon).'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Complète controle.sh : tester les dossiers désignés par les variables de chemin.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi tester [ -d "$valeur" ] avec des guillemets ?'
+        options:
+          - { text: 'Pour que le test soit plus rapide.', misconception: rapide, reaction: { who: colette, expr: sourcil, text: 'Les guillemets ne changent rien à la vitesse.' } }
+          - { text: 'Parce que [ ] refuse les chemins sans guillemets.', misconception: refus, reaction: { who: colette, expr: sourcil, text: '[ ] ne refuse rien : c''est le shell qui découpe le chemin avant.' } }
+          - { text: 'Sans guillemets, un chemin qui contient une espace est coupé en deux mots : [ -d /srv/mes fichiers ] est une erreur.', ok: true, reaction: { who: samir, expr: sourire, text: 'Voilà pourquoi je cite toujours mes variables : un nom de dossier peut contenir une espace.' } }
+          - { text: 'Pour que le test accepte aussi les fichiers.', misconception: fichiers, reaction: { who: colette, expr: sourcil, text: '-d teste un dossier. Les guillemets n''y changent rien.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Que teste [ -w "$dossier" ] ?'
+        options:
+          - { text: 'Qu''on peut écrire dans ce dossier.', ok: true }
+          - { text: 'Que le dossier existe.', misconception: existe, reaction: { who: colette, expr: sourcil, text: 'Pour l''existence, c''est -d (ou -e).' } }
+          - { text: 'Qu''on peut le lire.', misconception: lire, reaction: { who: colette, expr: sourcil, text: 'Lire, c''est -r. -w est la lettre de write.' } }
+    hints: 3
+  -
+    id: E29
+    act: 4
+    after: [E28]
+    course: 'SIO · administration système'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Exploitation › Parc'
+    title: 'Les douze serveurs'
+    request: 'Je ne veux pas contrôler douze serveurs un par un. Depuis la régie, une commande : un tableau HOTE, CLE, ETAT pour tous les serveurs de hotes.txt, aligné, avec les serveurs qui ne répondent pas listés à part. Le code de retour doit être 0 seulement si tout est en ordre.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Écris le contrôle du parc : le script de départ affiche seulement les lignes brutes de chaque fichier.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi ne pas empiler les lignes dans une variable depuis une boucle placée après un tube ?'
+        options:
+          - { text: 'Parce que les tubes sont limités à dix lignes.', misconception: limite, reaction: { who: colette, expr: sourcil, text: 'Il n''existe aucune limite de ce genre.' } }
+          - { text: 'Une boucle placée après un tube tourne dans un sous-shell : les variables qu''elle remplit disparaissent à sa sortie.', ok: true, reaction: { who: odile, expr: sourcil, text: 'Voilà pourquoi le tableau était vide à la fin. On lit hotes.txt par une redirection, dans le shell principal.' } }
+          - { text: 'Parce que ssh lit tout le fichier hotes.txt.', misconception: ssh-stdin, reaction: { who: colette, expr: sourcil, text: 'ssh peut lire l''entrée, c''est vrai, mais ce n''est pas ce dont il s''agit ici.' } }
+          - { text: 'Parce que column ne lit pas les variables.', misconception: column, reaction: { who: colette, expr: sourcil, text: 'column lit n''importe quelle entrée. Il lit ici ce qu''on lui envoie.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Que renvoie « ssh serveur commande » quand le serveur ne répond pas ?'
+        options:
+          - { text: '255 et un message sur la sortie d''erreur : le test d''un if le voit comme un échec.', ok: true }
+          - { text: '0 : ssh réussit toujours.', misconception: zero, reaction: { who: colette, expr: sourcil, text: 'Quand la connexion échoue, ssh sort en erreur.' } }
+          - { text: 'Il se bloque pour toujours.', misconception: bloque, reaction: { who: colette, expr: sourcil, text: 'Avec un délai de connexion (ConnectTimeout) ou ici, dans le simulateur, il échoue.' } }
+    hints: 3
+  -
+    id: E30
+    act: 4
+    after: [E29]
+    course: 'SIO · administration système'
+    requester: odile
+    kind: incident
+    priority: tres-haute
+    category: 'Configuration › Diagnostic'
+    title: 'Le serveur au chemin vide'
+    request: 'Voici le tableau du contrôle du parc. Deux variables sont vides. L''une est l''accident qui fait disparaître nos archives, l''autre n''a aucune conséquence. Laquelle est laquelle ?'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Le tableau'
+        prompt: 'Clique sur la ligne du serveur dont la variable vide explique les suppressions : celle que nettoyage-nuit lit.'
+        view: parc
+        answer: 'archives EXPORT_ROOT VIDE'
+        reaction: { who: colette, expr: sourcil, text: 'Rappelle-toi ce que lit le script de nuit, au début : « RACINE=${EXPORT_ROOT:-/srv/data} ». Quel serveur a EXPORT_ROOT vide ?' }
+      -
+        id: jingles
+        kind: choice
+        label: 'Le leurre'
+        prompt: 'Pourquoi la variable vide de « jingles » ne pose-t-elle pas de problème ?'
+        options:
+          - { text: 'Parce que jingles n''est pas dans hotes.txt.', misconception: hotes, reaction: { who: colette, expr: sourcil, text: 'Il y est : il apparaît dans le tableau.' } }
+          - { text: 'Parce qu''un état VIDE est moins grave qu''un état ABSENT.', misconception: vide-moins-grave, reaction: { who: colette, expr: sourcil, text: 'Ni l''un ni l''autre n''est grave en soi : tout dépend de qui lit la variable.' } }
+          - { text: 'Parce que RETENTION est facultative sur tous les serveurs.', misconception: facultative, reaction: { who: colette, expr: sourcil, text: 'Le contrôle la croit obligatoire. Elle ne coûte rien sur jingles pour une autre raison.' } }
+          - { text: 'Parce qu''aucun script de suppression ne tourne sur jingles : la variable est vide, mais personne ne la lit pour supprimer quoi que ce soit.', ok: true, reaction: { who: odile, expr: sourire, text: 'Une variable vide ne fait de dégâts que si un script qui détruit la lit. Sur archives, il y en a un.' } }
+  -
+    id: E31
+    act: 4
+    after: [E25]
+    course: 'SIO · scripts Bash'
+    requester: odile
+    kind: demande
+    priority: haute
+    category: 'Journaux › Recherche'
+    title: 'Depuis quand ?'
+    request: 'Le journal de la migration de septembre dernier est sur le serveur « archives » : quarante lignes, je n''ai pas le temps de les relire. Je voudrais pouvoir demander « quand est-ce arrivé ? » : une date, la première où ce mot apparaît, sans me soucier de la casse si je le demande.'
+    reward:
+      clue: 'La migration de septembre 2025 a déplacé les exports sans mettre à jour EXPORT_ROOT, et la crontab a été réactivée le 14 septembre : le nettoyage tourne depuis, sur /srv/data.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Répare quand.sh : il casse dès que le motif contient une espace et ne sait pas ignorer la casse.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi grep -F pour chercher « a.b » dans un journal ?'
+        options:
+          - { text: 'Parce que -F va plus vite que tous les autres modes.', misconception: vitesse, reaction: { who: colette, expr: sourcil, text: 'La vitesse n''est pas la raison ici.' } }
+          - { text: 'Parce que -F ignore la casse.', misconception: casse, reaction: { who: colette, expr: sourcil, text: 'Pour la casse, c''est -i.' } }
+          - { text: 'Parce que -F cherche le texte tel quel : sans lui, le point veut dire « n''importe quel caractère » et « axb » correspondrait aussi.', ok: true, reaction: { who: odile, expr: sourire, text: 'Le motif d''un utilisateur est un texte, pas une expression régulière. -F le respecte.' } }
+          - { text: 'Parce que -F affiche seulement le premier mot de la ligne.', misconception: premier-mot, reaction: { who: colette, expr: sourcil, text: 'Non : -F ne change rien à l''affichage. Pour la date seule, on coupe la ligne soi-même.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Quelle commande garde seulement la première ligne d''un résultat ?'
+        options:
+          - { text: 'head -n 1', ok: true }
+          - { text: 'tail -n 1', misconception: tail, reaction: { who: colette, expr: sourcil, text: 'tail -n 1 garde la dernière ligne, pas la première.' } }
+          - { text: 'uniq', misconception: uniq, reaction: { who: colette, expr: sourcil, text: 'uniq supprime les doublons consécutifs : il ne limite pas à une seule ligne.' } }
+    hints: 3
+  -
+    id: E32
+    act: 4
+    after: [E30, E31]
+    course: 'SIO · scripts Bash'
+    requester: yanis
+    kind: demande
+    priority: haute
+    category: 'Archives › Dégâts'
+    title: 'Chiffrer les dégâts'
+    request: 'Odile veut un chiffre pour la direction : combien de fichiers ont disparu du serveur « archives », et combien de Mo cela représente. Je n''ai que la liste d''hier soir : une ligne « octets chemin » par fichier. Compare-la à ce qu''il y a maintenant, et dis-moi « 42 fichiers, 1283 Mo ».'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Écris degats.sh : comparer la liste d''hier avec l''état d''archives, compter les fichiers manquants et additionner leur taille.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi comparer les chemins plutôt que les lignes entières « taille chemin » ?'
+        options:
+          - { text: 'Parce que comm ne sait comparer que des chemins.', misconception: comm, reaction: { who: colette, expr: sourcil, text: 'comm compare des lignes, quelles qu''elles soient. Mais elles doivent être triées.' } }
+          - { text: 'Une ligne contient la taille : si un fichier a seulement changé de taille, sa ligne diffère alors que le fichier est toujours là. Le chemin est la vraie identité du fichier.', ok: true, reaction: { who: yanis, expr: sourire, text: 'Un fichier modifié n''est pas un fichier disparu. Je le comprends mieux comme ça.' } }
+          - { text: 'Parce que les tailles sont toujours identiques.', misconception: tailles-identiques, reaction: { who: colette, expr: sourcil, text: 'Elles ne le sont pas : un fichier peut grossir ou rétrécir sans disparaître.' } }
+          - { text: 'Parce que awk ne lit pas les nombres.', misconception: awk-nombres, reaction: { who: colette, expr: sourcil, text: 'awk lit très bien les nombres : c''est même sa spécialité.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Avec « awk -v actuel=… FILENAME == actuel », que teste-t-on ?'
+        options:
+          - { text: 'On repère le fichier en cours de lecture : le premier (l''état actuel) est traité à part du second (la liste d''hier).', ok: true }
+          - { text: 'On teste si awk a bien lu le fichier.', misconception: lu, reaction: { who: colette, expr: sourcil, text: 'FILENAME est le nom du fichier en cours de lecture, pas un état de succès.' } }
+          - { text: 'On teste la taille du fichier actuel.', misconception: taille, reaction: { who: colette, expr: sourcil, text: 'FILENAME ne contient qu''un nom de fichier.' } }
+    hints: 3
