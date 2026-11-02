@@ -263,13 +263,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
 - **Serious games** (`/serious-games`) — `SeriousGame*` entities, `src/SeriousGame/`,
-  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; eight games built,
+  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; nine games built,
   **L'Observatoire** (automatismes de 1re), **Les Tablettes de Pompéi** (déclinaisons latines,
   4e-2nde, `design/validated/serious-games-pompei.md`), **Station Abysse** (SVT, 2nde-1re,
   `serious-games-abysse.md`), **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`), **Panique
   à la Neko-Con** (HTML et CSS, BTS SIO 1, `serious-games-neko-con.md`) and **Black-out** (réseau et
   cybersécurité, BTS SIO 2 SISR, `serious-games-blackout.md`) and **Rétro Rush** (bases de données
-  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`), the four of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
+  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`) and **Fusion** (le plan de bascule, BTS SIO 2 SISR, `serious-games-fusion.md`), the five of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
   mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus
   one line per game in the « Serious games » block of Paramètres › Fonctionnalités
@@ -353,6 +353,14 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     against the reference script the bench keeps; only `{passed, failed}` leaves the browser. The reference
     scripts stay in the package for the bench (like Black-out's repairs). The source of the game, its
     engine tests (98) and its bench live in the Cours repository, `Games/Radio-Comete/`.
+    **Fusion** is the fifth (40 steps in five acts, the architect's model of two merging agencies, Hélène as
+    the helper) and adds nothing to the server either: its `fix` steps are **cutover plans** built in the
+    game's plan editor (a window, operations before or during the night, a check and a rollback per
+    operation, a point of no return) and played by a **night simulator** (`public/serious-games/fusion/sim.js`)
+    on a visible night and 3 to 6 **hidden nights**, each an incident; or configuration forms checked by hidden
+    cases. Only `{passed, failed}` leaves the browser; the reference plans stay in the package for the bench,
+    which also demands that every hidden night catch a mistake the visible night does not show. The source,
+    its bench and its playthrough live in the Cours repository, `Games/Fusion/`.
     **Rétro Rush** is the third (45 issues in a GitLab-like forge, Jade as the helper) and adds
     nothing to the server: its repairs are SQL, run in the frame by **sql.js** (SQLite in
     WebAssembly, `vendor/`, served with the fonts' CORS header) behind a MySQL layer
