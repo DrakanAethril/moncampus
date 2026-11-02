@@ -1,0 +1,324 @@
+# Fusion - acte 4 : Les droits.
+#
+# The server half of the tickets (design/validated/serious-games-fusion.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Hélène's
+# guided questions, the clue closing gives. The game half (the plans and configurations to start from and to check,
+# the hidden nights and checks, the views, the written hints, the scenes) is public/serious-games/fusion/
+# steps/acte4.js. Converted from the prototype's host/scenario/acte4.js by tool/to-yaml.js;
+# `hints` counts the written hints the game holds after the guided questions. A ticket is an « étape »
+# in the game's words.
+tickets:
+  -
+    id: E25
+    act: 4
+    after: [E24]
+    course: 'droits'
+    requester: maelle
+    kind: incident
+    priority: haute
+    category: 'Droits › Le NAS de Brive'
+    title: 'Les droits de Brive'
+    request: 'Maintenant qu''on est tous dans le même domaine, Julien veut que Limoges ouvre nos projets. Avant ça, je veux savoir qui peut déjà ouvrir quoi chez nous. Thibault m''a sorti les droits du NAS. Moi, je n''y comprends rien.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Les droits du NAS'
+        prompt: 'Clique sur la ligne qui ouvre le dossier Concours à n''importe qui.'
+        view: icacls
+        answer: 'Concours Tout le monde:(OI)(CI)(F)'
+        reaction: { who: helene, expr: sourcil, text: 'Cette ligne donne un droit à un groupe précis. Cherche celle qui donne tout, à tout le monde.' }
+      -
+        id: comprendre
+        kind: choice
+        label: 'Ce qu''elle permet'
+        prompt: 'Depuis qu''il n''y a plus qu''un domaine, que permet cette ligne ?'
+        options:
+          - { text: 'Tout compte de delorme.local, à Limoges comme à Brive, peut lire, modifier et supprimer les plans du concours, et même changer leurs droits.', ok: true, reaction: { who: maelle, expr: surprise, text: 'Tout le monde. Les quatorze de Limoges compris. Sur le concours.' } }
+          - { text: 'Rien de grave : seuls les membres du groupe concours voient ce dossier.', misconception: tout-le-monde-equipe, reaction: { who: helene, expr: sourcil, text: 'Le groupe concours a sa propre ligne. « Tout le monde », c''est tout compte qui se connecte au NAS, équipe ou pas.' } }
+          - { text: 'Seuls les administrateurs en profitent : le contrôle total est un droit d''administrateur.', misconception: controle-total-admin, reaction: { who: helene, expr: sourcil, text: '« (F) » est le contrôle total, mais il est donné ici à tout le monde. Ce n''est pas réservé aux administrateurs.' } }
+          - { text: 'Seules les personnes de Brive : « Tout le monde » veut dire tout le monde de l''ancien domaine kerbrat.lan.', misconception: tout-le-monde-local, reaction: { who: helene, expr: sourcil, text: 'C''était vrai avant. Depuis la migration, tous les comptes sont dans delorme.local : ceux de Limoges aussi.' } }
+          - { text: 'N''importe qui sur Internet peut ouvrir le dossier.', misconception: tout-le-monde-internet, reaction: { who: helene, expr: sourcil, text: 'Il faut d''abord atteindre le NAS et s''y connecter avec un compte. Le port ouvert sur Internet a été fermé à l''acte 2. Le danger est à l''intérieur.' } }
+  -
+    id: E26
+    act: 4
+    after: [E25]
+    course: 'droits'
+    requester: julien
+    kind: demande
+    priority: haute
+    category: 'Droits › Habilitations'
+    title: 'La matrice des habilitations'
+    request: 'Maëlle et moi, on s''est mis d''accord, presque, sur qui fait quoi dans les dossiers. Hélène a pris des notes. Tu peux en faire le tableau ? Moi, j''aurais mis tout le monde partout, mais bon.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Remplis la matrice : pour chaque profil et chaque dossier, aucun accès, lecture ou modification, d''après les notes de la réunion.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi écrire cette matrice avant de créer un seul groupe ?'
+        options:
+          - { text: 'Qui lit quoi est une décision des associés, pas du technicien. La matrice l''écrit noir sur blanc : les groupes en découlent, et la recette la vérifiera.', ok: true, reaction: { who: julien, expr: sourire, text: 'Bon. Si c''est écrit et signé, au moins on ne se disputera plus dessus.' } }
+          - { text: 'Parce que Windows demande une matrice pour créer des groupes.', misconception: outil-exige, reaction: { who: helene, expr: sourcil, text: 'Windows ne demande rien. C''est la méthode : on décide d''abord, on configure ensuite.' } }
+          - { text: 'Pour aller plus vite : on remplit la matrice et elle crée les groupes toute seule.', misconception: matrice-automatique, reaction: { who: helene, expr: sourcil, text: 'Elle ne crée rien. Elle dit ce que les groupes devront faire, et ce qu''on vérifiera.' } }
+          - { text: 'Ce n''est pas utile : on peut régler les droits au fur et à mesure que les gens se plaignent.', misconception: droits-au-fil-eau, reaction: { who: helene, expr: sourcil, text: 'C''est comme ça qu''on se retrouve avec « Tout le monde : contrôle total » sur un concours. Personne ne se plaint d''avoir trop de droits.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Claire est dessinatrice à Brive et dans l''équipe concours. Sur la ligne « Équipe concours », que mettre dans la colonne « Projets Brive » ?'
+        options:
+          - { text: 'Rien : Claire a déjà la modification par sa ligne « Dessinateurs Brive ». La ligne de l''équipe n''ajoute que le concours.', ok: true }
+          - { text: 'Modification, puisque Claire modifie les projets de Brive.', misconception: repeter-droits, reaction: { who: helene, expr: sourcil, text: 'Elle les modifie déjà par sa ligne d''agence. Une ligne n''écrit que ce que le profil ajoute.' } }
+          - { text: 'Lecture, par prudence.', misconception: lecture-par-defaut, reaction: { who: helene, expr: sourcil, text: 'Une lecture « par prudence », c''est un droit que personne n''a décidé. Les membres de l''équipe ont le reste par leur agence.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Maëlle a dit : « le concours, personne d''autre, même en lecture ». Que mets-tu pour l''administration dans la colonne « Concours » ?'
+        options:
+          - { text: 'Aucun accès.', ok: true }
+          - { text: 'Lecture : Sandrine doit pouvoir tout retrouver.', misconception: assistante-voit-tout, reaction: { who: helene, expr: sourcil, text: 'Sandrine retrouve les plans des projets, pas ceux d''un concours anonyme. Maëlle a été claire.' } }
+          - { text: 'Modification : c''est elle qui gère les dossiers.', misconception: gestion-donc-modif, reaction: { who: helene, expr: sourcil, text: 'Gérer l''administratif ne donne aucun droit sur le concours.' } }
+    hints: 2
+  -
+    id: E27
+    act: 4
+    after: [E26]
+    course: 'droits'
+    requester: helene
+    kind: demande
+    priority: haute
+    category: 'Droits › Groupes'
+    title: 'AGDLP'
+    request: 'On a la matrice. Maintenant, les groupes. Chez nous, c''est toujours AGDLP : les comptes dans des groupes globaux par métier, ces groupes dans des groupes de domaine local par dossier et par droit, et seuls ceux-là sur les ACL. Construis-moi la structure.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Nomme les groupes globaux et remplis leurs membres, puis crée les groupes de domaine local : nom, membres, dossier, droit.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi ne jamais mettre un compte directement sur l''ACL d''un dossier ?'
+        options:
+          - { text: 'Quand quelqu''un arrive, part ou change de poste, on change un groupe, une fois, au lieu de reprendre les ACL de milliers de dossiers. Et l''ACL se lit comme la matrice.', ok: true, reaction: { who: helene, expr: sourire, text: 'Voilà. Le jour où Claire quittera l''équipe concours, on la retire d''un groupe, et c''est fini.' } }
+          - { text: 'Windows refuse de mettre un compte sur une ACL.', misconception: windows-interdit, reaction: { who: helene, expr: sourcil, text: 'Il l''accepte très bien. C''est justement comme ça qu''on fabrique des droits que personne ne retrouve.' } }
+          - { text: 'Pour que le serveur aille plus vite.', misconception: performances, reaction: { who: helene, expr: sourcil, text: 'La différence de vitesse est négligeable. La raison est l''administration des droits, pas la performance.' } }
+          - { text: 'Parce qu''un compte sur une ACL voit tous les dossiers du serveur.', misconception: compte-voit-tout, reaction: { who: helene, expr: sourcil, text: 'Non : il n''a que le droit qu''on lui a donné, sur ce dossier. Le problème est de le retrouver et de le retirer le jour où il part.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Dans AGDLP, qu''est-ce qu''on inscrit sur l''ACL d''un dossier ?'
+        options:
+          - { text: 'Les groupes de domaine local, un par droit : DL_Concours_L, DL_Concours_M.', ok: true }
+          - { text: 'Les groupes globaux des métiers.', misconception: global-sur-acl, reaction: { who: helene, expr: sourcil, text: 'Les globaux rassemblent des personnes. Sur l''ACL, on met les groupes de domaine local, qui rassemblent les globaux.' } }
+          - { text: 'Les comptes des personnes concernées.', misconception: compte-sur-acl, reaction: { who: helene, expr: sourcil, text: 'C''est ce qu''on veut éviter : les comptes vont dans les groupes globaux.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Le groupe G_Equipe_Concours modifie le concours. Dans quel groupe de domaine local le mets-tu ?'
+        options:
+          - { text: 'Dans DL_Concours_M, et nulle part ailleurs.', ok: true }
+          - { text: 'Dans DL_Concours_M et DL_Concours_L, pour être sûr.', misconception: cumul-l-m, reaction: { who: helene, expr: sourcil, text: 'La modification comprend la lecture. L''ajouter aussi en lecture ne sert à rien et brouille la lecture des groupes.' } }
+          - { text: 'Dans tous les DL de Brive, puisque l''équipe est à Brive.', misconception: equipe-par-site, reaction: { who: helene, expr: sourcil, text: 'Ses membres ont les droits de Brive par leur groupe d''agence. Le groupe de l''équipe n''ajoute que le concours.' } }
+    hints: 2
+  -
+    id: E28
+    act: 4
+    after: [E25]
+    course: 'droits'
+    requester: sandrine
+    kind: incident
+    priority: haute
+    category: 'Concours › Les droits'
+    title: 'Pourquoi Sandrine lit Concours'
+    request: 'Hélène m''a demandé d''ouvrir une copie du dossier Concours, une copie où elle avait retiré « Tout le monde ». Je l''ouvre. Je vois tous les plans. Je n''ai rien demandé, moi ! Comment ça se fait ?'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'L''essai d''Hélène'
+        prompt: 'Clique sur la ligne de droits qui laisse encore entrer Sandrine dans la copie.'
+        view: chaine
+        answer: 'lecture-projets:(I)(OI)(CI)(RX)'
+        reaction: { who: helene, expr: sourcil, text: 'Sandrine n''est pas dans ce groupe-là, ni administratrice. Cherche une ligne de droits sur la copie, puis remonte ses groupes.' }
+      -
+        id: ordonner
+        kind: order
+        label: 'La chaîne'
+        prompt: 'Remets la chaîne dans l''ordre, du compte de Sandrine jusqu''au droit sur le dossier.'
+        items:
+          - 'La lecture sur Projets, héritée par Concours'
+          - 's.aubry (Sandrine Aubry)'
+          - 'Le groupe Personnel Delorme'
+          - 'Le groupe Administration'
+          - 'Le groupe lecture-projets'
+        answer: [1, 3, 2, 4, 0]
+        reaction: { who: helene, expr: sourcil, text: 'Suis les réponses de la console une par une : de quel groupe Sandrine est-elle membre, puis ce groupe, de quel groupe est-il membre ?' }
+      -
+        id: conclure
+        kind: choice
+        label: 'Ce que ça dit'
+        prompt: 'Maëlle demande : « Donc si on retire « Tout le monde », c''est réglé ? »'
+        options:
+          - { text: 'Non. Par l''imbrication des groupes, tout Limoges lit Projets, Concours compris par héritage. Trop de monde pouvait lire le concours : il faut des droits choisis sur Concours, sans héritage de Projets.', ok: true, reaction: { who: maelle, expr: sourcil, text: 'Tout Limoges. Depuis novembre. Et personne ne l''avait vu.' } }
+          - { text: 'Oui : un groupe dans un groupe ne transmet pas ses droits.', misconception: imbrication-ignoree, reaction: { who: helene, expr: sourcil, text: 'Il les transmet : Sandrine est dans Administration, qui est dans Personnel Delorme, qui est dans lecture-projets. Elle a la lecture.' } }
+          - { text: 'Il suffit d''ajouter un refus explicite pour Sandrine sur Concours.', misconception: refus-rustine, reaction: { who: helene, expr: sourcil, text: 'Ça la bloquerait, elle. Et les treize autres de Limoges ? Un refus par personne, c''est une rustine que personne ne retrouvera.' } }
+          - { text: 'Oui : les droits posés sur Projets ne descendent pas dans ses sous-dossiers.', misconception: heritage-ignore, reaction: { who: helene, expr: sourcil, text: 'Le « (I) » de la ligne dit le contraire : ce droit est hérité de Projets.' } }
+  -
+    id: E29
+    act: 4
+    after: [E28]
+    course: 'SIO · cybersécurité'
+    requester: maelle
+    kind: incident
+    priority: tres-haute
+    category: 'Concours › La fuite'
+    title: 'Le journal d''audit'
+    request: 'Si trop de monde pouvait lire, je veux savoir qui l''a fait. Thibault dit que le NAS note les accès aux fichiers depuis l''an dernier. Si quelqu''un d''autre a ouvert l''indice C, je veux son nom.'
+    reward:
+      clue: 'Le dossier Concours était lisible par tout le monde, mais le journal d''audit ne montre aucune lecture inattendue de l''indice C : la fuite ne passe pas par les partages.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Le journal'
+        prompt: 'Un journal qui ne montre que l''équipe ne prouve rien s''il ne voit que l''équipe. Clique sur la ligne qui prouve qu''il enregistre aussi les lectures d''un compte extérieur à l''équipe concours.'
+        view: audit
+        answer: 's.aubry'
+        reaction: { who: helene, expr: sourcil, text: 'Ce compte fait partie de l''équipe concours. Cherche quelqu''un qui n''a rien à faire dans ce dossier.' }
+      -
+        id: conclure
+        kind: choice
+        label: 'Le suspect 3'
+        prompt: 'Que conclut-on pour l''indice C de la planche PL 07 ?'
+        options:
+          - { text: 'Trop de monde pouvait le lire, mais seuls Claire, Maëlle et Thibault l''ont ouvert, et le journal voit aussi les autres. La fuite ne passe pas par les partages.', ok: true, reaction: { who: maelle, expr: neutre, text: 'Claire, Thibault et moi. Personne d''autre. Alors par où ?' } }
+          - { text: 'Sandrine a ouvert le dossier : c''est elle.', misconception: lecture-vaut-fuite, reaction: { who: helene, expr: sourcil, text: 'Elle a lu le règlement du concours, le 26 novembre, plus d''un mois après la fuite. Elle n''a jamais ouvert l''indice C.' } }
+          - { text: 'Thibault l''a lu le lendemain : c''est lui.', misconception: equipe-coupable, reaction: { who: helene, expr: sourcil, text: 'Il fait partie de l''équipe concours, il reprenait la PL 06. Lire les plans de son équipe, c''est son travail.' } }
+          - { text: 'Le journal ne prouve rien : il ne note que les modifications.', misconception: journal-ecriture-seule, reaction: { who: helene, expr: sourcil, text: 'Il note aussi les lectures : la ligne de Sandrine en est une.' } }
+  -
+    id: E30
+    act: 4
+    after: [E27]
+    course: 'droits'
+    requester: thibault
+    kind: demande
+    priority: moyenne
+    category: 'Partages › La copie'
+    title: 'Copier sans les vieux droits'
+    request: 'Hélène veut que tout aille sur SRV-DELORME, sous \\delorme.local\Projets. J''ai préparé des commandes de copie. Elle dit qu''une seule fait ce qu''on veut : les fichiers, sans les vieux droits. Laquelle ?'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Les commandes'
+        prompt: 'Clique sur la commande qui copie les fichiers, leurs attributs et leurs dates, mais pas leurs ACL.'
+        view: commandes
+        answer: '/E /COPY:DAT /DCOPY:DAT'
+        reaction: { who: helene, expr: sourcil, text: 'Celle-ci emporte la sécurité avec les fichiers. Relis le rappel des lettres de /COPY: quelle lettre est l''ACL ?' }
+      -
+        id: pourquoi
+        kind: choice
+        label: 'Pourquoi sans'
+        prompt: 'Thibault : « Garder les droits avec /COPYALL, ce serait plus prudent, non ? »'
+        options:
+          - { text: 'Non : les anciennes ACL viendraient avec chaque fichier, « Tout le monde : contrôle total » compris. On copie sans, et chaque fichier hérite des droits DL_ posés sur son dossier cible.', ok: true, reaction: { who: thibault, expr: sourire, text: 'Donc on laisse les vieux droits sur le vieux NAS. Ça me va.' } }
+          - { text: 'Oui : on garde tout, et on corrigera après.', misconception: garder-par-securite, reaction: { who: helene, expr: sourcil, text: 'Corriger après, c''est reprendre des centaines de milliers de fichiers. Une ACL explicite copiée ne disparaît pas quand on pose les droits du dossier.' } }
+          - { text: '/COPYALL ne marche pas entre un Synology et Windows.', misconception: acl-pas-copiables, reaction: { who: helene, expr: sourcil, text: 'Il marche, et c''est justement le danger : les ACL du NAS passeraient telles quelles.' } }
+          - { text: 'Oui : avec l''historique des SID, les anciens droits marchent encore, autant les garder.', misconception: sid-history-suffit, reaction: { who: helene, expr: sourcil, text: 'Ils marchent, c''est bien le problème. Et on resterait dépendant d''un ancien domaine qu''on veut éteindre.' } }
+      -
+        id: delta
+        kind: choice
+        label: 'La seconde copie'
+        prompt: 'La copie initiale part mardi. Samedi, on relance une copie. Que fait-elle ?'
+        options:
+          - { text: 'La même commande avec /MIR : robocopy ne copie que ce qui est nouveau ou modifié depuis mardi, et retire de la cible ce qu''on a supprimé à la source.', ok: true, reaction: { who: thibault, expr: sourire, text: 'Samedi, il ne reste qu''une semaine de travail à copier. Pas 1,4 To.' } }
+          - { text: 'Elle recopie tout, pour être sûr.', misconception: tout-recopier, reaction: { who: helene, expr: sourcil, text: '1,4 To, environ 40 heures par le tunnel : ça ne tient pas dans un week-end. Robocopy compare tailles et dates, et saute ce qui n''a pas changé.' } }
+          - { text: 'On cherche à la main les fichiers modifiés depuis mardi et on les copie.', misconception: delta-a-la-main, reaction: { who: helene, expr: sourcil, text: 'À la main, on en oublie. Robocopy fait cette comparaison mieux et plus vite, et l''écrit dans son journal.' } }
+          - { text: 'Rien : /MIR efface la source, on ne peut pas le relancer.', misconception: mir-dangereux, reaction: { who: helene, expr: sourcil, text: '/MIR rend la cible identique à la source, il ne touche jamais à la source. Il faut seulement ne pas inverser les deux chemins.' } }
+  -
+    id: E31
+    act: 4
+    after: [E30, E29]
+    course: 'SIO · conduite de projet et bascule'
+    requester: julien
+    kind: demande
+    priority: haute
+    category: 'Partages › La bascule'
+    title: 'Le week-end des partages'
+    request: 'Ce week-end, on passe sur le nouveau partage. Lundi à 8 h, tout le monde ouvre P: et trouve ses dossiers, avec les bons droits. Et je ne veux pas qu''un seul plan se perde. Thibault m''a dit « un seul ». Je compte.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Construis le plan du week-end : ce qui se fait dans la semaine, la fenêtre, les opérations de la nuit, les contrôles, les retours arrière. Puis joue la nuit.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi geler les anciens partages juste avant la copie du delta ?'
+        options:
+          - { text: 'Ce qui s''écrit sur l''ancien partage après la dernière copie n''arrive jamais sur le nouveau. Le gel garantit que cette copie est complète, et ferme les fichiers qui la bloqueraient.', ok: true, reaction: { who: julien, expr: sourire, text: 'Donc personne ne perd un plan enregistré pendant la nuit. Je compte toujours, mais je suis rassuré.' } }
+          - { text: 'Pour empêcher un pirate de copier les plans pendant la nuit.', misconception: gel-securite, reaction: { who: helene, expr: sourcil, text: 'Le gel n''empêche pas de lire. Il empêche d''écrire là où la copie est déjà passée.' } }
+          - { text: 'Pour que la copie aille plus vite.', misconception: gel-vitesse, reaction: { who: helene, expr: sourcil, text: 'Le débit est le même. Le gel sert à ce que rien ne change pendant et après la copie.' } }
+          - { text: 'Il vaudrait mieux geler après la copie, une fois les fichiers à l''abri.', misconception: gel-apres, reaction: { who: helene, expr: sourcil, text: 'Entre la copie et le gel, quelqu''un peut encore enregistrer : ce fichier-là reste derrière, sur l''ancien partage.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'La copie initiale dure environ 40 heures. Où la places-tu ?'
+        options:
+          - { text: 'Dans la semaine, avant la nuit : le week-end, on ne copie plus que le delta.', ok: true }
+          - { text: 'Au début de la fenêtre, pour copier les fichiers les plus récents.', misconception: tout-dans-la-nuit, reaction: { who: helene, expr: sourcil, text: '40 heures ne tiennent dans aucune fenêtre. Le delta du samedi rattrapera ce qui a changé depuis.' } }
+          - { text: 'Nulle part : la copie du delta suffit.', misconception: delta-sans-base, reaction: { who: helene, expr: sourcil, text: 'Sans copie initiale, le delta, c''est tout : 1,4 To.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Après la copie du delta, quel contrôle voit un fichier qui n''a pas été copié ?'
+        options:
+          - { text: 'La fin du journal robocopy : la colonne « Échec » doit être à 0.', ok: true }
+          - { text: 'SRV-DELORME répond au ping.', misconception: ping-suffit, reaction: { who: helene, expr: sourcil, text: 'Le serveur répond, même avec 200 fichiers manquants.' } }
+          - { text: 'Ouvrir le partage avec le compte administrateur.', misconception: admin-voit, reaction: { who: helene, expr: sourcil, text: 'L''administrateur voit le dossier, pas les fichiers qui manquent. Et il voit tout, droits ou pas.' } }
+    hints: 2
+  -
+    id: E32
+    act: 4
+    after: [E31]
+    course: 'droits'
+    requester: maelle
+    kind: demande
+    priority: haute
+    category: 'Partages › La recette'
+    title: 'La recette'
+    request: 'Avant que je signe, je veux une feuille de recette : qui essaie quoi, et ce qui doit se passer. Lundi midi, chacun fait son test devant moi. Et je veux voir Sandrine se faire refuser le concours.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Écris le cahier de recette : pour chaque test, le compte, le dossier, l''action et le résultat attendu.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi des tests dont le résultat attendu est « accès refusé » ?'
+        options:
+          - { text: 'Les tests qui réussissent prouvent que chacun peut travailler. Seuls les refus prouvent que les autres ne peuvent pas, et c''est le trop de droits qu''on corrigeait.', ok: true, reaction: { who: maelle, expr: sourire, text: 'Sandrine, refusée. Thibault, refusé en modification à Limoges. Là, je signe.' } }
+          - { text: 'Pour vérifier que le serveur affiche bien ses messages d''erreur.', misconception: tester-messages, reaction: { who: helene, expr: sourcil, text: 'Le message importe peu. Ce qu''on vérifie, c''est que la porte est fermée à ceux qui ne doivent pas entrer.' } }
+          - { text: 'Ils ne servent à rien : si chacun ouvre ses dossiers, la recette est bonne.', misconception: recette-positive, reaction: { who: helene, expr: sourcil, text: 'Avec « Tout le monde : contrôle total », chacun ouvrait ses dossiers aussi. La recette doit voir ce qui était faux.' } }
+          - { text: 'Pour avoir autant de tests réussis que de tests refusés.', misconception: equilibre-tests, reaction: { who: helene, expr: sourcil, text: 'Il n''y a pas de quota. Il faut un refus là où la matrice dit « aucun accès » ou « lecture ».' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Pauline, dessinatrice à Limoges, a la lecture sur les projets de Brive. Quel test le vérifie vraiment ?'
+        options:
+          - { text: 'Elle essaie d''enregistrer un fichier dans Projets Brive : résultat attendu, accès refusé.', ok: true }
+          - { text: 'Elle ouvre un plan de Brive : il s''ouvre.', misconception: lecture-suffit, reaction: { who: helene, expr: sourcil, text: 'Ça prouve qu''elle lit. Avec la modification, il s''ouvrirait aussi. Une lecture seule se vérifie en essayant d''écrire.' } }
+          - { text: 'L''administrateur regarde l''ACL du dossier.', misconception: acl-suffit, reaction: { who: helene, expr: sourcil, text: 'Regarder l''ACL, c''est relire la configuration. Une recette fait faire le geste à l''utilisateur.' } }
+    hints: 2

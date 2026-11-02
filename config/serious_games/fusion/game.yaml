@@ -1,0 +1,81 @@
+# Fusion: the cutover plan, BTS SIO SISR - the fifth game of the « scénario » mechanic
+# (design/validated/serious-games-fusion.md).
+#
+# Read by `app:serious-games:sync`, which adds the tickets of `tickets/*.yaml` under `scenario.tickets`
+# and builds `chapters` from the acts, so that the screens common to every game read a ticket as a
+# unit and an act as a chapter. **The right answers live in those files and nowhere in the game's
+# package** (public/serious-games/fusion/), which holds the night simulator, the two information
+# systems, the plans and configurations to start from and to check, the hidden nights and checks, the
+# views to designate, the written hints and the scenes. A ticket is an « étape » in the game's words.
+slug: fusion
+title: "Fusion"
+pitch: "Alternant·e du prestataire, fusionner en un trimestre les SI de deux cabinets d'architectes et trouver par où les plans d'un concours ont fui. Des plans de bascule rejoués sur des nuits cachées : adressage, IPsec, DNS, domaines, droits, messagerie."
+subjects: [Informatique]
+levels: [BTS SIO 2]
+unit_label: étapes
+mechanic: scenario
+# The kinds of step of the scenario: a cutover plan or a configuration checked by the game, an
+# explanation to choose, a question, a line to designate in a view, an order.
+answer_kinds: [fix, choice, line, order]
+version: 1.0.0
+published: false
+
+words:
+  unit: [étape, étapes]
+  chapter: [acte, actes]
+  lit: [close, closes]
+  unlit: [ouverte, ouvertes]
+  level: étoiles
+  skill: notion
+  dim_filter: Beaucoup d'aide
+
+scenario:
+  # A ticket keeps the version it was started with; raise it when a step changes.
+  version: 1
+  # Four open steps at most, pinned on the model.
+  capacity: 4
+  # Who answers a wrong step that names nobody.
+  helper: helene
+  # No password: the leak file gathers five clues, the last step ends on the chain of the leak.
+  password: []
+  # « Recommencer depuis le début » on the title screen, before the end too, like Black-out.
+  restart_anytime: true
+  acts:
+    - { n: 1, title: "Deux SI pour un", tools: [plan, console] }
+    - { n: 2, title: "Le même réseau deux fois", tools: [plan, console] }
+    - { n: 3, title: "Deux domaines", tools: [plan, console] }
+    - { n: 4, title: "Les droits", tools: [plan, console] }
+    - { n: 5, title: "Le courrier", tools: [plan, console] }
+
+grades:
+  - [0, "Alternant·e"]
+  - [10, "Technicien·ne"]
+  - [20, "Intégrateur·rice"]
+  - [30, "Chef·fe de bascule"]
+  - [40, "Architecte du SI"]
+
+rewards:
+  # Brass once the final is closed (step 40); silver at two thirds of the steps with three stars,
+  # gold at 36. Thresholds to review after a first promotion.
+  trophy:
+    code: equerre-bascule
+    label: L'Équerre de bascule
+    lore: "L'équerre de l'atelier de maquettes, posée sur la passerelle de balsa le soir du 31 décembre, pour qui a fait passer deux SI en un sans rien perdre en route."
+    silver_at: 27
+    gold_at: 36
+  pin:
+    code: pin-passerelle
+    label: Épinglette Passerelle
+  # One card per act done.
+  cards: true
+
+# Played on a computer only: the request and the plan editor side by side need 1 100 px. On a
+# narrower screen the catalogue says so instead of opening the game.
+desktop_only: true
+
+thumbnail:
+  background: "linear-gradient(160deg, transparent 0 58%, rgba(224, 122, 63, .55) 58% 59.5%, transparent 59.5% 100%), linear-gradient(28deg, #D8C29D 0 34%, transparent 34% 100%), linear-gradient(180deg, #F4F4F1 0%, #E4E3DD 100%)"
+  font: "'Bricolage Grotesque', 'Trebuchet MS', sans-serif"
+  style: normal
+  weight: 800
+  color: "#2E3236"

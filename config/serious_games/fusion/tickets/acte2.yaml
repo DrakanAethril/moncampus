@@ -1,0 +1,336 @@
+# Fusion - acte 2 : Le même réseau deux fois.
+#
+# The server half of the tickets (design/validated/serious-games-fusion.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Hélène's
+# guided questions, the clue closing gives. The game half (the plans and configurations to start from and to check,
+# the hidden nights and checks, the views, the written hints, the scenes) is public/serious-games/fusion/
+# steps/acte2.js. Converted from the prototype's host/scenario/acte2.js by tool/to-yaml.js;
+# `hints` counts the written hints the game holds after the guided questions. A ticket is an « étape »
+# in the game's words.
+tickets:
+  -
+    id: E09
+    act: 2
+    after: [E07]
+    course: 'SIO · réseau et services'
+    requester: helene
+    kind: demande
+    priority: haute
+    category: 'Adressage › Le plan cible'
+    title: 'Le nouveau plan d''adressage'
+    request: 'Julien a validé le bloc du futur cabinet : 10.20.0.0/16. À toi de le découper. Je veux un réseau par site et par usage : les postes d''un côté, les serveurs de l''autre. Julien parle d''embaucher, et peut-être un jour d''ouvrir un troisième site : prévois de la marge. La passerelle de chaque réseau, c''est la box du site, sur la première adresse utilisable.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Écris les quatre réseaux du plan et leur passerelle, puis rends le plan à Hélène.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi un réseau par site et par usage, plutôt qu''un seul grand 10.20.0.0/16 pour tout le monde ?'
+        options:
+          - { text: 'Pour que chaque site soit un réseau à part, qu''on joint par une route (le tunnel en aura besoin), et pour séparer postes et serveurs : un filtrage entre les deux, un DHCP pour les seuls postes.', ok: true, reaction: { who: helene, expr: sourire, text: 'Exactement. Un réseau, c''est une frontière : on y met une route, un filtre, un DHCP. Un seul grand réseau, c''est zéro frontière.' } }
+          - { text: 'Ça ne change rien au fonctionnement, c''est une question de rangement.', misconception: reseau-plat, reaction: { who: helene, expr: sourcil, text: 'Ça change tout : entre deux sites, on route des réseaux. Si Limoges et Brive sont dans le même réseau, aucun routeur ne sait de quel côté envoyer un paquet.' } }
+          - { text: 'Les petits réseaux vont plus vite que les grands.', misconception: petit-reseau-rapide, reaction: { who: helene, expr: sourcil, text: 'La taille du masque ne change pas le débit. Ce qui compte ici, c''est de pouvoir router et filtrer entre les réseaux.' } }
+          - { text: 'Le masque empêche les postes d''un réseau de lire les fichiers des serveurs de l''autre.', misconception: masque-securite, reaction: { who: helene, expr: sourcil, text: 'Le masque ne filtre rien : il dit seulement ce qui est local. Le filtrage, ce sont les règles du pare-feu, qu''on peut écrire justement parce que les réseaux sont séparés.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Un réseau de postes doit accueillir au moins 60 machines. Quel masque au plus petit ?'
+        options:
+          - { text: '/26 : 64 adresses, dont 62 utilisables.', ok: true }
+          - { text: '/27 : 32 adresses.', misconception: compter-court, reaction: { who: helene, expr: sourcil, text: '32 adresses, dont 30 utilisables : c''est la moitié de ce qu''il faut.' } }
+          - { text: '/28 : il suffit de compter les postes d''aujourd''hui.', misconception: sans-marge, reaction: { who: helene, expr: sourcil, text: 'Brive a 9 postes aujourd''hui. Mais Hélène t''a demandé de la marge : on ne renumérote pas un site tous les deux ans.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Limoges prend 10.20.10.0/24 et 10.20.11.0/24. Quel réseau unique les résume, pour une seule route vers Limoges ?'
+        options:
+          - { text: '10.20.10.0/23 : il couvre de 10.20.10.0 à 10.20.11.255, et rien d''autre.', ok: true }
+          - { text: '10.20.10.0/25.', misconception: masque-a-l-envers, reaction: { who: helene, expr: sourcil, text: 'Un /25 est plus petit qu''un /24. Pour résumer deux /24 voisins, on raccourcit le masque d''un bit : /23.' } }
+          - { text: '10.20.0.0/16.', misconception: resume-trop-large, reaction: { who: helene, expr: sourcil, text: 'Il couvre bien Limoges… et Brive avec. Une route vers Limoges ne doit pas emporter les réseaux de Brive.' } }
+    hints: 2
+  -
+    id: E10
+    act: 2
+    after: [E09]
+    course: 'SIO · réseau et services'
+    requester: julien
+    kind: demande
+    priority: tres-haute
+    category: 'Adressage › Dans quel ordre'
+    title: 'Relier avant de renuméroter ?'
+    request: 'J''ai vu le plan. Très joli. Mais mon beau-frère, qui est dans l''informatique, dit qu''un NAT 1:1 règle tout en une soirée : vu de Limoges, Brive devient 10.99.1.0/24, et on relie les deux sites dès lundi. On renumérotera plus tard, tranquillement. Pourquoi pas ?'
+    steps:
+      -
+        id: dns
+        kind: choice
+        label: 'Le NAT et le DNS'
+        prompt: 'Avec le NAT 1:1, un poste de Limoges demande au DNS de Brive l''adresse de nas-kerbrat.kerbrat.lan. Que reçoit-il ?'
+        options:
+          - { text: '192.168.1.20 : le DNS de Brive répond l''adresse qu''il connaît, et le NAT ne réécrit pas le contenu des réponses. À Limoges, 192.168.1.20 est un poste du réseau local.', ok: true, reaction: { who: julien, expr: surprise, text: 'Donc le poste irait chercher le NAS de Brive… sur un PC de chez nous ?' } }
+          - { text: '10.99.1.20 : le NAT traduit les adresses, réponses DNS comprises.', misconception: nat-reecrit-tout, reaction: { who: helene, expr: sourcil, text: 'Le NAT réécrit les en-têtes des paquets, pas l''adresse écrite dans la réponse. Il faudrait une deuxième zone DNS, à tenir à jour à la main.' } }
+          - { text: 'Rien : le DNS ne traverse pas un NAT.', misconception: nat-bloque-dns, reaction: { who: helene, expr: sourcil, text: 'Le DNS passe très bien. C''est ce qu''il répond qui pose problème.' } }
+      -
+        id: choisir
+        kind: choice
+        label: 'La décision'
+        prompt: 'Que fait-on d''abord ?'
+        options:
+          - { text: 'On renumérote Brive dans le nouveau plan, puis on monte le tunnel entre deux réseaux qui ne se chevauchent plus.', ok: true, reaction: { who: julien, expr: sourcil, text: 'Une nuit de travail de plus avant le tunnel. Mais une seule fois, et sans bricolage. D''accord, allez-y.' } }
+          - { text: 'Le NAT 1:1 tout de suite, et on renumérote plus tard.', misconception: provisoire-durable, reaction: { who: helene, expr: sourcil, text: 'Un provisoire qui marche à moitié devient définitif. Le DNS, le domaine et la licence de CAO donnent les vraies adresses : chacun devra être traduit à la main, pour chaque nouveau service.' } }
+          - { text: 'On renumérote les deux sites la même nuit, pour en finir.', misconception: tout-en-une-nuit, reaction: { who: helene, expr: sourcil, text: 'Deux sites, deux domaines, Exchange et la CAO dans la même nuit : si quelque chose casse, on ne sait plus d''où ça vient, et le retour arrière est double.' } }
+          - { text: 'On renumérote Limoges d''abord : c''est le plus gros site, autant commencer par le plus dur.', misconception: commencer-par-le-plus-dur, reaction: { who: helene, expr: sourcil, text: 'Commencer par le plus risqué, c''est apprendre sur Exchange et quatorze personnes. On commence par ce qui casse le moins de choses.' } }
+      -
+        id: pourquoi
+        kind: choice
+        label: 'Pourquoi Brive'
+        prompt: 'Pourquoi renuméroter Brive plutôt que Limoges ?'
+        options:
+          - { text: 'Brive a moins de machines, des postes en DHCP et seulement quatre adresses fixes. Limoges porte Exchange, le copieur et quatorze personnes. On commence par le plus petit risque.', ok: true, reaction: { who: maelle, expr: neutre, text: 'Vu comme ça… Mais je veux être prévenue de la date, et que tout marche le lundi.' } }
+          - { text: 'Parce que si quelque chose casse à Brive, c''est moins grave.', misconception: site-secondaire, reaction: { who: maelle, expr: sourcil, text: 'Maëlle ne serait pas d''accord : Brive rend des concours comme Limoges. C''est une question de nombre de choses à changer, pas d''importance.' } }
+          - { text: 'Parce que c''est Delorme qui absorbe Kerbrat.', misconception: qui-rachete-qui, reaction: { who: helene, expr: sourcil, text: 'Ce n''est pas une question de qui rachète qui. C''est une question de risque technique.' } }
+          - { text: 'Parce que 10.20.0.0/16 n''a de place que pour un site à la fois.', misconception: plan-trop-petit, reaction: { who: helene, expr: sourcil, text: 'Le plan a de la place pour les deux sites, et pour un troisième. Limoges y passera après le trimestre.' } }
+  -
+    id: E11
+    act: 2
+    after: [E10]
+    course: 'SIO · réseau et services'
+    requester: helene
+    kind: demande
+    priority: haute
+    category: 'Interconnexion › Le tunnel'
+    title: 'Le tunnel'
+    request: 'On prépare le tunnel IPsec entre les deux box dès maintenant : il portera le trafic au lendemain de la nuit de Brive. Julien a commencé la configuration côté Limoges hier soir, « pour gagner du temps ». Reprends-la, et écris les deux côtés.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Configure le tunnel : les pairs, les réseaux de chaque côté, la version d''IKE, l''authentification et les algorithmes. Puis rends-le à Hélène.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Brive est encore en 192.168.1.0/24. Pourquoi son côté du tunnel annonce-t-il déjà 10.20.20.0/24 et 10.20.21.0/24 ?'
+        options:
+          - { text: 'Parce qu''un tunnel ne relie pas deux réseaux identiques : on le monte pour les réseaux qu''aura Brive, et il portera le trafic dès qu''elle sera renumérotée.', ok: true, reaction: { who: helene, expr: sourire, text: 'Voilà. Le tunnel est prêt, il attend Brive. La nuit de la renumérotation, il n''y aura rien à y toucher.' } }
+          - { text: 'Parce que le tunnel traduit 192.168.1.0/24 en 10.20.20.0/24 au passage.', misconception: tunnel-traduit, reaction: { who: helene, expr: sourcil, text: 'IPsec chiffre, il ne traduit pas. Les adresses sortent du tunnel telles qu''elles y sont entrées.' } }
+          - { text: 'C''est sans importance : IPsec laisse passer tous les réseaux.', misconception: ipsec-tout-passe, reaction: { who: helene, expr: sourcil, text: 'Au contraire : la phase 2 ne laisse passer que les réseaux qu''elle nomme. Le reste ne rentre pas dans le tunnel.' } }
+          - { text: 'C''est une erreur, mais elle ne gêne pas tant que le tunnel monte.', misconception: monte-donc-marche, reaction: { who: helene, expr: sourcil, text: 'Un tunnel peut monter et ne rien porter. Ici, ce n''est pas une erreur : c''est fait exprès.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Côté Limoges : local 192.168.1.0/24, distant 10.20.20.0/24 et 10.20.21.0/24. Que doit dire le côté Brive ?'
+        options:
+          - { text: 'Local 10.20.20.0/24 et 10.20.21.0/24, distant 192.168.1.0/24 : le miroir exact.', ok: true }
+          - { text: 'La même chose que Limoges : local 192.168.1.0/24, distant 10.20.20.0/24 et 10.20.21.0/24.', misconception: copier-coller, reaction: { who: helene, expr: sourcil, text: 'Chaque box parle de son point de vue : ce qui est local pour l''une est distant pour l''autre.' } }
+          - { text: 'Local 192.168.1.0/24, distant 192.168.1.0/24.', misconception: meme-reseau, reaction: { who: helene, expr: sourcil, text: 'C''est le problème de départ : le même réseau des deux côtés. Le tunnel ne saurait pas où envoyer les paquets.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Julien a mis la clé partagée « kerbrat2026 ». Qu''en penses-tu ?'
+        options:
+          - { text: 'Trop courte et devinable : une clé partagée doit être longue (20 caractères au moins) et aléatoire, ou on passe aux certificats.', ok: true }
+          - { text: 'Elle convient, puisqu''elle n''est connue que des deux box.', misconception: cle-secrete-suffit, reaction: { who: helene, expr: sourcil, text: 'Elle est surtout connue de quiconque sait que le cabinet s''appelle Kerbrat et qu''on est en 2026.' } }
+          - { text: 'La longueur ne compte pas : le tunnel est chiffré en AES.', misconception: aes-protege-cle, reaction: { who: helene, expr: sourcil, text: 'C''est la clé qui protège la négociation de l''AES. Une clé faible se casse hors ligne, et l''AES ne sert plus à rien.' } }
+    hints: 2
+  -
+    id: E12
+    act: 2
+    after: [E11]
+    course: 'SIO · cybersécurité'
+    requester: helene
+    kind: incident
+    priority: tres-haute
+    category: 'Concours › Le vieux NAS'
+    title: 'Le vieux NAS'
+    request: 'En préparant le tunnel, j''ai exporté les règles WAN de box-brive. Il y a quelque chose qui ne me plaît pas du tout. Regarde, et dis-moi ce que tu vois.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Les règles WAN'
+        prompt: 'Clique sur la règle qui rend une machine de Brive joignable depuis Internet, aujourd''hui.'
+        view: nat
+        answer: '192.168.1.30:5001'
+        reaction: { who: helene, expr: sourcil, text: 'Celle-là est désactivée, ou ne mène à aucune machine du réseau. Cherche une redirection active.' }
+      -
+        id: faire
+        kind: choice
+        label: 'Que faire'
+        prompt: 'Le vieux NAS, en DSM 6.2 jamais mis à jour, répond sur Internet. Que fais-tu ?'
+        options:
+          - { text: 'Je copie d''abord son journal d''accès, pour garder la preuve, puis je désactive la redirection aujourd''hui même. Son extinction viendra avec un plan.', ok: true, reaction: { who: helene, expr: sourire, text: 'Dans cet ordre. La preuve d''abord, la porte ensuite, et le serveur quand on saura ce qu''il contient.' } }
+          - { text: 'Je l''éteins tout de suite.', misconception: eteindre-tout-de-suite, reaction: { who: helene, expr: sourcil, text: 'Le danger, c''est le port, pas le courant. Et on perdrait ce qu''il sait : son journal, et peut-être des fichiers que personne n''a ailleurs.' } }
+          - { text: 'Rien pour l''instant : Thibault s''en sert de chez lui.', misconception: laisser-ouvert, reaction: { who: helene, expr: sourcil, text: 'Un NAS sans mises à jour depuis des années, ouvert sur Internet, ce n''est pas un service : c''est une porte. Thibault aura le VPN.' } }
+          - { text: 'Je change le mot de passe admin, et je laisse le port ouvert.', misconception: mot-de-passe-suffit, reaction: { who: helene, expr: sourcil, text: 'Les failles connues de DSM 6.2 ne demandent pas de mot de passe. Le port doit se fermer.' } }
+      -
+        id: suspect
+        kind: choice
+        label: 'Un suspect'
+        prompt: 'Maëlle demande : « C''est par là que nos plans sont partis ? »'
+        options:
+          - { text: 'Peut-être : ce port le rend possible, il ne le prouve pas. Le journal du NAS dira si la planche y est passée.', ok: true, reaction: { who: maelle, expr: sourcil, text: 'Possible, pas prouvé. Je retiens. Je veux lire ce journal avec vous.' } }
+          - { text: 'Oui : un port ouvert sur Internet, c''est forcément par là.', misconception: ouvert-donc-fuite, reaction: { who: helene, expr: sourcil, text: 'Une porte ouverte n''est pas une porte franchie. On ne conclut pas sans le journal.' } }
+          - { text: 'Oui, et c''est Thibault qui l''a ouvert : c''est lui.', misconception: chercher-un-coupable, reaction: { who: helene, expr: sourcil, text: 'On cherche un chemin, pas un coupable. Thibault a ouvert un port pour travailler de chez lui ; ça ne dit rien de la planche.' } }
+          - { text: 'Non : un NAS derrière une box n''est pas joignable depuis Internet.', misconception: box-protege, reaction: { who: helene, expr: sourcil, text: 'C''est justement ce que fait une redirection de port : elle envoie le trafic d''Internet vers une machine du réseau.' } }
+  -
+    id: E13
+    act: 2
+    after: [E10]
+    course: 'SIO · conduite de projet et bascule'
+    requester: helene
+    kind: demande
+    priority: haute
+    category: 'Renumérotation › Les opérations'
+    title: 'Les opérations'
+    request: 'Avant de construire la nuit de Brive, on se met d''accord sur la liste des opérations et sur leur ordre. Chacune a besoin de la précédente. Ensuite, on verra où mettre les contrôles.'
+    steps:
+      -
+        id: ordonner
+        kind: order
+        label: 'L''ordre'
+        prompt: 'Range les opérations de la renumérotation de Brive dans l''ordre où on peut les faire.'
+        items:
+          - 'Supprimer l''ancien réseau 192.168.1.0/24 de box-brive'
+          - 'Créer sur box-brive le VLAN des serveurs et les passerelles 10.20.20.1 et 10.20.21.1'
+          - 'Faire renouveler leur bail aux postes'
+          - 'Une semaine avant : raccourcir les baux DHCP à une heure, relever la configuration des machines à adresse fixe'
+          - 'Renuméroter les serveurs, dc-kerbrat en premier, et mettre le DNS à jour'
+          - 'Contrôler depuis un poste : une licence de CAO, le partage Projets, une page sur le traceur'
+          - 'Passer l''étendue DHCP sur 10.20.20.0/24 : DNS 10.20.21.10, réservation du traceur, relais DHCP sur la box'
+        answer: [3, 1, 4, 6, 2, 5, 0]
+        reaction: { who: helene, expr: sourcil, text: 'Demande-toi pour chacune : de quoi a-t-elle besoin ? Un serveur renuméroté a besoin d''une passerelle dans son nouveau réseau ; une étendue DHCP donne l''adresse d''un DNS qui doit déjà y répondre.' }
+      -
+        id: controles
+        kind: choice
+        label: 'Les contrôles'
+        prompt: 'Où places-tu les points de contrôle dans cette nuit ?'
+        options:
+          - { text: 'Après chaque opération qui peut casser quelque chose, avant la suivante, et chacun teste ce que fait un utilisateur : obtenir une licence, ouvrir Projets, imprimer.', ok: true, reaction: { who: helene, expr: sourire, text: 'Oui. Un contrôle juste après l''opération dit laquelle a cassé. Et il teste le service, pas la machine.' } }
+          - { text: 'Un seul, à la fin, quand tout est fait.', misconception: controle-a-la-fin, reaction: { who: helene, expr: sourcil, text: 'Si le contrôle final échoue, laquelle des six opérations a cassé ? Et il faut alors tout défaire, dans le noir.' } }
+          - { text: 'Après chaque opération, un ping de la machine changée.', misconception: ping-suffit, reaction: { who: helene, expr: sourcil, text: 'Le serveur de licences peut répondre au ping et refuser toutes les licences. On teste ce que fait l''utilisateur, pas ce que répond la machine.' } }
+          - { text: 'Aucun pendant la nuit : lundi, les utilisateurs diront ce qui ne marche pas.', misconception: utilisateurs-testeurs, reaction: { who: helene, expr: sourcil, text: 'Lundi à 8 h, il n''y a plus de retour arrière possible, et neuf personnes attendent. On contrôle pendant la nuit.' } }
+  -
+    id: E14
+    act: 2
+    after: [E13, E11]
+    course: 'SIO · conduite de projet et bascule'
+    requester: maelle
+    kind: demande
+    priority: tres-haute
+    category: 'Renumérotation › La nuit de Brive'
+    title: 'La nuit de Brive'
+    request: 'Hélène m''a expliqué le principe. Mes conditions : rien pendant la semaine du rendu, jeudi soir compris. Thibault travaille le samedi matin. Le traceur doit imprimer lundi à 8 h. Et lundi, je ne veux voir personne chercher ses fichiers.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Construis le plan de la nuit de Brive : la fenêtre, ce qui se prépare avant, les opérations, les contrôles, les retours arrière et le point de non-retour. Puis joue la nuit.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi raccourcir les baux DHCP une semaine avant, et pas pendant la nuit ?'
+        options:
+          - { text: 'Un poste ne redemande son adresse qu''à la moitié de son bail. Avec huit jours, un poste resté allumé garderait l''ancienne pendant quatre jours. Raccourcis une semaine avant, tous les baux en cours ne durent plus qu''une heure le soir de la bascule.', ok: true, reaction: { who: maelle, expr: sourire, text: 'Donc même les postes de rendu, qui tournent tout le week-end, suivront. Bien.' } }
+          - { text: 'Pendant la nuit suffirait : le DHCP prévient les postes du changement.', misconception: dhcp-previent, reaction: { who: helene, expr: sourcil, text: 'Le DHCP ne prévient personne : c''est le poste qui revient, à la moitié de son bail. Un bail de huit jours déjà donné reste un bail de huit jours.' } }
+          - { text: 'Pour soulager le serveur DHCP pendant la nuit.', misconception: charge-dhcp, reaction: { who: helene, expr: sourcil, text: 'Neuf postes ne chargent aucun serveur. Il s''agit du moment où chaque poste redemande son adresse.' } }
+          - { text: 'Pour que les postes soient mieux protégés.', misconception: bail-securite, reaction: { who: helene, expr: sourcil, text: 'La durée du bail ne protège rien. Elle dit quand le poste revient chercher une adresse.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'La licence de l''éditeur est liée à 192.168.1.15. Comment renuméroter lic-kerbrat sans risquer que le démon refuse de démarrer ?'
+        options:
+          - { text: 'Garder 192.168.1.15 en adresse secondaire (alias) sur lic-kerbrat, avant de redémarrer le démon.', ok: true }
+          - { text: 'Vérifier qu''il répond au ping sur sa nouvelle adresse.', misconception: ping-suffit, reaction: { who: helene, expr: sourcil, text: 'Il répondra au ping. C''est le démon de licences qui refusera de démarrer.' } }
+          - { text: 'Mettre à jour son enregistrement DNS.', misconception: dns-suffit, reaction: { who: helene, expr: sourcil, text: 'Les postes le trouveront, mais le démon vérifie l''adresse de sa propre machine, pas le DNS.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Supprimer l''ancien réseau et ses baux ne se défait pas. Où mets-tu le point de non-retour ?'
+        options:
+          - { text: 'Avant les opérations qu''on ne saurait plus défaire dans la fenêtre : au-delà, on répare en avant.', ok: true }
+          - { text: 'Nulle part : tout doit pouvoir se défaire.', misconception: tout-reversible, reaction: { who: helene, expr: sourcil, text: 'Sans point de non-retour, un incident vu après la suppression laisse le plan sans issue : on ne peut ni défaire, ni avoir prévu de réparer.' } }
+          - { text: 'Tout au début : on s''engage, et on répare au fil de l''eau.', misconception: non-retour-au-debut, reaction: { who: helene, expr: sourcil, text: 'Alors aucun retour arrière n''est possible, même pour la première opération, la plus facile à défaire.' } }
+    hints: 2
+  -
+    id: E15
+    act: 2
+    after: [E12]
+    course: 'SIO · cybersécurité'
+    requester: maelle
+    kind: incident
+    priority: tres-haute
+    category: 'Concours › Le journal du vieux NAS'
+    title: 'Le journal du vieux NAS'
+    request: 'Vous avez copié le journal du vieux NAS avant de fermer le port. Lisons-le ensemble. Je veux savoir si notre planche est passée par là, oui ou non.'
+    reward:
+      clue: 'Le vieux NAS était exposé sur Internet, mais son journal montre que l''indice C n''y est jamais arrivé : la fuite ne passe pas par lui.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Le journal'
+        prompt: 'La planche PL 07, indice C, date du 14 octobre. Clique sur la ligne qui montre qu''elle n''a jamais été sur ce NAS.'
+        view: journal
+        answer: 'dernière écriture le 12/06/2026'
+        reaction: { who: helene, expr: sourcil, text: 'Cette ligne parle d''une connexion. Cherche ce que dit le journal du dossier Concours lui-même.' }
+      -
+        id: conclure
+        kind: choice
+        label: 'Ce qu''on en conclut'
+        prompt: 'Que conclure de ce journal ?'
+        options:
+          - { text: 'Le vieux NAS était exposé, et c''est une faille à fermer, mais la planche du 14 octobre n''y est jamais arrivée : la fuite ne passe pas par lui.', ok: true, reaction: { who: maelle, expr: neutre, text: 'Un suspect de moins. Ça ne me rend pas mes plans, mais on avance.' } }
+          - { text: 'Les centaines d''échecs de connexion prouvent qu''on l''a piraté.', misconception: tentatives-donc-intrusion, reaction: { who: helene, expr: sourcil, text: 'Ce sont des robots qui essaient des mots de passe, et ils échouent tous. Une seule connexion réussie depuis Internet : celle de Thibault, de chez lui.' } }
+          - { text: 'La connexion de Thibault depuis chez lui, en juillet, le désigne.', misconception: chercher-un-coupable, reaction: { who: helene, expr: sourcil, text: 'En juillet, avec son compte, pour lire ses archives. Le concours de la médiathèque n''avait pas commencé.' } }
+          - { text: 'Puisqu''il n''y est pour rien, on peut le garder tel quel.', misconception: innocent-donc-sans-risque, reaction: { who: helene, expr: sourcil, text: 'Il n''a pas servi cette fois. Un NAS sans mises à jour reste une faille : on va l''éteindre proprement.' } }
+  -
+    id: E16
+    act: 2
+    after: [E15, E14]
+    course: 'SIO · conduite de projet et bascule'
+    requester: thibault
+    kind: demande
+    priority: moyenne
+    category: 'Décommission › Le vieux NAS'
+    title: 'Éteindre proprement'
+    request: 'Bon. Maëlle veut que le vieux NAS disparaisse. Je comprends. Mais j''ai tout copié sur le nouveau en 2019, normalement, et il y a des années de travail là-dedans. Si on l''éteint, je voudrais être sûr qu''on ne perd rien.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Construis le plan de décommission de srv-kerbrat-old : ce qui se prépare avant, la soirée d''extinction, l''attente, l''effacement. Puis joue-le.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi attendre trente jours entre l''extinction et l''effacement ?'
+        options:
+          - { text: 'Éteint mais intact, le NAS se rallume en vingt minutes si quelqu''un s''en servait encore ; effacé, c''est perdu. Trente jours couvrent un mois de travail complet, avec ce qu''on n''ouvre qu''une fois par mois.', ok: true, reaction: { who: thibault, expr: sourire, text: 'Donc si j''ai oublié quelque chose, j''ai un mois pour m''en rendre compte. Ça me va.' } }
+          - { text: 'Ça ne sert à rien, puisqu''on a une sauvegarde.', misconception: sauvegarde-suffit, reaction: { who: helene, expr: sourcil, text: 'La sauvegarde garde des fichiers. L''attente révèle ce que personne n''a dit : un poste qui monte encore un partage, un usage oublié.' } }
+          - { text: 'C''est une obligation légale.', misconception: obligation-legale, reaction: { who: helene, expr: sourcil, text: 'Aucune loi n''impose trente jours. C''est une précaution d''exploitation : on se laisse le temps de découvrir ce qu''on a oublié.' } }
+          - { text: 'Pour que les disques refroidissent avant l''effacement.', misconception: refroidir, reaction: { who: helene, expr: sourcil, text: 'Les disques n''ont pas besoin de refroidir un mois. L''attente sert aux utilisateurs, pas au matériel.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Hyper Backup affiche « Sauvegarde réussie ». La sauvegarde est-elle bonne ?'
+        options:
+          - { text: 'On ne le sait qu''en restaurant des fichiers et en les ouvrant.', ok: true }
+          - { text: 'Oui : le logiciel le dit.', misconception: succes-suffit, reaction: { who: helene, expr: sourcil, text: 'Le logiciel dit que la tâche s''est terminée. Il ne dit pas qu''on saura relire l''archive, avec la bonne clé.' } }
+          - { text: 'Oui, si la taille de la sauvegarde est proche de celle du NAS.', misconception: taille-suffit, reaction: { who: helene, expr: sourcil, text: 'Une archive peut avoir la bonne taille et ne pas s''ouvrir. On restaure.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Thibault dit avoir « tout copié en 2019 ». Que fais-tu avant de sauvegarder ?'
+        options:
+          - { text: 'Je liste tout ce que contient le NAS (volumes, dossiers non partagés, comptes) et je le compare à nas-kerbrat.', ok: true }
+          - { text: 'Rien : s''il l''a copié, c''est sur le nouveau NAS.', misconception: croire-sur-parole, reaction: { who: helene, expr: sourcil, text: '« Normalement », a-t-il dit. Ce qu''on n''a pas listé, on ne sait pas si on l''a sauvegardé.' } }
+          - { text: 'Je sauvegarde les dossiers partagés, c''est là que sont les fichiers.', misconception: partages-seulement, reaction: { who: helene, expr: sourcil, text: 'Un NAS a aussi des volumes et des dossiers qui ne sont partagés avec personne. On liste tout d''abord.' } }
+    hints: 2

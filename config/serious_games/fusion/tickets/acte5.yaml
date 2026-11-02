@@ -1,0 +1,344 @@
+# Fusion - acte 5 : Le courrier.
+#
+# The server half of the tickets (design/validated/serious-games-fusion.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Hélène's
+# guided questions, the clue closing gives. The game half (the plans and configurations to start from and to check,
+# the hidden nights and checks, the views, the written hints, the scenes) is public/serious-games/fusion/
+# steps/acte5.js. Converted from the prototype's host/scenario/acte5.js by tool/to-yaml.js;
+# `hints` counts the written hints the game holds after the guided questions. A ticket is an « étape »
+# in the game's words.
+tickets:
+  -
+    id: E33
+    act: 5
+    after: [E31]
+    course: 'SIO · messagerie'
+    requester: maelle
+    kind: incident
+    priority: haute
+    category: 'Messagerie › Les enregistrements publics'
+    title: 'Où arrive le courrier'
+    request: 'Depuis la rentrée, des clients me disent que nos mails arrivent dans leurs indésirables. La mairie de Brive dit même qu''elle en a refusé un. Julien jure que la messagerie marche. Hélène dit qu''on commence par regarder ce que voit le reste du monde. Je vous transmets.'
+    steps:
+      -
+        id: mx
+        kind: line
+        label: 'Le MX'
+        prompt: 'Clique sur l''enregistrement qui dit où arrive, en temps normal, le courrier envoyé à @kerbrat-architectes.fr.'
+        view: dig
+        answer: '10 mail.delorme-architectes.fr'
+        reaction: { who: helene, expr: sourcil, text: 'Le courrier entrant se lit dans les enregistrements MX. Il y en a deux : le plus petit numéro passe en premier.' }
+      -
+        id: secours
+        kind: choice
+        label: 'Le MX 20'
+        prompt: 'Et le second MX, celui d''Arvéo, en priorité 20 : à quoi sert-il aujourd''hui ?'
+        options:
+          - { text: 'C''est un MX de secours : quand Exchange ne répond pas, les expéditeurs déposent le courrier chez Arvéo, dans les anciennes boîtes que plus personne ne lit.', ok: true, reaction: { who: maelle, expr: sourcil, text: 'Donc des mails peuvent dormir chez Arvéo sans qu''on le sache. Notez-le pour la suite.' } }
+          - { text: 'À rien : Julien a changé le MX en septembre, l''ancien ne compte plus.', misconception: mx-ignore, reaction: { who: helene, expr: sourcil, text: 'Il est encore publié. Tant qu''il l''est, un expéditeur qui ne joint pas Exchange l''utilise.' } }
+          - { text: 'Il partage le courrier à moitié entre Exchange et Arvéo.', misconception: mx-repartition, reaction: { who: helene, expr: sourcil, text: 'Des priorités différentes ne partagent pas : le 10 passe d''abord, le 20 seulement si le 10 ne répond pas.' } }
+          - { text: 'Il sert à envoyer les mails de Brive vers l''extérieur.', misconception: mx-sortant, reaction: { who: helene, expr: sourcil, text: 'Un MX ne concerne que le courrier qui arrive. Pour l''envoi, c''est le SPF qu''il faut regarder.' } }
+      -
+        id: spf
+        kind: line
+        label: 'Le SPF'
+        prompt: 'Clique sur l''enregistrement qui explique pourquoi les mails de Brive, envoyés par Exchange depuis septembre, sont refusés ou classés en indésirables.'
+        view: dig
+        answer: 'v=spf1'
+        reaction: { who: helene, expr: sourcil, text: 'Le destinataire vérifie que le serveur qui envoie a le droit d''écrire au nom du domaine. Cherche l''enregistrement TXT qui donne cette liste.' }
+  -
+    id: E34
+    act: 5
+    after: [E33]
+    course: 'SIO · messagerie'
+    requester: julien
+    kind: incident
+    priority: haute
+    category: 'Messagerie › SPF, DKIM, DMARC'
+    title: 'SPF, DKIM, DMARC'
+    request: 'Bon, d''accord, le SPF. Je l''avais pas vu, celui-là. Tu me corriges ça ? Et Hélène parle aussi de DKIM et de DMARC. Je veux que nos mails arrivent, c''est tout.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Écris les enregistrements DNS de kerbrat-architectes.fr : le SPF corrigé, la signature DKIM, la politique DMARC. Puis rends-les à Julien.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi les mails de Brive étaient-ils refusés depuis septembre ?'
+        options:
+          - { text: 'Le SPF n''autorisait que les serveurs d''Arvéo, avec « -all » : un mail venu d''Exchange, à 203.0.113.10, échouait au contrôle SPF, et le destinataire le refusait ou le mettait de côté.', ok: true, reaction: { who: julien, expr: sourcil, text: 'J''ai changé où arrive le courrier, pas qui a le droit d''en envoyer. Deux choses différentes. Compris.' } }
+          - { text: 'Parce que le MX pointait encore sur Arvéo.', misconception: mx-sortant, reaction: { who: helene, expr: sourcil, text: 'Le MX dit où arrive le courrier, pas qui peut l''envoyer. Et il pointe sur Exchange depuis le 22 septembre.' } }
+          - { text: 'Parce qu''Exchange est un serveur trop ancien pour Gmail.', misconception: serveur-ancien, reaction: { who: helene, expr: sourcil, text: 'La version d''Exchange n''y est pour rien : le destinataire a comparé l''adresse du serveur au SPF, et elle n''y était pas.' } }
+          - { text: 'Parce que les plans en pièce jointe étaient trop lourds.', misconception: taille, reaction: { who: helene, expr: sourcil, text: 'Un mail trop lourd est refusé pour sa taille, avec un autre message. Ici, l''en-tête dit « spf=fail ».' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Un domaine publie deux enregistrements TXT qui commencent par « v=spf1 ». Que fait le destinataire ?'
+        options:
+          - { text: 'Il rend une erreur (permerror) : un domaine ne doit avoir qu''un seul SPF. On corrige l''existant, on n''en ajoute pas un second.', ok: true }
+          - { text: 'Il lit les deux et additionne les serveurs autorisés.', misconception: spf-addition, reaction: { who: helene, expr: sourcil, text: 'C''est ce qu''on espère, mais la norme dit l''inverse : deux SPF, c''est une erreur, et le contrôle échoue.' } }
+          - { text: 'Il prend le plus récent.', misconception: spf-recent, reaction: { who: helene, expr: sourcil, text: 'Le DNS ne date pas ses enregistrements. Deux SPF, c''est une erreur.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Pour autoriser Exchange, quel mécanisme ajouter au SPF ?'
+        options:
+          - { text: 'ip4:203.0.113.10, son adresse publique (ou « mx », puisque le MX 10 de kerbrat-architectes.fr est justement Exchange).', ok: true }
+          - { text: 'include:mail.delorme-architectes.fr', misconception: include-machine, reaction: { who: helene, expr: sourcil, text: 'include: va lire le SPF d''un autre domaine. mail.delorme-architectes.fr est une machine, sans SPF : erreur. Pour une machine, ip4: ou a:.' } }
+          - { text: '+all, pour ne plus avoir de refus.', misconception: plus-all, reaction: { who: helene, expr: sourcil, text: '+all autorise le monde entier à écrire en votre nom. Plus aucun refus, mais plus aucune protection.' } }
+    hints: 2
+  -
+    id: E35
+    act: 5
+    after: [E33]
+    course: 'SIO · cybersécurité'
+    requester: maelle
+    kind: incident
+    priority: tres-haute
+    category: 'Concours › La fuite'
+    title: 'Le suivi des messages'
+    request: 'On a écarté le vieux NAS, le compte de Bastien, les droits du partage. Il reste le courrier. Le 14 octobre à 16 h 42, Claire a envoyé l''indice C de la PL 07 à concours@, comme toujours. Je veux savoir où ce mail est allé. Partout où il est allé.'
+    reward:
+      clue: 'Le suivi des messages montre une copie de chaque envoi à concours@ vers une adresse Gmail, depuis le 21 septembre.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Le suivi du 14 octobre'
+        prompt: 'Clique sur l''événement qui envoie le mail à un destinataire que personne n''a choisi.'
+        view: trace
+        answer: 'REDIRECT'
+        reaction: { who: helene, expr: sourcil, text: 'Celui-là était prévu : concours@ distribue aux cinq membres du groupe. Cherche l''événement qui ajoute une adresse qui n''est pas au cabinet.' }
+      -
+        id: lire
+        kind: choice
+        label: 'Ce que dit la ligne'
+        prompt: 'Que dit cette ligne ?'
+        options:
+          - { text: 'Deux secondes après la remise, une règle de la boîte b.roux a envoyé une copie du mail vers une adresse Gmail. Personne n''a cliqué : c''est le serveur qui l''a fait.', ok: true, reaction: { who: maelle, expr: surprise, text: 'Bastien. Une règle dans sa boîte. Et personne n''a rien vu.' } }
+          - { text: 'Bastien a ouvert sa boîte et transféré le mail à la main.', misconception: transfert-manuel, reaction: { who: helene, expr: sourcil, text: 'Un transfert à la main serait un nouveau mail, envoyé depuis une session, à un autre moment. Ici, la source est MAILBOXRULE, deux secondes après la remise.' } }
+          - { text: 'L''adresse Gmail fait partie du groupe concours@.', misconception: membre-externe, reaction: { who: helene, expr: sourcil, text: 'Relis la ligne EXPAND : le groupe s''ouvre sur cinq adresses du cabinet, rien d''autre.' } }
+          - { text: 'Quelqu''un a piraté le serveur Exchange.', misconception: piratage, reaction: { who: helene, expr: sourcil, text: 'Rien dans le suivi ne parle d''intrusion. Le serveur a fait exactement ce qu''une règle lui demandait.' } }
+      -
+        id: depuis
+        kind: line
+        label: 'Depuis quand'
+        prompt: 'Clique sur le jour de la première copie vers Gmail.'
+        view: history
+        answer: '2026-09-21'
+        reaction: { who: helene, expr: sourcil, text: 'Les copies sont rangées par jour. Remonte jusqu''à la toute première.' }
+  -
+    id: E36
+    act: 5
+    after: [E35]
+    course: 'SIO · cybersécurité'
+    requester: helene
+    kind: incident
+    priority: tres-haute
+    category: 'Concours › La règle'
+    title: 'La règle'
+    request: 'On ne touche à rien pour l''instant, on lit. J''ai demandé à Exchange les règles de la boîte b.roux, et à Arvéo l''export des filtres de son ancienne boîte. Dis-moi ce que fait cette règle, et depuis quand elle existe.'
+    steps:
+      -
+        id: quoi
+        kind: line
+        label: 'Ce que fait la règle'
+        prompt: 'Clique sur la propriété de la règle qui envoie le courrier hors du cabinet.'
+        view: regle
+        answer: 'ForwardTo'
+        reaction: { who: helene, expr: sourcil, text: 'Cette propriété dit à quels mails la règle s''applique. Cherche celle qui dit ce qu''elle en fait.' }
+      -
+        id: quand
+        kind: line
+        label: 'Depuis quand'
+        prompt: 'Clique sur la ligne qui dit quand Bastien a créé cette règle.'
+        view: regle
+        answer: '08/07/2024'
+        reaction: { who: helene, expr: sourcil, text: 'Get-InboxRule ne donne pas de date de création. L''export d''Arvéo, plus bas, en donne une.' }
+      -
+        id: pourquoi
+        kind: choice
+        label: 'Le nom de la règle'
+        prompt: 'La règle s''appelle « Suivi concours pendant congé ». Qu''est-ce que ça raconte ?'
+        options:
+          - { text: 'Bastien l''a posée en juillet 2024 pour suivre le concours de chez lui pendant ses congés, quand il travaillait encore à Kerbrat. Personne ne l''a retirée à son départ.', ok: true, reaction: { who: helene, expr: neutre, text: 'Une règle d''il y a deux ans, posée pour une bonne raison, et oubliée. Reste à comprendre pourquoi elle ne s''est réveillée qu''en septembre.' } }
+          - { text: 'Qu''il préparait la fuite depuis 2024, avant de partir chez Varenne.', misconception: premeditation, reaction: { who: helene, expr: sourcil, text: 'En juillet 2024, il travaillait à Kerbrat et partait en congé. Rien ne dit qu''il pensait à Varenne. Tiens-t''en à ce que montrent les traces.' } }
+          - { text: 'Que la règle a été créée par Julien pendant l''import.', misconception: import-cree, reaction: { who: helene, expr: sourcil, text: 'L''import l''a recopiée, il ne l''a pas inventée : l''export d''Arvéo la montre en 2024, avec Bastien comme auteur.' } }
+          - { text: 'Rien : le nom d''une règle est choisi au hasard.', misconception: nom-hasard, reaction: { who: helene, expr: sourcil, text: 'C''est celui qui la crée qui la nomme. Ici, le nom dit pourquoi elle existe.' } }
+  -
+    id: E37
+    act: 5
+    after: [E36]
+    course: 'SIO · cybersécurité'
+    requester: julien
+    kind: demande
+    priority: haute
+    category: 'Concours › La cause'
+    title: 'Pourquoi depuis septembre'
+    request: 'Attends. Bastien est parti en avril 2025. Sa règle date de 2024. Et elle n''envoie quelque chose que depuis le 21 septembre, le soir où j''ai importé les boîtes ? Explique-moi. Lentement.'
+    steps:
+      -
+        id: reglage
+        kind: line
+        label: 'Le réglage d''Exchange'
+        prompt: 'Clique sur le réglage d''Exchange qui laisse partir la copie vers Gmail.'
+        view: exchange
+        answer: 'AutoForwardEnabled'
+        reaction: { who: helene, expr: sourcil, text: 'Cette ligne parle d''autre chose. Cherche, dans le domaine distant par défaut, ce qui concerne le transfert automatique.' }
+      -
+        id: cause
+        kind: choice
+        label: 'L''explication'
+        prompt: 'Pourquoi la règle n''a-t-elle envoyé des copies qu''à partir du 21 septembre ?'
+        options:
+          - { text: 'Chez Arvéo, la règle existait mais l''hébergeur bloquait les redirections vers l''extérieur. L''import l''a recopiée dans Exchange, dont le domaine distant par défaut autorise le transfert automatique : elle s''est mise à marcher le soir même.', ok: true, reaction: { who: julien, expr: surprise, text: 'Donc c''est mon import qui l''a réveillée. La règle dormait depuis deux ans, et je lui ai ouvert la porte.' } }
+          - { text: 'Bastien s''est connecté à sa boîte en septembre et a activé la règle.', misconception: il-s-est-connecte, reaction: { who: helene, expr: sourcil, text: 'Regarde LastLogonTime : vide. Son compte delorme.local a été créé par l''import et ne s''est jamais connecté. La règle vit dans la boîte et s''exécute seule, sur le serveur.' } }
+          - { text: 'Quelqu''un a piraté la boîte de Bastien en septembre.', misconception: on-l-a-pirate, reaction: { who: helene, expr: sourcil, text: 'Aucune connexion, aucune règle nouvelle : c''est sa règle de 2024, recopiée telle quelle. Pas besoin de pirate pour expliquer la fuite.' } }
+          - { text: 'Le vieux NAS de Brive a envoyé les plans.', misconception: le-vieux-nas, reaction: { who: helene, expr: sourcil, text: 'L''indice 2 l''a écarté : l''indice C n''y est jamais arrivé. Et le suivi montre la copie partir d''Exchange.' } }
+          - { text: 'Le compte b.roux de kerbrat.lan était resté actif.', misconception: compte-actif, reaction: { who: helene, expr: sourcil, text: 'L''indice 3 l''a écarté : aucune ouverture de session depuis son départ. Et la règle ne dépend pas d''une connexion.' } }
+      -
+        id: manque
+        kind: choice
+        label: 'Ce qui l''aurait arrêtée'
+        prompt: 'Qu''est-ce qui aurait arrêté cette règle le 21 septembre ?'
+        options:
+          - { text: 'Un inventaire de ce que l''import emportait : le journal disait « b.roux : règles de boîte : 1 ». Une ligne à lire, une règle à regarder, et un compte de parti qu''on ne recrée pas.', ok: true, reaction: { who: helene, expr: neutre, text: 'Voilà la leçon du trimestre. Ce n''est pas l''outil qui a manqué, c''est la liste de ce qu''on emportait.' } }
+          - { text: 'Un meilleur antivirus sur Exchange.', misconception: antivirus, reaction: { who: helene, expr: sourcil, text: 'Un antivirus cherche des fichiers malveillants. Une règle de transfert n''en est pas un.' } }
+          - { text: 'Un mot de passe plus fort pour Bastien.', misconception: mot-de-passe, reaction: { who: helene, expr: sourcil, text: 'Personne ne s''est connecté : un mot de passe ne protège pas contre une règle qui tourne sur le serveur.' } }
+          - { text: 'Rien : c''était imprévisible.', misconception: imprevisible, reaction: { who: helene, expr: sourcil, text: 'Le journal de l''import l''annonçait. C''était visible, pour qui lisait.' } }
+  -
+    id: E38
+    act: 5
+    after: [E37]
+    course: 'SIO · cybersécurité'
+    requester: maelle
+    kind: incident
+    priority: tres-haute
+    category: 'Concours › Les preuves'
+    title: 'Les preuves d''abord'
+    request: 'Coupez-moi cette règle. Tout de suite. Et supprimez cette boîte. Je ne veux plus qu''un seul de nos mails parte chez Varenne.'
+    steps:
+      -
+        id: ordonner
+        kind: order
+        label: 'Dans quel ordre'
+        prompt: 'Range les gestes dans l''ordre : ce qu''on ne pourra plus prouver après avoir corrigé passe en premier.'
+        items:
+          - 'Désactiver la règle de la boîte b.roux (Disable-InboxRule)'
+          - 'Calculer l''empreinte SHA-256 de chaque fichier exporté (Get-FileHash) et noter l''heure'
+          - 'Rédiger la note de conservation : qui a exporté quoi, quand, avec quelle commande, où sont rangés les fichiers'
+          - 'Exporter le suivi des messages depuis le 21 septembre (Get-MessageTrackingLog … | Export-Csv)'
+          - 'Bloquer le transfert automatique vers l''extérieur pour toute l''organisation (Set-RemoteDomain Default -AutoForwardEnabled $false)'
+          - 'Capturer la règle telle qu''elle est (Get-InboxRule -Mailbox b.roux | Format-List > regle-broux.txt)'
+        answer: [3, 5, 1, 2, 0, 4]
+        reaction: { who: helene, expr: sourcil, text: 'Demande-toi pour chaque geste : est-ce qu''il change ce qu''on veut prouver ? Désactiver la règle la modifie. Les journaux, eux, s''effacent tout seuls avec le temps.' }
+      -
+        id: boite
+        kind: choice
+        label: 'La boîte de Bastien'
+        prompt: 'Maëlle veut toujours supprimer la boîte b.roux. Que lui réponds-tu ?'
+        options:
+          - { text: 'Pas encore. La boîte, la règle et les journaux sont les pièces du dossier : on désactive le compte, on garde la boîte telle quelle, et on ne supprime que quand votre avocat ou votre assureur le dira.', ok: true, reaction: { who: maelle, expr: sourcil, text: 'Garder la preuve plutôt que la colère. D''accord. Je n''aime pas ça, mais d''accord.' } }
+          - { text: 'Oui : c''est la façon la plus sûre d''arrêter la fuite.', misconception: supprimer-c-est-arreter, reaction: { who: helene, expr: sourcil, text: 'La fuite s''arrête déjà avec la règle désactivée et le transfert bloqué. Supprimer la boîte n''arrête rien de plus, et efface la preuve.' } }
+          - { text: 'Oui, après avoir prévenu Bastien.', misconception: prevenir-avant, reaction: { who: helene, expr: sourcil, text: 'Le prévenir avant d''avoir conservé les traces, c''est risquer qu''on les conteste. On conserve d''abord, on parle ensuite.' } }
+          - { text: 'Il faut d''abord porter plainte contre Bastien.', misconception: coupable-designe, reaction: { who: helene, expr: sourcil, text: 'Les traces disent qu''une règle oubliée a envoyé des copies. Elles ne disent pas ce que Bastien a voulu. La décision revient à Maëlle, avec un dossier complet.' } }
+  -
+    id: E39
+    act: 5
+    after: [E34, E38]
+    course: 'SIO · conduite de projet et bascule'
+    requester: helene
+    kind: demande
+    priority: haute
+    category: 'Messagerie › La bascule'
+    title: 'Le plan de la messagerie'
+    request: 'La messagerie, on va la finir avec un plan, cette fois. Samedi 26, on rapatrie ce qui dort encore chez Arvéo, on retire leur MX de secours, on vérifie les règles de toutes les boîtes, pas seulement celle de Bastien, et on coupe Arvéo. Lundi 28, Brive doit recevoir et envoyer comme si de rien n''était.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Construis le plan de la messagerie : la fenêtre, ce qui se prépare avant, les opérations de la nuit, les contrôles, les retours, et le point de non-retour avant la coupure d''Arvéo. Puis joue la nuit.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi abaisser le TTL des enregistrements huit jours avant, et pas le soir même ?'
+        options:
+          - { text: 'Les serveurs qui ont lu l''ancien MX le gardent en cache pendant l''ancien TTL, un jour entier. Abaissé à l''avance, le TTL de 5 minutes est déjà partout le soir de la bascule : quand on retire le MX d''Arvéo, tout le monde l''oublie vite.', ok: true, reaction: { who: helene, expr: sourire, text: 'Le TTL se baisse avant, parce que c''est l''ancien qui décide combien de temps les autres se souviennent.' } }
+          - { text: 'Pour que la nuit soit plus courte.', misconception: ttl-vitesse, reaction: { who: helene, expr: sourcil, text: 'Le TTL ne change rien à la durée des opérations. Il dit combien de temps les autres gardent la réponse en mémoire.' } }
+          - { text: 'Un TTL bas rend le DNS plus sûr.', misconception: ttl-securite, reaction: { who: helene, expr: sourcil, text: 'Le TTL ne protège de rien. C''est une durée de cache, qu''on raccourcit le temps d''un changement.' } }
+          - { text: 'On peut le faire le soir même : le changement est immédiat.', misconception: ttl-immediat, reaction: { who: helene, expr: sourcil, text: 'Il est immédiat chez nous. Chez les autres, l''ancienne réponse reste en cache jusqu''à la fin de l''ancien TTL : un jour.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Pourquoi geler la réception chez Arvéo avant la dernière synchronisation des boîtes ?'
+        options:
+          - { text: 'Pour qu''aucun mail n''arrive chez Arvéo après la synchronisation : sinon il serait effacé avec les boîtes à la coupure.', ok: true }
+          - { text: 'Pour que la synchronisation aille plus vite.', misconception: gel-vitesse, reaction: { who: helene, expr: sourcil, text: 'Elle irait à la même vitesse. Le gel sert à ce que rien n''arrive après elle.' } }
+          - { text: 'Ce n''est pas utile : le MX principal est déjà Exchange.', misconception: gel-inutile, reaction: { who: helene, expr: sourcil, text: 'Le MX de secours d''Arvéo reçoit encore du courrier quand Exchange ne répond pas. Ce qui arrive après la synchronisation serait perdu.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Après le SPF définitif, quel contrôle voit le mieux si un mail légitime va être refusé ?'
+        options:
+          - { text: 'Chaque service qui écrit au nom de Kerbrat envoie un mail à une boîte Gmail, et on lit l''en-tête « spf=pass ».', ok: true }
+          - { text: 'dig TXT montre le nouveau SPF.', misconception: config-pas-usage, reaction: { who: helene, expr: sourcil, text: 'Il montre que l''enregistrement est publié, pas que tous les expéditeurs y figurent. Teste ce que fait l''expéditeur.' } }
+          - { text: 'Un mail de Brive à Limoges arrive.', misconception: test-interne, reaction: { who: helene, expr: sourcil, text: 'Un mail interne ne passe pas par le contrôle SPF d''un destinataire extérieur. Il ne voit rien.' } }
+    hints: 2
+  -
+    id: E40
+    act: 5
+    after: [E39, E32]
+    course: 'SIO · conduite de projet et bascule'
+    requester: julien
+    kind: demande
+    priority: tres-haute
+    category: 'Fusion › La dernière nuit'
+    final: true
+    title: 'La nuit du 31 décembre'
+    request: 'Dernière nuit. À minuit, on s''appelle Delorme Kerbrat Architectes. Tout le monde passe à son adresse @delorme-kerbrat.fr, les anciennes restent, DMARC se resserre, et les clients reçoivent l''annonce. Les enregistrements du nouveau domaine sont publiés depuis le 22. Cette fois, je ne touche à rien. Et après, tu nous racontes toute l''histoire, à Maëlle et à moi.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Construis le plan de la dernière nuit, d''une traite, et joue-la.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi l''annonce aux clients vient-elle après le point de non-retour ?'
+        options:
+          - { text: 'Un mail envoyé à trois cents clients ne se rappelle pas. S''il part avant un retour arrière, les clients répondent à des adresses qu''on vient de retirer. On ne l''envoie qu''une fois tout vérifié.', ok: true, reaction: { who: julien, expr: sourire, text: 'Ce qu''on ne peut pas défaire, on le fait en dernier. Même moi, je retiens.' } }
+          - { text: 'Pour que les clients le lisent le 1er janvier au matin.', misconception: annonce-horaire, reaction: { who: helene, expr: sourcil, text: 'L''heure de lecture n''y est pour rien. La question est : peut-on revenir en arrière après l''avoir envoyé ?' } }
+          - { text: 'Parce que l''annonce est l''opération la plus longue.', misconception: annonce-duree, reaction: { who: helene, expr: sourcil, text: 'Elle prend dix minutes. Ce qui compte, c''est qu''elle ne se défait pas.' } }
+          - { text: 'L''ordre n''a pas d''importance, tant que tout est fait avant minuit.', misconception: ordre-indifferent, reaction: { who: helene, expr: sourcil, text: 'Si un contrôle échoue après l''annonce, on ne peut plus reculer : les clients ont déjà la nouvelle adresse.' } }
+      -
+        id: chaine
+        kind: order
+        label: 'La chaîne de la fuite'
+        prompt: 'Pour le rapport à Maëlle et Julien : remets la chaîne de la fuite dans l''ordre, de la première cause au cartouche.'
+        items:
+          - 'Julien importe les neuf boîtes de Kerbrat dans Exchange, sans inventaire ni plan (21 septembre 2026)'
+          - 'Le jury reconnaît le cartouche de Kerbrat sous l''esquisse de l''Atelier Varenne'
+          - 'Bastien pose une redirection « Suivi concours pendant congé » vers son adresse Gmail (juillet 2024)'
+          - 'Exchange, dont le domaine distant par défaut autorise le transfert automatique, exécute la règle recopiée'
+          - 'Arvéo bloque la redirection : elle ne fait rien'
+          - 'L''indice C de la PL 07, envoyé à concours@ le 14 octobre, arrive chez Bastien, qui en parle chez Varenne'
+          - 'Bastien quitte Kerbrat pour l''Atelier Varenne, et la règle reste (avril 2025)'
+          - 'Chaque mail envoyé à concours@ part aussi vers Gmail'
+        answer: [2, 4, 6, 0, 3, 7, 5, 1]
+        reaction: { who: helene, expr: sourcil, text: 'Reprends les dates des indices : juillet 2024, avril 2025, 21 septembre, 14 octobre. Puis place entre elles ce qui n''a pas de date.' }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Une stratégie DMARC passe en quarantaine, et un expéditeur oublié se retrouve en indésirables. On revient à p=none. Combien de temps les autres serveurs appliquent-ils encore la quarantaine ?'
+        options:
+          - { text: 'Jusqu''à la fin du TTL de l''enregistrement DMARC qu''ils ont lu : d''où l''intérêt de l''avoir abaissé avant.', ok: true }
+          - { text: 'Aucun : le retour est immédiat partout.', misconception: ttl-immediat, reaction: { who: helene, expr: sourcil, text: 'Immédiat chez nous. Les autres gardent l''ancienne réponse en cache jusqu''à la fin de son TTL.' } }
+          - { text: 'Toujours : une quarantaine ne se lève pas.', misconception: dmarc-definitif, reaction: { who: helene, expr: sourcil, text: 'Elle se lève, dès que les caches ont expiré. C''est le TTL qui fixe le délai.' } }
+    hints: 2

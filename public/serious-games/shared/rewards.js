@@ -34,7 +34,8 @@
     'neko-con': { bg: '#241F3A', paper: '#3B3266', ink: '#FBF9FF', accent: '#FF6F91', font: "'Trebuchet MS', 'Source Sans 3', sans-serif", italic: false },
     blackout: { bg: '#0A0618', paper: '#151029', ink: '#F4F2FF', accent: '#FF2E88', font: "'Chakra Petch', 'Trebuchet MS', sans-serif", italic: false },
     'retro-rush': { bg: '#1E1433', paper: '#EDE7F7', ink: '#EDE7F7', accent: '#FF8A3D', font: "'Manrope', 'Trebuchet MS', sans-serif", italic: false },
-    'radio-comete': { bg: '#14181C', paper: '#232A30', ink: '#E9E1CF', accent: '#E8A33D', font: "'Barlow Condensed', 'Trebuchet MS', sans-serif", italic: false }
+    'radio-comete': { bg: '#14181C', paper: '#232A30', ink: '#E9E1CF', accent: '#E8A33D', font: "'Barlow Condensed', 'Trebuchet MS', sans-serif", italic: false },
+    fusion: { bg: '#E4E3DD', paper: '#F1F1EE', ink: '#2E3236', accent: '#E07A3F', font: "'Bricolage Grotesque', 'Trebuchet MS', sans-serif", italic: false }
   };
   var GAMES = {
     observatoire: { title: "L'Observatoire", chapters: [
@@ -110,6 +111,14 @@
       { id: 'acte3', name: "Un script qui n'est pas le sien", topic: 'find, ${A:-B}, lecture à blanc' },
       { id: 'acte4', name: 'Le parc', topic: 'while read, awk, tests de fichiers' },
       { id: 'acte5', name: 'La nuit de 3 h', topic: 'Garde-fous, flock, systemd' }],
+      finale: { id: 'none', name: '', topic: '' } },
+    // Fusion: a card per act (design/validated/serious-games-fusion.md §4).
+    fusion: { title: 'Fusion', chapters: [
+      { id: 'acte1', name: 'Deux SI pour un', topic: 'Inventaire, dépendances, premier plan' },
+      { id: 'acte2', name: 'Le même réseau deux fois', topic: 'Adressage, IPsec, renumérotation' },
+      { id: 'acte3', name: 'Deux domaines', topic: 'DNS, approbation, comptes' },
+      { id: 'acte4', name: 'Les droits', topic: 'Partages, AGDLP, audit' },
+      { id: 'acte5', name: 'Le courrier', topic: 'MX, SPF, règles, preuves' }],
       finale: { id: 'none', name: '', topic: '' } }
   };
   var PINS = [
@@ -120,7 +129,8 @@
     { id: 'pin-neko', name: 'Épinglette Neko', color: '#FBF9FF', ink: '#E8457A' },
     { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', ink: '#F4F2FF', ring: '#FF2E88' },
     { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', ink: '#FF8A3D', ring: '#BFE6FF' },
-    { id: 'pin-comete', name: 'Épinglette Comète', color: '#14181C', ink: '#E8A33D', ring: '#5FB37C' }
+    { id: 'pin-comete', name: 'Épinglette Comète', color: '#14181C', ink: '#E8A33D', ring: '#5FB37C' },
+    { id: 'pin-passerelle', name: 'Épinglette Passerelle', color: '#D8C29D', ink: '#2E3236', ring: '#E07A3F' }
   ];
 
   function cardOf(code) {
@@ -208,6 +218,13 @@
         '<rect x="34" y="92" width="52" height="8" rx="2" fill="' + M.dark + '"/>';
     },
     // Radio-Comète: the Fader d'or, a console fader in metal, its slot and its red mark.
+    // Fusion: the Équerre de bascule, an architect's set square in metal over a balsa footbridge.
+    'equerre-bascule': function (M, g, locked) {
+      var tick = '';
+      for (var i = 0; i < 6; i++) tick += '<rect x="' + (30 + i * 10) + '" y="86" width="2" height="' + (i % 2 ? 5 : 9) + '" fill="' + (locked ? 'currentColor' : '#2E3236') + '"/>';
+      return '<rect x="12" y="92" width="96" height="10" rx="2" fill="' + (locked ? 'currentColor' : '#D8C29D') + '" stroke="' + M.deep + '" stroke-width="1.6"/>' +
+        '<path d="M26 22 L26 96 L100 96 Z" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="2"/><path d="M38 52 L38 84 L70 84 Z" fill="' + (locked ? 'currentColor' : '#F1F1EE') + '" stroke="' + M.deep + '" stroke-width="1.6"/>' + tick;
+    },
     'fader-or': function (M, g, locked) {
       var tick = '';
       for (var i = 0; i < 7; i++) tick += '<rect x="' + (28 + i * 11) + '" y="' + (i % 2 ? 88 : 84) + '" width="3" height="' + (i % 2 ? 6 : 10) + '" fill="' + (locked ? 'currentColor' : '#E9E1CF') + '"/>';
@@ -318,6 +335,7 @@
     if (gameId === 'blackout') s = blackoutEmblem(idx, P);
     if (gameId === 'retro-rush') s = retroEmblem(idx, P);
     if (gameId === 'radio-comete') s = radioEmblem(idx, P);
+    if (gameId === 'fusion') s = fusionEmblem(idx, P);
     return s;
   }
   /* The fresco of a room of the villa, inside the card's red panel (x 9-111, y 22-118): one
@@ -532,6 +550,27 @@
         return '<circle cx="60" cy="66" r="34" fill="' + papier + '" stroke="' + noir + '" stroke-width="3"/><path d="M60 66 V42 M60 66 H80" stroke="' + noir + '" stroke-width="5" stroke-linecap="round"/><circle cx="60" cy="66" r="4" fill="' + rouge + '"/><rect x="40" y="26" width="40" height="14" rx="3" fill="' + rouge + '" stroke="' + noir + '" stroke-width="2"/><text x="60" y="37" text-anchor="middle" font-size="9" font-weight="700" letter-spacing="1.5" font-family="\'Trebuchet MS\', sans-serif" fill="#FFE2DC">ON AIR</text>';
     }
   }
+  /* A card of Fusion: the act's piece of the architect's model, on the game's grey table - cardboard,
+     balsa, lichen, ink and the orange thread. */
+  function fusionEmblem(idx, P) {
+    var carton = '#F1F1EE', balsa = '#D8C29D', lichen = '#7F9157', encre = '#2E3236', fil = '#E07A3F';
+    switch (idx) {
+      case 0: // deux SI pour un: two blocks of cardboard, side by side
+        return '<path d="M20 70 L44 58 L68 70 L44 82 Z" fill="' + carton + '" stroke="' + encre + '" stroke-width="1.6"/><path d="M20 70 V96 L44 108 V82 Z" fill="#E1E1DC" stroke="' + encre + '" stroke-width="1.6"/><path d="M68 70 V96 L44 108 V82 Z" fill="#CFCFC9" stroke="' + encre + '" stroke-width="1.6"/>' +
+          '<path d="M60 52 L80 42 L100 52 L80 62 Z" fill="' + carton + '" stroke="' + encre + '" stroke-width="1.6"/><path d="M60 52 V72 L80 82 V62 Z" fill="#E1E1DC" stroke="' + encre + '" stroke-width="1.6"/><path d="M100 52 V72 L80 82 V62 Z" fill="#CFCFC9" stroke="' + encre + '" stroke-width="1.6"/>';
+      case 1: // le même réseau deux fois: two identical address tags, crossed by the thread
+        return '<rect x="18" y="40" width="58" height="22" rx="3" fill="' + carton + '" stroke="' + encre + '" stroke-width="1.6"/><rect x="44" y="72" width="58" height="22" rx="3" fill="' + carton + '" stroke="' + encre + '" stroke-width="1.6"/>' +
+          '<path d="M24 51 H70 M50 83 H96" stroke="' + encre + '" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 3"/><path d="M30 104 C50 20 70 120 94 32" fill="none" stroke="' + fil + '" stroke-width="3"/>';
+      case 2: // deux domaines: two trees of the directory, joined by a footbridge
+        return '<circle cx="34" cy="50" r="13" fill="' + lichen + '" stroke="' + encre + '" stroke-width="1.6"/><path d="M34 63 V96" stroke="' + encre + '" stroke-width="3"/><circle cx="86" cy="50" r="13" fill="' + lichen + '" stroke="' + encre + '" stroke-width="1.6"/><path d="M86 63 V96" stroke="' + encre + '" stroke-width="3"/>' +
+          '<rect x="34" y="76" width="52" height="7" rx="1.5" fill="' + balsa + '" stroke="' + encre + '" stroke-width="1.4"/><path d="M48 76 V83 M62 76 V83 M74 76 V83" stroke="' + encre + '" stroke-width="1"/>';
+      case 3: // les droits: a key in front of a folder
+        return '<path d="M20 44 H50 L56 50 H100 V100 H20 Z" fill="' + balsa + '" stroke="' + encre + '" stroke-width="1.8"/><circle cx="52" cy="76" r="12" fill="none" stroke="' + encre + '" stroke-width="4"/><path d="M64 76 H92 M84 76 V86 M92 76 V84" stroke="' + encre + '" stroke-width="4" stroke-linecap="round"/>';
+      default: // le courrier: an envelope, and the orange thread that left with a copy
+        return '<rect x="18" y="44" width="70" height="48" rx="3" fill="' + carton + '" stroke="' + encre + '" stroke-width="1.8"/><path d="M18 46 L53 72 L88 46" fill="none" stroke="' + encre + '" stroke-width="1.8"/>' +
+          '<path d="M84 80 C98 72 100 54 92 40" fill="none" stroke="' + fil + '" stroke-width="3"/><path d="M86 38 L93 34 L96 42" fill="none" stroke="' + fil + '" stroke-width="3" stroke-linejoin="round"/>';
+    }
+  }
   var ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
   /* A card of Les Tablettes de Pompéi: a cream tablet, its fresco on a red panel, the room's name in
      capitals and its Roman numeral. */
@@ -589,6 +628,12 @@
     'pin-joystick': function (c) {
       return '<ellipse cx="30" cy="40" rx="13" ry="5" fill="' + c + '"/><rect x="28" y="22" width="4" height="18" rx="2" fill="' + c + '"/><circle cx="30" cy="20" r="6" fill="' + c + '"/>' +
         '<circle cx="40" cy="36" r="2.2" fill="#BFE6FF"/>';
+    },
+    // Fusion: the footbridge of the model, five planks laid between two blocks.
+    'pin-passerelle': function (c) {
+      return '<rect x="13" y="22" width="9" height="20" fill="' + c + '"/><rect x="38" y="22" width="9" height="20" fill="' + c + '"/>' +
+        '<path d="M22 28 H38" stroke="' + c + '" stroke-width="5"/><path d="M25 25.5 V30.5 M28.5 25.5 V30.5 M32 25.5 V30.5 M35.5 25.5 V30.5" stroke="#D8C29D" stroke-width="1"/>' +
+        '<path d="M16 46 Q30 40 44 46" stroke="#E07A3F" stroke-width="1.8" fill="none" stroke-linecap="round"/>';
     },
     'pin-loupe': function (c) { return '<circle cx="27" cy="27" r="9" fill="none" stroke="' + c + '" stroke-width="3"/><line x1="34" y1="34" x2="43" y2="43" stroke="' + c + '" stroke-width="4" stroke-linecap="round"/>'; },
     'pin-cave-canem': function (c, accent) {

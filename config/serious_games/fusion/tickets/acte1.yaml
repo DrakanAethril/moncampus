@@ -1,0 +1,273 @@
+# Fusion - acte 1 : Deux SI pour un.
+#
+# The server half of the tickets (design/validated/serious-games-fusion.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Hélène's
+# guided questions, the clue closing gives. The game half (the plans and configurations to start from and to check,
+# the hidden nights and checks, the views, the written hints, the scenes) is public/serious-games/fusion/
+# steps/acte1.js. Converted from the prototype's host/scenario/acte1.js by tool/to-yaml.js;
+# `hints` counts the written hints the game holds after the guided questions. A ticket is an « étape »
+# in the game's words.
+tickets:
+  -
+    id: E01
+    act: 1
+    course: 'SIO · réseau et services'
+    requester: julien
+    kind: demande
+    priority: haute
+    category: 'État des lieux › Les deux réseaux'
+    title: 'Le mail de Julien'
+    request: 'Bienvenue ! Au 1er janvier, on ne fait plus qu''un cabinet. Mon idée : on relie Limoges et Brive par un VPN la semaine prochaine, et tout le monde voit tout. Voici les schémas des deux réseaux, faits par nos anciens prestataires. Tu commences quand ?'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Les deux schémas'
+        prompt: 'Clique sur la ligne qui rend le VPN de Julien impossible tel quel.'
+        view: schemas
+        answer: 'Réseau local : 192.168.1.0/24 (Brive)'
+        reaction: { who: helene, expr: sourcil, text: 'Cette ligne-là ne gêne pas un VPN. Compare les réseaux des deux sites, ligne à ligne.' }
+      -
+        id: comprendre
+        kind: choice
+        label: 'Pourquoi'
+        prompt: 'Pourquoi un tunnel entre les deux sites ne marcherait-il pas tel quel ?'
+        options:
+          - { text: 'Les deux sites utilisent le même réseau 192.168.1.0/24 : un poste de Limoges qui vise 192.168.1.10 tombe sur son propre serveur, jamais sur celui de Brive.', ok: true, reaction: { who: julien, expr: surprise, text: 'La même adresse des deux côtés… Personne ne me l''avait dit. Bon, on fait comment ?' } }
+          - { text: 'Les deux box ne sont pas de la même marque.', misconception: marque-materiel, reaction: { who: helene, expr: sourcil, text: 'Deux pfSense, en plus. La marque n''empêche pas un tunnel : ce sont les adresses qui posent problème.' } }
+          - { text: 'Il faut d''abord fusionner les deux domaines Active Directory.', misconception: domaine-avant-reseau, reaction: { who: helene, expr: sourcil, text: 'Les domaines viendront plus tard. Un tunnel relie des réseaux, et ces deux réseaux portent les mêmes adresses.' } }
+          - { text: 'Le débit de la fibre de Brive est trop faible.', misconception: debit, reaction: { who: helene, expr: sourcil, text: 'Le débit limiterait la vitesse, pas la possibilité. Regarde les adresses.' } }
+  -
+    id: E02
+    act: 1
+    after: [E01]
+    course: 'SIO · réseau et services'
+    requester: sandrine
+    kind: demande
+    priority: haute
+    category: 'État des lieux › Inventaire de Limoges'
+    title: 'L''inventaire de Limoges'
+    request: 'Hélène m''a demandé la liste des machines de Limoges qui ont une adresse fixe. Je ne sais pas ce que ça veut dire, mais j''ai sorti les baux du DHCP et la table ARP du serveur. Tu peux me dire lesquelles ?'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Coche les machines de Limoges qui ont une adresse fixe, puis rends la liste à Sandrine.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Comment as-tu reconnu une adresse fixe ?'
+        options:
+          - { text: 'Elle répond dans la table ARP mais n''a aucun bail dans le DHCP : personne ne la lui a attribuée, elle est écrite dans la machine.', ok: true, reaction: { who: sandrine, expr: sourire, text: 'Présente sur le réseau, absente du DHCP. Je saurai le refaire.' } }
+          - { text: 'C''est une adresse plus petite que 192.168.1.100.', misconception: petite-adresse, reaction: { who: helene, expr: sourcil, text: 'Souvent, mais pas toujours : rien n''empêche un bail en .20, ni une adresse fixe en .140. Il faut comparer les deux listes.' } }
+          - { text: 'Le nom de la machine commence par SRV.', misconception: nom-serveur, reaction: { who: helene, expr: sourcil, text: 'Le copieur n''a pas de SRV dans son nom, et il est fixe. Le nom ne dit pas comment l''adresse est donnée.' } }
+          - { text: 'Son bail DHCP dure plus de huit jours.', misconception: bail-long, reaction: { who: helene, expr: sourcil, text: 'Un bail long reste un bail : l''adresse vient du DHCP. Une adresse fixe n''a pas de bail du tout.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Une machine répond dans la table ARP, mais n''apparaît dans aucun bail DHCP. Que peut-on en conclure ?'
+        options:
+          - { text: 'Son adresse a été écrite à la main dans la machine : elle est fixe.', ok: true }
+          - { text: 'Elle est éteinte.', misconception: eteinte, reaction: { who: helene, expr: sourcil, text: 'Elle répond dans la table ARP : elle est allumée.' } }
+          - { text: 'Le DHCP est en panne.', misconception: dhcp-panne, reaction: { who: helene, expr: sourcil, text: 'Les postes ont leurs baux : le DHCP marche. Cette machine ne lui a rien demandé.' } }
+    hints: 2
+  -
+    id: E03
+    act: 1
+    after: [E02]
+    course: 'SIO · réseau et services'
+    requester: maelle
+    kind: demande
+    priority: moyenne
+    category: 'État des lieux › Inventaire de Brive'
+    title: 'L''inventaire de Brive'
+    request: 'Même exercice chez nous. Notre ancien prestataire nous a laissé un inventaire, je vous l''envoie avec le résultat du balayage que vous avez lancé hier. Tout y est, normalement.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Le balayage'
+        prompt: 'Clique sur la machine qui répond sur le réseau de Brive mais qui n''est pas dans l''inventaire de Maëlle.'
+        view: scan
+        answer: '192.168.1.30'
+        reaction: { who: helene, expr: sourcil, text: 'Celle-là est bien dans l''inventaire. Relis-le, et cherche l''adresse qui n''y figure pas.' }
+      -
+        id: quoi
+        kind: choice
+        label: 'Qu''en faire'
+        prompt: 'Thibault explique : « C''est l''ancien NAS, je l''ai gardé au cas où. » Que fais-tu de cette machine pour l''instant ?'
+        options:
+          - { text: 'Je l''ajoute à l''inventaire avec son rôle et son propriétaire, et je note qu''il faudra décider de son sort : elle ne doit pas être oubliée par la migration.', ok: true, reaction: { who: maelle, expr: sourcil, text: 'Thibault et ses « au cas où »… D''accord, on la garde à l''œil.' } }
+          - { text: 'Je l''éteins tout de suite.', misconception: eteindre-sans-savoir, reaction: { who: helene, expr: sourcil, text: 'Sans savoir ce qu''elle contient ni qui s''en sert ? On n''éteint pas ce qu''on ne connaît pas.' } }
+          - { text: 'Rien : elle n''est pas dans l''inventaire officiel, ce n''est pas notre problème.', misconception: hors-inventaire, reaction: { who: helene, expr: sourcil, text: 'C''est exactement ce qui fait les problèmes : ce que l''inventaire ignore, la migration l''oublie.' } }
+          - { text: 'Je copie son contenu sur le NAS principal et je la formate.', misconception: formater, reaction: { who: helene, expr: sourcil, text: 'Copier et effacer sans décision de Maëlle ? Ce sont ses données. On inventorie d''abord.' } }
+  -
+    id: E04
+    act: 1
+    after: [E03]
+    course: 'SIO · réseau et services'
+    requester: helene
+    kind: demande
+    priority: haute
+    category: 'État des lieux › Dépendances'
+    title: 'Qui dépend de quoi'
+    request: 'Avant de toucher à une seule adresse, il faut savoir ce qui casse quand elle change. Remplis-moi la matrice des dépendances de Brive : pour chaque service, de quoi il a besoin pour marcher.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Coche, pour chaque service de Brive, ce dont il dépend. Les fiches des services sont au-dessus de la matrice.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'À quoi va servir cette matrice pendant la renumérotation ?'
+        options:
+          - { text: 'À savoir, pour chaque adresse changée, quel service vérifier ensuite : c''est la liste des points de contrôle du futur plan.', ok: true, reaction: { who: helene, expr: sourire, text: 'Voilà. Chaque case cochée deviendra un contrôle, ou un risque qu''on accepte en connaissance de cause.' } }
+          - { text: 'À montrer au client que le travail est compliqué.', misconception: justifier-devis, reaction: { who: helene, expr: sourcil, text: 'Ce n''est pas un argument commercial. Elle sert pendant la bascule, à toi.' } }
+          - { text: 'À rien de plus que l''inventaire : c''est la même information.', misconception: inventaire-suffit, reaction: { who: helene, expr: sourcil, text: 'L''inventaire dit ce qui existe. La matrice dit ce qui casse quand on y touche.' } }
+          - { text: 'À choisir les nouvelles adresses.', misconception: choisir-adresses, reaction: { who: helene, expr: sourcil, text: 'Le plan d''adressage se fait à part. La matrice dit quoi surveiller quand on l''applique.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Le serveur de licences de CAO accorde ses licences flottantes aux postes. De quoi dépend-il, d''après sa fiche ?'
+        options:
+          - { text: 'De son adresse IP : la licence est liée à l''adresse 192.168.1.15.', ok: true }
+          - { text: 'Du traceur.', misconception: traceur, reaction: { who: helene, expr: sourcil, text: 'Le logiciel de CAO imprime sur le traceur, mais le serveur de licences n''en a pas besoin pour donner une licence.' } }
+          - { text: 'De la messagerie.', misconception: messagerie, reaction: { who: helene, expr: sourcil, text: 'Rien dans sa fiche ne parle de mail.' } }
+    hints: 2
+  -
+    id: E05
+    act: 1
+    after: [E01]
+    course: 'SIO · réseau et services'
+    requester: helene
+    kind: demande
+    priority: haute
+    category: 'État des lieux › Migration de septembre'
+    title: 'Ce que Julien a déjà fait'
+    request: 'Julien m''a glissé qu''il avait « déjà réglé la messagerie ». Il a importé lui-même les boîtes de Kerbrat dans son Exchange, en septembre. J''ai récupéré le journal de son outil d''import. Lis-le avec moi.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Le journal de l''import'
+        prompt: 'Clique sur la ligne qui dit quand l''import s''est terminé.'
+        view: import
+        answer: 'Import terminé'
+        reaction: { who: helene, expr: sourcil, text: 'Cette ligne est au milieu de l''import. Cherche celle qui le clôt.' }
+      -
+        id: manque
+        kind: choice
+        label: 'Ce qui manque'
+        prompt: 'Qu''est-ce qui manque à la migration de Julien pour être une migration maîtrisée ?'
+        options:
+          - { text: 'Tout ce qui entoure l''import : pas d''inventaire de ce qu''emportaient les boîtes, pas de contrôle après, pas de retour arrière prévu.', ok: true, reaction: { who: helene, expr: sourcil, text: 'Il a importé, ça a marché, il est passé à autre chose. On ne sait pas ce que l''import a emporté avec les boîtes.' } }
+          - { text: 'Rien : l''import s''est terminé sans erreur.', misconception: sans-erreur-donc-bon, reaction: { who: helene, expr: sourcil, text: 'Sans erreur, oui. Mais personne n''a vérifié ce qu''il a importé, ni prévu quoi faire si ça tournait mal.' } }
+          - { text: 'Il aurait dû l''importer un jour de semaine.', misconception: jour, reaction: { who: helene, expr: sourcil, text: 'Le moment n''est pas le problème principal. C''est tout ce qui n''a pas été prévu autour.' } }
+          - { text: 'Il aurait fallu un outil payant.', misconception: outil-payant, reaction: { who: helene, expr: sourcil, text: 'L''outil a fait son travail. C''est la démarche qui manque.' } }
+  -
+    id: E06
+    act: 1
+    after: [E05]
+    course: 'SIO · cybersécurité'
+    requester: maelle
+    kind: incident
+    priority: tres-haute
+    category: 'Concours › La fuite'
+    title: 'Le cartouche'
+    request: 'Catastrophe. Un membre du jury du concours de la médiathèque m''appelle : sous l''esquisse de l''Atelier Varenne, on devine notre cartouche, mal effacé. Ils ont nos plans. Voici l''agrandissement qu''il m''a envoyé. De quand datent les plans qu''ils ont ?'
+    reward:
+      clue: 'La planche qui a fui porte l''indice C du 14 octobre : la fuite est postérieure à l''annonce de la fusion.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'Le cartouche'
+        prompt: 'Clique sur la ligne du cartouche qui date la version qui a fui.'
+        view: cartouche
+        answer: 'Indice C'
+        reaction: { who: helene, expr: sourcil, text: 'Cette date-là est celle de la première version. Une planche change d''indice à chaque version : cherche le dernier indice.' }
+      -
+        id: conclure
+        kind: choice
+        label: 'Ce que ça dit'
+        prompt: 'Qu''apprend-on de l''indice C du 14 octobre ?'
+        options:
+          - { text: 'Que la version qui a fui a été dessinée après l''annonce de la fusion : la fuite est récente, et passe par un chemin encore ouvert aujourd''hui.', ok: true, reaction: { who: maelle, expr: sourcil, text: 'Après l''annonce… Donc pendant la fusion. Trouvez par où.' } }
+          - { text: 'Que Varenne a recopié une version ancienne, trouvée sur Internet.', misconception: version-ancienne, reaction: { who: helene, expr: sourcil, text: 'L''indice C est la dernière version, du 14 octobre. Elle n''a jamais été publiée.' } }
+          - { text: 'Que la fuite vient forcément de Limoges.', misconception: coupable-limoges, reaction: { who: helene, expr: sourcil, text: 'Rien dans le cartouche ne dit d''où vient la fuite. Il dit seulement quand.' } }
+          - { text: 'Que le jury s''est trompé de cartouche.', misconception: deni, reaction: { who: helene, expr: sourcil, text: 'Le cartouche porte notre nom et l''indice de notre dernière version. Il ne s''est pas trompé.' } }
+  -
+    id: E07
+    act: 1
+    after: [E04, E06]
+    course: 'SIO · réseau et services'
+    requester: helene
+    kind: demande
+    priority: haute
+    category: 'Projet › Ordre des chantiers'
+    title: 'Par où commencer'
+    request: 'On a l''état des lieux. Julien veut tout en même temps, Maëlle veut d''abord comprendre la fuite. Il nous faut l''ordre des chantiers du trimestre, chacun préparant le suivant.'
+    steps:
+      -
+        id: ordonner
+        kind: order
+        label: 'Les chantiers'
+        prompt: 'Range les chantiers dans l''ordre où on peut les mener, chacun ayant besoin du précédent.'
+        items:
+          - 'Migrer les partages et leurs droits'
+          - 'Relier les sites par un VPN'
+          - 'Finir la migration de la messagerie'
+          - 'Renuméroter Brive dans un nouveau plan d''adressage'
+          - 'Réunir les comptes dans un seul domaine'
+          - 'Faire résoudre les noms d''un site à l''autre (DNS)'
+        answer: [3, 1, 5, 4, 0, 2]
+        reaction: { who: helene, expr: sourcil, text: 'Demande-toi pour chacun : de quoi a-t-il besoin pour marcher ? Un tunnel entre deux réseaux identiques, par exemple…' }
+  -
+    id: E08
+    act: 1
+    after: [E07]
+    course: 'SIO · conduite de projet et bascule'
+    requester: thibault
+    kind: demande
+    priority: moyenne
+    category: 'Premier plan › Le traceur'
+    title: 'Le samedi du traceur'
+    request: 'Hélène veut qu''on passe le traceur A0 de son adresse fixe à une réservation DHCP, pour que la renumérotation ne soit plus qu''un changement dans le DHCP. D''accord, mais le lundi matin, il doit imprimer : on rend des planches toute la semaine.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Construis ton premier plan de bascule : la fenêtre, les opérations dans l''ordre, un contrôle, les retours arrière. Puis joue la nuit.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi créer la réservation DHCP avant de passer le traceur en DHCP ?'
+        options:
+          - { text: 'Sans réservation, le DHCP lui donne la première adresse libre : les postes, qui impriment sur 192.168.1.50, ne le trouvent plus.', ok: true, reaction: { who: thibault, expr: sourire, text: 'Il garde son adresse, mais c''est le DHCP qui la lui donne. Lundi, personne ne verra la différence.' } }
+          - { text: 'Parce que le DHCP refuse les traceurs sans réservation.', misconception: dhcp-refuse, reaction: { who: helene, expr: sourcil, text: 'Le DHCP sert tout le monde. Le problème est l''adresse qu''il donne.' } }
+          - { text: 'Pour que le traceur imprime plus vite.', misconception: vitesse, reaction: { who: helene, expr: sourcil, text: 'L''adresse ne change rien à la vitesse d''impression.' } }
+          - { text: 'L''ordre n''a pas d''importance, tant que les deux sont faits dans la nuit.', misconception: ordre-indifferent, reaction: { who: helene, expr: sourcil, text: 'Si le traceur passe en DHCP d''abord, il prend une autre adresse aussitôt, et l''impression casse avant même la réservation.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Un retour arrière « Remettre l''adresse fixe relevée » demande quelque chose avant. Quoi ?'
+        options:
+          - { text: 'D''avoir relevé la configuration du traceur avant de la changer.', ok: true }
+          - { text: 'D''avoir redémarré le serveur DHCP.', misconception: redemarrer, reaction: { who: helene, expr: sourcil, text: 'Redémarrer ne dit rien de l''ancienne configuration.' } }
+          - { text: 'Rien : on connaît l''adresse, .50.', misconception: adresse-suffit, reaction: { who: helene, expr: sourcil, text: 'Et le masque ? La passerelle ? Le DNS ? On relève tout avant de toucher.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Après « Passer le traceur en DHCP », quel contrôle voit le mieux si l''impression est cassée ?'
+        options:
+          - { text: 'Un poste de Brive imprime une page de test.', ok: true }
+          - { text: 'Le traceur répond au ping.', misconception: ping-suffit, reaction: { who: helene, expr: sourcil, text: 'Il peut répondre au ping sur une autre adresse que celle que visent les postes. Teste ce que l''utilisateur fait.' } }
+          - { text: 'L''écran du traceur affiche « DHCP activé ».', misconception: ecran, reaction: { who: helene, expr: sourcil, text: 'Ça dit que le changement est fait, pas que l''impression marche.' } }
+    hints: 2
