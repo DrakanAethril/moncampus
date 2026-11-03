@@ -233,16 +233,16 @@
       goal: function (st) { return st.dhcp ? true : 'le traceur n\'est pas passé en DHCP'; }
     },
     start: { window: '', prep: [], night: [], noReturn: null },
-    ref: { window: 'sam', prep: [], night: [{ op: 'noter' }, { op: 'resa', back: 'suppr-resa' }, { op: 'dhcp', check: 'page', back: 'remettre-fixe' }], noReturn: null },
+    ref: { window: 'sam', prep: [], night: [{ op: 'noter' }, { op: 'resa', back: 'suppr-resa' }, { op: 'allumer' }, { op: 'dhcp', check: 'page', back: 'remettre-fixe' }], noReturn: null },
     cases: [
       { id: 'nuit', label: 'la nuit prévue, sans incident : lundi, le traceur imprime', visible: true, flags: {} },
       { id: 'mac', label: 'une adresse MAC recopiée de mémoire', flags: { macTypo: true } },
       { id: 'eteint', label: 'un traceur éteint le vendredi soir', flags: { off: true } },
-      { id: 'squat', label: 'un portable de passage qui a pris la .50 à la main', flags: { squat: true } }
+      { id: 'squat', label: 'un portable de passage qui a pris la .50 à la main', flags: { squat: true }, unavoidable: true }
     ],
     hints: [
-      { title: 'Fiche : un plan de bascule', body: '1. La fenêtre : un moment où personne n\'a besoin du service, avec de la marge pour revenir en arrière.\n2. On relève l\'existant avant d\'y toucher (sans ça, pas de retour possible).\n3. Chaque opération qui change quelque chose a son retour arrière.\n4. Après l\'opération risquée, un contrôle qui teste ce que fait l\'utilisateur, pas ce que dit la machine.' },
-      { title: 'La réponse', body: 'Fenêtre : samedi 14 h – 18 h (ou vendredi soir).\n1. Relever la configuration du traceur.\n2. Créer la réservation DHCP — retour : supprimer la réservation.\n3. Passer le traceur en DHCP — contrôle : un poste imprime une page de test — retour : remettre l\'adresse fixe relevée.' }
+      { title: 'Fiche : un plan de bascule', body: '1. La fenêtre : un moment où personne n\'a besoin du service, avec de la marge pour revenir en arrière.\n2. On relève l\'existant avant d\'y toucher (sans ça, pas de retour possible).\n3. Chaque opération qui change quelque chose a son retour arrière.\n4. Après l\'opération risquée, un contrôle qui teste ce que fait l\'utilisateur, pas ce que dit la machine.\n5. Ce qui se prévient se prévient : un retour arrière sauve la nuit, mais la bascule est à refaire.' },
+      { title: 'La réponse', body: 'Fenêtre : samedi 14 h – 18 h (ou vendredi soir).\n1. Relever la configuration du traceur.\n2. Créer la réservation DHCP — retour : supprimer la réservation.\n3. Allumer le traceur et vérifier qu\'il est prêt (quelqu\'un a pu l\'éteindre vendredi soir).\n4. Passer le traceur en DHCP — contrôle : un poste imprime une page de test — retour : remettre l\'adresse fixe relevée.' }
     ],
     intro: [
       { who: 'helene', expr: 'neutre', text: 'Ton premier plan de bascule. Petit, exprès : une machine, trois opérations. Mais les règles sont celles des grands.' },

@@ -350,8 +350,8 @@
       { id: 'nuit', label: 'la nuit prévue : lundi, chacun ouvre sa session delorme.local et retrouve son bureau', visible: true, flags: {} },
       { id: 'eteint', label: 'un poste éteint le vendredi soir', flags: { off: true } },
       { id: 'expire', label: 'un mot de passe expiré, et changé, dans la semaine', flags: { expire: true } },
-      { id: 'profil', label: 'des profils locaux qui ne se laissent pas traduire', flags: { profil: true } },
-      { id: 'tunnel', label: 'le tunnel qui tombe pendant la nuit', flags: { tunnel: true } }
+      { id: 'profil', label: 'des profils locaux qui ne se laissent pas traduire', flags: { profil: true }, unavoidable: true },
+      { id: 'tunnel', label: 'le tunnel qui tombe pendant la nuit', flags: { tunnel: true }, unavoidable: true }
     ],
     hints: [
       { title: 'Fiche : changer des postes de domaine', body: 'Les jours d\'avant : migrer les comptes (avec l\'historique des SID), sauvegarder les profils, relever ce qu\'il faudra pour revenir en arrière.\nLa nuit : s\'assurer que tous les postes sont allumés, rafraîchir ce qui a pu changer depuis la migration des comptes, traduire les profils, puis seulement changer de domaine.\nLe contrôle : un vrai utilisateur, devant son poste, avec son bureau et ses dossiers. Pas la machine, pas l\'administrateur.\nChaque retour arrière demande quelque chose fait avant : vérifie-le.' },

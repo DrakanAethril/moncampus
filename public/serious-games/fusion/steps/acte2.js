@@ -343,8 +343,8 @@
       { id: 'bail', label: 'des baux DHCP de huit jours et trois postes de rendu allumés tout le week-end', flags: { rendus: true } },
       { id: 'licence', label: 'un serveur de licences lié à l\'ancienne adresse', flags: { licOld: true, unrepairable: ['cao'] } },
       { id: 'cache', label: 'un enregistrement DNS gardé en cache pour 24 h', flags: { dnsCache: true } },
-      { id: 'fixe', label: 'une adresse fixe que personne n\'a relevée', flags: { forgotten: true } },
-      { id: 'reboot', label: 'une box qui redémarre au mauvais moment', flags: { reboot: true, unrepairable: ['postes', 'noms', 'routage'] } }
+      { id: 'fixe', label: 'une adresse fixe que personne n\'a relevée', flags: { forgotten: true }, unavoidable: true },
+      { id: 'reboot', label: 'une box qui redémarre au mauvais moment', flags: { reboot: true, unrepairable: ['postes', 'noms', 'routage'] }, unavoidable: true }
     ],
     hints: [
       { title: 'Fiche : la nuit d\'une renumérotation', body: '1. Une semaine avant : raccourcir les baux (un poste ne revient qu\'à mi-bail), baisser le TTL du DNS (les caches gardent l\'ancienne adresse), sauvegarder la box, relever les adresses fixes. Sans sauvegarde ni relevé, pas de retour arrière.\n2. Dans l\'ordre : les passerelles, le contrôleur de domaine, les autres serveurs (la licence garde son ancienne adresse en alias), puis l\'étendue DHCP, et l\'ancien réseau en dernier.\n3. Un contrôle après chaque opération risquée, qui teste ce que fait un utilisateur.\n4. Point de non-retour après le contrôleur de domaine : au-delà, on répare en avant. Ce qui ne se défait pas (supprimer l\'ancien réseau) vient après lui, suivi d\'un contrôle complet.' },
@@ -466,8 +466,8 @@
     cases: [
       { id: 'nuit', label: 'le mois prévu, sans surprise : le vieux NAS disparaît, rien ne manque', visible: true, flags: {} },
       { id: 'unique', label: 'des données présentes nulle part ailleurs', flags: { unique: true } },
-      { id: 'monte', label: 'un partage encore monté par un poste', flags: { mounted: true } },
-      { id: 'illisible', label: 'une sauvegarde illisible', flags: { unreadable: true } }
+      { id: 'monte', label: 'un partage encore monté par un poste', flags: { mounted: true }, unavoidable: true },
+      { id: 'illisible', label: 'une sauvegarde illisible', flags: { unreadable: true }, unavoidable: true }
     ],
     hints: [
       { title: 'Fiche : décommissionner un serveur', body: '1. Avant : fermer ce qui l\'expose, prévenir les utilisateurs, lister TOUT ce qu\'il contient (volumes, dossiers non partagés, comptes).\n2. Sauvegarder, puis restaurer quelques fichiers et les ouvrir : une sauvegarde jamais relue n\'est pas une sauvegarde.\n3. Éteindre sans effacer, avec un retour : le rallumer.\n4. Attendre un mois, éteint mais intact, et noter qui le réclame.\n5. Point de non-retour, puis effacer : ça ne se défait pas.' },
