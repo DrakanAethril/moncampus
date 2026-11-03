@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Twig;
 
 use App\Entity\User;
-use App\Service\FileUploadService;
+use App\Service\UserAvatars;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
@@ -15,7 +15,7 @@ use Twig\TwigFunction;
 class AvatarExtension extends AbstractExtension
 {
     public function __construct(
-        private readonly FileUploadService $fileUploadService,
+        private readonly UserAvatars $userAvatars,
     ) {
     }
 
@@ -24,15 +24,14 @@ class AvatarExtension extends AbstractExtension
     {
         return [
             new TwigFunction('avatar_url', $this->getAvatarUrl(...)),
+            // A student's serious-games avatar, standing in for the photo they did not upload
+            // (App\Service\UserAvatars) - null when the photo or the initials answer.
+            new TwigFunction('drawn_avatar', $this->userAvatars->drawnConfig(...)),
         ];
     }
 
     public function getAvatarUrl(?User $user): ?string
     {
-        if (null === $user || null === $user->getAvatarKey()) {
-            return null;
-        }
-
-        return $this->fileUploadService->url($user->getAvatarKey());
+        return $this->userAvatars->photoUrl($user);
     }
 }

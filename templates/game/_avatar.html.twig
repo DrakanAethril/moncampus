@@ -16,7 +16,7 @@
 {% set avatar %}
     <span class="cm-gm-av{{ small ? ' cm-gm-av--sm' }}">
         <span class="cm-gm-av__ring" style="{{ game_level_style(shown_level) }}">
-            <span class="cm-gm-av__face"{% if badge.avatarUrl %} style="background-image: url({{ badge.avatarUrl }})"{% endif %}>{% if not badge.avatarUrl %}{{ badge.initials }}{% endif %}</span>
+            <span class="cm-gm-av__face{{ badge.drawnAvatar ? ' cm-avatar-drawn' }}"{% if badge.avatarUrl %} style="background-image: url({{ badge.avatarUrl }})"{% elseif badge.drawnAvatar %} data-controller="sg-avatar" data-sg-avatar-config-value="{{ badge.drawnAvatar|json_encode }}" data-sg-avatar-size-value="{{ small ? 34 : 64 }}" data-sg-avatar-round-value="false"{% endif %}>{% if not badge.avatarUrl %}{{ badge.initials }}{% endif %}</span>
         </span>
         {% if progress %}
             {# « 860 / 1 200 XP — prochain niveau : Chasseuse de bugs » on hover: the bar carries the

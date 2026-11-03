@@ -10,6 +10,9 @@
 {% set current_theme = app.user.themePreference %}
 <div class="nav-item dropdown">
     {% set navbar_avatar_url = avatar_url(app.user) %}
+    {# A student without a photo is drawn with their serious-games avatar, when they made one
+       (App\Service\UserAvatars); the initials stay underneath until the drawing has loaded. #}
+    {% set navbar_drawn_avatar = navbar_avatar_url ? null : drawn_avatar(app.user) %}
     {# The campus game's badge, when this person plays one (design/validated/
        gamification.md, screen 4 - the handoff's #3c kept as it is). The ring says
        the level of the whole cursus, the band underneath turns into a filled bar
@@ -30,7 +33,7 @@
                 {% include 'game/_avatar.html.twig' with {badge: game_user_badge, small: true, progress: true} %}
             </span>
         {% else %}
-            <span class="cm-user__avatar"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+            <span class="cm-user__avatar{{ navbar_drawn_avatar ? ' cm-avatar-drawn' }}"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% elseif navbar_drawn_avatar %} data-controller="sg-avatar" data-sg-avatar-config-value="{{ navbar_drawn_avatar|json_encode }}" data-sg-avatar-size-value="34" data-sg-avatar-round-value="false"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
         {% endif %}
     </a>
     {# No name/identity header inside this menu: the bar already shows who is
