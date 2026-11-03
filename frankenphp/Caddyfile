@@ -99,14 +99,14 @@
 	# keep their file names across versions, so every fetch revalidates. The game folder is a
 	# directory, not a `file` to @phpRoute below - without the rewrite it would reach Symfony, whose
 	# /serious-games/… routes are the module's screens.
-	@seriousGameFiles path /serious-games/shared/* /serious-games/observatoire/* /serious-games/pompei/* /serious-games/abysse/* /serious-games/irregulars/* /serious-games/neko-con/* /serious-games/blackout/* /serious-games/retro-rush/* /serious-games/radio-comete/*
+	@seriousGameFiles path /serious-games/shared/* /serious-games/observatoire/* /serious-games/pompei/* /serious-games/abysse/* /serious-games/irregulars/* /serious-games/neko-con/* /serious-games/blackout/* /serious-games/retro-rush/* /serious-games/radio-comete/* /serious-games/fusion/*
 	header @seriousGameFiles ?Cache-Control "no-cache"
 	# A font is always fetched in CORS mode, and the game's frame has an opaque origin: without this
 	# header its own typefaces would be refused. Fonts only - they carry nothing of anybody. Panique à
 	# la Neko-Con ships its own, which its previews of the convention's site load too; so do Black-out,
-	# Rétro Rush and Radio-Comète. Rétro Rush's SQL engine (sql.js) fetches its WebAssembly the same way: the .wasm
+	# Rétro Rush, Radio-Comète and Fusion. Rétro Rush's SQL engine (sql.js) fetches its WebAssembly the same way: the .wasm
 	# is the SQLite library, nobody's data.
-	@seriousGameFonts path /serious-games/shared/fonts/* /serious-games/neko-con/fonts/* /serious-games/blackout/fonts/* /serious-games/retro-rush/fonts/* /serious-games/retro-rush/vendor/* /serious-games/radio-comete/fonts/*
+	@seriousGameFonts path /serious-games/shared/fonts/* /serious-games/neko-con/fonts/* /serious-games/blackout/fonts/* /serious-games/retro-rush/fonts/* /serious-games/retro-rush/vendor/* /serious-games/radio-comete/fonts/* /serious-games/fusion/fonts/*
 	header @seriousGameFonts Access-Control-Allow-Origin "*"
 	redir /serious-games/observatoire /serious-games/observatoire/ 308
 	rewrite /serious-games/observatoire/ /serious-games/observatoire/index.html

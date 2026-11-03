@@ -1,0 +1,317 @@
+# Fusion - acte 3 : Deux domaines.
+#
+# The server half of the tickets (design/validated/serious-games-fusion.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Hélène's
+# guided questions, the clue closing gives. The game half (the plans and configurations to start from and to check,
+# the hidden nights and checks, the views, the written hints, the scenes) is public/serious-games/fusion/
+# steps/acte3.js. Converted from the prototype's host/scenario/acte3.js by tool/to-yaml.js;
+# `hints` counts the written hints the game holds after the guided questions. A ticket is an « étape »
+# in the game's words.
+tickets:
+  -
+    id: E17
+    act: 3
+    after: [E14]
+    course: 'SIO · réseau et services'
+    requester: julien
+    kind: incident
+    priority: haute
+    category: 'Domaines › Résolution de noms'
+    title: 'Qui résout quoi'
+    request: 'J''ai tapé \\nas-kerbrat.kerbrat.lan dans l''explorateur : « Windows ne peut pas accéder ». Pourtant, si je tape \\10.20.21.20, le NAS de Brive me demande un mot de passe. Le tunnel marche, non ? Alors pourquoi le nom ne marche pas ?'
+    steps:
+      -
+        id: ordonner
+        kind: order
+        label: 'Le chemin de la question'
+        prompt: 'Remets dans l''ordre ce qui se passe aujourd''hui quand le poste de Julien cherche nas-kerbrat.kerbrat.lan.'
+        items:
+          - 'SRV-DELORME n''a aucun redirecteur pour kerbrat.lan : il passe la question à son redirecteur général, la box (192.168.1.1), qui la pose à Internet.'
+          - 'Le poste regarde son propre cache DNS et son fichier hosts : rien.'
+          - 'Le poste affiche « Non-existent domain ».'
+          - 'SRV-DELORME cherche kerbrat.lan parmi les zones qu''il héberge : il n''a que delorme.local.'
+          - 'Sur Internet, personne ne connaît le domaine .lan : la réponse revient « ce nom n''existe pas ».'
+          - 'Le poste envoie la question à son serveur DNS, SRV-DELORME (192.168.1.10).'
+        answer: [1, 5, 3, 0, 4, 2]
+        reaction: { who: helene, expr: sourcil, text: 'Suis la question pas à pas : d''abord ce que le poste sait déjà, puis à qui il demande, puis ce que ce serveur fait de ce qu''il ne connaît pas.' }
+      -
+        id: manque
+        kind: choice
+        label: 'Ce qui manque'
+        prompt: 'Que faut-il pour que le poste de Julien obtienne l''adresse de nas-kerbrat.kerbrat.lan ?'
+        options:
+          - { text: 'Que SRV-DELORME sache à qui poser les questions sur kerbrat.lan : un redirecteur conditionnel vers le DNS de Brive. Et la même chose dans l''autre sens.', ok: true, reaction: { who: julien, expr: sourire, text: 'Un panneau « pour Brive, demandez là-bas ». Je comprends. Ça se règle en une matinée ?' } }
+          - { text: 'Mettre le DNS de Brive comme DNS du poste de Julien.', misconception: dns-du-poste, reaction: { who: helene, expr: sourcil, text: 'Le poste trouverait Brive, mais ne trouverait plus delorme.local, ni son propre contrôleur de domaine. C''est au serveur DNS de savoir où demander, pas au poste.' } }
+          - { text: 'Ajouter une ligne « 10.20.21.20 nas-kerbrat.kerbrat.lan » dans le fichier hosts de chaque poste.', misconception: fichier-hosts, reaction: { who: helene, expr: sourcil, text: 'Ça marcherait pour ce nom-là, sur ces postes-là, jusqu''au jour où l''adresse change. Et il y a des centaines de noms dans kerbrat.lan, dont ceux que cherche Active Directory.' } }
+          - { text: 'Réparer le tunnel : il ne laisse pas passer les noms.', misconception: tunnel-casse, reaction: { who: helene, expr: sourcil, text: 'Julien ouvre \\10.20.21.20 : le tunnel fonctionne. Un tunnel transporte des paquets ; ce qui manque, c''est un serveur qui connaisse la réponse.' } }
+  -
+    id: E18
+    act: 3
+    after: [E17]
+    course: 'SIO · réseau et services'
+    requester: helene
+    kind: demande
+    priority: haute
+    category: 'Domaines › Redirecteurs'
+    title: 'Les redirecteurs'
+    request: 'Chaque DNS ne connaît que son domaine. On va leur apprendre à se renvoyer les questions : un redirecteur conditionnel sur SRV-DELORME pour kerbrat.lan, et un sur dc-kerbrat pour delorme.local. Attention aux adresses : les vieux schémas de Brive traînent encore.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Configure les redirecteurs conditionnels des deux serveurs DNS, puis vérifie la résolution des deux côtés.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi un redirecteur conditionnel, et pas dc-kerbrat comme redirecteur général de SRV-DELORME ?'
+        options:
+          - { text: 'Le conditionnel n''envoie à Brive que les questions sur kerbrat.lan. Le reste, Internet compris, continue par la box locale : si le tunnel tombe, Limoges résout encore tout ce qui n''est pas à Brive.', ok: true, reaction: { who: helene, expr: sourire, text: 'Chacun reste maître chez lui, et ne dépend de l''autre que pour ce qui est chez l''autre.' } }
+          - { text: 'Parce que Windows interdit de mettre un serveur Samba en redirecteur général.', misconception: windows-interdit, reaction: { who: helene, expr: sourcil, text: 'Windows l''accepterait sans broncher. C''est une question de dépendance : avec un redirecteur général à Brive, tout Internet de Limoges passerait par le tunnel.' } }
+          - { text: 'Parce qu''un redirecteur conditionnel copie la zone kerbrat.lan sur SRV-DELORME.', misconception: redirecteur-copie, reaction: { who: helene, expr: sourcil, text: 'Ça, c''est une zone secondaire. Le redirecteur ne copie rien : il transmet la question et garde la réponse le temps de son TTL.' } }
+          - { text: 'Parce que le redirecteur conditionnel fait passer les mots de passe de Brive à Limoges.', misconception: dns-authentifie, reaction: { who: helene, expr: sourcil, text: 'Le DNS donne des adresses, rien d''autre. Les mots de passe, ce sera l''affaire de l''approbation entre les domaines.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'À quelle adresse SRV-DELORME doit-il envoyer les questions sur kerbrat.lan ?'
+        options:
+          - { text: '10.20.21.10, l''adresse de dc-kerbrat depuis la renumérotation.', ok: true }
+          - { text: '192.168.1.10, l''adresse du DNS sur le schéma de Brive.', misconception: ancienne-adresse, reaction: { who: helene, expr: sourcil, text: 'C''était l''adresse de dc-kerbrat avant la renumérotation. Aujourd''hui, vue de Limoges, 192.168.1.10 c''est SRV-DELORME lui-même : la question tournerait en rond.' } }
+          - { text: '10.20.20.1, la box de Brive.', misconception: box-dns, reaction: { who: helene, expr: sourcil, text: 'La box de Brive ne connaît pas kerbrat.lan : elle demanderait à Internet, comme celle de Limoges.' } }
+    hints: 2
+  -
+    id: E19
+    act: 3
+    after: [E18]
+    course: 'SIO · réseau et services'
+    requester: helene
+    kind: demande
+    priority: moyenne
+    category: 'Domaines › TTL'
+    title: 'Le TTL'
+    request: 'Au week-end des partages, en décembre, le dossier Projets quittera nas-kerbrat. Le lecteur P: passera par une GPO, mais des raccourcis et des liens dans les documents ouvrent encore l''alias projets.kerbrat.lan : ce jour-là, on le fera pointer vers le nouveau serveur. Sauf que depuis les redirecteurs, SRV-DELORME garde aussi la réponse en mémoire, pour tout Limoges. Regarde l''enregistrement avec moi.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'L''enregistrement'
+        prompt: 'Clique sur la ligne qui dit combien de temps les postes et les autres DNS gardent en mémoire l''alias projets.'
+        view: dig
+        answer: '86400'
+        reaction: { who: helene, expr: sourcil, text: 'Le TTL est le nombre juste après le nom, en secondes. Cherche la ligne de l''alias projets, pas celle de la machine.' }
+      -
+        id: pourquoi
+        kind: choice
+        label: 'Pourquoi le baisser'
+        prompt: 'Pourquoi baisser le TTL de l''alias à 300 secondes avant le jour du changement ?'
+        options:
+          - { text: 'Chaque DNS et chaque poste qui a déjà la réponse la garde jusqu''à la fin du TTL : avec 86 400 s, certains iraient encore sur nas-kerbrat le lendemain. Avec 300 s, le changement se voit partout en cinq minutes.', ok: true, reaction: { who: helene, expr: sourire, text: 'Voilà. Le TTL, c''est la date de péremption de la réponse.' } }
+          - { text: 'Un TTL court rend la résolution plus rapide.', misconception: ttl-vitesse, reaction: { who: helene, expr: sourcil, text: 'Il la rend plutôt plus fréquente. Le TTL dit combien de temps une réponse reste valable en mémoire, pas à quelle vitesse elle arrive.' } }
+          - { text: 'Le TTL est le nombre de routeurs que la réponse peut traverser.', misconception: ttl-ip, reaction: { who: helene, expr: sourcil, text: 'Ça, c''est le TTL d''un paquet IP, qui compte des routeurs. Celui du DNS compte des secondes de mise en cache.' } }
+          - { text: 'Pour que le DNS de Brive accepte la modification.', misconception: ttl-verrou, reaction: { who: helene, expr: sourcil, text: 'Le DNS accepte la modification quel que soit le TTL. Ce sont les copies déjà faites ailleurs qui ne la verront pas.' } }
+      -
+        id: quand
+        kind: choice
+        label: 'Combien de temps avant'
+        prompt: 'Combien de temps avant le changement faut-il baisser le TTL ?'
+        options:
+          - { text: 'Au moins 24 heures avant, la durée de l''ancien TTL : il faut que toutes les copies faites avec 86 400 s aient expiré.', ok: true, reaction: { who: helene, expr: sourire, text: 'Le jeudi d''avant, donc. Et après la bascule, on le remonte.' } }
+          - { text: 'Cinq minutes avant, la durée du nouveau TTL.', misconception: nouveau-ttl, reaction: { who: helene, expr: sourcil, text: 'Une copie faite hier avec 86 400 s ne relit pas l''enregistrement pour apprendre que le TTL a baissé : elle attend sa propre fin. C''est l''ancien TTL qu''il faut laisser passer.' } }
+          - { text: 'En même temps que le changement de cible.', misconception: simultane, reaction: { who: helene, expr: sourcil, text: 'Trop tard : les copies déjà faites gardent l''ancienne cible, et l''ancien TTL, jusqu''à 24 h.' } }
+          - { text: 'Ce n''est pas utile : un ipconfig /flushdns sur chaque poste suffit.', misconception: flushdns, reaction: { who: helene, expr: sourcil, text: 'Le cache du poste, oui. Mais SRV-DELORME garde aussi la réponse pour tout Limoges, depuis qu''il redirige kerbrat.lan. Et on oubliera forcément un poste.' } }
+  -
+    id: E20
+    act: 3
+    after: [E19]
+    course: 'SIO · administration système'
+    requester: maelle
+    kind: demande
+    priority: haute
+    category: 'Domaines › Approbation'
+    title: 'L''approbation'
+    request: 'Les noms marchent, paraît-il. Mais quand Claire ouvre le dossier commun de Limoges, on lui demande un mot de passe qu''elle n''a pas. Et Julien râle parce qu''il ne voit pas nos projets. D''ici à ce que tout le monde soit dans le même domaine, je veux que chacun ouvre ce qu''il doit ouvrir. Pas plus.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Crée l''approbation entre delorme.local et kerbrat.lan : nom, type, sens, transitivité, authentification, et ce qui doit être prêt avant.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi l''approbation avait-elle besoin des redirecteurs de l''étape précédente ?'
+        options:
+          - { text: 'Chaque contrôleur doit trouver ceux de l''autre domaine par leurs enregistrements SRV (_ldap._tcp, _kerberos._tcp). Sans résolution croisée, l''assistant ne trouve même pas le domaine à approuver.', ok: true, reaction: { who: maelle, expr: neutre, text: 'Donc le DNS d''abord, les comptes ensuite. Je commence à voir la logique.' } }
+          - { text: 'Parce que les redirecteurs copient les comptes de Brive dans delorme.local.', misconception: redirecteur-copie, reaction: { who: helene, expr: sourcil, text: 'Les redirecteurs ne copient rien, et surtout pas des comptes. Ils disent seulement où sont les contrôleurs de l''autre domaine.' } }
+          - { text: 'Ce n''est pas lié : une approbation se crée par adresse IP.', misconception: ip-suffit, reaction: { who: helene, expr: sourcil, text: 'L''assistant demande un nom de domaine, et le cherche dans le DNS. Kerberos, ensuite, ne travaille qu''avec des noms.' } }
+          - { text: 'Parce que le DNS transporte les mots de passe d''un domaine à l''autre.', misconception: dns-authentifie, reaction: { who: helene, expr: sourcil, text: 'Le DNS donne des adresses. Les mots de passe, c''est Kerberos, entre les contrôleurs, une fois qu''ils se sont trouvés.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Les comptes de Brive doivent ouvrir les partages de Limoges. Quel domaine approuve l''autre ?'
+        options:
+          - { text: 'delorme.local, où sont les partages, approuve kerbrat.lan, où sont les comptes.', ok: true }
+          - { text: 'kerbrat.lan approuve delorme.local.', misconception: sens-inverse, reaction: { who: helene, expr: sourcil, text: 'C''est le domaine qui détient la ressource qui fait confiance au domaine des comptes. Ici, la ressource est à Limoges.' } }
+          - { text: 'Peu importe : une approbation marche toujours dans les deux sens.', misconception: toujours-bidirectionnelle, reaction: { who: helene, expr: sourcil, text: 'Une approbation peut n''aller que dans un sens. Ici on veut les deux, mais il faut savoir pourquoi : Julien ouvre aussi les projets de Brive.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'dc-kerbrat avance de sept minutes sur SRV-DELORME. Est-ce un problème pour l''approbation ?'
+        options:
+          - { text: 'Oui : Kerberos refuse les tickets quand les horloges ont plus de cinq minutes d''écart.', ok: true }
+          - { text: 'Non : l''heure ne sert qu''aux journaux.', misconception: heure-journaux, reaction: { who: helene, expr: sourcil, text: 'Elle sert aux journaux, et surtout à Kerberos, qui date chaque ticket pour qu''on ne puisse pas le rejouer.' } }
+          - { text: 'Seulement si les deux serveurs n''ont pas le même fuseau horaire.', misconception: fuseau, reaction: { who: helene, expr: sourcil, text: 'Kerberos compare en temps universel : le fuseau ne change rien. Ce sont les sept minutes qui posent problème.' } }
+    hints: 2
+  -
+    id: E21
+    act: 3
+    after: [E17]
+    course: 'SIO · cybersécurité'
+    requester: maelle
+    kind: demande
+    priority: haute
+    category: 'Comptes › Export de kerbrat.lan'
+    title: 'L''export des comptes'
+    request: 'Avant que nos comptes passent chez Julien, Hélène veut savoir qui existe dans kerbrat.lan. Pour vous aider : trois personnes sont parties. Bastien, fin avril 2025, chez Varenne. Anaïs, en décembre dernier. Et notre stagiaire de l''été 2024. Les neuf autres sont là.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'L''export'
+        prompt: 'Clique sur le compte d''une personne partie qui a encore accès aux dossiers du concours.'
+        view: export
+        answer: 'b.roux'
+        reaction: { who: helene, expr: sourcil, text: 'Regarde deux colonnes à la fois : la description dit qui c''est, les groupes disent ce qu''il ouvre. Et Maëlle t''a donné les départs.' }
+      -
+        id: conclure
+        kind: choice
+        label: 'Ce que tu en dis'
+        prompt: 'Bastien est chez Varenne, et son compte ouvre encore le concours. Qu''en dis-tu à Maëlle ?'
+        options:
+          - { text: 'C''est une porte ouverte, pas une preuve. Avant de conclure, je regarde si ce compte a servi depuis le départ de Bastien.', ok: true, reaction: { who: maelle, expr: sourcil, text: 'Trois comptes actifs pour trois personnes parties. Et l''un d''eux chez notre concurrent. Vérifiez, vite.' } }
+          - { text: 'C''est lui : il a pris les plans avec son ancien compte.', misconception: conclure-trop-vite, reaction: { who: helene, expr: sourcil, text: 'Peut-être. Mais un compte actif dit que la porte est ouverte, pas que quelqu''un est entré. On regarde les traces avant d''accuser.' } }
+          - { text: 'Je supprime le compte tout de suite.', misconception: supprimer-la-trace, reaction: { who: helene, expr: sourcil, text: 'Et avec lui les dates de dernière connexion dont on a besoin. On ne détruit pas une trace avant de l''avoir lue.' } }
+          - { text: 'Rien : il est parti, ce compte ne sert plus.', misconception: parti-donc-inactif, reaction: { who: helene, expr: sourcil, text: 'Lui est parti, son compte non. Tant qu''il est actif, son mot de passe ouvre le concours depuis n''importe quel poste de Brive.' } }
+  -
+    id: E22
+    act: 3
+    after: [E21]
+    course: 'SIO · cybersécurité'
+    requester: helene
+    kind: incident
+    priority: tres-haute
+    category: 'Concours › La fuite'
+    title: 'Son dernier passage'
+    request: 'Maëlle ne dort plus. On regarde les traces du compte b.roux, calmement : ce que dit l''annuaire, puis ce que dit le journal d''audit de dc-kerbrat, qui est conservé depuis janvier 2025.'
+    reward:
+      clue: 'Le compte b.roux de kerbrat.lan est toujours actif, mais personne ne l''a ouvert depuis le départ de Bastien : la fuite ne passe pas par ce compte.'
+    steps:
+      -
+        id: annuaire
+        kind: line
+        label: 'L''annuaire'
+        prompt: 'Clique sur la ligne qui dit quand ce compte a ouvert une session pour la dernière fois.'
+        view: compte
+        answer: 'LastLogonDate'
+        reaction: { who: helene, expr: sourcil, text: 'Cette date dit autre chose : une création, un mot de passe changé, une erreur de saisie. Cherche la dernière ouverture de session.' }
+      -
+        id: journal
+        kind: line
+        label: 'Le journal d''audit'
+        prompt: 'Clique sur la ligne qui montre que personne n''a même essayé ce compte depuis le départ de Bastien.'
+        view: journal
+        answer: '0 tentative refusée'
+        reaction: { who: helene, expr: sourcil, text: 'Celle-là dit qu''on n''est pas entré. Mais quelqu''un aurait pu essayer sans réussir. Cherche la ligne qui le dit aussi.' }
+      -
+        id: conclure
+        kind: choice
+        label: 'La conclusion'
+        prompt: 'Que peux-tu dire à Maëlle ?'
+        options:
+          - { text: 'Le compte b.roux de kerbrat.lan n''a ni servi ni été essayé depuis le 30 avril 2025 : la fuite ne passe pas par ce compte. Il faut quand même le désactiver.', ok: true, reaction: { who: maelle, expr: neutre, text: 'Donc ce n''est pas par là. Je préfère ça, je crois. Mais alors, par où ?' } }
+          - { text: 'Bastien n''y est pour rien.', misconception: innocent, reaction: { who: helene, expr: sourcil, text: 'On a écarté un chemin, pas une personne. Ce journal dit seulement que ce compte-là n''a pas servi.' } }
+          - { text: 'LastLogonDate peut avoir 14 jours de retard : on ne peut rien conclure.', misconception: lastlogon-14-jours, reaction: { who: helene, expr: sourcil, text: 'Ce retard existe quand il y a plusieurs contrôleurs. Ici il n''y en a qu''un, on parle de dix-huit mois, et le journal d''audit dit la même chose.' } }
+          - { text: 'Puisqu''il ne sert pas, on peut le laisser actif.', misconception: inactif-sans-risque, reaction: { who: helene, expr: sourcil, text: 'Un compte que personne ne surveille, au mot de passe inchangé depuis janvier 2025 et qui ouvre le concours : c''est exactement ce qu''on désactive.' } }
+  -
+    id: E23
+    act: 3
+    after: [E22]
+    course: 'SIO · cybersécurité'
+    requester: helene
+    kind: demande
+    priority: haute
+    category: 'Comptes › Départs'
+    title: 'La procédure de départ'
+    request: 'Trois comptes dormants dans kerbrat.lan : b.roux, a.perrin, stagiaire2024. On les traite avant la migration, et on écrit au passage la procédure de départ du futur cabinet, pour que ça ne se reproduise pas. Pour l''instant, on l''applique aux comptes de kerbrat.lan. Les boîtes, elles, sont chez Julien depuis septembre : on les traitera avec la messagerie.'
+    steps:
+      -
+        id: ordonner
+        kind: order
+        label: 'La procédure'
+        prompt: 'Range les étapes de la procédure de départ dans l''ordre.'
+        items:
+          - 'Désactiver le compte, et noter dans sa description la date et la raison.'
+          - 'Supprimer le compte.'
+          - 'Retirer les règles de la boîte et les transferts.'
+          - 'Relever l''état du compte pour le dossier : groupes, listes, règles, dernière session.'
+          - 'Déplacer le compte dans « Comptes désactivés » et attendre le délai de conservation (90 jours).'
+          - 'Retirer le compte de ses groupes et des listes de diffusion.'
+          - 'Confier la boîte au responsable : la convertir en boîte partagée, ou en exporter le contenu.'
+        answer: [3, 0, 5, 6, 2, 4, 1]
+        reaction: { who: helene, expr: sourcil, text: 'Deux repères : on relève avant de toucher, et on ne supprime qu''à la toute fin, quand plus rien ne peut servir. Entre les deux, on ferme les accès, puis on s''occupe de ce que la personne laisse.' }
+      -
+        id: delai
+        kind: choice
+        label: 'Le délai'
+        prompt: 'Pourquoi attendre 90 jours entre la désactivation et la suppression ?'
+        options:
+          - { text: 'Supprimer efface le compte et son SID : si on s''est trompé, ou s''il faut retrouver une trace, un compte recréé ne retrouve ni ses droits ni ses fichiers. Désactivé, il ne sert à personne mais tout reste réversible.', ok: true, reaction: { who: helene, expr: sourire, text: 'Voilà. Désactiver, c''est fermer la porte. Supprimer, c''est démolir le mur.' } }
+          - { text: 'Pour laisser à la personne le temps de revenir.', misconception: retour-salarie, reaction: { who: helene, expr: sourcil, text: 'Si elle revient, on lui fera un compte, ou on réactivera celui-ci. Le délai sert surtout à pouvoir revenir sur une erreur, et à garder les traces.' } }
+          - { text: 'Parce que la loi interdit de supprimer un compte avant 90 jours.', misconception: obligation-legale, reaction: { who: helene, expr: sourcil, text: 'Aucune loi ne fixe ce chiffre : c''est le cabinet qui le choisit et l''écrit dans sa procédure. L''important est qu''il soit écrit, et tenu.' } }
+          - { text: 'Pour que la licence du logiciel se libère toute seule.', misconception: licence, reaction: { who: helene, expr: sourcil, text: 'Une licence se libère en retirant le compte de son groupe, dès le premier jour. Le délai sert à autre chose.' } }
+  -
+    id: E24
+    act: 3
+    after: [E20, E23]
+    course: 'SIO · conduite de projet et bascule'
+    requester: maelle
+    kind: demande
+    priority: tres-haute
+    category: 'Bascule › Les postes de Brive'
+    title: 'Les postes de Brive'
+    request: 'Hélène me dit qu''après ce week-end, nos neuf postes seront dans le domaine de Julien. Je ne demande qu''une chose : que lundi matin chacun retrouve son bureau comme il l''a laissé, et nos projets. Claire a dix ans de raccourcis sur le sien.'
+    steps:
+      -
+        id: corriger
+        kind: fix
+        prompt: 'Construis le plan de bascule des neuf postes de Brive vers delorme.local, en gardant les profils : ce qui se fait les jours d''avant, la fenêtre, les opérations, les contrôles, les retours arrière. Puis joue la nuit.'
+      -
+        id: solution
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi migrer les comptes avec l''historique des SID ?'
+        options:
+          - { text: 'Le nouveau compte de delorme.local garde l''ancien SID de kerbrat.lan dans son historique : les droits donnés à l''ancien compte, sur Projets ou sur le profil, le reconnaissent encore. On n''a pas à tout refaire la nuit même.', ok: true, reaction: { who: maelle, expr: sourire, text: 'Un nouveau nom de domaine, la même personne pour les dossiers. C''est ce que je voulais.' } }
+          - { text: 'Pour copier le mot de passe.', misconception: sid-mot-de-passe, reaction: { who: helene, expr: sourcil, text: 'Le mot de passe se copie à part. L''historique des SID garde l''identité, pour les droits.' } }
+          - { text: 'Pour garder le même identifiant, c.nguyen.', misconception: sid-nom, reaction: { who: helene, expr: sourcil, text: 'Le nom se garde sans historique. Windows ne reconnaît pas les gens à leur nom, mais à leur SID.' } }
+          - { text: 'Ce n''est pas utile : il suffit de recréer les comptes avec les mêmes noms.', misconception: meme-nom-meme-compte, reaction: { who: helene, expr: sourcil, text: 'Même nom, autre SID : pour le NAS et pour le profil, c''est un inconnu. Claire ouvrirait un bureau vide, et Projets lui serait refusé.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Le profil de Claire, sur son poste, appartient au SID de son compte kerbrat. Que doit faire l''outil de migration avant que le poste change de domaine ?'
+        options:
+          - { text: 'Traduire le profil : donner aussi les droits au SID de son nouveau compte delorme.local.', ok: true }
+          - { text: 'Rien : Windows retrouve le profil par le nom c.nguyen.', misconception: profil-par-nom, reaction: { who: helene, expr: sourcil, text: 'Windows range les profils par SID. Au nouveau SID, sans traduction, il crée un profil neuf : un bureau vide.' } }
+          - { text: 'Copier le profil sur le NAS, puis le recopier lundi.', misconception: profil-copie, reaction: { who: helene, expr: sourcil, text: 'Long, et les droits du profil copié appartiendraient toujours à l''ancien SID. La traduction règle les droits sur place.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Après le changement de domaine, quel contrôle voit qu''un utilisateur a perdu son bureau ?'
+        options:
+          - { text: 'Claire ouvre sa session delorme.local sur son poste, et retrouve son bureau et Projets.', ok: true }
+          - { text: 'Les neuf postes apparaissent dans l''annuaire de delorme.local.', misconception: machine-pas-utilisateur, reaction: { who: helene, expr: sourcil, text: 'Ça dit que les machines ont changé de domaine. Ça ne dit rien de ce que verra la personne qui s''assoit devant.' } }
+          - { text: 'L''administrateur ouvre une session sur un poste.', misconception: admin-pas-utilisateur, reaction: { who: helene, expr: sourcil, text: 'L''administrateur n''a pas de profil à retrouver sur ce poste. C''est un vrai utilisateur qu''il faut asseoir devant.' } }
+    hints: 2
