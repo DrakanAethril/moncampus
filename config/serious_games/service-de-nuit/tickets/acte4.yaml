@@ -1,0 +1,177 @@
+# Service de nuit - acte 4 : Les étages.
+#
+# The server half of the nights (design/validated/serious-games-service-de-nuit.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Sami's guided
+# questions, the clue closing gives. The game half (the site to start from, the visitors and their
+# checks, the hidden ones, the notebooks, the written hints, the scenes) is public/serious-games/
+# service-de-nuit/steps/acte4.js. Converted from the prototype's host/scenario/acte4.js by
+# tool/to-yaml.js; `hints` counts the written hints the game holds after the guided questions. A ticket
+# is a « nuit » in the game's words.
+tickets:
+  -
+    id: N12
+    act: 4
+    after: [N11]
+    course: 'PHP · les tableaux'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'Les étages › La date'
+    title: 'Jeudi, pas Thursday'
+    request: 'En haut de la page d''accueil, je voudrais la date du jour, en français : « Nous sommes le jeudi 5 novembre. » Et le premier du mois, on écrit « 1er ». J''ai essayé date(''l j F'') : la page m''a répondu « Thursday 5 November ».'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Écris la date du jour en français, avec au plus une condition de plus, puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi $jours[date(''N'') - 1] ?'
+        options:
+          - { text: 'date(''N'') va de 1 (lundi) à 7 (dimanche), et un tableau commence à la case 0 : on retire 1 pour tomber sur la bonne case.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Lundi dans la case 0… Les informaticiens comptent comme les étages : on part du rez-de-chaussée.' } }
+          - { text: 'Parce que PHP compte les jours à partir du dimanche.', misconception: semaine-dimanche, reaction: { who: sami, expr: sourcil, text: 'Avec N, lundi vaut 1 et dimanche 7. Le -1 vient du tableau, qui commence à 0.' } }
+          - { text: 'Pour obtenir la veille.', misconception: moins-un-veille, reaction: { who: sami, expr: sourcil, text: 'On n''enlève pas un jour : on passe du numéro du jour au numéro de la case.' } }
+          - { text: 'Le -1 retire le dernier élément du tableau.', misconception: moins-un-tableau, reaction: { who: sami, expr: sourcil, text: 'Le -1 s''applique au nombre date(''N''), pas au tableau.' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: 'premier / 4', ok: true, reaction: { who: sami, expr: sourire, text: 'Case 0 : le rez-de-chaussée. Case 1 : le premier. Et count() compte les cases.' } }
+          - { text: 'rez-de-chaussée / 4', misconception: indice-un, reaction: { who: sami, expr: sourcil, text: 'La première case est la case 0 : $etages[1] est la deuxième.' } }
+          - { text: 'premier / 3', misconception: count-indice, reaction: { who: sami, expr: sourcil, text: 'count() donne le nombre de cases, 4, pas le numéro de la dernière.' } }
+          - { text: 'deuxième / 4', misconception: indice-plus-un, reaction: { who: sami, expr: sourcil, text: '$etages[1], c''est la case 1 : « premier ».' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Comment ranger les noms des jours pour y accéder par un numéro ?'
+        options:
+          - { text: 'Dans un tableau : $jours = [''lundi'', ''mardi'', …, ''dimanche''];', ok: true }
+          - { text: 'Dans sept variables : $jour1, $jour2…', misconception: variables-numerotees, reaction: { who: sami, expr: sourcil, text: 'Et ensuite ? Il faudrait un if par jour pour choisir la bonne. Un tableau se lit avec un numéro.' } }
+          - { text: 'Dans une seule chaîne : ''lundi mardi mercredi…''', misconception: chaine-liste, reaction: { who: sami, expr: sourcil, text: 'Une chaîne n''a pas de cases : on ne peut pas y prendre le 4e jour simplement.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Jeudi, date(''N'') vaut 4. Quelle case lire dans [''lundi'', ''mardi'', ''mercredi'', ''jeudi'', …] ?'
+        options:
+          - { text: 'La case 3 : $jours[date(''N'') - 1].', ok: true }
+          - { text: 'La case 4 : $jours[date(''N'')].', misconception: indice-un, reaction: { who: sami, expr: sourcil, text: 'La case 4, c''est « vendredi » : le tableau commence à 0.' } }
+          - { text: 'La case « jeudi » : $jours[''jeudi''].', misconception: cle-texte, reaction: { who: sami, expr: sourcil, text: 'Ce tableau est numéroté : ses cases s''appellent 0, 1, 2…' } }
+    hints: 2
+  -
+    id: N13
+    act: 4
+    after: [N12]
+    course: 'PHP · foreach'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'Les étages › Les arrivées'
+    title: 'Les arrivées du soir'
+    request: 'Sur la page des arrivées, je recopie chaque soir la liste des clients attendus. Le registre la donne pourtant, dans $arrivees. Je voudrais « 3 arrivées ce soir », puis les noms numérotés : « 1. Mme Roux ». S''il n''y en a qu''une : « 1 arrivée ce soir ». Et s''il n''y en a aucune : « Aucune arrivée ce soir. »'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Affiche le nombre d''arrivées et la liste numérotée du registre, puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Que fait foreach ($arrivees as $client) ?'
+        options:
+          - { text: 'Il passe une fois par case du tableau, et met à chaque tour la valeur de la case dans $client.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Un tour par client, sans que j''aie à les compter.' } }
+          - { text: 'Il met tout le tableau dans $client, une seule fois.', misconception: foreach-une-fois, reaction: { who: sami, expr: sourcil, text: 'Il y a un tour par case : $client change à chaque tour.' } }
+          - { text: 'Il faut savoir combien il y a de clients pour l''écrire.', misconception: foreach-compte, reaction: { who: sami, expr: sourcil, text: 'C''est tout l''intérêt : foreach s''arrête tout seul à la dernière case.' } }
+          - { text: '$client contient le numéro de la case.', misconception: foreach-cle-valeur, reaction: { who: sami, expr: sourcil, text: 'Avec « as $client », c''est la valeur. Le numéro s''obtient avec « as $numero => $client ».' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: '101 102 205 (3)', ok: true, reaction: { who: sami, expr: sourire, text: 'Trois cases, trois tours, trois clés.' } }
+          - { text: '0 1 2 (3)', misconception: foreach-cle-valeur, reaction: { who: sami, expr: sourcil, text: '« as $cle » donne les valeurs des cases, pas leurs numéros.' } }
+          - { text: '101 102 205 (2)', misconception: count-indice, reaction: { who: sami, expr: sourcil, text: 'count() compte les cases : 3.' } }
+          - { text: 'Array (3)', misconception: tableau-echo, reaction: { who: sami, expr: sourcil, text: 'echo est dans la boucle : il écrit une case à chaque tour, pas le tableau.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Comment savoir combien il y a d''arrivées ?'
+        options:
+          - { text: 'count($arrivees)', ok: true }
+          - { text: '$arrivees.length', misconception: syntaxe-javascript, reaction: { who: sami, expr: sourcil, text: 'Ça, c''est du JavaScript. En PHP : count().' } }
+          - { text: 'Le numéro de la dernière case.', misconception: count-indice, reaction: { who: sami, expr: sourcil, text: 'Les cases commencent à 0 : la dernière d''un tableau de 3 est la case 2.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Comment numéroter les clients à partir de 1 ?'
+        options:
+          - { text: 'Avec un compteur : $rang = 1 avant la boucle, $rang++ à chaque tour.', ok: true }
+          - { text: 'Avec « as $rang => $client » tel quel.', misconception: cle-depuis-zero, reaction: { who: sami, expr: sourcil, text: 'Les clés commencent à 0 : « 0. Mme Roux ». Il faudrait ajouter 1.' } }
+          - { text: 'Avec count($arrivees) à chaque tour.', misconception: count-rang, reaction: { who: sami, expr: sourcil, text: 'count() donne le total, le même à chaque tour.' } }
+    hints: 2
+  -
+    id: N14
+    act: 4
+    after: [N13]
+    course: 'PHP · les tableaux associatifs'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'Les étages › Les tarifs'
+    title: 'Les tarifs de la saison'
+    request: 'Les tarifs changent avec la saison, et l''annexe aura des chambres familiales. Le registre donne $tarifs : chaque type de chambre avec son prix. Une ligne par type, « Double : 78,00 € », puis en dessous la moins chère : « Dès 62,00 € la nuit ».'
+    reward:
+      clue: 'Dans le registre des réservations, le client de la 12 revient chaque jeudi depuis la retraite d''Augustin, sous le nom « A. L. », et paie en liquide.'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Affiche chaque type de chambre avec son prix, puis le moins cher, et sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Dans foreach ($tarifs as $type => $prix), que contient $type ?'
+        options:
+          - { text: 'La clé de la case : « Simple », « Double »… et $prix sa valeur.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Le nom de la chambre et son prix, ensemble. Comme sur l''ardoise du comptoir.' } }
+          - { text: 'Le numéro de la case : 0, 1, 2.', misconception: cle-numero, reaction: { who: sami, expr: sourcil, text: 'Ce tableau a des clés en texte : $type prend « Simple », « Double »…' } }
+          - { text: 'Le prix, et $prix le type.', misconception: cle-valeur-inverse, reaction: { who: sami, expr: sourcil, text: 'À gauche de =>, la clé ; à droite, la valeur.' } }
+          - { text: 'Le type de la variable : int ou string.', misconception: type-php, reaction: { who: sami, expr: sourcil, text: 'Ici, $type est juste un nom de variable : il reçoit la clé de chaque case.' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: '3 / 3', ok: true, reaction: { who: sami, expr: sourire, text: '$chambres[''Diaz''] vaut 3, et la case Okafor ajoutée en fait trois.' } }
+          - { text: '12 / 3', misconception: cle-ordre, reaction: { who: sami, expr: sourcil, text: 'On lit la case dont la clé est « Diaz », pas la première.' } }
+          - { text: '3 / 2', misconception: ajout-ignore, reaction: { who: sami, expr: sourcil, text: 'La ligne $chambres[''Okafor''] = 21; ajoute une case.' } }
+          - { text: 'Diaz / 3', misconception: cle-affichee, reaction: { who: sami, expr: sourcil, text: '$chambres[''Diaz''] donne la valeur rangée sous la clé : 3.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Un soir de haute saison, le registre ajoute « Familiale ». Que doit faire la page ?'
+        options:
+          - { text: 'L''afficher sans qu''on touche au code : la boucle parcourt toutes les cases du registre.', ok: true }
+          - { text: 'Rien : la page ne connaît que Simple, Double et Suite.', misconception: cles-en-dur, reaction: { who: sami, expr: sourcil, text: 'C''est ce qu''il faut éviter : écrire les types en dur.' } }
+          - { text: 'Il faudra ajouter une ligne dans la page.', misconception: cles-en-dur, reaction: { who: sami, expr: sourcil, text: 'Avec foreach, la nouvelle case est lue comme les autres.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Comment trouver le prix le plus bas ?'
+        options:
+          - { text: 'min($tarifs)', ok: true }
+          - { text: '$tarifs[''Simple'']', misconception: min-en-dur, reaction: { who: sami, expr: sourcil, text: 'La Simple n''est pas toujours la moins chère, ni même toujours là.' } }
+          - { text: '$tarifs[0]', misconception: cle-numero, reaction: { who: sami, expr: sourcil, text: 'Ce tableau n''a pas de case 0 : ses clés sont des noms de chambres.' } }
+    hints: 2

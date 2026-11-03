@@ -1,0 +1,179 @@
+# Service de nuit - acte 5 : La chambre 12.
+#
+# The server half of the nights (design/validated/serious-games-service-de-nuit.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Sami's guided
+# questions, the clue closing gives. The game half (the site to start from, the visitors and their
+# checks, the hidden ones, the notebooks, the written hints, the scenes) is public/serious-games/
+# service-de-nuit/steps/acte5.js. Converted from the prototype's host/scenario/acte5.js by
+# tool/to-yaml.js; `hints` counts the written hints the game holds after the guided questions. A ticket
+# is a « nuit » in the game's words.
+tickets:
+  -
+    id: N15
+    act: 5
+    after: [N14]
+    course: 'PHP · les fonctions'
+    requester: sami
+    kind: demande
+    priority: haute
+    category: 'La chambre 12 › Les prix'
+    title: 'Une fonction pour les prix'
+    request: 'number_format est écrit à trois endroits du site, et j''ai vu passer « 1,141,00 € » un soir où quelqu''un l''avait recopié sans l''espace des milliers. Le carnet rouge dit : « Ce qui s''écrit deux fois devient une fonction. » Écris prix($montant) dans fonctions.php, et sers-t''en sur la page d''accueil et sur celle des tarifs.'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Écris la fonction prix() une fois dans fonctions.php, sers-t''en partout, puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi return et pas echo, dans prix() ?'
+        options:
+          - { text: 'return rend le texte à qui appelle la fonction, qui le place où il veut : dans une phrase, dans une ligne de la liste. echo l''écrirait tout de suite, au mauvais endroit.', ok: true, reaction: { who: sami, expr: sourire, text: 'Exactement. Une fonction qui rend son résultat se glisse partout.' } }
+          - { text: 'return affiche le prix en gras.', misconception: return-affiche, reaction: { who: sami, expr: sourcil, text: 'return n''affiche rien : il rend une valeur.' } }
+          - { text: 'Les deux font pareil.', misconception: return-echo-pareil, reaction: { who: sami, expr: sourcil, text: 'Essaie : avec echo, le prix sort avant « Total à régler ».' } }
+          - { text: 'echo est interdit dans une fonction.', misconception: echo-interdit, reaction: { who: sami, expr: sourcil, text: 'Il est permis, mais il écrit tout de suite : on perd la main sur l''endroit.' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: '62 / 186', ok: true, reaction: { who: sami, expr: sourire, text: 'Sans deuxième argument, $nuits prend sa valeur par défaut : 1.' } }
+          - { text: '0 / 186', misconception: parametre-defaut, reaction: { who: sami, expr: sourcil, text: '$nuits = 1 dans la déclaration : c''est la valeur prise quand on ne la donne pas.' } }
+          - { text: 'Une erreur : il manque $nuits.', misconception: parametre-obligatoire, reaction: { who: sami, expr: sourcil, text: 'Un paramètre avec une valeur par défaut est facultatif.' } }
+          - { text: '62 / 62', misconception: parametre-ignore, reaction: { who: sami, expr: sourcil, text: 'nuitee(62, 3) donne 3 à $nuits : 62 × 3.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Comment une page se sert-elle des fonctions écrites dans fonctions.php ?'
+        options:
+          - { text: 'En l''incluant en haut de la page : include ''fonctions.php'';', ok: true }
+          - { text: 'Elles sont disponibles partout, automatiquement.', misconception: include-automatique, reaction: { who: sami, expr: sourcil, text: 'Seul pied.php est ajouté par l''hôtel. Les autres fichiers, une page les inclut.' } }
+          - { text: 'En recopiant la fonction dans chaque page.', misconception: fonction-copiee, reaction: { who: sami, expr: sourcil, text: 'C''est justement ce qu''on veut éviter.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Que doit contenir prix($montant) ?'
+        options:
+          - { text: 'return number_format($montant, 2, '','', '' '') . '' €'';', ok: true }
+          - { text: 'echo number_format($montant, 2, '','', '' '') . '' €'';', misconception: return-echo-pareil, reaction: { who: sami, expr: sourcil, text: 'echo écrirait le prix tout de suite, avant le texte qui l''entoure.' } }
+          - { text: 'return number_format($montant, 2, '','') . '' €'';', misconception: milliers-oublies, reaction: { who: sami, expr: sourcil, text: 'Sans le 4e argument, les milliers sont séparés par une virgule : 1,141,00 €.' } }
+    hints: 2
+  -
+    id: N16
+    act: 5
+    after: [N15]
+    course: 'PHP · formulaires et sécurité'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'La chambre 12 › Les réservations'
+    title: 'Retrouver sa réservation'
+    request: 'Les clients veulent retrouver leur chambre avant d''arriver. La page reservation.php a un champ « Votre nom » ; quand on l''envoie, elle doit répondre « Roux : chambre 12. », ou « Aucune réservation au nom de Dupont. » Le registre donne $reservations : le nom, et la chambre. Et Sami dit que n''importe qui peut taper n''importe quoi dans ce champ.'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Réponds à chaque nom envoyé, sans rien afficher avant l''envoi et sans laisser passer de HTML, puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi htmlspecialchars($nom) avant de l''écrire dans la page ?'
+        options:
+          - { text: 'Ce que tape le visiteur arrive tel quel : sans htmlspecialchars, un nom comme <b>Dupont</b>, ou un <script>, serait lu comme du HTML par le navigateur.', ok: true, reaction: { who: sami, expr: sourire, text: 'Tu viens de fermer la première faille de ton site. Augustin l''avait laissée ouverte, je parie.' } }
+          - { text: 'Pour mettre le nom en majuscules.', misconception: htmlspecialchars-casse, reaction: { who: sami, expr: sourcil, text: 'Il ne change pas la casse : il transforme < et > en &lt; et &gt;.' } }
+          - { text: 'Pour que le formulaire soit envoyé plus vite.', misconception: htmlspecialchars-vitesse, reaction: { who: sami, expr: sourcil, text: 'Rien à voir avec la vitesse : c''est une question de sécurité.' } }
+          - { text: 'C''est inutile avec method="get".', misconception: get-sur, reaction: { who: sami, expr: sourcil, text: 'GET ou POST, le visiteur tape ce qu''il veut. Il suffit même de modifier l''adresse.' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Le client ouvre reservation.php?chambre=12. Que lit-il ?'
+        view: veille
+        options:
+          - { text: 'Chambre 12', ok: true, reaction: { who: sami, expr: sourire, text: '?chambre=12 dans l''adresse donne $_GET[''chambre''] = ''12''.' } }
+          - { text: 'Quelle chambre ?', misconception: get-vide, reaction: { who: sami, expr: sourcil, text: 'L''adresse porte ?chambre=12 : isset($_GET[''chambre'']) est vrai.' } }
+          - { text: 'Chambre chambre', misconception: get-cle, reaction: { who: sami, expr: sourcil, text: '$_GET[''chambre''] donne la valeur envoyée, 12, pas le nom du champ.' } }
+          - { text: 'Chambre 12 Quelle chambre ?', misconception: deux-branches, reaction: { who: sami, expr: sourcil, text: 'if ou else, jamais les deux.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Au premier affichage, personne n''a encore rien envoyé. Que vaut $_GET[''nom''] ?'
+        options:
+          - { text: 'Rien : la case n''existe pas. Il faut tester isset($_GET[''nom'']) avant de la lire.', ok: true }
+          - { text: 'Une chaîne vide.', misconception: get-vide-existe, reaction: { who: sami, expr: sourcil, text: 'La case n''existe pas du tout : la lire donne un avertissement « Undefined array key ».' } }
+          - { text: 'Le nom du dernier client.', misconception: get-memoire, reaction: { who: sami, expr: sourcil, text: 'Chaque visite est neuve : $_GET ne contient que ce que porte l''adresse.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Comment savoir si « Dupont » a une réservation ?'
+        options:
+          - { text: 'isset($reservations[$nom])', ok: true }
+          - { text: '$reservations[$nom] tout court.', misconception: cle-inexistante, reaction: { who: sami, expr: sourcil, text: 'Lire une case qui n''existe pas affiche un avertissement : il faut demander d''abord si elle existe.' } }
+          - { text: 'in_array($nom, $reservations)', misconception: in-array-cle, reaction: { who: sami, expr: sourcil, text: 'in_array cherche parmi les valeurs (les chambres), pas parmi les clés (les noms).' } }
+    hints: 2
+  -
+    id: N17
+    act: 5
+    after: [N16]
+    course: 'PHP · synthèse'
+    requester: augustin
+    kind: demande
+    priority: haute
+    category: 'La chambre 12 › Le registre des veilleurs'
+    final: true
+    title: 'Le registre des veilleurs'
+    request: 'Dernière page du carnet rouge : « Fais au veilleur suivant la page que j''aurais voulu avoir. veilleurs.php : pour chaque veilleur du registre ($veilleurs, son nom et ses nuits du mois), une ligne « Nora : 12 nuits », le veilleur de ce soir ($garde) marqué « (de garde) », et le total. Et une nuit, au singulier : 0 nuit, 1 nuit, 2 nuits. Écris le pluriel une fois, dans une fonction nuits(), à côté de prix(). » A.'
+    reward:
+      clue: 'A. L. : Augustin Lebrun. Il revenait chaque jeudi, chambre 12, voir si son site était entre de bonnes mains.'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Construis la page des veilleurs avec une fonction nuits() dans fonctions.php, puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi le pluriel dans une fonction nuits() ?'
+        options:
+          - { text: 'La règle est écrite une fois, et elle sert à chaque ligne comme au total : 0 nuit, 1 nuit, 30 nuits.', ok: true, reaction: { who: augustin, expr: sourire, text: 'C''est ce que je n''ai jamais fait, moi. Mon site disait « 1 nuits » depuis 1998.' } }
+          - { text: 'Parce qu''une boucle ne peut pas contenir de if.', misconception: boucle-sans-if, reaction: { who: sami, expr: sourcil, text: 'Elle peut, tu l''as fait pour les chambres. La fonction évite d''écrire la règle deux fois.' } }
+          - { text: 'Parce que PHP met le pluriel tout seul dans les fonctions.', misconception: pluriel-automatique, reaction: { who: sami, expr: sourcil, text: 'PHP ne sait rien du français : c''est ta fonction qui décide.' } }
+          - { text: 'Pour que la page s''affiche plus vite.', misconception: fonction-rapide, reaction: { who: sami, expr: sourcil, text: 'La vitesse n''y est pour rien : une règle, un seul endroit.' } }
+      -
+        id: ordre
+        kind: order
+        label: 'Une visite'
+        prompt: 'Le client de la 12 ouvre veilleurs.php. Remets dans l''ordre ce qui se passe.'
+        items:
+          - 'Le navigateur affiche la page.'
+          - 'Le serveur exécute le PHP de veilleurs.php, puis celui de pied.php.'
+          - 'Le client tape l''adresse de la page.'
+          - 'Le serveur envoie le HTML fabriqué.'
+        answer: [2, 1, 3, 0]
+        reaction: { who: sami, expr: sourcil, text: 'Pense au chemin d''une visite : la demande part du navigateur, le PHP tourne sur le serveur, le HTML revient.' }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Que doit rendre nuits(0) ? Et nuits(30) ?'
+        options:
+          - { text: '« 0 nuit » et « 30 nuits » : au-dessous de 2, le singulier.', ok: true }
+          - { text: '« 0 nuits » et « 30 nuits ».', misconception: zero-pluriel, reaction: { who: sami, expr: sourcil, text: 'En français, zéro prend le singulier : 0 nuit.' } }
+          - { text: '« 0 » et « 30 ».', misconception: unite-oubliee, reaction: { who: sami, expr: sourcil, text: 'La fonction rend le nombre avec son mot.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Comment calculer le total des nuits ?'
+        options:
+          - { text: '$total = 0 avant la boucle, $total = $total + $n à chaque tour.', ok: true }
+          - { text: 'count($veilleurs)', misconception: count-somme, reaction: { who: sami, expr: sourcil, text: 'count() compte les veilleurs, pas leurs nuits.' } }
+          - { text: '$total = $n dans la boucle.', misconception: somme-ecrase, reaction: { who: sami, expr: sourcil, text: 'À chaque tour, tu écrases le total : il ne reste que le dernier veilleur.' } }
+    hints: 2
