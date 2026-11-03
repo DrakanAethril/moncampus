@@ -578,7 +578,7 @@
       z.appendChild(h('<div class="de">NADIA · SUIVI PRIVÉ</div>'));
       z.appendChild(h('<p>' + esc(guide.prompt) + '</p>'));
       if (guide.kind === 'choice') z.appendChild(choiceButtons(guide.options, function (i) { return submitGuide(guide, i); }));
-      else z.appendChild(h('<p class="cours">Clique la ligne directement dans le fichier, au centre.</p>'));
+      else z.appendChild(h('<p class="cours">Clique la ligne directement dans le fichier, au centre : il est montré tel qu\'au départ du ticket, tes modifications t\'attendent.</p>'));
       return z;
     }
     var k = G.hints - G.guide.length - 1;
@@ -689,9 +689,12 @@
       b.addEventListener('click', function () { G.tab = f; renderEditor(); });
       bar2.appendChild(b);
     });
-    bar2.appendChild(h('<span class="etat">' + (editable ? 'modifiable' : (lineMode ? 'clique sur une ligne' : 'lecture seule')) + '</span>'));
+    bar2.appendChild(h('<span class="etat">' + (editable ? 'modifiable' : (lineMode ? 'clique sur une ligne · fichier de départ' : 'lecture seule')) + '</span>'));
     p.appendChild(bar2);
-    var src = G.files[G.tab] || '';
+    // Nadia's line is designated in the file as the ticket handed it over, never in the draft: an
+    // edit could have removed the line she asks for (no click would pass, the editor being locked
+    // meanwhile) or copied its text onto another one (a wrong line would pass).
+    var src = (lineMode ? N.ticketFiles(G.def)[G.tab] : G.files[G.tab]) || '';
     if (lineMode) {
       p.appendChild(h('<div class="consigne-ligne">' + esc(guide.prompt) + '</div>'));
       var lines = h('<div class="lignes" role="list"></div>');
@@ -935,7 +938,9 @@
     G.user = r[2];
     var data = r[0].data || {};
     G.data = Object.assign(G.data, data);
-    ['seen', 'drafts'].forEach(function (k) { G.data[k] = G.data[k] || {}; });
+    // An empty map comes back from the server as [] (PHP knows no empty object): a key set on that
+    // array would never reach JSON, which is how drafts and the scenes seen stopped being saved.
+    ['seen', 'drafts'].forEach(function (k) { G.data[k] = G.data[k] && !Array.isArray(G.data[k]) ? G.data[k] : {}; });
     SND.setMuted(!!G.data.mute);
     G.sc = r[1];
     showTitle();
