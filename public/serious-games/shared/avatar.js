@@ -27,7 +27,8 @@
     { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', glyph: '◠' },
     { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', glyph: '✚' },
     { id: 'pin-comete', name: 'Épinglette Comète', color: '#14181C', glyph: '☄' },
-    { id: 'pin-passerelle', name: 'Épinglette Passerelle', color: '#D8C29D', glyph: '⊓' }
+    { id: 'pin-passerelle', name: 'Épinglette Passerelle', color: '#D8C29D', glyph: '⊓' },
+    { id: 'pin-neon', name: 'Épinglette Néon', color: '#14111F', glyph: '☾' }
   ];
   A.PINS = PINS;
 
@@ -202,6 +203,13 @@
       return el('path', { d: 'M112 194 L112 216 L138 216 Z', fill: '#F1F1EE', stroke: '#2E3236', strokeWidth: 1.6 }) +
         el('path', { d: 'M117 204 L117 211 L125 211 Z', fill: '#E07A3F' }) +
         el('path', sx({ d: 'M112 216 H138', stroke: '#E07A3F', strokeWidth: 2.4 }));
+    } },
+    // Service de nuit: the night porter's badge, a pink neon crescent on a dark plate
+    // (design/validated/serious-games-service-de-nuit.md §4) - on the body, nothing on the head.
+    'service-de-nuit': { label: 'Badge de veilleur', svg: function () {
+      return el('rect', { x: 108, y: 195, width: 38, height: 20, rx: 4, fill: '#14111F', stroke: '#3FE0D0', strokeWidth: 1.6 }) +
+        el('path', { d: 'M124 199 A7 7 0 1 0 131 210 A5.5 5.5 0 1 1 124 199 Z', fill: '#FF4F7B' }) +
+        el('circle', { cx: 137, cy: 201, r: 1.4, fill: '#FFB547' });
     } },
     // The Irregulars: the street urchin's flat cap of 1895, its peak and its button.
     irregulars: { label: 'Casquette gavroche', svg: function () {

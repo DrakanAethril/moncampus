@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { loadAvatarModule } from '../serious_game/avatar_module.js';
 
 /**
  * Drives the teacher's projector screen (Turns 1q lobby / 1u countdown / 1h question / 1i
@@ -18,7 +19,7 @@ export default class extends Controller {
         'countdownNumber',
         'questionIndex', 'questionLabel', 'questionImage', 'questionImageWrap', 'questionAnswers', 'questionTimer', 'questionAnsweredCount', 'questionParticipantCount',
         'revealCorrectLabel', 'revealLeaderboard', 'revealNextLabel',
-        'podiumFirst', 'podiumSecond', 'podiumThird', 'finishedLeaderboard',
+        'podiumFirst', 'podiumSecond', 'podiumThird', 'podiumAvatar', 'finishedLeaderboard',
         'advanceButton',
     ];
 
@@ -102,7 +103,7 @@ export default class extends Controller {
         state.participants.forEach((participant) => {
             const chip = document.createElement('span');
             chip.className = 'cm-quiz-live-chip';
-            chip.textContent = participant.displayName;
+            chip.append(this.face('cm-quiz-live-face', participant), this.span('cm-quiz-live-chip__name', participant.displayName));
             this.participantChipsTarget.appendChild(chip);
         });
     }
@@ -202,6 +203,7 @@ export default class extends Controller {
             item.className = 'cm-quiz-live-rank';
             item.append(
                 this.span('cm-quiz-live-rank__position', row.rank),
+                this.face('cm-quiz-live-face', row),
                 this.span('cm-quiz-live-rank__name', row.displayName),
                 barWrap,
             );
@@ -222,6 +224,7 @@ export default class extends Controller {
             item.className = 'cm-quiz-live-rank';
             item.append(
                 this.span('cm-quiz-live-rank__position', row.rank),
+                this.face('cm-quiz-live-face', row),
                 this.span('cm-quiz-live-rank__name', row.displayName),
                 this.span('cm-quiz-live-rank__score', row.score.toLocaleString('fr-FR')),
             );
@@ -242,6 +245,31 @@ export default class extends Controller {
         return element;
     }
 
+    /**
+     * A participant's face: their photo, else the avatar they drew in the serious games (drawn by
+     * the module the games share), else the first letter of the name they play under - the payload
+     * carries `avatar: {photo, drawn}` (App\Service\QuizLiveSessionService::avatarOf()).
+     */
+    face(className, row) {
+        const face = document.createElement('span');
+        face.className = className;
+        this.paintFace(face, row);
+
+        return face;
+    }
+
+    paintFace(face, row) {
+        const avatar = row.avatar || {};
+        face.classList.toggle('cm-avatar-drawn', !avatar.photo && !!avatar.drawn);
+        face.style.backgroundImage = avatar.photo ? `url(${JSON.stringify(avatar.photo)})` : '';
+        face.textContent = avatar.photo ? '' : (Array.from((row.displayName || '').trim())[0]?.toUpperCase() || '?');
+        if (!avatar.photo && avatar.drawn) {
+            loadAvatarModule().then((module) => {
+                face.innerHTML = module.svg(module.normalize(avatar.drawn), { size: 80, round: false });
+            });
+        }
+    }
+
     renderPodiumSlot(target, row) {
         if (!target) {
             return;
@@ -253,6 +281,10 @@ export default class extends Controller {
         target.hidden = false;
         const nameEl = target.querySelector('[data-quiz-live-host-target="podiumName"]');
         const scoreEl = target.querySelector('[data-quiz-live-host-target="podiumScore"]');
+        const avatarEl = target.querySelector('[data-quiz-live-host-target="podiumAvatar"]');
+        if (avatarEl) {
+            this.paintFace(avatarEl, row);
+        }
         if (nameEl) {
             nameEl.textContent = row.displayName;
         }

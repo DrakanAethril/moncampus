@@ -763,7 +763,9 @@
   Promise.all([E.ready(), api('getProgress'), api('getScenario'), api('getUser').catch(function () { return null; })]).then(function (r) {
     G.user = r[3];
     G.data = Object.assign(G.data, r[1].data || {});
-    ['seen', 'drafts'].forEach(function (k) { G.data[k] = G.data[k] || {}; });
+    // An empty map comes back from the server as [] (PHP knows no empty object): a key set on that
+    // array would never reach JSON, which is how drafts and the scenes seen stopped being saved.
+    ['seen', 'drafts'].forEach(function (k) { G.data[k] = G.data[k] && !Array.isArray(G.data[k]) ? G.data[k] : {}; });
     SND.setMuted(!!G.data.mute);
     G.sc = r[2];
     showTitle();

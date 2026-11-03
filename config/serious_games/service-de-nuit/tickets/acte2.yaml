@@ -1,0 +1,177 @@
+# Service de nuit - acte 2 : L'horloge.
+#
+# The server half of the nights (design/validated/serious-games-service-de-nuit.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Sami's guided
+# questions, the clue closing gives. The game half (the site to start from, the visitors and their
+# checks, the hidden ones, the notebooks, the written hints, the scenes) is public/serious-games/
+# service-de-nuit/steps/acte2.js. Converted from the prototype's host/scenario/acte2.js by
+# tool/to-yaml.js; `hints` counts the written hints the game holds after the guided questions. A ticket
+# is a « nuit » in the game's words.
+tickets:
+  -
+    id: N05
+    act: 2
+    after: [N04]
+    course: 'PHP · if et else'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'L''horloge › Bonjour, bonsoir'
+    title: 'Bonjour ou bonsoir'
+    request: 'Le soir, la page dit « Bienvenue » à des gens qui rentrent de dîner, et le matin aussi. Augustin disait « Bonjour » avant 18 h et « Bonsoir » à partir de 18 h. Remplace « Bienvenue » par le bon mot, selon l''heure de la visite.'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Dis « Bonjour » avant 18 h et « Bonsoir » à partir de 18 h, puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi « date(''G'') < 18 » et pas « date(''G'') <= 18 » ?'
+        options:
+          - { text: 'date(''G'') vaut 18 de 18 h 00 à 18 h 59 : avec <= 18, la page dirait « Bonjour » jusqu''à 18 h 59.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Une heure entière de « Bonjour » au moment de l''apéritif. Augustin aurait détesté.' } }
+          - { text: 'C''est pareil : 18 h n''arrive qu''une fois par jour.', misconception: heure-instant, reaction: { who: sami, expr: sourcil, text: 'date(''G'') donne l''heure sans les minutes : elle vaut 18 pendant soixante minutes.' } }
+          - { text: '<= veut dire « beaucoup plus petit que ».', misconception: operateur-sens, reaction: { who: sami, expr: sourcil, text: '<= veut dire « plus petit ou égal ». C''est le « égal » qui pose problème à 18 h.' } }
+          - { text: 'date(''G'') donne aussi les minutes : 18,30 à 18 h 30.', misconception: heure-decimale, reaction: { who: sami, expr: sourcil, text: 'G, c''est l''heure seule, de 0 à 23. Les minutes sont à part, avec i.' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: 'Bonne nuit parmi nous.', ok: true, reaction: { who: sami, expr: sourire, text: '1 n''est pas plus grand que 1 : la condition est fausse, c''est le else qui parle.' } }
+          - { text: 'Bon séjour parmi nous.', misconception: superieur-ou-egal, reaction: { who: sami, expr: sourcil, text: '$nuits > 1, avec $nuits qui vaut 1 : c''est faux. Il aurait fallu >= pour que ce soit vrai.' } }
+          - { text: 'Bon séjour parmi nous. Bonne nuit parmi nous.', misconception: deux-branches, reaction: { who: sami, expr: sourcil, text: 'if et else ne s''exécutent jamais tous les deux : c''est l''un ou l''autre.' } }
+          - { text: 'Rien : la condition est fausse.', misconception: else-ignore, reaction: { who: sami, expr: sourcil, text: 'Quand la condition est fausse, c''est le bloc else qui s''exécute.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'À 18 h 30, que vaut date(''G'') ?'
+        options:
+          - { text: '18', ok: true }
+          - { text: '18.30', misconception: heure-decimale, reaction: { who: sami, expr: sourcil, text: 'G ne donne que l''heure, de 0 à 23.' } }
+          - { text: '1830', misconception: heure-minutes-collees, reaction: { who: sami, expr: sourcil, text: 'G ne donne que l''heure : les minutes sont ailleurs, avec i.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Quelle condition est vraie pour « Bonjour », et seulement pour lui ?'
+        options:
+          - { text: 'date(''G'') < 18', ok: true }
+          - { text: 'date(''G'') <= 18', misconception: borne-incluse, reaction: { who: sami, expr: sourcil, text: 'À 18 h 30, date(''G'') vaut 18, et 18 <= 18 est vrai : « Bonjour » à l''apéritif.' } }
+          - { text: 'date(''G'') > 18', misconception: condition-inversee, reaction: { who: sami, expr: sourcil, text: 'C''est vrai le soir, pas le jour. Et à 18 h pile, ce n''est même pas vrai.' } }
+    hints: 2
+  -
+    id: N06
+    act: 2
+    after: [N05]
+    course: 'PHP · elseif'
+    requester: josette
+    kind: demande
+    priority: haute
+    category: 'L''horloge › Le petit-déjeuner'
+    title: 'Le petit-déjeuner'
+    request: 'Bonjour ! Josette, du petit-déjeuner. Les clients me demandent toute la journée si c''est encore servi. Sous l''accueil, une ligne : avant 7 h, « Le petit-déjeuner ouvre à 7 h. » ; de 7 h à 10 h, « Le petit-déjeuner est servi jusqu''à 10 h. » ; après, « Le petit-déjeuner est servi demain dès 7 h. »'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Affiche la bonne des trois phrases de Josette selon l''heure, puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi l''ordre des conditions compte-t-il ?'
+        options:
+          - { text: 'PHP teste les conditions de haut en bas et s''arrête à la première vraie : à 6 h 30, « $heure < 10 » est déjà vrai, la phrase de 7 h ne serait jamais lue.', ok: true, reaction: { who: josette, expr: sourire, text: 'Comme ma file du matin : le premier servi, c''est le premier arrivé.' } }
+          - { text: 'PHP teste toutes les conditions et affiche toutes celles qui sont vraies.', misconception: elseif-toutes, reaction: { who: sami, expr: sourcil, text: 'Avec elseif, une seule branche s''exécute : la première dont la condition est vraie.' } }
+          - { text: 'PHP choisit la condition la plus précise.', misconception: elseif-precise, reaction: { who: sami, expr: sourcil, text: 'PHP ne juge pas la précision : il lit de haut en bas, et la première vraie gagne.' } }
+          - { text: 'L''ordre ne compte pas, seul le else compte.', misconception: ordre-indifferent, reaction: { who: sami, expr: sourcil, text: 'Essaie à 6 h 30 avec « < 10 » en premier : tu verras que l''ordre compte.' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: 'après-midi', ok: true, reaction: { who: sami, expr: sourire, text: '14 < 18 est vrai : PHP s''arrête là. La branche « goûter » ne sera jamais lue, à aucune heure.' } }
+          - { text: 'après-midi goûter', misconception: elseif-toutes, reaction: { who: sami, expr: sourcil, text: 'Une seule branche s''exécute : la première vraie.' } }
+          - { text: 'goûter', misconception: elseif-precise, reaction: { who: sami, expr: sourcil, text: 'PHP ne cherche pas la plus précise : il prend la première vraie, de haut en bas.' } }
+          - { text: 'soir', misconception: else-defaut, reaction: { who: sami, expr: sourcil, text: 'Le else ne sert que si aucune condition n''est vraie. Ici, 14 < 18.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'À 6 h 30, avec « if ($heure < 10) … elseif ($heure < 7) … », quelle phrase s''affiche ?'
+        options:
+          - { text: '« servi jusqu''à 10 h » : 6 < 10 est vrai, PHP n''ira pas plus loin.', ok: true }
+          - { text: '« ouvre à 7 h » : c''est la condition la plus juste.', misconception: elseif-precise, reaction: { who: sami, expr: sourcil, text: 'PHP lit de haut en bas : la première condition vraie gagne.' } }
+          - { text: 'Les deux phrases.', misconception: elseif-toutes, reaction: { who: sami, expr: sourcil, text: 'elseif veut dire « sinon, si » : une seule branche.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Comment écrire « jusqu''à » dans un texte entre guillemets simples ?'
+        options:
+          - { text: '''Le petit-déjeuner est servi jusqu\''à 10 h.''', ok: true }
+          - { text: '''Le petit-déjeuner est servi jusqu''à 10 h.''', misconception: apostrophe-ferme, reaction: { who: sami, expr: sourcil, text: 'L''apostrophe ferme le texte au milieu : PHP lit « jusqu », puis ne comprend plus rien.' } }
+          - { text: '''Le petit-déjeuner est servi jusqu à 10 h.''', misconception: apostrophe-supprimee, reaction: { who: sami, expr: sourcil, text: 'Josette tient à son apostrophe. Mets un \ devant, ou des guillemets doubles autour du texte.' } }
+    hints: 2
+  -
+    id: N07
+    act: 2
+    after: [N06]
+    course: 'PHP · et, ou'
+    requester: josette
+    kind: demande
+    priority: haute
+    category: 'L''horloge › Le week-end'
+    title: 'Le week-end et la nuit'
+    request: 'Deux choses, et Mireille est d''accord. Le samedi et le dimanche, le petit-déjeuner est servi jusqu''à 11 h : « Le petit-déjeuner est servi jusqu''à 11 h. » Et entre 23 h et 5 h, l''accueil dit « Bonne nuit » au lieu de « Bonsoir ».'
+    reward:
+      clue: 'Le message de 23 h 12 ne vient que le jeudi : celui qui l''a écrit regarde date(''N''), comme ta page du week-end.'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Sers le petit-déjeuner jusqu''à 11 h le week-end, dis « Bonne nuit » de 23 h à 5 h, puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Dimanche à 10 h 40, pourquoi le petit-déjeuner est-il encore servi ?'
+        options:
+          - { text: 'Parce que « c''est le week-end ET il est avant 11 h » est vrai : date(''N'') vaut 7, 7 >= 6, et 10 < 11.', ok: true, reaction: { who: josette, expr: sourire, text: 'Les deux à la fois. Le samedi comme le dimanche.' } }
+          - { text: 'Parce qu''avec &&, il suffit qu''une des deux conditions soit vraie.', misconception: et-ou, reaction: { who: sami, expr: sourcil, text: '&& demande que les deux soient vraies. Celui qui se contente d''une seule, c''est ||.' } }
+          - { text: 'Parce que date(''N'') vaut « dimanche ».', misconception: date-N-texte, reaction: { who: sami, expr: sourcil, text: 'date(''N'') donne un chiffre : 1 pour lundi, 7 pour dimanche.' } }
+          - { text: 'Parce que le dimanche, PHP saute les conditions.', misconception: jour-special, reaction: { who: sami, expr: sourcil, text: 'PHP ne connaît pas le dimanche : il compare des nombres.' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Une ancienne version de la page d''Augustin. À 2 h du matin, que lit le client ?'
+        view: veille
+        options:
+          - { text: 'Bonsoir', ok: true, reaction: { who: sami, expr: sourcil, text: 'Une heure ne peut pas être à la fois >= 23 et < 5 : avec &&, c''est toujours faux. Il fallait ||.' } }
+          - { text: 'Bonne nuit', misconception: et-ou, reaction: { who: sami, expr: sourcil, text: 'Pour que && soit vrai, il faut les deux : 2 >= 23 est faux. Il fallait ||.' } }
+          - { text: 'Bonne nuit Bonsoir', misconception: deux-branches, reaction: { who: sami, expr: sourcil, text: 'if ou else, jamais les deux.' } }
+          - { text: 'Une erreur : on ne peut pas mettre deux conditions dans un if.', misconception: une-condition, reaction: { who: sami, expr: sourcil, text: 'On peut en combiner autant qu''on veut, avec && et ||.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Que vaut date(''N'') un samedi ? Et un dimanche ?'
+        options:
+          - { text: '6 et 7.', ok: true }
+          - { text: '« Saturday » et « Sunday ».', misconception: date-N-texte, reaction: { who: sami, expr: sourcil, text: 'Ça, c''est date(''l''). N donne un chiffre, de 1 (lundi) à 7 (dimanche).' } }
+          - { text: '0 et 1.', misconception: date-w-N, reaction: { who: sami, expr: sourcil, text: 'Tu penses à date(''w''), où dimanche vaut 0. Avec N, lundi vaut 1 et dimanche 7.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Quelle condition est vraie entre 23 h et 5 h ?'
+        options:
+          - { text: '$heure >= 23 || $heure < 5', ok: true }
+          - { text: '$heure >= 23 && $heure < 5', misconception: et-ou, reaction: { who: sami, expr: sourcil, text: 'Aucune heure n''est à la fois après 23 et avant 5 : && serait toujours faux.' } }
+          - { text: '$heure > 23 || $heure < 5', misconception: borne-exclue, reaction: { who: sami, expr: sourcil, text: 'À 23 h 30, $heure vaut 23 : 23 > 23 est faux.' } }
+    hints: 2

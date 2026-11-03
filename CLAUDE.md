@@ -263,13 +263,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
 - **Serious games** (`/serious-games`) — `SeriousGame*` entities, `src/SeriousGame/`,
-  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; nine games built,
+  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; ten games built,
   **L'Observatoire** (automatismes de 1re), **Les Tablettes de Pompéi** (déclinaisons latines,
   4e-2nde, `design/validated/serious-games-pompei.md`), **Station Abysse** (SVT, 2nde-1re,
   `serious-games-abysse.md`), **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`), **Panique
   à la Neko-Con** (HTML et CSS, BTS SIO 1, `serious-games-neko-con.md`) and **Black-out** (réseau et
   cybersécurité, BTS SIO 2 SISR, `serious-games-blackout.md`) and **Rétro Rush** (bases de données
-  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`) and **Fusion** (le plan de bascule, BTS SIO 2 SISR, `serious-games-fusion.md`), the five of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
+  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`) and **Fusion** (le plan de bascule, BTS SIO 2 SISR, `serious-games-fusion.md`) and **Service de nuit** (PHP pour débutants, BTS SIO 1, `serious-games-service-de-nuit.md`), the six of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
   mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus
   one line per game in the « Serious games » block of Paramètres › Fonctionnalités
@@ -361,6 +361,17 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     cases. Only `{passed, failed}` leaves the browser; the reference plans stay in the package for the bench,
     which also demands that every hidden night catch a mistake the visible night does not show. The source,
     its bench and its playthrough live in the Cours repository, `Games/Fusion/`.
+    **Service de nuit** is the sixth (17 nights in five acts, a small hotel's PHP site, Sami as the helper,
+    one night open at a time) and adds nothing to the server either, but it is the one where **the student
+    keeps their code**: the site is one, from the first night to the last, and it travels as the game's
+    **display state** (`saveProgress`, within the scenario's 256 KB) - never as an answer, which stays
+    `{passed, failed}` (the user's decision of 2026-11-03). Its `fix` steps serve that site to visitors (a
+    time, a day, a registre of variables, a `$_GET`) with a **PHP interpreter written for the game**
+    (`public/serious-games/service-de-nuit/php.js`, checked against real PHP 8.5 in the Cours repository);
+    « Essayer » plays the visible ones inside the frame and costs nothing, « Servir la nuit » adds the hidden
+    ones and is the delivery. A page that shows a PHP warning is badly served. The sign's letters (one per
+    notion) and Augustin's notebooks live in the game alone. The source, its bench, the cross-check with
+    real PHP and the playthrough live in the Cours repository, `Games/Service-de-nuit/`.
     **Rétro Rush** is the third (45 issues in a GitLab-like forge, Jade as the helper) and adds
     nothing to the server: its repairs are SQL, run in the frame by **sql.js** (SQLite in
     WebAssembly, `vendor/`, served with the fonts' CORS header) behind a MySQL layer

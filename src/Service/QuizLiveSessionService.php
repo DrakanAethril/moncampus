@@ -38,6 +38,8 @@ use Symfony\Component\Mercure\Update;
  * findEligibilityIssues()) - the 4-shape-button UI can't represent QcmMulti/Ordre or a 5th option.
  * All participants see the identical shape/color mapping (no per-student shuffle,
  * App\Service\QuizDrawService is never used here) since the whole point is a synchronized room.
+ *
+ * @phpstan-import-type UserAvatar from UserAvatars as ParticipantAvatar
  */
 class QuizLiveSessionService
 {
@@ -68,6 +70,7 @@ class QuizLiveSessionService
         private readonly QuizLiveAnswerRepository $answerRepository,
         private readonly HubInterface $mercureHub,
         private readonly TokenFactoryInterface $subscriberTokenFactory,
+        private readonly UserAvatars $userAvatars,
     ) {
     }
 
@@ -445,13 +448,16 @@ class QuizLiveSessionService
 
     private function lobbyPayload(QuizLiveSession $session): array
     {
+        $participants = array_values($session->getParticipants()->toArray());
+        $avatars = $this->avatarsOf($participants);
+
         return [
             'type' => 'participant-joined',
             'participantCount' => \count($session->getParticipants()),
-            'participants' => array_values(array_map(
-                static fn (QuizLiveParticipant $p): array => ['id' => $p->getId(), 'displayName' => $p->getDisplayName()],
-                $session->getParticipants()->toArray(),
-            )),
+            'participants' => array_map(
+                fn (QuizLiveParticipant $p): array => ['id' => $p->getId(), 'displayName' => $p->getDisplayName(), 'avatar' => $this->avatarOf($p, $avatars)],
+                $participants,
+            ),
         ];
     }
 
@@ -555,21 +561,53 @@ class QuizLiveSessionService
         ];
     }
 
-    /** @return list<array{participantId: int, displayName: string, score: int, rank: int}> */
+    /** @return list<array{participantId: int|null, displayName: string|null, score: int, rank: int, avatar: ParticipantAvatar}> */
     private function buildLeaderboard(QuizLiveSession $session): array
     {
         $ranked = $this->participantRepository->findRankedForSession($session);
+        $avatars = $this->avatarsOf($ranked);
 
-        return array_map(
-            static fn (QuizLiveParticipant $p, int $index): array => [
-                'participantId' => $p->getId(),
-                'displayName' => $p->getDisplayName(),
-                'score' => $p->getScore(),
+        $rows = [];
+        foreach ($ranked as $index => $participant) {
+            $rows[] = [
+                'participantId' => $participant->getId(),
+                'displayName' => $participant->getDisplayName(),
+                'score' => $participant->getScore(),
                 'rank' => $index + 1,
-            ],
-            $ranked,
-            array_keys($ranked),
-        );
+                'avatar' => $this->avatarOf($participant, $avatars),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The faces the projector draws beside the participants: their photo, else the avatar they drew
+     * in the serious games (App\Service\UserAvatars), else nothing - the screen then writes the
+     * pseudonym's initial. One query for the whole room.
+     *
+     * @param list<QuizLiveParticipant> $participants
+     *
+     * @return array<int, ParticipantAvatar>
+     */
+    private function avatarsOf(array $participants): array
+    {
+        return $this->userAvatars->forUsers(array_values(array_filter(array_map(
+            static fn (QuizLiveParticipant $p): ?User => $p->getStudent(),
+            $participants,
+        ))));
+    }
+
+    /**
+     * @param array<int, ParticipantAvatar> $avatars
+     *
+     * @return ParticipantAvatar
+     */
+    private function avatarOf(QuizLiveParticipant $participant, array $avatars): array
+    {
+        $id = $participant->getStudent()?->getId();
+
+        return (null !== $id ? $avatars[$id] ?? null : null) ?? ['photo' => null, 'drawn' => null];
     }
 
     // Kahoot-style speed bonus: correct + instant ~= 1000pts, correct right at the buzzer ~=

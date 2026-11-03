@@ -6,7 +6,7 @@ namespace App\Service\Game;
 
 use App\Entity\User;
 use App\Repository\GameProfileRepository;
-use App\Twig\AvatarExtension;
+use App\Service\UserAvatars;
 use Symfony\Contracts\Service\ResetInterface;
 
 /**
@@ -35,7 +35,7 @@ final class GameBadgeProvider implements ResetInterface
         private readonly GameLevelResolver $levels,
         private readonly GameLevelBoard $board,
         private readonly GameTrackResolver $tracks,
-        private readonly AvatarExtension $avatars,
+        private readonly UserAvatars $avatars,
     ) {
     }
 
@@ -70,7 +70,8 @@ final class GameBadgeProvider implements ResetInterface
             $progress,
             $title,
             $this->initialsOf($user),
-            $this->avatars->getAvatarUrl($user),
+            $this->avatars->photoUrl($user),
+            $this->avatars->drawnConfig($user),
         );
     }
 

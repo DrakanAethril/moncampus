@@ -35,7 +35,8 @@
     blackout: { bg: '#0A0618', paper: '#151029', ink: '#F4F2FF', accent: '#FF2E88', font: "'Chakra Petch', 'Trebuchet MS', sans-serif", italic: false },
     'retro-rush': { bg: '#1E1433', paper: '#EDE7F7', ink: '#EDE7F7', accent: '#FF8A3D', font: "'Manrope', 'Trebuchet MS', sans-serif", italic: false },
     'radio-comete': { bg: '#14181C', paper: '#232A30', ink: '#E9E1CF', accent: '#E8A33D', font: "'Barlow Condensed', 'Trebuchet MS', sans-serif", italic: false },
-    fusion: { bg: '#E4E3DD', paper: '#F1F1EE', ink: '#2E3236', accent: '#E07A3F', font: "'Bricolage Grotesque', 'Trebuchet MS', sans-serif", italic: false }
+    fusion: { bg: '#E4E3DD', paper: '#F1F1EE', ink: '#2E3236', accent: '#E07A3F', font: "'Bricolage Grotesque', 'Trebuchet MS', sans-serif", italic: false },
+    'service-de-nuit': { bg: '#14111F', paper: '#1B1729', ink: '#F6F1E7', accent: '#FF4F7B', font: "'Bungee', 'Trebuchet MS', sans-serif", italic: false }
   };
   var GAMES = {
     observatoire: { title: "L'Observatoire", chapters: [
@@ -119,6 +120,14 @@
       { id: 'acte3', name: 'Deux domaines', topic: 'DNS, approbation, comptes' },
       { id: 'acte4', name: 'Les droits', topic: 'Partages, AGDLP, audit' },
       { id: 'acte5', name: 'Le courrier', topic: 'MX, SPF, règles, preuves' }],
+      finale: { id: 'none', name: '', topic: '' } },
+    // Service de nuit: a card per act (design/validated/serious-games-service-de-nuit.md §4).
+    'service-de-nuit': { title: 'Service de nuit', chapters: [
+      { id: 'acte1', name: 'La loge', topic: 'echo, date(), variables, calculs' },
+      { id: 'acte2', name: "L'horloge", topic: 'if, elseif, && et ||' },
+      { id: 'acte3', name: 'Les couloirs', topic: 'for, while, lire du code' },
+      { id: 'acte4', name: 'Les étages', topic: 'Tableaux et foreach' },
+      { id: 'acte5', name: 'La chambre 12', topic: 'Fonctions, formulaires, sécurité' }],
       finale: { id: 'none', name: '', topic: '' } }
   };
   var PINS = [
@@ -130,7 +139,8 @@
     { id: 'pin-ghost', name: 'Épinglette Ghost', color: '#0A0618', ink: '#F4F2FF', ring: '#FF2E88' },
     { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', ink: '#FF8A3D', ring: '#BFE6FF' },
     { id: 'pin-comete', name: 'Épinglette Comète', color: '#14181C', ink: '#E8A33D', ring: '#5FB37C' },
-    { id: 'pin-passerelle', name: 'Épinglette Passerelle', color: '#D8C29D', ink: '#2E3236', ring: '#E07A3F' }
+    { id: 'pin-passerelle', name: 'Épinglette Passerelle', color: '#D8C29D', ink: '#2E3236', ring: '#E07A3F' },
+    { id: 'pin-neon', name: 'Épinglette Néon', color: '#14111F', ink: '#FF4F7B', ring: '#3FE0D0' }
   ];
 
   function cardOf(code) {
@@ -224,6 +234,16 @@
       for (var i = 0; i < 6; i++) tick += '<rect x="' + (30 + i * 10) + '" y="86" width="2" height="' + (i % 2 ? 5 : 9) + '" fill="' + (locked ? 'currentColor' : '#2E3236') + '"/>';
       return '<rect x="12" y="92" width="96" height="10" rx="2" fill="' + (locked ? 'currentColor' : '#D8C29D') + '" stroke="' + M.deep + '" stroke-width="1.6"/>' +
         '<path d="M26 22 L26 96 L100 96 Z" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="2"/><path d="M38 52 L38 84 L70 84 Z" fill="' + (locked ? 'currentColor' : '#F1F1EE') + '" stroke="' + M.deep + '" stroke-width="1.6"/>' + tick;
+    },
+    // Service de nuit: the key of room 12, in metal, on its enamelled tag.
+    'cle-12': function (M, g, locked) {
+      return '<circle cx="34" cy="30" r="13" fill="none" stroke="url(#' + g + ')" stroke-width="6"/>' +
+        '<rect x="30" y="42" width="8" height="58" rx="2" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.2"/>' +
+        '<path d="M38 82 H50 V88 H44 V94 H50 V100 H38 Z" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.2"/>' +
+        '<path d="M44 26 Q58 18 66 22" fill="none" stroke="' + M.deep + '" stroke-width="2"/>' +
+        '<path d="M64 20 L104 34 Q110 36 108 42 L96 92 Q94 98 88 96 L60 86 Q54 84 56 78 L62 24 Q63 18 64 20 Z" fill="' + (locked ? 'currentColor' : '#FF4F7B') + '" stroke="' + M.deep + '" stroke-width="1.6"/>' +
+        '<circle cx="68" cy="30" r="3.2" fill="' + (locked ? 'currentColor' : '#14111F') + '"/>' +
+        '<text x="82" y="70" text-anchor="middle" font-size="26" font-family="\'Bungee\', \'Trebuchet MS\', sans-serif" fill="' + (locked ? 'currentColor' : '#FFE3EA') + '" transform="rotate(16 82 62)">12</text>';
     },
     'fader-or': function (M, g, locked) {
       var tick = '';
@@ -336,6 +356,7 @@
     if (gameId === 'retro-rush') s = retroEmblem(idx, P);
     if (gameId === 'radio-comete') s = radioEmblem(idx, P);
     if (gameId === 'fusion') s = fusionEmblem(idx, P);
+    if (gameId === 'service-de-nuit') s = nuitEmblem(idx, P);
     return s;
   }
   /* The fresco of a room of the villa, inside the card's red panel (x 9-111, y 22-118): one
@@ -569,6 +590,27 @@
       default: // le courrier: an envelope, and the orange thread that left with a copy
         return '<rect x="18" y="44" width="70" height="48" rx="3" fill="' + carton + '" stroke="' + encre + '" stroke-width="1.8"/><path d="M18 46 L53 72 L88 46" fill="none" stroke="' + encre + '" stroke-width="1.8"/>' +
           '<path d="M84 80 C98 72 100 54 92 40" fill="none" stroke="' + fil + '" stroke-width="3"/><path d="M86 38 L93 34 L96 42" fill="none" stroke="' + fil + '" stroke-width="3" stroke-linejoin="round"/>';
+    }
+  }
+  /* A card of Service de nuit: the act's corner of the hotel at night, in neon - pink, cyan and the
+     amber of the street lamp. */
+  function nuitEmblem(idx, P) {
+    var nuit = '#14111F', rose = '#FF4F7B', cyan = '#3FE0D0', ambre = '#FFB547', craie = '#F6F1E7';
+    switch (idx) {
+      case 0: // la loge: the brass bell of the desk
+        return '<rect x="16" y="88" width="88" height="10" rx="2" fill="' + nuit + '" stroke="' + cyan + '" stroke-width="1.6"/><path d="M30 86 Q30 50 60 50 Q90 50 90 86 Z" fill="' + ambre + '" stroke="' + craie + '" stroke-width="1.6"/><rect x="56" y="40" width="8" height="10" rx="2" fill="' + ambre + '"/><path d="M42 70 Q46 60 56 57" fill="none" stroke="' + craie + '" stroke-width="3" stroke-linecap="round" opacity=".7"/>';
+      case 1: // l'horloge: the desk clock at 23 h 12
+        return '<circle cx="60" cy="68" r="36" fill="' + nuit + '" stroke="' + rose + '" stroke-width="3"/><path d="M60 68 L56 48 M60 68 L74 62" stroke="' + craie + '" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="68" r="4" fill="' + rose + '"/><text x="60" y="98" text-anchor="middle" font-size="9" font-family="\'JetBrains Mono\', monospace" fill="' + ambre + '">23:12</text>';
+      case 2: // les couloirs: a row of doors, the thirteenth missing
+        var d = '';
+        for (var i = 0; i < 5; i++) d += i === 2 ? '<rect x="' + (14 + i * 19) + '" y="44" width="15" height="48" fill="none" stroke="' + rose + '" stroke-width="1.4" stroke-dasharray="3 3"/>' : '<rect x="' + (14 + i * 19) + '" y="44" width="15" height="48" fill="' + nuit + '" stroke="' + cyan + '" stroke-width="1.6"/><circle cx="' + (25 + i * 19) + '" cy="70" r="1.6" fill="' + ambre + '"/>';
+        return d + '<path d="M10 96 H110" stroke="' + craie + '" stroke-width="1.6"/>';
+      case 3: // les étages: the hotel's front, the upper floors lit
+        var w = '';
+        for (var r = 0; r < 4; r++) for (var c = 0; c < 4; c++) w += '<rect x="' + (30 + c * 16) + '" y="' + (36 + r * 16) + '" width="10" height="11" fill="' + (r < 2 || (r + c) % 3 === 0 ? ambre : '#3B3550') + '"/>';
+        return '<rect x="22" y="30" width="76" height="72" fill="' + nuit + '" stroke="' + rose + '" stroke-width="2"/>' + w;
+      default: // la chambre 12: the key and its tag
+        return '<circle cx="40" cy="44" r="10" fill="none" stroke="' + ambre + '" stroke-width="4"/><rect x="37" y="53" width="6" height="40" fill="' + ambre + '"/><path d="M43 82 H52 V88 H43 Z" fill="' + ambre + '"/><path d="M58 40 L92 52 L84 92 L56 82 Z" fill="' + rose + '"/><text x="74" y="74" text-anchor="middle" font-size="18" font-family="\'Bungee\', sans-serif" fill="#FFE3EA" transform="rotate(16 74 68)">12</text>';
     }
   }
   var ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
