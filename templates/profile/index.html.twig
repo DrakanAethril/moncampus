@@ -8,11 +8,12 @@
 
 {% block main %}
     {% set profile_avatar_url = avatar_url(user) %}
+    {% set profile_drawn_avatar = profile_avatar_url ? null : drawn_avatar(user) %}
     <div class="row g-3">
         <div class="col-12">
             <div class="card">
                 <div class="card-body d-flex align-items-center gap-3">
-                    <span class="cm-profile-avatar"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% endif %}>{% if not profile_avatar_url %}{{ user.initials|default((user.displayName ?? user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+                    <span class="cm-profile-avatar{{ profile_drawn_avatar ? ' cm-avatar-drawn' }}"{% if profile_avatar_url %} style="background-image: url({{ profile_avatar_url }})"{% elseif profile_drawn_avatar %} data-controller="sg-avatar" data-sg-avatar-config-value="{{ profile_drawn_avatar|json_encode }}" data-sg-avatar-size-value="72" data-sg-avatar-round-value="false"{% endif %}>{% if not profile_avatar_url %}{{ user.initials|default((user.displayName ?? user.username)|slice(0, 1)|upper) }}{% endif %}</span>
                     <div class="flex-fill">
                         <div class="cm-profile-name">{{ user.displayName ?? user.username }}</div>
                         <div class="text-secondary">{{ 'accountUsernameLabel'|trans }} : <span class="font-monospace">{{ user.username }}</span></div>

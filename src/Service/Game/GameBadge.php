@@ -23,6 +23,8 @@ final readonly class GameBadge
         public string $title,
         public string $initials,
         public ?string $avatarUrl = null,
+        /** @var array<string, mixed>|null the serious-games avatar drawn when there is no photo */
+        public ?array $drawnAvatar = null,
     ) {
     }
 
