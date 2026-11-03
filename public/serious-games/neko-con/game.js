@@ -445,7 +445,7 @@
     if (guide) {
       var box = h('<div class="guided-help"><div class="from">Inès te guide</div><p>' + esc(guide.prompt) + '</p></div>');
       if (guide.kind === 'choice') box.appendChild(choiceButtons(guide.options, function (i) { return submitGuide(guide, i); }));
-      else if (guide.kind === 'line') box.appendChild(h('<p class="note">Clique directement sur la ligne, dans l\'éditeur au centre. Tu retrouveras ton code juste après.</p>'));
+      else if (guide.kind === 'line') box.appendChild(h('<p class="note">Clique directement sur la ligne, dans l\'éditeur au centre : le fichier y est montré tel qu\'au départ du ticket. Tu retrouveras ton code juste après.</p>'));
       hz.appendChild(box);
     } else {
       var total = rungs();
@@ -586,9 +586,12 @@
       b.addEventListener('click', function () { G.tab = f; renderEditor(); });
       bar.appendChild(b);
     });
-    bar.appendChild(h('<span class="state">' + (editable ? 'modifiable' : (lineMode ? 'clique sur une ligne' : 'lecture seule')) + '</span>'));
+    bar.appendChild(h('<span class="state">' + (editable ? 'modifiable' : (lineMode ? 'clique sur une ligne · fichier de départ' : 'lecture seule')) + '</span>'));
     p.appendChild(bar);
-    var src = G.files[G.tab] || '';
+    // Inès' line is designated in the file as the ticket handed it over, never in the draft: an
+    // edit could have removed the line she asks for (no click would pass, the editor being locked
+    // meanwhile) or copied its text onto another one (a wrong line would pass).
+    var src = (lineMode ? E.ticketFiles(G.def)[G.tab] : G.files[G.tab]) || '';
     var zone = h('<div class="code-zone' + (editable ? '' : ' read-only') + '"></div>');
     if (lineMode) {
       var lines = h('<div class="lines" role="list"></div>');
@@ -961,7 +964,9 @@
     G.user = r[2] || null;
     var data = r[0].data || {};
     G.data = Object.assign(G.data, data);
-    ['seen', 'drafts', 'hints'].forEach(function (k) { G.data[k] = G.data[k] || {}; });
+    // An empty map comes back from the server as [] (PHP knows no empty object): a key set on that
+    // array would never reach JSON, which is how drafts and the scenes seen stopped being saved.
+    ['seen', 'drafts', 'hints'].forEach(function (k) { G.data[k] = G.data[k] && !Array.isArray(G.data[k]) ? G.data[k] : {}; });
     SND.setMuted(!!G.data.mute);
     G.sc = r[1];
     showTitle();

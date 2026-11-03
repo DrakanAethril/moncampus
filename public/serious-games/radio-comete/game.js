@@ -516,7 +516,10 @@
   // ——— Start ———
   window.SGSdk.onReward(function (rewards) { G.rewards = G.rewards.concat(rewards); });
   Promise.all([api('getProgress'), api('getScenario')]).then(function (r) {
-    G.data = r[0].data || {}; G.data.seen = G.data.seen || {}; G.data.drafts = G.data.drafts || {};
+    G.data = r[0].data || {};
+    // An empty map comes back from the server as [] (PHP knows no empty object): a key set on that
+    // array would never reach JSON, which is how drafts and the scenes seen stopped being saved.
+    ['seen', 'drafts'].forEach(function (k) { G.data[k] = G.data[k] && !Array.isArray(G.data[k]) ? G.data[k] : {}; });
     if (G.data.mute) SND.setMuted(true);
     G.sc = r[1]; G.actView = G.sc.act;
     var go = /open=(E\d+)/.exec(location.hash); // a shortcut for the tests and the screenshots of the prototype
