@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.03.2'
+      date: '2026-11-03'
+      summary: "Un sixième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration, le premier pour les débutants : un petit hôtel dont l'élève reprend le site, pour apprendre PHP en première année de BTS SIO. Les étudiants sans photo apparaissent avec leur avatar."
+      entries:
+          - type: nouveaute
+            title: "Service de nuit : un jeu d'entraînement pour débuter en PHP, en dix-sept nuits"
+            detail: "L'élève fait grandir le même site nuit après nuit et chaque notion est une lettre de l'enseigne, qui s'allume quand elle est acquise ; la lecture de l'enseignant montre les visiteurs mal servis."
+          - type: modification
+            title: "Un étudiant sans photo apparaît avec l'avatar de ses jeux d'entraînement"
+            detail: "Dans le menu profil, dans « Mon profil » et sur le projecteur du concours en direct, où chaque participant a désormais un visage ; la photo reste prioritaire."
+          - type: fix
+            title: "Jeux à tickets : le travail en cours est de nouveau gardé d'une séance à l'autre"
+            detail: "La question « clique sur la ligne » se lit aussi dans le fichier de départ, où une seule ligne est la bonne."
     - version: '2026.11.03'
       date: '2026-11-03'
       summary: "Un cinquième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration : la fusion de deux cabinets d'architectes, pour apprendre à conduire une migration en BTS SIO option SISR."
