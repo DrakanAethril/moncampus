@@ -20,9 +20,13 @@
      repair: 45                                           — minutes to repair forward past the point
 
    A night (one case of the step: the visible one, then the hidden ones) runs the plan with the case's
-   flags. It passes when, at the end of the window, the migration is done and every service works, or
-   when a check saw the incident before the point of no return and the rollback brought the world back
-   — without data lost and without running past the window. The visible night must end done. */
+   flags. The information system survives it (ok) when, at the end of the window, the migration is done
+   and every service works — straight away (done) or after a check saw a breakage past the point of no
+   return and it was repaired forward (repaired) — or when a check saw the incident before the point of
+   no return and the rollback brought the world back (rolledback); always without data lost and without
+   running past the window. Which of these a case accepts is runCases' rule (steps.js): the visible
+   night and a foreseeable incident must end done, only an unavoidable one may be repaired or rolled
+   back. */
 (function (root) {
   'use strict';
 
@@ -53,11 +57,11 @@
     return problems;
   }
 
-  /** Plays one night. Returns { ok, outcome: 'done'|'rolledback'|'broken'|'stuck'|'overrun'|'refused'|'unfinished', detail, timeline: [{ t, text, kind }] }. */
+  /** Plays one night. Returns { ok, outcome: 'done'|'repaired'|'rolledback'|'broken'|'stuck'|'overrun'|'refused'|'unfinished', detail, timeline: [{ t, text, kind }] }. */
   function night(def, plan, flags) {
-    var p = def.plan, tl = [], st = { svc: {}, lost: [] };
+    var p = def.plan, tl = [], st = { svc: {}, lost: [] }, repaired = [];
     flags = flags || {};
-    var res = function (outcome, detail) { return { ok: outcome === 'done' || outcome === 'rolledback', outcome: outcome, detail: detail || '', timeline: tl }; };
+    var res = function (outcome, detail) { return { ok: outcome === 'done' || outcome === 'repaired' || outcome === 'rolledback', outcome: outcome, detail: detail || '', timeline: tl }; };
     var bad = shape(def, plan);
     if (bad.length) return res('refused', bad[0]);
     var win = find(p.windows, plan.window);
@@ -112,6 +116,7 @@
       if (stuck.length) return res('broken', 'à ' + when(t) + ', après le point de non-retour, le contrôle voit : ' + stuck.map(function (s) { return p.services[s]; }).join(', ') + '. Plus de retour possible, et cela ne se répare pas dans la nuit');
       t += p.repair || 45;
       broken.forEach(function (s) { st.svc[s] = true; });
+      repaired.push('à ' + when(t) + ', ' + what);
       tl.push({ t: t, text: 'Réparé en avant : ' + what, kind: 'repair' });
       if (t > win.end) return res('overrun', 'la réparation de « ' + what + ' » se termine ' + when(t) + ', après la fin de la fenêtre');
     }
@@ -125,7 +130,7 @@
     var g = p.goal ? p.goal(st, done) : true;
     if (g !== true) return res('unfinished', 'la migration ne va pas au bout : ' + (typeof g === 'string' ? g : 'il manque une opération'));
     tl.push({ t: win.end, text: 'Tout fonctionne à l\'ouverture', kind: 'ok' });
-    return res('done', '');
+    return repaired.length ? res('repaired', 'réparé en avant ' + repaired.join(' ; ')) : res('done', '');
   }
 
   // ——— Network arithmetic, for the configuration steps ———

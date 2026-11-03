@@ -9,7 +9,9 @@
    every hidden night is failed by at least one plan next to the reference (one operation, one check,
    one rollback or the point of no return taken away, two operations swapped, an operation moved before
    the night) that still passes the visible night: a mistake the student cannot see, which only that
-   hidden night reveals. A hidden night no such mistake fails teaches nothing. */
+   hidden night reveals. A hidden night no such mistake fails teaches nothing. A night said unavoidable
+   (the reference may only survive it by a rollback or a repair, see steps.js) that the reference
+   crosses without breaking anything is foreseeable after all. */
 (function (root) {
   'use strict';
 
@@ -82,6 +84,10 @@
           if (!bad.results.some(function (r) { return r.visible && !r.ok; })) p.push('le point de départ réussit ce que vérifie le demandeur : l\'élève n\'a rien à faire');
           var good = ST.runCases(def, def.ref);
           good.results.forEach(function (r) { if (!r.ok) p.push('la référence échoue : ' + r.label + (r.detail ? ' (' + r.detail + ')' : '')); });
+          if (def.tool === 'plan') hid.forEach(function (c) {
+            var o = good.results.filter(function (r) { return r.id === c.id; })[0].outcome;
+            if (c.unavoidable && o === 'done') p.push('la nuit « ' + c.label + ' » est dite imprévisible, mais la référence la traverse sans rien casser : c\'est qu\'elle se prévient');
+          });
           if (def.tool === 'plan' && good.passed) {
             var muts = neighbours(def.ref).map(function (a) { return ST.runCases(def, a); });
             hid.forEach(function (c) {

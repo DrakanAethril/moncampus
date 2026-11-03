@@ -456,9 +456,9 @@
       { id: 'nuit', label: 'le week-end prévu, sans incident : lundi, tout le monde ouvre P:', visible: true, flags: {} },
       { id: 'verrou', label: 'un plan resté ouvert sur un poste de Brive', flags: { lock: true } },
       { id: 'chemins', label: 'des chemins de dossiers très longs', flags: { longpath: true } },
-      { id: 'quota', label: 'un quota oublié sur le serveur cible', flags: { quota: true } },
+      { id: 'quota', label: 'un quota oublié sur le serveur cible', flags: { quota: true }, unavoidable: true },
       { id: 'sessions', label: 'des postes restés allumés tout le week-end', flags: { sessions: true } },
-      { id: 'ou', label: 'une stratégie liée à une seule agence', flags: { ou: true } }
+      { id: 'ou', label: 'une stratégie liée à une seule agence', flags: { ou: true }, unavoidable: true }
     ],
     hints: [
       { title: 'Fiche : migrer un partage', body: '1. Dans la semaine (avant la nuit) : la copie initiale, longue, et ce qui demande les utilisateurs (des chemins trop longs à raccourcir avec leurs auteurs).\n2. La nuit : relever l\'existant, puis geler l\'ancien partage (lecture seule, fichiers fermés), puis copier le delta. Après la copie, plus rien ne doit pouvoir s\'écrire derrière elle.\n3. Contrôler la copie par son journal, les droits par un compte de chaque profil, le lecteur par gpresult sur de vrais postes.\n4. Un poste qui garde sa session ne lit pas la nouvelle GPO : on force la mise à jour.\n5. On ne supprime jamais l\'ancien partage la nuit de la bascule.' },

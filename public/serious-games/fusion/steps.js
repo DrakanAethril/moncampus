@@ -10,7 +10,7 @@
        plan: { … },                           // a cutover plan: see sim.js (services, ops, checks, backs, windows…)
        form: { intro, fields: [ … ] },        // a configuration: fields, see below
        start: { … }, ref: { … },              // the answer at the start, and the reference (only the bench reads it)
-       cases: [{ id, label, visible, flags }] (plan: a night) or [{ id, label, visible, check(answer, H) }] (form)
+       cases: [{ id, label, visible, flags, unavoidable }] (plan: a night) or [{ id, label, visible, check(answer, H) }] (form)
        views: { id: { title, lines: [...] } },  // what a « line » step shows
        hints: [{ title, body }],              // Hélène's file cards, after her guided questions; the last gives the solution
        intro: [{ who, expr, text }], done: [{ who, expr, text }]      // scenes
@@ -25,7 +25,15 @@
 
    A delivery runs every case: a plan is played night by night (FSSim.night), a form is checked case by
    case. Cases with visible: true are what the requester checks; the others are « nuits » or « contrôles
-   que vous ne voyez pas »: when one fails, its label and what went wrong are told. */
+   que vous ne voyez pas »: when one fails, its label and what went wrong are told.
+
+   What a night must end on. The visible night has no incident: whatever breaks there, the plan broke
+   itself, so it must end done — neither repaired forward nor rolled back. A hidden night's incident is
+   foreseeable unless the case says unavoidable: true, which means no operation of the catalogue could
+   prevent it (a laptop arriving with the address written by hand, a fibre that cuts, a key noted
+   wrong). A foreseeable incident must end done too: a check and a rollback that save the night do not
+   make up for the operation that would have prevented it. Only an unavoidable one may end repaired
+   forward or rolled back, which is what checks, rollbacks and the point of no return are for. */
 (function (root) {
   'use strict';
   var N = root.FSNet, SIM = root.FSSim;
@@ -59,10 +67,12 @@
       var r = { id: c.id, label: c.label, visible: !!c.visible, ok: false, detail: '' };
       try {
         if (def.tool === 'plan') {
-          var n = SIM.night(def, copy(answer), c.flags || {});
-          r.ok = c.visible ? n.outcome === 'done' : n.ok;
+          var n = SIM.night(def, copy(answer), c.flags || {}), saved = n.outcome === 'repaired' || n.outcome === 'rolledback';
+          r.ok = c.visible || !c.unavoidable ? n.outcome === 'done' : n.ok;
           if (c.visible && n.outcome === 'rolledback') n.detail = 'sur la nuit visible, rien ne devait tomber, et le plan a reculé : ' + n.detail;
-          r.detail = r.ok ? (n.outcome === 'rolledback' ? 'le contrôle a vu l\'incident et le retour arrière a tenu' : '') : n.detail;
+          else if (c.visible && n.outcome === 'repaired') n.detail = 'sur la nuit visible, rien ne devait tomber : c\'est le plan lui-même qui a cassé ce qu\'il a fallu réparer, ' + n.detail;
+          else if (!c.visible && !c.unavoidable && saved) n.detail = (n.outcome === 'rolledback' ? 'le retour arrière a tenu, mais la bascule n\'a pas eu lieu' : 'il a fallu réparer en avant') + ' : cette nuit se traverse sans rien casser, avec un plan qui prévient son incident';
+          r.detail = r.ok ? (n.outcome === 'rolledback' ? 'le contrôle a vu l\'incident et le retour arrière a tenu' : n.outcome === 'repaired' ? 'le contrôle a vu l\'incident, réparé en avant dans la fenêtre' : '') : n.detail;
           r.timeline = n.timeline; r.outcome = n.outcome;
         } else {
           var v = c.check(copy(answer), H);

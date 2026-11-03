@@ -336,9 +336,9 @@
       { id: 'nuit', label: 'la nuit prévue, sans incident : lundi 28, Brive reçoit et envoie', visible: true, flags: {} },
       { id: 'cache', label: 'des serveurs qui gardent l\'ancien MX en cache', flags: { mxCache: true } },
       { id: 'file', label: 'des mails en file chez l\'ancien hébergeur', flags: { queued: true } },
-      { id: 'spf', label: 'un SPF trop strict', flags: { spfStrict: true, unrepairable: ['envoie'] } },
+      { id: 'spf', label: 'un SPF trop strict', flags: { spfStrict: true, unrepairable: ['envoie'] }, unavoidable: true },
       { id: 'gros', label: 'une boîte de 48 Go', flags: { big: true } },
-      { id: 'telephone', label: 'un téléphone encore branché sur Arvéo', flags: { phone: true } }
+      { id: 'telephone', label: 'un téléphone encore branché sur Arvéo', flags: { phone: true }, unavoidable: true }
     ],
     hints: [
       { title: 'Fiche : finir une migration de messagerie', body: 'Avant la nuit : on abaisse le TTL (les autres gardent l\'ancienne réponse pendant l\'ancien TTL) et on rattrape le gros des boîtes.\nLa nuit : on gèle l\'ancien serveur, puis on retire son MX, puis on fait le dernier delta (rien n\'arrive plus après lui), et on compte.\nOn vérifie les règles de TOUTES les boîtes, et on bloque le transfert automatique : ces deux mesures ne se défont pas.\nSPF définitif, puis un vrai mail de chaque expéditeur vers l\'extérieur.\nLa coupure ne se défait pas : après le point de non-retour, avec un contrôle après elle, puisqu\'on ne pourra que réparer en avant.' },
@@ -423,20 +423,21 @@
     },
     start: { window: '', prep: [], night: [], noReturn: null },
     ref: { window: 'soir', prep: ['cert', 'ttl'], night: [
+      { op: 'adresses' },
       { op: 'politique', check: 'ecrire', back: 'politique-retour' },
       { op: 'partis' },
       { op: 'dmarc', check: 'externe', back: 'dmarc-none' },
       { op: 'annonce' }
-    ], noReturn: 3 },
+    ], noReturn: 4 },
     cases: [
       { id: 'nuit', label: 'la nuit du 31, sans incident : à minuit, Delorme Kerbrat Architectes', visible: true, flags: {} },
       { id: 'boites', label: 'des boîtes importées qui ne suivent pas la stratégie d\'adresses', flags: { frozenBoxes: true } },
-      { id: 'voeux', label: 'un expéditeur oublié qui écrit au nom du cabinet', flags: { forgot: true, unrepairable: ['envoie'] } },
+      { id: 'voeux', label: 'un expéditeur oublié qui écrit au nom du cabinet', flags: { forgot: true, unrepairable: ['envoie'] }, unavoidable: true },
       { id: 'cert', label: 'un certificat qui ne porte pas le nouveau nom', flags: { cert: true } }
     ],
     hints: [
-      { title: 'Fiche : la dernière nuit', body: 'Ce qui se prépare : le certificat qui doit porter les nouveaux noms, le TTL de ce qu\'on pourrait devoir remettre.\nAprès chaque changement, un contrôle qui fait ce que fait l\'utilisateur ou le client : écrire à la nouvelle adresse, envoyer depuis chaque service.\nChaque changement a son retour.\nCe qui ne se défait pas, un mail envoyé à trois cents clients, vient après le point de non-retour.' },
-      { title: 'La réponse', body: 'Fenêtre : jeudi 31, 18 h – 23 h 45.\nAvant : ajouter autodiscover.delorme-kerbrat.fr au certificat ; abaisser le TTL de DMARC.\n1. Stratégie d\'adresses — contrôle : un mail de Gmail à la nouvelle adresse de Claire — retour : ancienne stratégie.\n2. Traiter le compte b.roux.\n3. DMARC en quarantaine — contrôle : chaque service écrit à Gmail, dmarc=pass — retour : p=none.\n◆ Point de non-retour.\n4. Envoyer l\'annonce.' }
+      { title: 'Fiche : la dernière nuit', body: 'Ce qui se prépare : le certificat qui doit porter les nouveaux noms, le TTL de ce qu\'on pourrait devoir remettre, et les boîtes importées, qui ont souvent la stratégie d\'adresses désactivée.\nAprès chaque changement, un contrôle qui fait ce que fait l\'utilisateur ou le client : écrire à la nouvelle adresse, envoyer depuis chaque service.\nChaque changement a son retour.\nCe qui ne se défait pas, un mail envoyé à trois cents clients, vient après le point de non-retour.' },
+      { title: 'La réponse', body: 'Fenêtre : jeudi 31, 18 h – 23 h 45.\nAvant : ajouter autodiscover.delorme-kerbrat.fr au certificat ; abaisser le TTL de DMARC.\n1. Réactiver la stratégie d\'adresses sur les boîtes importées de Brive.\n2. Stratégie d\'adresses — contrôle : un mail de Gmail à la nouvelle adresse de Claire — retour : ancienne stratégie.\n3. Traiter le compte b.roux.\n4. DMARC en quarantaine — contrôle : chaque service écrit à Gmail, dmarc=pass — retour : p=none.\n◆ Point de non-retour.\n5. Envoyer l\'annonce.' }
     ],
     intro: [
       { who: 'narr', text: 'Jeudi 31 décembre, 17 h 45. Le cabinet de Limoges est vide. Sur la table d\'Hélène, la maquette : il manque une planche à la passerelle.' },
