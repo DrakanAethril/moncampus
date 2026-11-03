@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.03'
+      date: '2026-11-03'
+      summary: "Un cinquième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration : la fusion de deux cabinets d'architectes, pour apprendre à conduire une migration en BTS SIO option SISR."
+      entries:
+          - type: nouveaute
+            title: "Fusion : un jeu d'entraînement à la conduite de migration, en quarante étapes"
+            detail: "L'élève construit des plans de bascule (fenêtre, opérations, contrôles, retours arrière, point de non-retour), que le jeu rejoue sur des nuits où quelque chose tourne mal ; la lecture de l'enseignant montre les nuits qui ont échoué."
     - version: '2026.11.02.2'
       date: '2026-11-02'
       summary: "Trois corrections dans les jeux d'entraînement en essai auprès de l'administration : un ticket qui ne pouvait plus se fermer, un éditeur dont on ne voyait pas qu'il défilait, un bouton de remise à zéro que personne ne trouvait."
