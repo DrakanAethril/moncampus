@@ -1,0 +1,230 @@
+# Service de nuit - acte 3 : Les couloirs.
+#
+# The server half of the nights (design/validated/serious-games-service-de-nuit.md §3): the graph, the
+# requests, the steps with their right answers and the misconception of each wrong one, Sami's guided
+# questions, the clue closing gives. The game half (the site to start from, the visitors and their
+# checks, the hidden ones, the notebooks, the written hints, the scenes) is public/serious-games/
+# service-de-nuit/steps/acte3.js. Converted from the prototype's host/scenario/acte3.js by
+# tool/to-yaml.js; `hints` counts the written hints the game holds after the guided questions. A ticket
+# is a « nuit » in the game's words.
+tickets:
+  -
+    id: N08
+    act: 3
+    after: [N07]
+    course: 'PHP · la boucle for'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'Les couloirs › Les chambres'
+    title: 'Quarante chambres'
+    request: 'C''est signé : on a racheté l''immeuble d''à côté ! L''hôtel monte jusqu''à 40 chambres, mais elles n''ouvriront pas toutes en même temps : le registre dit combien sont ouvertes, dans $ouvertes. La page des chambres doit les montrer toutes, de la 1 à la dernière ouverte.'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Liste les chambres ouvertes, de la 1 à la dernière, sans écrire chaque ligne à la main, puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Que fait for ($i = 1; $i <= $ouvertes; $i++) ?'
+        options:
+          - { text: '$i part de 1 ; tant que $i ne dépasse pas $ouvertes, la boucle écrit une ligne, puis ajoute 1 à $i.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Quarante lignes, et demain trente-huit, sans que personne ne recopie rien.' } }
+          - { text: 'Elle écrit $ouvertes lignes d''un coup, sans compter.', misconception: boucle-magique, reaction: { who: sami, expr: sourcil, text: 'Elle compte : $i prend les valeurs 1, 2, 3… une par tour.' } }
+          - { text: 'Elle s''arrête dès que $i vaut 1.', misconception: condition-arret, reaction: { who: sami, expr: sourcil, text: 'La condition du milieu dit quand continuer : tant que $i <= $ouvertes.' } }
+          - { text: '$i++ ajoute une ligne au fichier chambres.php.', misconception: boucle-modifie-fichier, reaction: { who: sami, expr: sourcil, text: 'Le fichier ne change jamais : $i++ ajoute 1 à $i, et la boucle écrit dans la page envoyée.' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: '1 2 3', ok: true, reaction: { who: sami, expr: sourire, text: '$i < 4 : la boucle s''arrête avant 4.' } }
+          - { text: '1 2 3 4', misconception: borne-incluse, reaction: { who: sami, expr: sourcil, text: '< 4 exclut 4. Pour l''inclure, il faudrait <= 4.' } }
+          - { text: '0 1 2 3', misconception: depart-zero, reaction: { who: sami, expr: sourcil, text: '$i commence à 1 : c''est ce que dit $i = 1.' } }
+          - { text: '4', misconception: boucle-derniere-valeur, reaction: { who: sami, expr: sourcil, text: 'echo est dans la boucle : il écrit à chaque tour, pas seulement à la fin.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Le registre dit 38 chambres ouvertes. Que doit afficher la page ?'
+        options:
+          - { text: 'Chambre 1 à Chambre 38 : la fin vient de $ouvertes, pas d''un nombre écrit dans le code.', ok: true }
+          - { text: 'Chambre 1 à Chambre 40 : l''hôtel en a 40.', misconception: borne-en-dur, reaction: { who: sami, expr: sourcil, text: 'Seules les ouvertes s''affichent : 38 ce soir-là.' } }
+          - { text: 'Chambre 0 à Chambre 37.', misconception: depart-zero, reaction: { who: sami, expr: sourcil, text: 'Il n''y a pas de chambre 0 aux Quatre-Vents.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Quelle boucle écrit de « Chambre 1 » à « Chambre $ouvertes » ?'
+        options:
+          - { text: 'for ($i = 1; $i <= $ouvertes; $i++)', ok: true }
+          - { text: 'for ($i = 1; $i < $ouvertes; $i++)', misconception: borne-exclue, reaction: { who: sami, expr: sourcil, text: 'Avec <, la dernière chambre manque.' } }
+          - { text: 'for ($i = 0; $i <= $ouvertes; $i++)', misconception: depart-zero, reaction: { who: sami, expr: sourcil, text: 'Une chambre 0 de trop.' } }
+    hints: 2
+  -
+    id: N09
+    act: 3
+    after: [N08]
+    course: 'PHP · la boucle while'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'Les couloirs › La navette'
+    title: 'La navette de la gare'
+    request: 'La navette pour la gare part devant l''hôtel à 5 h 40, puis toutes les 25 minutes, et la dernière part avant minuit. Sur sa page, je veux les départs qui restent aujourd''hui, à partir de maintenant. Et s''il n''y en a plus : « Plus de navette ce soir. »'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Affiche les départs qui restent jusqu''à minuit, ou « Plus de navette ce soir. », puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Pourquoi while plutôt qu''une liste écrite à la main, ou que for ?'
+        options:
+          - { text: 'On ne sait pas d''avance combien de départs il reste : la boucle avance de 25 minutes en 25 minutes tant que le départ ne passe pas minuit.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Tant que… C''est comme ça que je l''aurais dit.' } }
+          - { text: 'while va plus vite que for.', misconception: while-rapide, reaction: { who: sami, expr: sourcil, text: 'Ils vont aussi vite. while se lit « tant que » : c''est ce qui colle ici.' } }
+          - { text: 'for ne sait pas compter de 25 en 25.', misconception: for-pas-1, reaction: { who: sami, expr: sourcil, text: 'for sait : $i += 25. Ce qui compte, c''est qu''on raisonne en « tant que ».' } }
+          - { text: 'while s''arrête tout seul après dix tours.', misconception: while-limite, reaction: { who: sami, expr: sourcil, text: 'while tourne tant que sa condition est vraie. Si elle l''est toujours, il ne s''arrête jamais.' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: 'Une place. Une place. Une place. Complet !', ok: true, reaction: { who: sami, expr: sourire, text: '3, 2, 1 : trois tours. À 0, la condition est fausse.' } }
+          - { text: 'Une place. Une place. Complet !', misconception: while-un-de-moins, reaction: { who: sami, expr: sourcil, text: 'Compte les tours : $places vaut 3, puis 2, puis 1. Trois fois vrai.' } }
+          - { text: 'Une place. Une place. Une place. Une place. Complet !', misconception: while-un-de-plus, reaction: { who: sami, expr: sourcil, text: 'À 0, 0 > 0 est faux : pas de quatrième tour.' } }
+          - { text: 'Une place. Complet !', misconception: while-une-fois, reaction: { who: sami, expr: sourcil, text: 'while recommence tant que sa condition est vraie : ce n''est pas un if.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'À 21 h 10, quel est le prochain départ ?'
+        options:
+          - { text: '21 h 30.', ok: true }
+          - { text: '21 h 35 : 21 h 10 plus 25 minutes.', misconception: navette-depuis-maintenant, reaction: { who: sami, expr: sourcil, text: 'Les départs partent de 5 h 40, pas de l''heure de la visite : 5 h 40, 6 h 05… 21 h 05, 21 h 30.' } }
+          - { text: '21 h 05.', misconception: depart-passe, reaction: { who: sami, expr: sourcil, text: 'À 21 h 10, la navette de 21 h 05 est partie.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Que doit faire la boucle à chaque tour ?'
+        options:
+          - { text: 'Écrire le départ s''il n''est pas passé, puis ajouter 25 minutes (25 * 60 secondes).', ok: true }
+          - { text: 'Ajouter 25 à $depart.', misconception: secondes-minutes, reaction: { who: sami, expr: sourcil, text: 'mktime() compte en secondes : 25 minutes, c''est 25 * 60.' } }
+          - { text: 'Écrire tous les départs, même passés.', misconception: depart-passe, reaction: { who: sami, expr: sourcil, text: 'Mireille ne veut que ceux qui restent, à partir de maintenant.' } }
+    hints: 2
+  -
+    id: N10
+    act: 3
+    after: [N09]
+    course: 'PHP · boucles et conditions'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'Les couloirs › Cour ou rue'
+    title: 'Cour ou rue'
+    request: 'Trois choses sur la page des chambres. Les paires donnent sur la cour, les impaires sur la rue : écris-le, « Chambre 7 : côté rue ». Il n''y a pas de chambre 13, personne n''en veut : saute-la. Et la chambre en travaux, que le registre donne dans $travaux (0 s''il n''y en a pas), s''affiche « Chambre 9 : fermée ».'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Donne le côté de chaque chambre, saute la 13, ferme celle en travaux, puis sers la nuit.'
+      -
+        id: expliquer
+        kind: explain
+        expr: neutre
+        prompt: 'Que fait continue quand $i vaut 13 ?'
+        options:
+          - { text: 'Il saute la fin de ce tour : rien n''est écrit pour la 13, et la boucle reprend à 14.', ok: true, reaction: { who: mireille, expr: sourire, text: 'De la 12 à la 14, comme dans l''ascenseur.' } }
+          - { text: 'Il arrête la boucle : les chambres après la 13 disparaissent.', misconception: continue-break, reaction: { who: sami, expr: sourcil, text: 'Ça, c''est break. continue passe au tour suivant.' } }
+          - { text: 'Il écrit « Chambre 13 », puis continue.', misconception: continue-ecrit, reaction: { who: sami, expr: sourcil, text: 'continue n''écrit rien : il saute ce qui reste du tour.' } }
+          - { text: 'Il recommence la boucle à 1.', misconception: continue-recommence, reaction: { who: sami, expr: sourcil, text: 'La boucle reprend au tour suivant, à 14, pas au début.' } }
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: '1 2 [3] 4 5 [6]', ok: true, reaction: { who: sami, expr: sourire, text: '% 3 donne le reste de la division par 3 : 0 pour 3 et 6.' } }
+          - { text: '1 2 [3] 4 5 6', misconception: modulo-une-fois, reaction: { who: sami, expr: sourcil, text: 'Le test est refait à chaque tour : 6 % 3 vaut 0 aussi.' } }
+          - { text: '[1] 2 3 [4] 5 6', misconception: modulo-quotient, reaction: { who: sami, expr: sourcil, text: '% donne le reste de la division, pas le résultat : 1 % 3 vaut 1.' } }
+          - { text: '[3] [6]', misconception: else-oublie, reaction: { who: sami, expr: sourcil, text: 'Les autres nombres passent par le else : ils sont écrits sans crochets.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Comment savoir si $i est pair ?'
+        options:
+          - { text: '$i % 2 == 0 : le reste de la division par 2 est nul.', ok: true }
+          - { text: '$i / 2 == 0', misconception: modulo-quotient, reaction: { who: sami, expr: sourcil, text: '$i / 2 ne vaut 0 que pour 0. Il faut le reste : %.' } }
+          - { text: '$i == 2', misconception: pair-egal-deux, reaction: { who: sami, expr: sourcil, text: 'Ça ne vaut que pour la chambre 2.' } }
+      -
+        id: g2
+        kind: choice
+        prompt: 'Le soir où la 13 est en travaux, que doit afficher la page ?'
+        options:
+          - { text: 'Rien pour la 13 : elle n''existe pas, travaux ou pas. Le saut passe avant tout le reste.', ok: true }
+          - { text: '« Chambre 13 : fermée ».', misconception: ordre-continue, reaction: { who: sami, expr: sourcil, text: 'La 13 n''existe pas : elle ne peut pas être fermée. Le continue doit passer avant le test des travaux.' } }
+          - { text: '« Chambre 13 : côté rue ».', misconception: treize-oublie, reaction: { who: sami, expr: sourcil, text: 'Pas de 13 aux Quatre-Vents, jamais.' } }
+    hints: 2
+  -
+    id: N11
+    act: 3
+    after: [N10]
+    course: 'PHP · lire du code'
+    requester: sami
+    kind: demande
+    priority: haute
+    category: 'Les couloirs › Le fichier d''Augustin'
+    title: 'Le fichier d''Augustin'
+    request: 'Mireille a retrouvé le mot de passe dans la couverture du premier carnet : « pied.php ». C''est le fichier que l''hôtel ajoute en bas de toutes les pages. C''est lui qui écrit les lignes de la nuit. Augustin l''a laissé pour toi. On le lit ensemble ?'
+    reward:
+      clue: 'Augustin a programmé ses messages pour son successeur : ils mènent au carnet rouge, au quatrième, chambre 404. Les étages s''ouvrent.'
+    steps:
+      -
+        id: designer
+        kind: line
+        label: 'La ligne de 23 h 12'
+        prompt: 'Clique sur la ligne qui écrit le message de jeudi, 23 h 12.'
+        view: pied
+        answer: 'Regarde qui arrive à la 12'
+        reaction: { who: sami, expr: sourcil, text: 'Cette ligne-là n''écrit pas le message de 23 h 12. Cherche le echo qui suit la condition sur 23 h.' }
+      -
+        id: trois
+        kind: choice
+        label: 'Jeudi, 3 h 14'
+        prompt: 'Jeudi à 3 h 14, que lit un client tout en bas de la page ?'
+        view: pied-0314
+        options:
+          - { text: 'La 12 attend toujours son veilleur.', ok: true, reaction: { who: sami, expr: sourire, text: '$minute vaut 14 : 14 >= 12 et 14 < 15. Le message reste trois minutes.' } }
+          - { text: 'Rien : à 3 h 14, $minute vaut 14, pas 12.', misconception: egalite-intervalle, reaction: { who: sami, expr: sourcil, text: 'La condition n''est pas « == 12 » : c''est « >= 12 et < 15 ». De 3 h 12 à 3 h 14.' } }
+          - { text: '23 h 12. Regarde qui arrive à la 12.', misconception: heure-3-23, reaction: { who: sami, expr: sourcil, text: '$heure vaut 3, pas 23 : c''est la première branche.' } }
+          - { text: 'Les trois messages, l''un sous l''autre.', misconception: elseif-toutes, reaction: { who: sami, expr: sourcil, text: 'if, elseif, elseif : une seule branche, la première vraie.' } }
+      -
+        id: quatre
+        kind: choice
+        label: 'Le carnet rouge'
+        prompt: 'Quand le message du carnet rouge s''affiche-t-il ?'
+        view: pied
+        options:
+          - { text: 'Le vendredi, à 4 h 04 pile, pendant une minute.', ok: true, reaction: { who: sami, expr: sourire, text: '$jour == 5 : vendredi. $heure == 4 et $minute == 4. Il fallait être debout.' } }
+          - { text: 'Tous les jours à 4 h 04.', misconception: condition-et-oubliee, reaction: { who: sami, expr: sourcil, text: 'Il y a trois conditions liées par && : le jour compte aussi.' } }
+          - { text: 'Le jeudi à 4 h 04.', misconception: date-N-jours, reaction: { who: sami, expr: sourcil, text: 'date(''N'') vaut 4 le jeudi. Ici, c''est 5 : vendredi.' } }
+          - { text: 'À 4 h, pendant quatre minutes.', misconception: minute-intervalle, reaction: { who: sami, expr: sourcil, text: '$minute == 4 : une seule minute, 4 h 04.' } }
+      -
+        id: ordre
+        kind: order
+        label: 'La nuit d''Augustin'
+        prompt: 'Du jeudi 0 h au vendredi 8 h, dans quel ordre les messages d''Augustin apparaissent-ils ?'
+        items:
+          - '23 h 12. Regarde qui arrive à la 12.'
+          - 'Le carnet rouge dort au quatrième, chambre 404.'
+          - 'La 12 attend toujours son veilleur.'
+        answer: [2, 0, 1]
+        reaction: { who: sami, expr: sourcil, text: 'Relis les heures et les jours : jeudi 3 h 12, jeudi 23 h 12, vendredi 4 h 04.' }
