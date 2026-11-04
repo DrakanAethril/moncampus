@@ -1661,7 +1661,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     /**
      * The quiz tournaments (design/validated/quiz-tournament.md §2 and §3): the standings are read by
      * the students the targeting reaches, the teachers of a targeted class and the staff once the
-     * tournament is opened, by the administrators always; a tutor reads nothing. Creating, editing and
+     * tournament is opened, by the administrators always; a tutor reads nothing. « Mes défis » is a
+     * student's alone (§7) - the rooms and duels, their two players' (QuizTournamentChallengesTest). Creating, editing and
      * opening is the administrators' alone (Paramètres › Pédagogique › Tournois) - the staff reach
      * Paramètres but find no such screen. A closed tournament is nobody else's to see.
      */
@@ -1681,15 +1682,16 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $closedPage = '/tournaments/'.$closed->getId();
         $edit = '/settings/tournaments/'.$opened->getId().'/edit';
 
-        $this->assertScreens($this->student, ['/tournaments' => 200, $page => 200, $closedPage => 404, '/settings/tournaments' => 403]);
-        $this->assertScreens($this->teacher, ['/tournaments' => 200, $page => 200, $closedPage => 404, '/settings/tournaments' => 403, $edit => 403]);
-        $this->assertScreens($staff, ['/tournaments' => 200, $page => 200, $closedPage => 404, '/settings/tournaments' => 404, '/settings/tournaments/new' => 404, $edit => 404]);
-        $this->assertScreens($this->tutor, ['/tournaments' => 200, $page => 404, '/settings/tournaments' => 403]);
-        $this->assertScreens($this->admin, ['/tournaments' => 200, $page => 200, $closedPage => 200, '/settings/tournaments' => 200, '/settings/tournaments/new' => 200, $edit => 200]);
+        $challenges = $page.'/challenges';
+        $this->assertScreens($this->student, ['/tournaments' => 200, $page => 200, $challenges => 200, $closedPage => 404, $closedPage.'/challenges' => 404, '/settings/tournaments' => 403]);
+        $this->assertScreens($this->teacher, ['/tournaments' => 200, $page => 200, $challenges => 404, $closedPage => 404, '/settings/tournaments' => 403, $edit => 403]);
+        $this->assertScreens($staff, ['/tournaments' => 200, $page => 200, $challenges => 404, $closedPage => 404, '/settings/tournaments' => 404, '/settings/tournaments/new' => 404, $edit => 404]);
+        $this->assertScreens($this->tutor, ['/tournaments' => 200, $page => 404, $challenges => 404, '/settings/tournaments' => 403]);
+        $this->assertScreens($this->admin, ['/tournaments' => 200, $page => 200, $challenges => 404, $closedPage => 200, '/settings/tournaments' => 200, '/settings/tournaments/new' => 200, $edit => 200]);
 
         // The feature switched off: nobody but the administrator finds a tournament.
         $this->switchOffEveryRole(Feature::QuizTournaments);
-        $this->assertScreens($this->student, ['/tournaments' => 404, $page => 404]);
+        $this->assertScreens($this->student, ['/tournaments' => 404, $page => 404, $challenges => 404]);
         $this->assertScreens($this->admin, ['/tournaments' => 200, '/settings/tournaments' => 200]);
     }
 }

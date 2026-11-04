@@ -155,6 +155,138 @@ class QuizTournamentChallengeRepository extends ServiceEntityRepository
     }
 
     /**
+     * One person's challenges in a tournament, either side, that « Mes défis » may still show: those
+     * still pending or accepted as stored (statusAt() decides what they are now), and any sent since
+     * $since - the outcomes of the last day. Both users loaded.
+     *
+     * @return list<QuizTournamentChallenge>
+     */
+    public function findForBoard(QuizTournament $tournament, User $user, \DateTimeImmutable $since): array
+    {
+        /** @var list<QuizTournamentChallenge> $challenges */
+        $challenges = $this->createQueryBuilder('c')
+            ->addSelect('challenger', 'challenged')
+            ->innerJoin('c.challenger', 'challenger')
+            ->innerJoin('c.challenged', 'challenged')
+            ->where('c.tournament = :tournament')
+            ->andWhere('c.challenger = :user OR c.challenged = :user')
+            ->andWhere('c.status IN (:open) OR c.createdAt >= :since')
+            ->setParameter('tournament', $tournament)
+            ->setParameter('user', $user)
+            ->setParameter('open', [QuizTournamentChallengeStatus::Pending, QuizTournamentChallengeStatus::Accepted])
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getResult();
+
+        return $challenges;
+    }
+
+    /**
+     * How many challenges each player of the tournament has pending, received - the « 5 at most »
+     * of every line of the standings at once.
+     *
+     * @return array<int, int> user id => pending received
+     */
+    public function pendingIncomingCounts(QuizTournament $tournament, \DateTimeImmutable $now): array
+    {
+        /** @var list<array{id: int|string, pending: int|string}> $rows */
+        $rows = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.challenged) AS id', 'COUNT(c.id) AS pending')
+            ->where('c.tournament = :tournament')
+            ->andWhere('c.status = :pending')
+            ->andWhere('c.expiresAt > :now')
+            ->groupBy('c.challenged')
+            ->setParameter('tournament', $tournament)
+            ->setParameter('pending', QuizTournamentChallengeStatus::Pending)
+            ->setParameter('now', $now)
+            ->getQuery()
+            ->getArrayResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['id']] = (int) $row['pending'];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * When each player last refused a challenge of this challenger - lastRefusalAt() for every line
+     * of the standings at once.
+     *
+     * @return array<int, \DateTimeImmutable> challenged user id => last refusal
+     */
+    public function lastRefusalsOf(QuizTournament $tournament, User $challenger): array
+    {
+        /** @var list<array{id: int|string, at: string|null}> $rows */
+        $rows = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.challenged) AS id', 'MAX(c.respondedAt) AS at')
+            ->where('c.tournament = :tournament')
+            ->andWhere('c.challenger = :challenger')
+            ->andWhere('c.status = :refused')
+            ->groupBy('c.challenged')
+            ->setParameter('tournament', $tournament)
+            ->setParameter('challenger', $challenger)
+            ->setParameter('refused', QuizTournamentChallengeStatus::Refused)
+            ->getQuery()
+            ->getArrayResult();
+
+        $refusals = [];
+        foreach ($rows as $row) {
+            if (\is_string($row['at'])) {
+                $refusals[(int) $row['id']] = new \DateTimeImmutable($row['at']);
+            }
+        }
+
+        return $refusals;
+    }
+
+    /**
+     * When this person and each other player challenged each other in [$from, $to), either way -
+     * encounterTimes() for every line of the standings at once.
+     *
+     * @return array<int, list<\DateTimeImmutable>> other user id => times
+     */
+    public function encounterTimesByOpponent(QuizTournament $tournament, User $user, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        /** @var list<array{a: int|string, b: int|string, createdAt: \DateTimeImmutable}> $rows */
+        $rows = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.challenger) AS a', 'IDENTITY(c.challenged) AS b', 'c.createdAt AS createdAt')
+            ->where('c.tournament = :tournament')
+            ->andWhere('c.challenger = :user OR c.challenged = :user')
+            ->andWhere('c.createdAt >= :from AND c.createdAt < :to')
+            ->setParameter('tournament', $tournament)
+            ->setParameter('user', $user)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->getQuery()
+            ->getArrayResult();
+
+        return self::timesByOpponent($rows, (int) $user->getId(), 'createdAt');
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows each with `a`, `b` (user ids) and a date under $dateKey
+     *
+     * @return array<int, list<\DateTimeImmutable>>
+     */
+    public static function timesByOpponent(array $rows, int $userId, string $dateKey): array
+    {
+        $times = [];
+        foreach ($rows as $row) {
+            $a = \is_numeric($row['a'] ?? null) ? (int) $row['a'] : 0;
+            $b = \is_numeric($row['b'] ?? null) ? (int) $row['b'] : 0;
+            $at = $row[$dateKey] ?? null;
+            if (!$at instanceof \DateTimeImmutable) {
+                continue;
+            }
+            $times[$a === $userId ? $b : $a][] = $at;
+        }
+
+        return $times;
+    }
+
+    /**
      * @param list<array{a: int|string, b: int|string}> $rows
      *
      * @return array<string, int>

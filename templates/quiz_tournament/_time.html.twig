@@ -1,0 +1,11 @@
+{# Durations as the tournament screens write them (H-defis, H-salle): « 18 h », « 21 h 14 »,
+   « 12 min ». `seconds` is what is left (or what has passed); never below one minute. #}
+{% macro short(seconds) %}{% apply spaceless %}
+    {% set s = max(seconds, 0) %}
+    {% if s >= 3600 %}{{ s // 3600 }} h{% else %}{{ max(s // 60, 1) }} min{% endif %}
+{% endapply %}{% endmacro %}
+
+{% macro long(seconds) %}{% apply spaceless %}
+    {% set s = max(seconds, 0) %}
+    {% if s >= 3600 %}{{ s // 3600 }} h {{ '%02d'|format((s % 3600) // 60) }}{% else %}{{ max(s // 60, 1) }} min{% endif %}
+{% endapply %}{% endmacro %}

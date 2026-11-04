@@ -1,0 +1,75 @@
+{# A duel's room (design/validated/quiz-tournament.md §4.3, mockup H-salle): the two players and their
+   « Prêt », the time the room has left, the duel's rules, « Je suis prêt » / the waiting state, and
+   « Quitter la salle ». quiz_tournament_room_controller.js beats every 20 s while ready, says when
+   the page is left, follows the other player over Mercure, and goes to the duel - after the « C'est
+   parti dans 3 » - once it has started. #}
+{% extends 'quiz_tournament/_layout.html.twig' %}
+{% import 'quiz_tournament/_time.html.twig' as time %}
+
+{% block tournament_kicker %}<span class="qt-head__kicker">{{ tournament.name }}</span>{% endblock %}
+{% block tournament_heading %}{{ 'quizTournamentRoomHeading'|trans }}{% endblock %}
+
+{% block tournament_attributes -%}
+    data-controller="quiz-tournament-room"
+    data-quiz-tournament-room-ready-url-value="{{ path('app_quiz_tournament_room_ready', {id: tournament.id, challenge: room.id}) }}"
+    data-quiz-tournament-room-leave-url-value="{{ path('app_quiz_tournament_room_leave', {id: tournament.id, challenge: room.id}) }}"
+    data-quiz-tournament-room-state-url-value="{{ path('app_quiz_tournament_room_state', {id: tournament.id, challenge: room.id}) }}"
+    data-quiz-tournament-room-token-value="{{ csrf_token('quiz_tournament_room' ~ room.id) }}"
+    data-quiz-tournament-room-hub-url-value="{{ tournamentLive.url }}"
+    data-quiz-tournament-room-topic-value="{{ roomTopic }}"
+    data-quiz-tournament-room-me-value="{{ me.id }}"
+    data-quiz-tournament-room-state-value="{{ state|json_encode }}"
+    data-quiz-tournament-room-left-template-value="{{ 'quizTournamentRoomOpenFor'|trans({'%time%': '%time%'}) }}"
+    data-quiz-tournament-room-closed-text-value="{{ 'quizTournamentRoomClosedFlash'|trans }}"
+{%- endblock %}
+
+{% block tournament_body %}
+    {% set myName = me.displayName ?? me.username %}
+    {% set opponentFullName = opponent.displayName ?? opponent.username %}
+    <span class="qt-pill" data-quiz-tournament-room-target="timeLeft">{{ 'quizTournamentRoomOpenFor'|trans({'%time%': time.long(room.roomClosesAt.timestamp - 'now'|date('U'))}) }}</span>
+
+    <section class="qt-versus" aria-label="{{ 'quizTournamentRoomPlayersLabel'|trans }}">
+        <div class="qt-player qt-player--me{{ state.me ? ' is-ready' }}" data-quiz-tournament-room-target="meCard">
+            {{ include('quiz_tournament/_avatar.html.twig', {user: me, avatar: myLine ? myLine.avatar : {photo: null, drawn: null}, modifier: 'qt-avatar--player'}) }}
+            <span class="qt-person__text">
+                <span class="qt-player__name">{{ 'quizTournamentRoomYou'|trans({'%name%': myName}) }}</span>
+                <span class="qt-person__meta">{{ include('quiz_tournament/_player_meta.html.twig', {line: myLine, withRank: true}) }}</span>
+            </span>
+            <span class="qt-player__ready">{{ 'quizTournamentReadyBadge'|trans }}</span>
+        </div>
+
+        <span class="qt-versus__vs" aria-hidden="true">VS</span>
+
+        <div class="qt-player qt-player--opponent{{ state.opponent ? ' is-ready' }}" data-quiz-tournament-room-target="opponentCard">
+            {{ include('quiz_tournament/_avatar.html.twig', {user: opponent, avatar: opponentLine ? opponentLine.avatar : {photo: null, drawn: null}, modifier: 'qt-avatar--player'}) }}
+            <span class="qt-person__text">
+                <span class="qt-player__name">{{ opponentFullName }}</span>
+                <span class="qt-person__meta">{{ include('quiz_tournament/_player_meta.html.twig', {line: opponentLine, withRank: true}) }}</span>
+            </span>
+            <span class="qt-player__ready">{{ 'quizTournamentReadyBadge'|trans }}</span>
+            <span class="qt-player__absent">{{ 'quizTournamentNotThereYet'|trans }}</span>
+        </div>
+    </section>
+
+    <ul class="qt-reminders qt-reminders--paper" data-quiz-tournament-room-target="rules">
+        <li>{{ 'quizTournamentRoomRuleQuestions'|trans({'%count%': tournament.questionsPerDuel})|raw }}</li>
+        <li>{{ 'quizTournamentRoomRuleTime'|trans({'%seconds%': tournament.secondsPerQuestion, '%multi%': tournament.secondsPerMultiQuestion})|raw }}</li>
+        <li>{{ 'quizTournamentRoomRuleLeave'|trans }}</li>
+    </ul>
+
+    <div class="qt-countdown" data-quiz-tournament-room-target="countdown" hidden>
+        <span class="qt-countdown__head">{{ 'quizTournamentCountdownHeading'|trans }}</span>
+        <span class="qt-countdown__number" data-quiz-tournament-room-target="countdownNumber">3</span>
+    </div>
+
+    <p class="qt-sheet__refusal" role="alert" data-quiz-tournament-room-target="refusal" hidden></p>
+
+    <div class="qt-room-actions" data-quiz-tournament-room-target="actions">
+        <button type="button" class="qt-btn qt-btn--primary qt-btn--big" data-quiz-tournament-room-target="readyButton" data-action="quiz-tournament-room#ready"{{ state.me ? ' hidden' }}>{{ 'quizTournamentReadyAction'|trans }}</button>
+        <div class="qt-waiting" data-quiz-tournament-room-target="waiting"{{ state.me ? '' : ' hidden' }}>
+            <span class="qt-waiting__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+            {{ 'quizTournamentWaitingFor'|trans({'%name%': opponentName}) }}
+        </div>
+        <a class="qt-room-actions__leave" href="{{ path('app_quiz_tournament_challenges', {id: tournament.id}) }}" data-action="quiz-tournament-room#leave">{{ 'quizTournamentLeaveRoomAction'|trans }}</a>
+    </div>
+{% endblock %}

@@ -6,6 +6,8 @@
    A screen extends this and fills `tournament_body`; it may also set:
    - `activeTab` - 'standings', 'challenges' or 'duels' (templates/quiz_tournament/_tabbar.html.twig);
    - `tournamentCrumbs` - the levels after the tournament's name in the trail;
+   - `tournamentLive` - QuizTournamentLive::screen(): the « Défis » counter and its live link;
+   - the `tournament_attributes` block - attributes of the root (a screen's Stimulus controller);
    - the `tournament_kicker` / `tournament_heading` blocks - a screen other than the standings
      carries the tournament's name small and its own title big (H-defis). #}
 {% extends 'layout/app.html.twig' %}
@@ -35,7 +37,7 @@
 {% endblock %}
 
 {% block main %}
-    <div class="qt" data-tournament-palette="{{ tournament.palette.value }}">
+    <div class="qt" data-tournament-palette="{{ tournament.palette.value }}" {% block tournament_attributes %}{% endblock %}>
         <header class="qt-head">
             <div class="qt-head__titles">
                 {% block tournament_kicker %}{% endblock %}
@@ -46,6 +48,6 @@
         <div class="qt-body">
             {% block tournament_body %}{% endblock %}
         </div>
-        {% include 'quiz_tournament/_tabbar.html.twig' with {tournament: tournament, activeTab: activeTab|default('standings')} only %}
+        {% include 'quiz_tournament/_tabbar.html.twig' with {tournament: tournament, activeTab: activeTab|default('standings'), live: tournamentLive|default(null)} only %}
     </div>
 {% endblock %}

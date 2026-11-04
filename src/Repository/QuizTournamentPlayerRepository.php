@@ -27,6 +27,22 @@ class QuizTournamentPlayerRepository extends ServiceEntityRepository
     }
 
     /**
+     * The player's line, created (persisted, not flushed) the first time they take part - a
+     * challenge sent or accepted, a duel started (§9). Callers hold a lock that keeps two first
+     * gestures of one person from both creating it.
+     */
+    public function findOrCreate(QuizTournament $tournament, User $user): QuizTournamentPlayer
+    {
+        $player = $this->findOneFor($tournament, $user);
+        if (null === $player) {
+            $player = new QuizTournamentPlayer($tournament, $user);
+            $this->getEntityManager()->persist($player);
+        }
+
+        return $player;
+    }
+
+    /**
      * Every player of the tournament, keyed by user id, users loaded.
      *
      * @return array<int, QuizTournamentPlayer>

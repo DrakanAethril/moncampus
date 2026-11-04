@@ -133,6 +133,13 @@ class QuizTournamentFactsTest extends FunctionalTestCase
             static::getContainer()->get(QuizTournamentChallengeRepository::class)->ladderDeclinedChallengerIds($tournament, $now->modify('-14 days'), $now),
             'the expired ladder challenge holds the ladder rule for its challenger',
         );
+
+        // The standings read the same facts for every line at once: they must be the very same.
+        $access = static::getContainer()->get(QuizTournamentAccess::class);
+        foreach ([[$alice, $bruno], [$bruno, $alice]] as [$challenger, $challenged]) {
+            $byOpponent = $access->challengeFactsByOpponent($tournament, $challenger, [(int) $challenged->getId() => true], $now);
+            self::assertEquals($access->challengeFacts($tournament, $challenger, $challenged, $now), $byOpponent[(int) $challenged->getId()]);
+        }
     }
 
     public function testTheDuelFactsOfTheStandingsAndTheDraw(): void

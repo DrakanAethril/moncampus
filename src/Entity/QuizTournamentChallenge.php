@@ -116,13 +116,47 @@ class QuizTournamentChallenge
         return $this->status;
     }
 
-    /** The status at this moment: a pending row past its expiry is expired, a room past its end missed. */
+    /**
+     * The status at this moment: a pending row past its expiry is expired, a room past its end
+     * missed - and the tournament's end closes both, whatever is left of their 24 hours (§4.3).
+     */
     public function statusAt(\DateTimeImmutable $now): QuizTournamentChallengeStatus
     {
+        $ended = $this->tournament->hasEnded($now);
+
         return match (true) {
-            QuizTournamentChallengeStatus::Pending === $this->status && $now >= $this->expiresAt => QuizTournamentChallengeStatus::Expired,
-            QuizTournamentChallengeStatus::Accepted === $this->status && null !== $this->roomClosesAt && $now >= $this->roomClosesAt => QuizTournamentChallengeStatus::Missed,
+            QuizTournamentChallengeStatus::Pending === $this->status && ($ended || $now >= $this->expiresAt) => QuizTournamentChallengeStatus::Expired,
+            QuizTournamentChallengeStatus::Accepted === $this->status && ($ended || (null !== $this->roomClosesAt && $now >= $this->roomClosesAt)) => QuizTournamentChallengeStatus::Missed,
             default => $this->status,
+        };
+    }
+
+    /**
+     * Writes what statusAt() already reads - the lazy expiry of « Mes défis »: a row is rewritten
+     * when somebody touches it, no task needed. True when something changed.
+     */
+    public function settle(\DateTimeImmutable $now): bool
+    {
+        $status = $this->statusAt($now);
+        if ($status === $this->status) {
+            return false;
+        }
+
+        match ($status) {
+            QuizTournamentChallengeStatus::Expired => $this->expire(),
+            QuizTournamentChallengeStatus::Missed => $this->miss(),
+            default => null,
+        };
+
+        return true;
+    }
+
+    public function opponentOf(User $user): ?User
+    {
+        return match ($user) {
+            $this->challenger => $this->challenged,
+            $this->challenged => $this->challenger,
+            default => null,
         };
     }
 

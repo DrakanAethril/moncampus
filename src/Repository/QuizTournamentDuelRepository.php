@@ -70,6 +70,32 @@ class QuizTournamentDuelRepository extends ServiceEntityRepository
     }
 
     /**
+     * When this person met each other player in a **round** duel in [$from, $to) -
+     * roundEncounterTimes() for every line of the standings at once.
+     *
+     * @return array<int, list<\DateTimeImmutable>> other user id => times
+     */
+    public function roundEncounterTimesByOpponent(QuizTournament $tournament, User $user, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        /** @var list<array{a: int|string, b: int|string, startedAt: \DateTimeImmutable}> $rows */
+        $rows = $this->createQueryBuilder('d')
+            ->select('IDENTITY(d.playerA) AS a', 'IDENTITY(d.playerB) AS b', 'd.startedAt AS startedAt')
+            ->where('d.tournament = :tournament')
+            ->andWhere('d.origin = :round')
+            ->andWhere('d.playerA = :user OR d.playerB = :user')
+            ->andWhere('d.startedAt >= :from AND d.startedAt < :to')
+            ->setParameter('tournament', $tournament)
+            ->setParameter('round', QuizTournamentDuelOrigin::Round)
+            ->setParameter('user', $user)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->getQuery()
+            ->getArrayResult();
+
+        return QuizTournamentChallengeRepository::timesByOpponent($rows, (int) $user->getId(), 'startedAt');
+    }
+
+    /**
      * How many round duels each pair among these people played in [$from, $to), keyed
      * « smallerId-largerId » - added to QuizTournamentChallengeRepository::pairEncounterCounts().
      *

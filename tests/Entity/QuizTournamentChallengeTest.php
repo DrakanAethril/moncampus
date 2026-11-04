@@ -53,6 +53,43 @@ class QuizTournamentChallengeTest extends TestCase
         self::assertSame(QuizTournamentChallengeStatus::Missed, $challenge->statusAt(new \DateTimeImmutable('2026-11-22 09:00')));
     }
 
+    public function testTheTournamentsEndClosesPendingChallengesAndOpenRooms(): void
+    {
+        $tournament = new QuizTournament('Tournoi', new \DateTimeImmutable('2026-11-10'), new \DateTimeImmutable('2026-11-21 12:00'), QuizTournamentPalette::Lavender, new User('admin'));
+        $pending = new QuizTournamentChallenge($tournament, $this->alice, $this->bruno, false, new \DateTimeImmutable('2026-11-21 08:00'));
+        $room = (new QuizTournamentChallenge($tournament, $this->bruno, $this->alice, false, new \DateTimeImmutable('2026-11-21 07:00')))
+            ->accept(new \DateTimeImmutable('2026-11-21 09:00'));
+
+        self::assertTrue($pending->isPending(new \DateTimeImmutable('2026-11-21 11:59')));
+        self::assertSame(QuizTournamentChallengeStatus::Expired, $pending->statusAt(new \DateTimeImmutable('2026-11-21 12:00')));
+        self::assertTrue($room->isRoomOpen(new \DateTimeImmutable('2026-11-21 11:59')));
+        self::assertSame(QuizTournamentChallengeStatus::Missed, $room->statusAt(new \DateTimeImmutable('2026-11-21 12:00')));
+    }
+
+    public function testSettlingWritesWhatTheClockAlreadySays(): void
+    {
+        $challenge = $this->challenge('2026-11-20 14:00');
+
+        self::assertFalse($challenge->settle(new \DateTimeImmutable('2026-11-21 13:00')), 'still pending: nothing to write');
+        self::assertTrue($challenge->settle(new \DateTimeImmutable('2026-11-21 14:00')));
+        self::assertSame(QuizTournamentChallengeStatus::Expired, $challenge->getStatus());
+
+        $room = $this->challenge('2026-11-20 14:00')->accept(new \DateTimeImmutable('2026-11-20 15:00'));
+        $room->markReady($this->alice, new \DateTimeImmutable('2026-11-21 14:59:50'));
+        self::assertTrue($room->settle(new \DateTimeImmutable('2026-11-21 15:00')));
+        self::assertSame(QuizTournamentChallengeStatus::Missed, $room->getStatus());
+        self::assertFalse($room->isReady($this->alice, new \DateTimeImmutable('2026-11-21 15:00')), 'a missed room keeps nobody ready');
+    }
+
+    public function testTheOpponentAndTheReadinessAreReadFromEitherSide(): void
+    {
+        $challenge = $this->challenge('2026-11-20 14:00')->accept(new \DateTimeImmutable('2026-11-20 15:00'));
+
+        self::assertSame($this->bruno, $challenge->opponentOf($this->alice));
+        self::assertSame($this->alice, $challenge->opponentOf($this->bruno));
+        self::assertNull($challenge->opponentOf(new User('carla')));
+    }
+
     public function testTheDuelStartsWhenBothAreFreshlyReady(): void
     {
         $challenge = $this->challenge('2026-11-20 14:00')->accept(new \DateTimeImmutable('2026-11-20 15:00'));
