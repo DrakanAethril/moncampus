@@ -1,0 +1,5 @@
+{# How the duel screens write numbers: a score « 15,5 » or « 12 », a rating move « +12 » / « −8 »
+   (a true minus sign). #}
+{% macro score(value) %}{{ value|number_format(1, ',', '')|replace({',0': ''}) }}{% endmacro %}
+
+{% macro delta(value) %}{% if value > 0 %}+{{ value }}{% elseif value < 0 %}−{{ -value }}{% else %}±0{% endif %}{% endmacro %}

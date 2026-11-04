@@ -1,0 +1,15 @@
+{# Both scores of a finished duel (H-resultat): each player's face, score, and rating move - « Toi ·
+   1052 → 1064 », « Lucas · −12 ». Parameters: `report`, `opponentName`. #}
+{% import 'quiz_tournament/_duel_macros.html.twig' as fmt %}
+<section class="qt-sides" aria-label="{{ 'quizTournamentScoresLabel'|trans }}">
+    <div class="qt-side">
+        {{ include('quiz_tournament/_avatar.html.twig', {user: report.me.user, avatar: report.me.avatar, modifier: 'qt-avatar--card'}) }}
+        <span class="qt-side__score">{{ fmt.score(report.me.score) }}</span>
+        <span class="qt-side__meta">{{ 'quizTournamentSideMine'|trans({'%before%': report.me.before, '%after%': report.me.after}) }}</span>
+    </div>
+    <div class="qt-side">
+        {{ include('quiz_tournament/_avatar.html.twig', {user: report.them.user, avatar: report.them.avatar, modifier: 'qt-avatar--card'}) }}
+        <span class="qt-side__score">{{ fmt.score(report.them.score) }}</span>
+        <span class="qt-side__meta">{{ 'quizTournamentSideTheirs'|trans({'%name%': opponentName, '%delta%': fmt.delta(report.them.delta)|trim}) }}</span>
+    </div>
+</section>

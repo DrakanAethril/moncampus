@@ -1,0 +1,7 @@
+{# The head of the screens after a duel (H-resultat, H-defaite): the tournament's name, « Fin du
+   duel », the emblem. Parameter: `tournament`. #}
+<header class="qt-end-head">
+    <span class="qt-end-head__name">{{ tournament.name }}</span>
+    <span class="qt-end-head__what">{{ 'quizTournamentDuelResultHeading'|trans }}</span>
+    {% include 'quiz_tournament/_emblem.html.twig' with {tournament: tournament, size: 44} only %}
+</header>

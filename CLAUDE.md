@@ -90,6 +90,7 @@ asked — made the second run throw « A lock is already in place ».
 | `app:guest-accounts:prune` | **Maintenance à la demande, jamais planifiée.** Supprime les lignes `guest_account` dont la machine n'existe plus sur l'hyperviseur, ou dont le VMID a été repris depuis par un autre lot — Proxmox rend un numéro dès qu'une machine est détruite, et les lignes de l'ancienne occupante restent classées dessous (cette moitié-là se décide sur les seules données de la plateforme, sans rien demander à l'hyperviseur ; `App\Service\Proxmox\VmidHandover` la ferme à la source lors des créations suivantes). C'est l'état que /infrastructure ne montre pas : ces écrans lisent Proxmox à l'affichage, donc une machine détruite cesse d'y être listée, tandis que ses comptes restent — et « Mes machines virtuelles » est bâti sur ces comptes. Un hôte injoignable ne décide rien : ses comptes sont comptés à part et laissés tels quels. `--dry-run` nomme chaque ligne avant d'y toucher. Jamais planifiée : supprimer est une décision, pas un horaire |
 | `app:ecoledirecte:check` | **Diagnostic, not scheduled.** Runs the one step of an École Directe login that needs no account (the GTK cookie of `login.awp?gtk=1`) and says whether École Directe still answers it from this server. The platform holds no École Directe credentials and must not, so this is the most it can prove on its own |
 | `app:counters:recompute` | **Scheduled, once a night** (`docs/production.md`). Checks every stored counter of the platform (`App\Counter\RecomputableCounter`, one tagged service each) against its source and corrects the drifts - each correction logged at error level, so it reaches Discord: a drift is a bug, not a figure to patch. The counters move in real time with what changes them; this is the safety net. `--counter=`, `--dry-run` |
+| `app:quiz-tournament:close-duels` | **Scheduled every minute.** Finishes the tournament duels both players left: a duel runs on the server's clock whether anybody watches it, and the duel screen finishes it as soon as one player asks after its last question - but nobody asks when both are gone, and an unfinished duel refuses « Prêt » to both players in every tournament. Goes through `QuizTournamentDuelEngine::settle()`, the screens' own door (scores, ratings, exactly once). Also writes the challenges whose 24 h are over as expired / missed (two guarded UPDATEs: a room that starts its duel in the same second keeps « played »). Locked (`SharedLockableTrait`) |
 | `app:eco:read-terrain` | **Scheduled every minute.** Asks the IGN's Géoplateforme what e-CO's statistics read: the terrain analysis of the oldest parcours waiting for one (button « Analyser le terrain », last flag located, or a race on a parcours never analysed), then the terrain altitude / path / wood of every GPS fix of the oldest closed race not yet read. A Géoplateforme that does not answer is a *warning* and a retry next minute, never a non-zero exit. See `docs/production.md`, « e-CO and the IGN's Géoplateforme » |
 | `app:rncp:fetch` | **Scheduled every minute.** Serves the « Récupérer chez France compétences » requests of the portfolio's Référentiels tab: finds the day's `export-fiches-rncp-v4-1-*.zip` through the data.gouv.fr API (no URL written down), downloads it once into `var/rncp/`, streams through it (`XMLReader` over `zip://`) and writes the fiche into the `RncpImport`. Nothing requested, nothing downloaded. A network failure is « En échec » on screen, never a non-zero exit. `--file=` reads a local export |
 | `app:rncp:check` | **Scheduled Mondays 05:30.** Rereads each référentiel's RNCP fiche - still active, end of registration, a fiche that now replaces it - into `Referential::$rncpWatch`; the Référentiels screen turns a change into a banner, logged at *warning*. Never rewrites a référentiel: a new fiche is a new version |
@@ -251,7 +252,8 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   that timing is to *exonerate*: three seconds on a question is proof nobody had time to look it up.
 - **Tournois de quiz** — `QuizTournament*` entities, `src/Service/QuizTournament/`, spec
   `design/validated/quiz-tournament.md` (being built in lots; lot 1 the model and the rules, lot 2
-  the administration and the standings page, lot 3 the challenges, the room and the duel). Students reached by a **targeting** challenge each other to synchronous duels of 20
+  the administration and the standings page, lot 3 the challenges, the room, the duel and its
+  history). Students reached by a **targeting** challenge each other to synchronous duels of 20
   questions drawn from ordinary library quizzes; an Elo rating ranks them. `Feature::QuizTournaments`
   is off for every role; creating and opening is `ROLE_ADMIN` alone whatever the matrix says
   (`QuizTournamentVoter`, the only arbiter, facts from `QuizTournamentAccess`). Rules the code holds:
@@ -320,6 +322,30 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     room lock (LOCK_DSN) + the challenge row FOR UPDATE, an existing duel answered as is, then
     `shouldStart()` on fresh facts, the draw, the frozen questions (choices with local ids,
     `QuizTournamentDuelSnapshot`; images referenced, not copied), ladder flags and ratings before.
+  - **The duel is server-timed and lazy** (`QuizTournamentDuelEngine`, the one door: the screen's
+    state, an answer, `app:quiz-tournament:close-duels`). `QuizTournamentDuelClock` is the pure
+    timeline: the first question served `LEAD_SECONDS` after the duel's creation (the room's
+    countdown), each one closing at its deadline or as soon as **both** answered, the next served
+    `TRANSITION_SECONDS` later, the duel over two seconds after its last. Every request first stamps
+    the serves whose time has come - **at the computed moment, never the request's**, and only once
+    (`serve()`), so a reload restarts nothing and nobody's absence pauses anything - and finishes a
+    duel that is over: one transaction, the duel row FOR UPDATE, both players locked in id order,
+    `QuizTournamentElo::rate()`, `recordDuel()` on both, `finish()`; a finished duel is left as it
+    is. All under a LOCK_DSN lock per duel. Times are whole seconds, what the columns keep.
+  - **What a player learns during a duel**: the public state (same for both, published on the duel's
+    private topic) carries the question without its correction, who answered, right or wrong for
+    each once the question closed, the scores - never the right answer, never the other's pick; one's
+    own pick comes back only in the answer to one's own request (`mine`). Grading is
+    `QuizAnswerChecker` on the frozen choices (`QuizTournamentDuelGrader`): 0 or 1 a question - the
+    four duel formats are all-or-nothing on this platform, a QCM à réponses multiples included - no
+    penalty, an unanswered question 0.
+  - **After the duel** (`DuelController`): result or defeat (`QuizTournamentDuelReports`, rules in the
+    pure `QuizTournamentDuelReading` - the consolation reads the ratings *before* the duel, the errors
+    are grouped by the question's source quiz), the correction one question at a time behind links
+    (`?filter=errors`, `?theme=`, `?q=`), « Mes duels » with the rating line
+    (`QuizTournamentRatingChart`, server-drawn SVG, hover by Stimulus). **A duel is its two players'
+    alone** - teachers and administrators included get a 404 - and its result and correction exist
+    only once it is finished. A player who lost their eligibility keeps them.
 - **Sondages** — the same three-step shape as Quiz, and deliberately so: `SurveyTemplate` (library,
   `SurveyFolder`s) → `SurveyCampaign` (launched wave, carrying a frozen copy of the questions) →
   `SurveyResponse`. `SurveySeries` replays a campaign to compare waves. Two things freeze at launch

@@ -31,7 +31,12 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * - **a duel's room**, `/quiz-tournaments/{tournament}/rooms/{challenge}`, subscribed by the room's
  *   two players on the room's screen: `{"event": "ready", "ready": {"<user id>": bool, …}}` when
  *   somebody clicks « Prêt » or leaves, `{"event": "start", "url": …}` when the duel is created -
- *   both browsers then go to the duel.
+ *   both browsers then go to the duel;
+ * - **a duel**, `/quiz-tournaments/{tournament}/duels/{duel}`, subscribed by its two players on the
+ *   duel's screen: the duel's public state (QuizTournamentDuelEngine - the question in play, who has
+ *   answered, right or wrong for each once it closed, the scores), published whenever it moves -
+ *   an answer, a question served, the end. **Never an answer's content**: what a player picked is
+ *   only in the answers to their own requests.
  *
  * Publishing is a comfort, never a condition: a hub that does not answer is logged and the screens
  * catch up at their next request (the room's heartbeat answers the same state).
@@ -55,6 +60,11 @@ class QuizTournamentLive
     public function roomTopic(QuizTournamentChallenge $challenge): string
     {
         return \sprintf('/quiz-tournaments/%d/rooms/%d', (int) $challenge->getTournament()->getId(), (int) $challenge->getId());
+    }
+
+    public function duelTopic(QuizTournamentDuel $duel): string
+    {
+        return \sprintf('/quiz-tournaments/%d/duels/%d', (int) $duel->getTournament()->getId(), (int) $duel->getId());
     }
 
     /**
@@ -139,6 +149,12 @@ class QuizTournamentLive
     public function publishStart(QuizTournamentChallenge $challenge, QuizTournamentDuel $duel): void
     {
         $this->publish($this->roomTopic($challenge), ['event' => 'start', 'url' => $this->duelUrl($duel)]);
+    }
+
+    /** @param array<string, mixed> $state the duel's public state - nothing personal */
+    public function publishDuel(QuizTournamentDuel $duel, array $state): void
+    {
+        $this->publish($this->duelTopic($duel), $state);
     }
 
     public function duelUrl(QuizTournamentDuel $duel): string

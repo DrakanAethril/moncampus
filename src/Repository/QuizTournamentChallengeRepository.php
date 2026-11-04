@@ -135,23 +135,45 @@ class QuizTournamentChallengeRepository extends ServiceEntityRepository
     }
 
     /**
-     * Pending challenges whose 24 hours are over, and rooms whose 24 hours are over - what a task or
-     * the end of the tournament closes.
-     *
-     * @return list<QuizTournamentChallenge>
+     * Writes what QuizTournamentChallenge::statusAt() already reads: a pending challenge past its 24 h
+     * (or its tournament's end) is expired, an accepted one whose room is over is missed. Two guarded
+     * UPDATEs rather than loaded rows: a room that starts its duel in the same second keeps « played »
+     * (`duel IS NULL`), whatever this pass read before. Returns how many rows moved.
      */
-    public function findLapsed(\DateTimeImmutable $now): array
+    public function settleLapsed(\DateTimeImmutable $now): int
     {
-        /** @var list<QuizTournamentChallenge> $challenges */
-        $challenges = $this->createQueryBuilder('c')
-            ->where('(c.status = :pending AND c.expiresAt <= :now) OR (c.status = :accepted AND c.roomClosesAt <= :now)')
+        $ended = $this->getEntityManager()->createQueryBuilder()
+            ->select('t.id')
+            ->from(QuizTournament::class, 't')
+            ->where('t.endsAt <= :now')
+            ->getDQL();
+
+        $expired = $this->getEntityManager()->createQueryBuilder()
+            ->update(QuizTournamentChallenge::class, 'c')
+            ->set('c.status', ':expired')
+            ->where('c.status = :pending')
+            ->andWhere(\sprintf('c.expiresAt <= :now OR c.tournament IN (%s)', $ended))
+            ->setParameter('expired', QuizTournamentChallengeStatus::Expired)
             ->setParameter('pending', QuizTournamentChallengeStatus::Pending)
+            ->setParameter('now', $now)
+            ->getQuery()
+            ->execute();
+
+        $missed = $this->getEntityManager()->createQueryBuilder()
+            ->update(QuizTournamentChallenge::class, 'c')
+            ->set('c.status', ':missed')
+            ->set('c.challengerReadyAt', 'NULL')
+            ->set('c.challengedReadyAt', 'NULL')
+            ->where('c.status = :accepted')
+            ->andWhere('c.duel IS NULL')
+            ->andWhere(\sprintf('c.roomClosesAt <= :now OR c.tournament IN (%s)', $ended))
+            ->setParameter('missed', QuizTournamentChallengeStatus::Missed)
             ->setParameter('accepted', QuizTournamentChallengeStatus::Accepted)
             ->setParameter('now', $now)
             ->getQuery()
-            ->getResult();
+            ->execute();
 
-        return $challenges;
+        return $expired + $missed;
     }
 
     /**

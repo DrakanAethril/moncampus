@@ -264,6 +264,50 @@ class QuizTournamentDuelRepository extends ServiceEntityRepository
     }
 
     /**
+     * Every duel not finished yet, in any tournament - what app:quiz-tournament:close-duels reads
+     * (§5.2: a duel both players left runs out by itself).
+     *
+     * @return list<QuizTournamentDuel>
+     */
+    public function findUnfinished(): array
+    {
+        /** @var list<QuizTournamentDuel> $duels */
+        $duels = $this->createQueryBuilder('d')
+            ->where('d.endedAt IS NULL')
+            ->orderBy('d.startedAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $duels;
+    }
+
+    /**
+     * One player's finished duels in a tournament, oldest first, both players loaded - « Mes duels »,
+     * the rating line, and the duels a result counts before itself.
+     *
+     * @return list<QuizTournamentDuel>
+     */
+    public function findFinishedFor(QuizTournament $tournament, User $player): array
+    {
+        /** @var list<QuizTournamentDuel> $duels */
+        $duels = $this->createQueryBuilder('d')
+            ->addSelect('a', 'b')
+            ->innerJoin('d.playerA', 'a')
+            ->innerJoin('d.playerB', 'b')
+            ->where('d.tournament = :tournament')
+            ->andWhere('d.playerA = :player OR d.playerB = :player')
+            ->andWhere('d.endedAt IS NOT NULL')
+            ->setParameter('tournament', $tournament)
+            ->setParameter('player', $player)
+            ->orderBy('d.endedAt', 'ASC')
+            ->addOrderBy('d.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $duels;
+    }
+
+    /**
      * @return list<array{a: int|string, b: int|string, ladderA: bool|int|string, ladderB: bool|int|string}>
      */
     private function finishedRows(QuizTournament $tournament, \DateTimeImmutable $since, \DateTimeImmutable $until): array

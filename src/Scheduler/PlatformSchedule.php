@@ -62,6 +62,9 @@ final class PlatformSchedule implements ScheduleProviderInterface
         // e-CO: what the IGN says about a parcours and about a closed race, too slow for a request.
         'app:eco:read-terrain' => '* * * * *',
         'app:rncp:fetch' => '* * * * *',
+        // The quiz tournament's duels both players left: finished once their last question is
+        // over, since an unfinished duel refuses « Prêt » to both players everywhere.
+        'app:quiz-tournament:close-duels' => '* * * * *',
         // The hypervisors' badges and the address ranges, refreshed off the page render. Offset
         // from each other so the two never start in the same minute.
         'app:proxmox:check' => '*/5 * * * *',
