@@ -1,0 +1,37 @@
+{# One serious game as a card: its thumbnail (the manifest's), its title, pitch and tags, the units
+   lit, and the « Jouer » that launches it full screen (sg-launch, which the caller's element carries).
+   Shared by the catalogue (/serious-games, whose filters read the data-* attributes) and the
+   student's « Jouer » page (design/validated/quiz-tournament.md §15). Parameter: `card` (a
+   SeriousGameShelf card). #}
+{% set game = card.game %}
+{% set thumb = card.thumbnail %}
+<article class="cm-sg-card {{ card.desktopOnly ? 'cm-sg-card--desktop' }}" data-sg-catalog-target="card"
+         data-subjects="{{ game.subjects|json_encode }}" data-levels="{{ game.levels|json_encode }}"
+         data-status="{{ card.status }}" data-text="{{ (game.title ~ ' ' ~ game.pitch)|lower }}">
+    <a class="cm-sg-card__visual" data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}"
+       style="background: {{ thumb.background|default('#1B2550') }}; color: {{ thumb.color|default('#D9A441') }}; font-family: {{ thumb.font|default('Georgia, serif') }}; font-style: {{ thumb.style|default('normal') }}; font-weight: {{ thumb.weight|default(600) }};">
+        <span class="cm-sg-card__title-art">{{ game.title }}</span>
+        {% if not game.published %}<span class="cm-sg-card__flag">{{ 'seriousGameUnpublishedLabel'|trans }}</span>{% endif %}
+        {% if card.trophy %}
+            <span class="cm-sg-card__medal cm-sg-card__medal--{{ card.trophy.finish ? card.trophy.finish.value : 'brass' }}" title="{{ card.trophy.label }}">✦</span>
+        {% endif %}
+    </a>
+    <div class="cm-sg-card__body">
+        <h2 class="cm-sg-card__title"><a data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ game.title }}</a></h2>
+        <p class="cm-sg-card__pitch">{{ game.pitch }}</p>
+        <div class="cm-sg-card__tags">
+            {% for subject in game.subjects %}<span class="cm-sg-tag cm-sg-tag--subject">{{ subject }}</span>{% endfor %}
+            {% for level in game.levels %}<span class="cm-sg-tag">{{ level }}</span>{% endfor %}
+        </div>
+        {% if card.desktopOnly %}<p class="cm-sg-card__desktop">{{ 'seriousGameDesktopOnly'|trans }}</p>{% endif %}
+        <div class="cm-sg-card__foot">
+            <div class="cm-sg-card__progress">
+                {% if card.value > 0 %}
+                    <span class="cm-sg-bar"><span class="cm-sg-bar__fill cm-sg-bar__fill--{{ card.status }}" style="width: {{ (100 * card.value / card.total)|round }}%"></span></span>
+                    <span class="cm-sg-card__value">{{ card.value }}/{{ card.total }} {{ game.unitLabel }}</span>
+                {% endif %}
+            </div>
+            <a class="cm-sg-card__cta" data-action="sg-launch#enter" href="{{ path('app_serious_games_play', {slug: game.slug}) }}">{{ ('seriousGameCta' ~ card.status|capitalize)|trans }}</a>
+        </div>
+    </div>
+</article>
