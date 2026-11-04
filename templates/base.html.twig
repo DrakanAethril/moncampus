@@ -18,7 +18,31 @@
            since Gotenberg renders a standalone HTML string with no browser origin and these
            asset() URLs are otherwise root-relative. #}
         <link rel="icon" href="{{ assetBaseUrl|default('') }}{{ asset('images/favicon-32x32.png') }}" sizes="32x32">
-        <link rel="apple-touch-icon" href="{{ assetBaseUrl|default('') }}{{ asset('images/apple-touch-icon.png') }}">
+        {# Formatool installable as an app, « beaup-app » (design/validated/quiz-tournament.md, §13): the manifest and
+           the icons live at stable addresses under public/, outside AssetMapper, because an installed
+           app keeps the manifest URL it was installed from - a content hash would orphan it at the
+           next deploy. No service worker: no browser this platform targets asks for one any more,
+           and the app has nothing to cache (see App\Controller\InstallController). The icon is
+           beaup-app's own mark (public/beaup-app/icon.svg), never an emblem of the Institution,
+           which the licence excludes (NOTICE).
+
+           A page installable as something else (the e-CO GPS probe) replaces this block whole: two
+           manifest links on one page and the browser takes the first. #}
+        {% block web_app_meta %}
+            <link rel="manifest" href="/manifest.webmanifest">
+            {# The app bar's colour (--cm-topbar-bg), light or dark: an installed app's title bar and
+               Android's status bar take it, and should continue the bar rather than cut it. #}
+            <meta name="theme-color" content="{{ (app.user ? app.user.themePreference : app.request.cookies.get('theme')) == 'dark' ? '#0d2438' : '#12344d' }}">
+            <meta name="mobile-web-app-capable" content="yes">
+            {# Safari before iOS 16.4 ignores the manifest and reads these when somebody adds the page
+               to their home screen - without the first it opens in a Safari tab. « default »
+               keeps the status bar out of the page - « black-translucent » would draw the app's
+               bar under the clock. #}
+            <meta name="apple-mobile-web-app-capable" content="yes">
+            <meta name="apple-mobile-web-app-title" content="beaup-app">
+            <meta name="apple-mobile-web-app-status-bar-style" content="default">
+            <link rel="apple-touch-icon" sizes="180x180" href="{{ assetBaseUrl|default('') }}/beaup-app/apple-touch-icon.png">
+        {% endblock %}
 
         {% block stylesheets %}
             {# Source Sans 3 / Spectral are self-hosted (assets/styles/fonts.css, imported by

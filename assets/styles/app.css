@@ -2814,6 +2814,19 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     display: grid; place-items: center; font: 700 11px var(--cm-font-ui);
 }
 
+/* ---------- « Installer beaup-app » (templates/install/index.html.twig) ----------
+   The Ressources cards above, without QR nor download: the card that applies to this device is
+   marked by web_app_install_controller.js, and comes first on a phone. Its iPhone card's steps are
+   the install section with no rule above it - it is the whole card. */
+.cm-app-install .cm-app-card__install { border-top: 0; padding-top: 0; }
+.cm-app-install__icon { color: var(--cm-ink); flex: none; }
+.cm-app-install__text { margin: 0; font-size: 13px; line-height: 1.55; color: var(--cm-text); }
+.cm-app-install__status { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--cm-muted); }
+.cm-app-install__share { vertical-align: -3px; color: var(--cm-brand); }
+.cm-app-install .cm-btn:disabled { opacity: .5; cursor: not-allowed; }
+.cm-app-card.is-current { border-color: var(--cm-brand); box-shadow: 0 0 0 1px var(--cm-brand); }
+@media (max-width: 700px) { .cm-app-card.is-current { order: -1; } }
+
 /* ---- Concours live (Kahoot-style projector/player screens) - Turns 1q/1u/1h/1i/1j/1l -----------
    Deliberately hardcoded dark, independent of the app's light/dark theme toggle: these are meant
    to read as a projected classroom screen (or a full-bleed mobile game screen), same as the
@@ -2823,7 +2836,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     background: radial-gradient(1200px 800px at 50% -10%, #16436b 0%, #0d2438 62%);
     font-family: var(--cm-font-ui);
 }
-.cm-quiz-live--mobile { padding: 20px 18px; min-height: 100dvh; }
+/* Formatool installed on an iPhone runs this screen edge to edge (viewport-fit=cover in
+   base.html.twig): the answers must stay clear of the home indicator, and of the notch in landscape. */
+.cm-quiz-live--mobile {
+    padding: 20px max(18px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+    min-height: 100dvh;
+}
 /* Bootstrap's `.d-flex`/`.d-grid` utility classes carry `!important`, which otherwise beats the
    native `[hidden] { display: none }` UA rule (no !important) on the same element - the
    quiz_live_host_controller.js/quiz_live_play_controller.js phase-toggling relies on `hidden`

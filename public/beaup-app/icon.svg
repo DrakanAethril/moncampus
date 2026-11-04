@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>beaup-app</title>
+  <!-- beaup-app's own mark: a geometric B on the app bar's navy (--cm-navy), its upper bowl in the
+       platform gold (--cm-gold-strong). Project artwork under the AGPL - no emblem of the
+       Institution. This is the "any" icon: rounded corners, transparent outside. -->
+  <rect width="512" height="512" rx="112" fill="#12344d"/>
+  <g transform="translate(248 256)" fill="none" stroke-width="56">
+    <path d="M -70 -100 H 22 A 47 47 0 0 1 22 -6 H -70" stroke="#dbb35f"/>
+    <path d="M -70 -6 H 34 A 53 53 0 0 1 34 100 H -70" stroke="#ffffff"/>
+    <rect x="-100" y="-128" width="60" height="256" rx="8" fill="#ffffff" stroke="none"/>
+  </g>
+</svg>

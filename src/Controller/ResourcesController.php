@@ -33,14 +33,10 @@ class ResourcesController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function mobileApp(Request $request): Response
     {
-        // The PWA: the same Flutter app built for the browser, served from public/campus-app/ (the
-        // moncampus-mobile repo's tool/build_pwa.sh) - the way onto an iPhone while no IPA can be
-        // signed.
-        $webUrl = $request->getSchemeAndHttpHost().'/campus-app/';
-
+        // No web build of this app any more: the site itself is the installable app (« beaup-app »,
+        // App\Controller\InstallController), which the page links to - see the template.
         return $this->render('resources/application_mobile.html.twig', [
             'resourceApp' => $this->appViewData('moncampus', $request),
-            'webApp' => ['url' => $webUrl, 'qr' => $this->qrSvg($webUrl)],
         ]);
     }
 
