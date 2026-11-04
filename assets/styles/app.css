@@ -1870,6 +1870,9 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     border-left: 3px solid var(--cm-brand); border-radius: 0 8px 8px 0;
     padding: 11px 14px; font-size: 12.5px; color: var(--cm-blue-tx); line-height: 1.6;
 }
+/* `display: flex` above beats the `hidden` attribute, so a note a controller hides on purpose
+   (« déjà installée » on the install screen) showed anyway. */
+.cm-note[hidden] { display: none; }
 .cm-note__icon {
     flex: none; width: 18px; height: 18px; border-radius: 50%; margin-top: 2px;
     background: var(--cm-brand); color: #fff;
