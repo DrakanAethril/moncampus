@@ -751,7 +751,7 @@ h1, h2, h3, h4,
     display: grid; place-items: center; font-weight: 700; font-size: 13px;
     background-size: cover; background-position: center;
 }
-/* A student's serious-games avatar standing in for the photo (sg_avatar_controller.js, round off):
+/* A drawn avatar chosen on « Mon profil » as one's face (sg_avatar_controller.js, round off):
    the square frame clips the drawing, which brings its own background. */
 .cm-avatar-drawn { overflow: hidden; }
 .cm-avatar-drawn > svg { width: 100%; height: 100%; }
@@ -3671,6 +3671,34 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     background-size: cover; background-position: center;
 }
 .cm-profile-name { font: 600 18px var(--cm-font-title); color: var(--cm-ink); }
+
+/* « Mon avatar » (design/validated/quiz-tournament.md §16): the photo, the drawn avatar and the
+   initials side by side, the one shown framed in ink. Each keeps its own preview whichever is
+   chosen - switching deletes nothing. */
+.cm-avatar-card__options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.cm-avatar-card__option {
+    display: grid; justify-items: center; align-content: start; gap: 10px; padding: 18px 14px 16px;
+    border: 2px solid var(--cm-border-soft); border-radius: var(--cm-radius); background: var(--cm-surface);
+    text-align: center;
+}
+.cm-avatar-card__option.is-chosen { border-color: var(--cm-ink); background: var(--cm-surface-alt); }
+.cm-avatar-card__face {
+    width: 88px; height: 88px; border-radius: var(--cm-radius-sm); overflow: hidden;
+    display: grid; place-items: center; background-size: cover; background-position: center;
+}
+.cm-avatar-card__face.is-empty { border: 2px dashed var(--cm-border); color: var(--cm-muted); }
+.cm-avatar-card__face--initials { background: var(--cm-gold); color: var(--cm-navy); font: 700 30px var(--cm-font-title); }
+.cm-avatar-card__label { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; font-weight: 600; color: var(--cm-ink); }
+.cm-avatar-card__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.cm-avatar-card__actions form { margin: 0; }
+.cm-avatar-card__upload { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--cm-border-soft); }
+.cm-avatar-card__note { margin: 8px 0 0; font-size: 12.5px; color: var(--cm-muted); }
+@media (max-width: 640px) {
+    .cm-avatar-card__options { grid-template-columns: 1fr; }
+    .cm-avatar-card__option { grid-template-columns: 72px minmax(0, 1fr); justify-items: start; text-align: left; align-items: center; }
+    .cm-avatar-card__option .cm-avatar-card__face { width: 72px; height: 72px; grid-row: span 2; }
+    .cm-avatar-card__label, .cm-avatar-card__actions { justify-content: flex-start; }
+}
 
 /* ==========================================================================
    Messaging (design/design_handoff_messagerie) - three-pane inbox (folders / list / reading
@@ -13879,7 +13907,9 @@ dialog.cm-wall-panel::backdrop { background: rgba(18, 52, 77, .2); }
    The module's screens inside the Formatool shell. The games themselves draw their own world in
    their sandboxed frame (public/serious-games/{slug}/); nothing here reaches it. */
 
-/* --- The avatar editor (design/conception_serious_games/avatar.html) --- */
+/* --- The avatar editor (design/conception_serious_games/avatar.html) - since
+   design/validated/quiz-tournament.md §16 the creation tunnel of « Mon avatar », on the profile
+   (templates/profile/avatar_draw.html.twig); the class names kept their origin. --- */
 .cm-sg-ed { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 24px; align-items: start; }
 .cm-sg-ed__left { padding: 26px; display: grid; gap: 14px; justify-items: center; }
 .cm-sg-ed__preview { width: 220px; height: 220px; border-radius: 50%; overflow: hidden; }
@@ -14005,6 +14035,8 @@ dialog.cm-wall-panel::backdrop { background: rgba(18, 52, 77, .2); }
 body.cm-sg-immersive { overflow: hidden; }
 .cm-sg-host__bar { flex: none; display: flex; align-items: center; gap: 14px; min-height: 40px; padding: 4px 10px 4px 16px; background: #0B1026; border-bottom: 1px solid rgba(217, 164, 65, .35); color: #EDE6D6; }
 .cm-sg-host__title { font: italic 600 17px 'Cormorant Garamond', Georgia, serif; color: #D9A441; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cm-sg-host__avatar { flex: none; font: 600 13px var(--cm-font-ui); color: #F2CE7A; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.cm-sg-host__avatar:hover, .cm-sg-host__avatar:focus-visible { color: #fff; }
 .cm-sg-host__timer { margin-left: auto; display: inline-flex; align-items: baseline; gap: 8px; padding: 3px 12px; border: 1px solid rgba(217, 164, 65, .55); border-radius: 16px; font: 500 12px 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; color: #C9D3EA; }
 .cm-sg-host__timer b { font-size: 17px; font-weight: 600; letter-spacing: .02em; color: #F2CE7A; font-variant-numeric: tabular-nums; text-transform: none; }
 .cm-sg-host__timer.is-low { border-color: #E06C5F; }

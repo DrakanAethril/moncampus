@@ -27,6 +27,9 @@
          data-serious-game-host-minutes-left-label-value="{{ 'seriousGameMinutesLeft'|trans }}">
         <div class="cm-sg-host__bar">
             <span class="cm-sg-host__title">{{ game.title }}</span>
+            {% if not avatarDrawn %}
+                <a class="cm-sg-host__avatar" href="{{ path('app_profile_avatar_draw') }}">{{ 'seriousGameCreateAvatarAction'|trans }}</a>
+            {% endif %}
             <span class="cm-sg-host__timer" role="timer" data-serious-game-host-target="timer" hidden>
                 <span class="cm-sg-host__timer-label">{{ 'seriousGameTimeLeft'|trans }}</span>
                 <b data-serious-game-host-target="timerValue"></b>

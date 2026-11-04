@@ -271,6 +271,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            // « Mon avatar »'s creation tunnel: every account draws one, outside any feature
+            // (design/validated/quiz-tournament.md §16).
+            '/profile/avatar/draw' => 200,
             // The Claude connector is a door of its own: a browser session opens nothing there, whatever
             // the role - only an OAuth access token does (App\Security\McpAccessTokenAuthenticator).
             '/mcp' => 401,
@@ -476,6 +479,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            // « Mon avatar »'s creation tunnel: every account draws one, outside any feature
+            // (design/validated/quiz-tournament.md §16).
+            '/profile/avatar/draw' => 200,
             '/mcp' => 401,
             '/about' => 200,
             '/help' => 200,
@@ -672,6 +678,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            // « Mon avatar »'s creation tunnel: every account draws one, outside any feature
+            // (design/validated/quiz-tournament.md §16).
+            '/profile/avatar/draw' => 200,
             '/mcp' => 401,
             '/about' => 200,
             '/help' => 200,
@@ -838,6 +847,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            // « Mon avatar »'s creation tunnel: every account draws one, outside any feature
+            // (design/validated/quiz-tournament.md §16).
+            '/profile/avatar/draw' => 200,
             '/mcp' => 401,
             '/about' => 200,
             // Open to every account, and empty for anyone no article is addressed to: there is
@@ -1631,7 +1643,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $class = '/serious-games/results/'.$this->program->getId().'/observatoire';
         $studentCard = '/serious-games/results/student/'.$this->student->getId();
         $strangerCard = '/serious-games/results/student/'.$stranger->getId();
-        $own = ['/serious-games' => 200, '/serious-games/avatar' => 200, '/serious-games/me' => 200, '/serious-games/play/observatoire' => 200];
+        $own = ['/serious-games' => 200, '/serious-games/me' => 200, '/serious-games/play/observatoire' => 200];
 
         $this->assertScreens($this->student, $own + ['/play' => 200, '/serious-games/play/nope' => 404, '/serious-games/results' => 404, $class => 404, $strangerCard => 404]);
         $this->assertScreens($this->teacher, $own + ['/play' => 404, '/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 404]);
@@ -1640,6 +1652,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($staff, ['/serious-games' => 404, '/serious-games/results' => 200, $class => 404, $studentCard => 404, '/settings/serious-games' => 404, $targeting => 404]);
         $this->assertScreens($stranger, ['/play' => 404, '/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
         $this->assertScreens($this->tutor, array_fill_keys(array_keys($own), 404) + ['/play' => 404, '/serious-games/results' => 404, $class => 404, $studentCard => 404]);
+        // The editor moved to « Mon profil » (design/validated/quiz-tournament.md §16): its old
+        // address sends everybody there, module lit or not.
+        foreach ([$this->student, $this->teacher, $this->tutor, $staff] as $user) {
+            $this->assertScreens($user, ['/serious-games/avatar' => 301]);
+        }
         $this->assertScreens($this->teacher, ['/settings/serious-games' => 403, $targeting => 403]);
         $this->assertScreens($this->student, [$targeting => 403]);
 

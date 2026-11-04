@@ -6,16 +6,20 @@ namespace App\SeriousGame\Avatar;
 
 use App\Entity\SeriousGameAvatar;
 use App\Entity\User;
+use App\Enum\AvatarChoice;
 use App\Repository\SeriousGameAvatarRepository;
 use App\Repository\SeriousGameRewardGrantRepository;
 use App\Service\SeriousGame\SeriousGameRules;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Reads and writes a person's avatar (design/validated/serious-games.md §7).
+ * Reads and writes a person's drawn avatar (design/validated/serious-games.md §7) - every account's,
+ * whatever the serious games module says: it is drawn on « Mon profil »
+ * (design/validated/quiz-tournament.md §16) and the games always draw it, the default one standing
+ * in for whoever never drew theirs.
  *
- * The server **refuses a pin the person has not obtained**; an adult has an avatar to play with and
- * never a pin - pins are collection pieces, and only students collect.
+ * The server **refuses a pin the person has not obtained**; an adult has an avatar and never a pin -
+ * pins are collection pieces, won in the games, and only students collect. Nothing is earned here.
  */
 final readonly class SeriousGameAvatars
 {
@@ -69,5 +73,27 @@ final readonly class SeriousGameAvatars
         $this->entityManager->flush();
 
         return $normalized;
+    }
+
+    /**
+     * The profile's « Enregistrer mon avatar »: the drawing is saved **and** becomes what stands
+     * for the person across Formatool, in the same flush. Wearing a pin from the player page saves
+     * the drawing too (save()) but chooses nothing - a student who shows their photo keeps it.
+     *
+     * @param array<array-key, mixed> $config
+     *
+     * @return array<string, mixed> what was stored
+     *
+     * @throws \DomainException when the config asks for a pin the person does not hold
+     */
+    public function draw(User $user, array $config): array
+    {
+        // Refused before the choice moves, so that a refused drawing leaves nothing to flush.
+        if (AvatarConfig::asksForAPinNotHeld($config, $this->heldPins($user))) {
+            throw new \DomainException('seriousGameAvatarPinNotHeld');
+        }
+        $user->setAvatarChoice(AvatarChoice::Drawn);
+
+        return $this->save($user, $config);
     }
 }

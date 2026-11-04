@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\AvatarChoice;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -187,6 +188,12 @@ class User implements UserInterface
     // keeps the bucket/CloudFront domain changeable without a data migration.
     #[ORM\Column(name: 'avatar_key', length: 255, nullable: true)]
     private ?string $avatarKey = null;
+
+    // What stands for this person wherever Formatool draws a face (design/validated/
+    // quiz-tournament.md §16): the photo above, the avatar drawn on « Mon profil »
+    // (App\Entity\SeriousGameAvatar), or - null - the initials. Choosing deletes neither.
+    #[ORM\Column(name: 'avatar_choice', length: 10, nullable: true, enumType: AvatarChoice::class)]
+    private ?AvatarChoice $avatarChoice = null;
 
     // Whether an internal message received by this user (App\Controller\MessageController) also
     // gets forwarded to their $contactEmail, provided it's verified - see
@@ -601,6 +608,18 @@ class User implements UserInterface
     public function setAvatarKey(?string $avatarKey): static
     {
         $this->avatarKey = $avatarKey;
+
+        return $this;
+    }
+
+    public function getAvatarChoice(): ?AvatarChoice
+    {
+        return $this->avatarChoice;
+    }
+
+    public function setAvatarChoice(?AvatarChoice $avatarChoice): static
+    {
+        $this->avatarChoice = $avatarChoice;
 
         return $this;
     }

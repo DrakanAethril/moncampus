@@ -582,8 +582,8 @@ class QuizLiveSessionService
     }
 
     /**
-     * The faces the projector draws beside the participants: their photo, else the avatar they drew
-     * in the serious games (App\Service\UserAvatars), else nothing - the screen then writes the
+     * The faces the projector draws beside the participants: the one each chose on « Mon profil » -
+     * photo or drawn avatar (App\Service\UserAvatars) - else nothing: the screen then writes the
      * pseudonym's initial. One query for the whole room.
      *
      * @param list<QuizLiveParticipant> $participants

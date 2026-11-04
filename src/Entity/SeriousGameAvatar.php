@@ -9,10 +9,12 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * A person's avatar in the serious games (design/validated/serious-games.md §7). Outside them, a
- * student's avatar stands in for the photo they did not upload - the main bar, « Mon profil », the
- * live quiz's projector (App\Service\UserAvatars); a photo always wins, and an adult keeps the
- * photo and the initials.
+ * A person's drawn avatar, every account's (design/validated/serious-games.md §7,
+ * design/validated/quiz-tournament.md §16). Born in the serious games, it is drawn since on
+ * « Mon profil » (App\Controller\ProfileAvatarController), with no feature condition. The games
+ * always draw it; everywhere else it stands for the person when `User::$avatarChoice` says so
+ * (App\Service\UserAvatars) - the photo, when there is one, stays beside it. The entity and its
+ * table kept their serious-games name: renaming them would move every reference for no reader's gain.
  *
  * `$config` is the drawing's settings, version 2 (`start: 'a' | 'b'`, no gender stored), read and
  * completed by App\SeriousGame\Avatar\AvatarConfig. It is drawn by one JavaScript module shared by

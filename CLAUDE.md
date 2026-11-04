@@ -261,7 +261,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
 - **Tournois de quiz** — `QuizTournament*` entities, `src/Service/QuizTournament/`, spec
   `design/validated/quiz-tournament.md` (being built in lots; lot 1 the model and the rules, lot 2
   the administration and the standings page, lot 3 the challenges, the room, the duel and its
-  history, lot 4 the rounds in class, lot 6 « Jouer »). Students reached by a **targeting** challenge each other to synchronous duels of 20
+  history, lot 4 the rounds in class, lot 6 « Jouer », lot 8 the avatar moved to « Mon profil »). Students reached by a **targeting** challenge each other to synchronous duels of 20
   questions drawn from ordinary library quizzes; an Elo rating ranks them. `Feature::QuizTournaments`
   is off for every role; creating and opening is `ROLE_ADMIN` alone whatever the matrix says
   (`QuizTournamentVoter`, the only arbiter, facts from `QuizTournamentAccess`). Rules the code holds:
@@ -464,7 +464,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     covers the window otherwise) with a toggle, and shows **the time left** whenever a session
     carries a deadline, read against `serverTime`. The avatar and the reward
     drawings are one JavaScript module each, shared by the platform and the games
-    (`public/serious-games/shared/`); students only collect.
+    (`public/serious-games/shared/`); students only collect. **The avatar is drawn on « Mon profil »**
+    (see « Mon avatar »), never in the module: a game always draws the person's drawing, whatever
+    they show elsewhere, and the default one for whoever never drew one - the host bar, the
+    catalogue and the player page then offer « Créer mon avatar », a link to the profile. Wearing a
+    pin from the player page changes the drawing, never the choice.
   - **Two mechanics** (`SeriousGame::$mechanic`, the manifest's `mechanic`): the four games above are
     **series** of generated questions; Neko-Con is a **scenario** (`src/SeriousGame/Scenario/`,
     `SeriousGameScenarioPlay`, `ScenarioApiController`) - 39 hand-written tickets in
@@ -959,6 +963,20 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
   manifest made Chrome refuse installation, so it lists PNGs only. A page installable as something
   else replaces `base.html.twig`'s `web_app_meta` block whole (the e-CO GPS probe). The Ressources
   page of the mobile app links here instead of offering a web build.
+- **Mon avatar** (« Mon profil », `App\Controller\ProfileAvatarController`, every account, outside
+  the feature catalogue; design/validated/quiz-tournament.md §16) — what stands for a person wherever
+  Formatool draws a face is **their explicit choice**, `User::$avatarChoice` (`AvatarChoice`: `photo` |
+  `drawn`, null = initials), for every role alike. `App\Service\UserAvatars` is the one reading
+  (`decide()` is the rule on primitives; `of()` / `forUsers()` batched, memoised per request,
+  `ResetInterface`); templates ask `user_avatar(user)` and draw a square face with
+  `partials/_user_face.html.twig`. **Choosing deletes nothing**: the photo and the drawing both stay
+  and « Utiliser … » switches back; a choice with nothing behind it shows the initials and is refused
+  by the server. Sending a photo (`app_profile_avatar`) chooses it; saving a drawing in the creation
+  tunnel (`/profile/avatar/draw`, the serious games' editor moved here - `sg_avatar_editor_controller.js`
+  over `public/serious-games/shared/avatar.js`) chooses it (`SeriousGameAvatars::draw()`). The
+  drawing is still the `SeriousGameAvatar` row (name and table kept), with no feature condition; pins
+  are offered to whoever holds one and a pin not obtained is refused - nothing is earned in the
+  profile. `/serious-games/avatar` answers a 301 to the tunnel, for anybody.
 - **Aide** — `HelpSection`/`HelpArticle` (an article, a FAQ answer or a glossary term, one entity),
   reached from the profile menu only. Every entry names its audiences (`HelpAudience`:
   enseignant/administration/étudiant/tuteur) and `App\Service\HelpAccess` is the single place that
@@ -1031,7 +1049,7 @@ Prefer these over re-implementing:
   pill family (`cm-audio-pill`, `cm-wc-tag`, `cm-step`, Tabler's `bg-*-lt`) keep their own
   `badgeClass()`.
 - `Cm:*` Twig components — see "Design" below.
-- Twig helpers in `src/Twig/`: `is_staff`, `is_program_teacher`, `file_url`, `avatar_url`,
+- Twig helpers in `src/Twig/`: `is_staff`, `is_program_teacher`, `file_url`, `user_avatar`, `avatar_url`,
   `visibility_allows`, `structure_nav_*`, `student_nav_*`, `ufa_nav_*`, `unread_message_thread_count`.
 
 ### Test accounts / "zone de test"

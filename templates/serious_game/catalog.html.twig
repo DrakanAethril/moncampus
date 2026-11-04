@@ -26,9 +26,11 @@
         {% if is_granted('SERIOUS_GAME_READ_STATS') %}
             <a class="cm-sg-pill" href="{{ path('app_serious_games_stats') }}">{{ 'seriousGameStatsHeading'|trans }}</a>
         {% endif %}
-        <a class="cm-sg-pill" href="{{ path('app_serious_games_avatar') }}">
+        {# The avatar is drawn on « Mon profil » (design/validated/quiz-tournament.md §16): the pill
+           leads there, and the default avatar stands in until one is drawn. #}
+        <a class="cm-sg-pill" href="{{ path('app_profile_avatar_draw') }}">
             <span data-controller="sg-avatar" data-sg-avatar-config-value="{{ avatar_config|json_encode }}" data-sg-avatar-size-value="28"></span>
-            {{ 'seriousGameAvatarHeading'|trans }}
+            {{ (avatar_drawn ? 'seriousGameAvatarHeading' : 'seriousGameCreateAvatarAction')|trans }}
         </a>
     </div>
 {% endblock %}
