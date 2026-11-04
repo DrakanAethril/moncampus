@@ -6,8 +6,10 @@ namespace App\Entity;
 
 use App\Enum\QuestionType;
 use App\Enum\QuizTournamentPalette;
+use App\Enum\QuizTournamentStatus;
 use App\Repository\QuizTournamentRepository;
 use App\Service\QuizTournament\QuizTournamentEligibility;
+use App\Service\QuizTournament\QuizTournamentMonogram;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -164,6 +166,12 @@ class QuizTournament implements StructureTargetable
         return $this;
     }
 
+    /** What stands in for the logo when there is none (§10.1), drawn from the name. */
+    public function getMonogram(): string
+    {
+        return QuizTournamentMonogram::of($this->name);
+    }
+
     public function getLogoKey(): ?string
     {
         return $this->logoKey;
@@ -309,6 +317,11 @@ class QuizTournament implements StructureTargetable
     public function isInProgress(\DateTimeImmutable $now): bool
     {
         return QuizTournamentEligibility::isInProgress($this->isOpened(), $this->startsAt, $this->endsAt, $now);
+    }
+
+    public function statusAt(\DateTimeImmutable $now): QuizTournamentStatus
+    {
+        return QuizTournamentStatus::of($this->isOpened(), $this->startsAt, $this->endsAt, $now);
     }
 
     public function hasEnded(\DateTimeImmutable $now): bool

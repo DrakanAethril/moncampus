@@ -1,0 +1,50 @@
+{# The tournaments one may read (design/validated/quiz-tournament.md §10, screen 1): a student the
+   opened ones that reach them, a teacher those that target their classes, an administrator all of
+   them. Each card wears its tournament's palette and emblem and opens its standings. The « Jouer »
+   page of the student's menu (§15) comes with lot 6. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizTournamentsPageHeading'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/quiz_tournament.css') }}">
+{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'quizTournamentsBreadcrumbLabel'|trans, url: path('app_quiz_tournaments')},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'quizTournamentsPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% if rows is empty %}
+        <p class="cm-pf-empty">{{ 'quizTournamentsEmptyText'|trans }}</p>
+    {% else %}
+        <ul class="qt-cards">
+            {% for row in rows %}
+                {% set tournament = row.tournament %}
+                <li class="qt qt-card" data-tournament-palette="{{ tournament.palette.value }}">
+                    <a class="qt-card__link" href="{{ path('app_quiz_tournament_show', {id: tournament.id}) }}">
+                        <div class="qt-head">
+                            <div class="qt-head__titles"><span class="qt-head__title">{{ tournament.name }}</span></div>
+                            {% include 'quiz_tournament/_emblem.html.twig' with {tournament: tournament, size: 52} only %}
+                        </div>
+                        <div class="qt-card__body">
+                            {% if row.status.value == 'upcoming' %}
+                                <span class="qt-sticker qt-sticker--accent">{{ 'quizTournamentStartsSticker'|trans({'%date%': tournament.startsAt|date('d/m/Y'), '%time%': tournament.startsAt|date('H:i')}) }}</span>
+                            {% elseif row.status.value == 'ended' %}
+                                <span class="qt-sticker">{{ 'quizTournamentEndedSticker'|trans({'%date%': tournament.endsAt|date('d/m/Y')}) }}</span>
+                            {% elseif row.status.value == 'closed' %}
+                                <span class="qt-sticker qt-sticker--alert">{{ 'quizTournamentClosedSticker'|trans }}</span>
+                            {% else %}
+                                <span class="qt-sticker">{{ 'quizTournamentUntilSticker'|trans({'%date%': tournament.endsAt|date('d/m/Y')}) }}</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}

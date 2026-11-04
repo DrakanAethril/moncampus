@@ -1,0 +1,151 @@
+{# Creating or editing a quiz tournament (design/validated/quiz-tournament.md §3), Paramètres ›
+   Pédagogique › Tournois. After the first duel only the name, the end and the targeting are fields
+   (App\Form\QuizTournamentType `locked`); the rest is read here. #}
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = (tournament ? 'quizTournamentEditPageHeading' : 'quizTournamentNewPageHeading')|trans %}
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'pedagogiquePageHeading'|trans, url: path('app_settings_structure_school_years')},
+        {label: 'quizTournamentsTabLabel'|trans, url: path('app_settings_quiz_tournaments')},
+    ]|merge(tournament ? [{label: tournament.name, url: path('app_quiz_tournament_show', {id: tournament.id})}] : [])|merge([
+        {label: heading, url: app.request.requestUri},
+    ])}) }}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    {{ form_start(form, {attr: {class: 'cm-pf-page cm-qt-form', novalidate: 'novalidate'}}) }}
+        {% if locked %}
+            <div class="cm-pf-banner cm-pf-banner--warn">{{ 'quizTournamentLockedBanner'|trans }}</div>
+        {% endif %}
+        {{ form_errors(form) }}
+
+        <div class="cm-pf-card cm-pf-card--pad">
+            <twig:Cm:Subhead :title="'quizTournamentIdentitySubhead'|trans"/>
+            <div class="cm-pf-form">
+                <div class="cm-pf-field cm-pf-field--wide">{{ form_row(form.name) }}</div>
+                {% if form.startsAt is defined %}
+                    <div class="cm-pf-field">{{ form_row(form.startsAt) }}</div>
+                {% else %}
+                    <div class="cm-pf-field">
+                        <span class="cm-pf-label">{{ 'quizTournamentStartsAtFieldLabel'|trans }}</span>
+                        <span>{{ tournament.startsAt|date('d/m/Y H:i') }}</span>
+                    </div>
+                {% endif %}
+                <div class="cm-pf-field">{{ form_row(form.endsAt) }}</div>
+            </div>
+        </div>
+
+        <div class="cm-pf-card cm-pf-card--pad">
+            <twig:Cm:Subhead :title="'quizTournamentTargetsSubhead'|trans" :hint="'quizTournamentTargetsFieldHelp'|trans"/>
+            {{ form_errors(form.targets) }}
+            {{ form_widget(form.targets) }}
+        </div>
+
+        {% if form.sources is defined %}
+            <div class="cm-pf-card cm-pf-card--pad"
+                 data-controller="quiz-pool library-picker"
+                 data-quiz-pool-counts-value="{{ admittedByQuiz|json_encode(constant('JSON_FORCE_OBJECT')) }}"
+                 data-quiz-pool-prototype-value="{{ include('settings/quiz_tournament/_source_row.html.twig', {entry: form.sources.vars.prototype})|e('html_attr') }}">
+                <twig:Cm:Subhead :title="'quizTournamentSourcesSubhead'|trans" :hint="'quizTournamentSourcesHint'|trans"/>
+                <div class="cm-quizpool__rows" data-quiz-pool-target="rows">
+                    {% for entry in form.sources %}
+                        {{ include('settings/quiz_tournament/_source_row.html.twig', {entry: entry}) }}
+                    {% endfor %}
+                </div>
+                <div>
+                    <button type="button" class="cm-dashed-add" data-quiz-pool-target="addButton" data-action="quiz-pool#add">{{ 'quizTournamentAddSourceAction'|trans }}</button>
+                </div>
+                <p class="cm-pf-hint">{{ 'quizTournamentReserveLive'|trans({'%total%': '<strong data-quiz-pool-target="total">0</strong>'})|raw }}</p>
+                {% if reserve %}{{ include('settings/quiz_tournament/_reserve.html.twig', {reserve: reserve}) }}{% endif %}
+                {% if form.sources.vars.errors|length > 0 %}
+                    <div class="cm-pf-banner cm-pf-banner--danger">
+                        {% for error in form.sources.vars.errors %}<div>{{ error.message }}</div>{% endfor %}
+                    </div>
+                {% endif %}
+                {% do form.sources.setRendered %}
+                {% include '_library_picker.html.twig' with {
+                    tree: pickerTree,
+                    title: 'quizTournamentSourcePickerTitle'|trans,
+                    count_label: 'quizTournamentPlayableQuestionsUnit'|trans,
+                    empty_message: 'quizTournamentSourcePickerEmpty'|trans,
+                } %}
+            </div>
+
+            <div class="cm-pf-card cm-pf-card--pad">
+                <twig:Cm:Subhead :title="'quizTournamentDuelSubhead'|trans" :hint="'quizTournamentDuelHint'|trans"/>
+                <div class="cm-pf-form">
+                    <div class="cm-pf-field">{{ form_row(form.questionsPerDuel) }}</div>
+                    <div class="cm-pf-field">{{ form_row(form.maxTrueFalsePerDuel) }}</div>
+                    <div class="cm-pf-field">{{ form_row(form.secondsPerQuestion) }}</div>
+                    <div class="cm-pf-field">{{ form_row(form.secondsPerMultiQuestion) }}</div>
+                </div>
+            </div>
+
+            <div class="cm-pf-card cm-pf-card--pad">
+                <twig:Cm:Subhead :title="'quizTournamentLookSubhead'|trans" :hint="'quizTournamentLookHint'|trans"/>
+                <fieldset class="cm-qt-palettes">
+                    <legend class="cm-pf-label">{{ 'quizTournamentPaletteFieldLabel'|trans }}</legend>
+                    {% for palette in enum_cases('App\\Enum\\QuizTournamentPalette') %}
+                        {% set child = form.palette.children|filter(c => c.vars.value == palette.value)|first %}
+                        {% if child %}
+                            <label class="cm-qt-palette" for="{{ child.vars.id }}">
+                                <input type="radio" class="form-check-input" id="{{ child.vars.id }}" name="{{ child.vars.full_name }}" value="{{ child.vars.value }}"{{ child.vars.checked ? ' checked' }}>
+                                <span class="cm-qt-swatch cm-qt-swatch--lg" aria-hidden="true">{% for colour in palette.colors %}<i style="background: {{ colour }}"></i>{% endfor %}</span>
+                                <span>{{ palette.labelKey|trans }}</span>
+                            </label>
+                            {% do child.setRendered %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ form_errors(form.palette) }}
+                    {% do form.palette.setRendered %}
+                </fieldset>
+                {# The picker's parent type is HiddenType, whose row draws no label: label and help are
+                   written here. #}
+                <div class="cm-pf-field">
+                    <span class="cm-pf-label">{{ 'quizTournamentLogoFieldLabel'|trans }}</span>
+                    <span class="cm-pf-hint">{{ 'quizTournamentLogoFieldHelp'|trans }}</span>
+                    {{ form_errors(form.logo) }}
+                    {{ form_widget(form.logo) }}
+                </div>
+                {% if tournament and tournament.logoKey %}
+                    <div class="cm-qt-logo-now">
+                        <img src="{{ file_url(tournament.logoKey) }}" alt="" width="64" height="64">
+                        {% if form.removeLogo is defined %}{{ form_row(form.removeLogo) }}{% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        {% elseif tournament %}
+            <div class="cm-pf-card cm-pf-card--pad">
+                <twig:Cm:Subhead :title="'quizTournamentFrozenSubhead'|trans"/>
+                <dl class="cm-qt-frozen">
+                    <dt>{{ 'quizTournamentSourcesSubhead'|trans }}</dt>
+                    <dd>{{ tournament.sources|map(q => q.name)|join(', ') }}</dd>
+                    <dt>{{ 'quizTournamentDuelSubhead'|trans }}</dt>
+                    <dd>{{ 'quizTournamentDuelSummary'|trans({'%questions%': tournament.questionsPerDuel, '%trueFalse%': tournament.maxTrueFalsePerDuel, '%seconds%': tournament.secondsPerQuestion, '%multiSeconds%': tournament.secondsPerMultiQuestion}) }}</dd>
+                    <dt>{{ 'quizTournamentPaletteFieldLabel'|trans }}</dt>
+                    <dd>{{ tournament.palette.labelKey|trans }}</dd>
+                </dl>
+                {% if reserve %}{{ include('settings/quiz_tournament/_reserve.html.twig', {reserve: reserve}) }}{% endif %}
+            </div>
+        {% endif %}
+
+        <twig:Cm:ActionBar>
+            <twig:Cm:Button variant="outline" href="{{ path('app_settings_quiz_tournaments') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+            <twig:Cm:Button variant="primary" type="submit">{{ 'submitSaveAction'|trans }}</twig:Cm:Button>
+        </twig:Cm:ActionBar>
+    {{ form_end(form) }}
+
+    {% if deletable %}
+        <form method="post" action="{{ path('app_settings_quiz_tournaments_delete', {id: tournament.id}) }}" class="cm-qt-delete">
+            <input type="hidden" name="_token" value="{{ csrf_token(deleteToken) }}">
+            <twig:Cm:Button variant="danger" size="sm" type="submit"
+                    data-controller="confirm-submit"
+                    data-confirm-submit-message-value="{{ 'quizTournamentDeleteConfirmText'|trans({'%name%': tournament.name}) }}"
+                    data-action="click->confirm-submit#confirm">{{ 'quizTournamentDeleteAction'|trans }}</twig:Cm:Button>
+        </form>
+    {% endif %}
+{% endblock %}

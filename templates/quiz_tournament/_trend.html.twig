@@ -1,0 +1,4 @@
+{# « L'écart de cote sur 14 jours » (§6.2): ▲ up, ▼ down, = nothing moved. Parameter: `delta`. #}
+{% if delta > 0 %}<span class="qt-trend--up" title="{{ 'quizTournamentTrendTitle'|trans }}">▲ {{ delta }}</span>
+{%- elseif delta < 0 %}<span class="qt-trend--down" title="{{ 'quizTournamentTrendTitle'|trans }}">▼ {{ -delta }}</span>
+{%- else %}<span title="{{ 'quizTournamentTrendTitle'|trans }}">= 0</span>{% endif %}

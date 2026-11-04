@@ -1,0 +1,82 @@
+{# The targeting field - App\Form\StructureTargetsType (design/validated/quiz-tournament.md §14): the
+   tree Section › filière › formation as checkboxes, several at every level, test formations apart.
+
+   The three choice fields of the type are not drawn by their own widgets: each box is placed in the
+   tree by the id it is named after (`choice_name`), and marked rendered here.
+   structure_targets_controller.js says « inclus » under a box an ancestor already covers; it never
+   ticks or unticks anything - what a targeting reaches is StructureTargetRule's business. #}
+{% block structure_targets_widget %}
+    {% set sections = form.targetSections %}
+    {% set tracks = form.targetTracks %}
+    {% set programs = form.targetPrograms %}
+    <div class="cm-targets" data-controller="structure-targets">
+        {% if tree is null or (tree.nodes is empty and tree.testPrograms is empty) %}
+            <p class="cm-targets__empty">{{ 'structureTargetsEmptyText'|trans }}</p>
+        {% else %}
+            <ul class="cm-targets__tree">
+                {% for node in tree.nodes %}
+                    {% set sectionBox = sections.children[node.section.id] ?? null %}
+                    <li class="cm-targets__node cm-targets__node--section">
+                        {% if sectionBox %}{{ include('form/_structure_target_box.html.twig', {child: sectionBox, label: node.section.name, meta: null, ancestors: [], kind: 'section'}) }}{% endif %}
+                        {% if node.tracks is not empty %}
+                            <ul class="cm-targets__tree cm-targets__tree--nested">
+                                {% for branch in node.tracks %}
+                                    {% set trackBox = tracks.children[branch.track.id] ?? null %}
+                                    <li class="cm-targets__node cm-targets__node--track">
+                                        {% if trackBox %}{{ include('form/_structure_target_box.html.twig', {child: trackBox, label: branch.track.name, meta: null, ancestors: sectionBox ? [sectionBox.vars.id] : [], kind: 'track'}) }}{% endif %}
+                                        {% if branch.programs is not empty %}
+                                            <ul class="cm-targets__programs">
+                                                {% for program in branch.programs %}
+                                                    {% set programBox = programs.children[program.id] ?? null %}
+                                                    {% if programBox %}
+                                                        <li class="cm-targets__node cm-targets__node--program">
+                                                            {{ include('form/_structure_target_box.html.twig', {
+                                                                child: programBox,
+                                                                label: program.shortName,
+                                                                meta: program.schoolYear ? program.schoolYear.startDate|date('Y') ~ '-' ~ program.schoolYear.endDate|date('Y') : null,
+                                                                ancestors: (sectionBox ? [sectionBox.vars.id] : [])|merge(trackBox ? [trackBox.vars.id] : []),
+                                                                kind: 'program',
+                                                            }) }}
+                                                        </li>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </ul>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+            {% if tree.testPrograms is not empty %}
+                <div class="cm-targets__test">
+                    <div class="cm-targets__test-title">{{ 'structureTargetsTestZoneHeading'|trans }}</div>
+                    <ul class="cm-targets__programs">
+                        {% for program in tree.testPrograms %}
+                            {% set programBox = programs.children[program.id] ?? null %}
+                            {% set track = program.cohort ? program.cohort.track : null %}
+                            {% set section = track ? track.section : null %}
+                            {% set sectionBox = section ? (sections.children[section.id] ?? null) : null %}
+                            {% set trackBox = track ? (tracks.children[track.id] ?? null) : null %}
+                            {% if programBox %}
+                                <li class="cm-targets__node cm-targets__node--program">
+                                    {{ include('form/_structure_target_box.html.twig', {
+                                        child: programBox,
+                                        label: program.shortName,
+                                        meta: [section ? section.name : null, track ? track.name : null]|filter(v => v is not null)|join(' › '),
+                                        ancestors: (sectionBox ? [sectionBox.vars.id] : [])|merge(trackBox ? [trackBox.vars.id] : []),
+                                        kind: 'program',
+                                    }) }}
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        {% endif %}
+        {% do sections.setRendered %}
+        {% do tracks.setRendered %}
+        {% do programs.setRendered %}
+    </div>
+{% endblock %}

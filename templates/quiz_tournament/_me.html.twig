@@ -1,0 +1,35 @@
+{# The reader's own card at the head of the standings (H-classement « Ta place »): their rank - or
+   their block when they are not ranked -, their rating, their activity over 14 days and the ladder
+   rule, what they still lack, and the starburst of their rating's move over 14 days. Parameter:
+   `line` (App\Service\QuizTournament\QuizTournamentStandingLine). #}
+{% set block = line.block.value %}
+<section class="qt-me" aria-label="{{ 'quizTournamentMyPlaceLabel'|trans }}">
+    {% if line.rank is not null %}
+        <span class="qt-me__rank">#{{ line.rank }}</span>
+    {% else %}
+        <span class="qt-me__rank qt-me__rank--block">{{ line.block.labelKey|trans }}</span>
+    {% endif %}
+    <span class="qt-me__text">
+        <span class="qt-me__who">{{ 'quizTournamentMyRating'|trans({'%name%': line.user.firstname ?? line.user.displayName ?? line.user.username, '%rating%': line.rating}) }}</span>
+        {% if block == 'not_played' %}
+            <span class="qt-me__missing">{{ 'quizTournamentMyFirstDuel'|trans }}</span>
+        {% elseif block == 'placement' %}
+            <span class="qt-me__state">{{ 'quizTournamentMyPlacement'|trans({'%count%': line.duels, '%needed%': constant('App\\Service\\QuizTournament\\QuizTournamentStanding::PLACEMENT_DUELS')}) }}</span>
+            <span class="qt-me__missing">{{ 'quizTournamentMissingPlacement'|trans({'%count%': line.missingPlacementDuels}) }}</span>
+        {% else %}
+            <span class="qt-me__state">
+                {{ 'quizTournamentMyActivity'|trans({'%count%': min(line.row.entry.recentDuels, constant('App\\Service\\QuizTournament\\QuizTournamentStanding::ACTIVITY_DUELS')), '%needed%': constant('App\\Service\\QuizTournament\\QuizTournamentStanding::ACTIVITY_DUELS')}) }}
+                · {{ (line.row.missingLadder ? 'quizTournamentMyLadderMissing' : 'quizTournamentMyLadderMet')|trans }}
+            </span>
+            {% if block == 'inactive' %}
+                <span class="qt-me__missing">{{ include('quiz_tournament/_missing.html.twig', {row: line.row}) }}</span>
+            {% endif %}
+        {% endif %}
+    </span>
+    {% if line.delta != 0 %}
+        <svg class="qt-me__burst" viewBox="0 0 64 64" role="img" aria-label="{{ 'quizTournamentMyTrendLabel'|trans({'%delta%': (line.delta > 0 ? '+' : '') ~ line.delta}) }}">
+            <path d="M32 2l6 12 13-6-2 14 14 3-10 10 10 10-14 3 2 14-13-6-6 12-6-12-13 6 2-14-14-3 10-10L1 25l14-3-2-14 13 6z"></path>
+            <text x="32" y="38" text-anchor="middle">{{ line.delta > 0 ? '+' }}{{ line.delta }}</text>
+        </svg>
+    {% endif %}
+</section>

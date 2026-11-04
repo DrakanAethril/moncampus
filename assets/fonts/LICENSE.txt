@@ -7,6 +7,10 @@ for headings. They replace the fonts.googleapis.com / fonts.gstatic.com <link> t
 templates/base.html.twig used to carry - see the header comment in assets/styles/fonts.css for
 why, and for which subsets were dropped.
 
+Archivo (v25, variable 500-800) and Archivo Black (v23), the `latin` and `latin-ext` subsets too, were
+added for the quiz tournaments' own screens (assets/styles/quiz_tournament.css, direction H « Pop »),
+from the same css2 API; both are SIL Open Font License 1.1 (Omnibus-Type).
+
 Provenance: downloaded from the Google Fonts css2 API (Source Sans 3 v19, Spectral v15), which is
 also what the removed <link> pointed at, so the rendering is byte-for-byte the same files the app
 was already serving to visitors.

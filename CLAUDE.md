@@ -250,8 +250,8 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   (`QuizAttemptAnswer::$servedAt`, stamped only if null, so F5 cannot reset the clock) — the point of
   that timing is to *exonerate*: three seconds on a question is proof nobody had time to look it up.
 - **Tournois de quiz** — `QuizTournament*` entities, `src/Service/QuizTournament/`, spec
-  `design/validated/quiz-tournament.md` (being built in lots; lot 1 is the model and the rules, no
-  screen yet). Students reached by a **targeting** challenge each other to synchronous duels of 20
+  `design/validated/quiz-tournament.md` (being built in lots; lot 1 the model and the rules, lot 2
+  the administration and the standings page). Students reached by a **targeting** challenge each other to synchronous duels of 20
   questions drawn from ordinary library quizzes; an Elo rating ranks them. `Feature::QuizTournaments`
   is off for every role; creating and opening is `ROLE_ADMIN` alone whatever the matrix says
   (`QuizTournamentVoter`, the only arbiter, facts from `QuizTournamentAccess`). Rules the code holds:
@@ -274,6 +274,31 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     attente » with `expiresAt > now` for the same reason.
   - A duel's questions are frozen through `QuizQuestionDefinitionTrait`, their choices a JSON snapshot
     in the order both players see; `servedAt` is stamped once.
+  - **Administration** is Paramètres › Pédagogique › « Tournois » (`App\Controller\Settings\QuizTournamentController`,
+    the tab shown to ROLE_ADMIN once the feature is lit): every tournament, opened or not; « Ouvrir » is
+    its own gesture (born closed). `QuizTournamentEditor` is the one door: the save-time reserve check
+    (`QuizTournamentReserve`, « N questions ignorées : apparier, ordre » and what is missing), and **after
+    the first duel only the name, the end and the targeting are fields** (`QuizTournamentType` `locked`
+    renders nothing else, so a forged POST moves nothing); deleting only before any duel. Sources come
+    from the creator's own quiz library, through the library picker rows of « Lancer un quiz ».
+  - **`StructureTargetsType`** is the one targeting field (`inherit_data`, writes `targetSections` /
+    `targetTracks` / `targetPrograms` onto an entity or an array): the active structure only
+    (`StructureTargetChoices`), test formations apart, what is already named kept even once
+    deactivated. Its boxes are placed in the tree by id (`templates/form/structure_targets.html.twig`);
+    it never ticks a child for the person.
+  - **The standings page** (`/tournaments/{id}`, `App\Controller\QuizTournament\TournamentController`)
+    reads `QuizTournamentStandingsAssembler` - players, eligible students (`reachedStudents()` +
+    ROLE_STUDENT), 14-day activity, ladder facts and rating trend, a fixed number of queries - and
+    **writes « la classe affichée » on the player as it shows it** (§2). Eligibility is read now even
+    for a tournament that is over.
+  - **The tournament's dress is its own stylesheet**, `assets/styles/quiz_tournament.css`, scoped under
+    `.qt[data-tournament-palette]` and loaded by the tournament screens alone (H « Pop », Archivo and
+    Archivo Black self-hosted in `assets/fonts/`); a palette is three custom properties whose values
+    `QuizTournamentPaletteStylesheetTest` pins against `QuizTournamentPalette::colors()`. Every H screen
+    extends `templates/quiz_tournament/_layout.html.twig` (trail, head with the emblem, tab bar). The
+    logo is data uploaded per tournament (`UploadPolicy::images()`, no SVG): the Tournoi RGPD's shield
+    is shipped ready to upload as `public/quiz-tournaments/logo-tournoi-rgpd.png` (its SVG source
+    beside it); without a logo, `QuizTournamentMonogram` draws one from the name.
 - **Sondages** — the same three-step shape as Quiz, and deliberately so: `SurveyTemplate` (library,
   `SurveyFolder`s) → `SurveyCampaign` (launched wave, carrying a frozen copy of the questions) →
   `SurveyResponse`. `SurveySeries` replays a campaign to compare waves. Two things freeze at launch

@@ -1,8 +1,9 @@
 twig:
     file_name_pattern: '*.twig'
-    # form/file_picker.html.twig after the Bootstrap layout, not instead of it: it defines one block,
-    # for App\Form\FilePickerType, and everything else keeps rendering as it does today.
-    form_themes: ['bootstrap_5_layout.html.twig', 'form/file_picker.html.twig']
+    # form/file_picker.html.twig and form/structure_targets.html.twig after the Bootstrap layout, not
+    # instead of it: each defines one block, for App\Form\FilePickerType and
+    # App\Form\StructureTargetsType, and everything else keeps rendering as it does today.
+    form_themes: ['bootstrap_5_layout.html.twig', 'form/file_picker.html.twig', 'form/structure_targets.html.twig']
     globals:
         matomo_url: '%env(MATOMO_URL)%'
         matomo_site_id: '%env(MATOMO_SITE_ID)%'

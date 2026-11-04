@@ -1,0 +1,7 @@
+{# What an inactive player lacks to be ranked again (§6.2): duels over 14 days, and/or a duel against
+   one of the five ranked players nearest their rating. Parameter: `row`
+   (App\Service\QuizTournament\QuizTournamentStandingRow). #}
+{%- set parts = [] -%}
+{%- if row.missingRecentDuels > 0 %}{% set parts = parts|merge(['quizTournamentMissingRecentDuels'|trans({'%count%': row.missingRecentDuels})]) %}{% endif -%}
+{%- if row.missingLadder %}{% set parts = parts|merge(['quizTournamentMissingLadder'|trans]) %}{% endif -%}
+{{- parts|join(' · ') -}}
