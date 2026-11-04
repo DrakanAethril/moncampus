@@ -1,0 +1,27 @@
+{# A round in class, projected (design/validated/quiz-tournament.md §8 and §10, mockup H-ronde): the
+   whole window, outside the app shell, a 16:9 stage in the tournament's dress readable from the
+   back of a room - registrations first (who is present on whom, « Annuler la ronde », « Clore et
+   apparier »), then the duels with their scores live. quiz_tournament_round_controller.js follows
+   the round's topic (QuizTournamentLive::roundTopic()) and draws the stage again
+   (_round_board.html.twig) when it moves. #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ tournament.name }} - {{ 'quizTournamentRoundHeading'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/quiz_tournament.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="qt qt-projector" data-tournament-palette="{{ tournament.palette.value }}"
+         data-controller="quiz-tournament-round"
+         data-quiz-tournament-round-board-url-value="{{ path('app_quiz_tournament_round_board', {id: tournament.id, round: round.id}) }}"
+         data-quiz-tournament-round-hub-url-value="{{ hubUrl }}"
+         data-quiz-tournament-round-topic-value="{{ topic }}"
+         data-quiz-tournament-round-question-template-value="{{ 'quizTournamentRoundDuelQuestion'|trans({'%number%': '%number%', '%total%': '%total%'}) }}">
+        <div class="qt-stage" data-quiz-tournament-round-target="stage">
+            {{ include('quiz_tournament/_round_board.html.twig') }}
+        </div>
+    </div>
+{% endblock %}

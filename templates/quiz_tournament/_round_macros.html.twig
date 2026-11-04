@@ -1,0 +1,35 @@
+{# How a round in class names its restriction (design/validated/quiz-tournament.md §8): « option
+   SISR », « groupe 2 (lot « TP réseau ») », or nothing for the whole class; and the scope the
+   projected screen counts in (« dans le groupe 2 »). A lot deleted since keeps its group's number. #}
+{% macro restriction(round) -%}
+    {%- if round.restrictedOption -%}
+        {{ 'quizTournamentRoundRestrictionOption'|trans({'%name%': round.restrictedOption.shortName}) }}
+    {%- elseif round.restrictedGroupIndex is not null -%}
+        {%- if round.restrictedGroupBatch -%}
+            {{ 'quizTournamentRoundRestrictionGroup'|trans({'%number%': round.restrictedGroupIndex + 1, '%lot%': round.restrictedGroupBatch.name}) }}
+        {%- else -%}
+            {{ 'quizTournamentRoundRestrictionGroupNoLot'|trans({'%number%': round.restrictedGroupIndex + 1}) }}
+        {%- endif -%}
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro scope(round) -%}
+    {%- if round.restrictedOption -%}
+        {{ 'quizTournamentRoundScopeOption'|trans({'%name%': round.restrictedOption.shortName}) }}
+    {%- elseif round.restrictedGroupIndex is not null -%}
+        {{ 'quizTournamentRoundScopeGroup'|trans({'%number%': round.restrictedGroupIndex + 1}) }}
+    {%- else -%}
+        {{ 'quizTournamentRoundScopeClass'|trans }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# « Classe · restriction », the line under a round's name. #}
+{% macro where(round) -%}
+    {%- set restriction = _self.restriction(round) -%}
+    {{ round.program.shortName }}{% if restriction is not empty %} · {{ restriction }}{% endif %}
+{%- endmacro %}
+
+{# A duel's score, whole when it is (a question is worth 0 or 1 today, §5.3). #}
+{% macro score(value) -%}
+    {{ value == value|round ? value|round|number_format(0, ',', ' ') : value|number_format(1, ',', ' ') }}
+{%- endmacro %}

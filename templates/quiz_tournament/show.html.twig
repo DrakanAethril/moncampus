@@ -1,7 +1,8 @@
 {# A tournament's page (design/validated/quiz-tournament.md §6.2 and §10, mockup H-classement): the
    reader's own card, the podium, then the four blocks of the standings - « Classement », « En
    placement », « Inactifs », « Pas encore joué » - each line with its « Défier », which opens the
-   H-defier sheet in the dialog at the foot (quiz_tournament_sheet_controller.js). #}
+   H-defier sheet in the dialog at the foot (quiz_tournament_sheet_controller.js). Above them, a
+   student's round card (« Rejoindre la ronde », §8) and a teacher's rounds (« Lancer une ronde »). #}
 {% extends 'quiz_tournament/_layout.html.twig' %}
 
 {% block tournament_attributes %}{% if canPlay %}data-controller="quiz-tournament-sheet"{% endif %}{% endblock %}
@@ -19,6 +20,11 @@
     {% else %}
         <p class="qt-sticker">{{ 'quizTournamentUntilSticker'|trans({'%date%': tournament.endsAt|date('d/m/Y')}) }}</p>
     {% endif %}
+
+    {% if is_granted('ROLE_STUDENT') %}
+        {{ include('quiz_tournament/_round_entry.html.twig', {tournament: tournament, entry: roundEntry, back: 'standings', live: tournamentLive}, with_context = false) }}
+    {% endif %}
+    {{ include('quiz_tournament/_round_teacher.html.twig', {tournament: tournament, canOpenRound: canOpenRound, teacherRounds: teacherRounds}, with_context = false) }}
 
     {% if readerLine %}
         {{ include('quiz_tournament/_me.html.twig', {line: readerLine}) }}

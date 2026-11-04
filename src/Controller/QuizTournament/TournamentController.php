@@ -10,11 +10,13 @@ use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\QuizTournamentChallengeRefusal;
 use App\Repository\QuizTournamentRepository;
+use App\Repository\QuizTournamentRoundRepository;
 use App\Security\Voter\QuizTournamentVoter;
 use App\Service\QuizTournament\QuizTournamentAccess;
 use App\Service\QuizTournament\QuizTournamentChallengeFacts;
 use App\Service\QuizTournament\QuizTournamentChallengeRules;
 use App\Service\QuizTournament\QuizTournamentLive;
+use App\Service\QuizTournament\QuizTournamentRounds;
 use App\Service\QuizTournament\QuizTournamentStandingsAssembler;
 use App\Service\QuizTournament\QuizTournamentStandingsView;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -34,6 +36,9 @@ use Symfony\Component\Routing\Attribute\Route;
 #[RequiresFeature(Feature::QuizTournaments)]
 class TournamentController extends AbstractController
 {
+    /** How far back the tournament page offers a teacher the rounds they opened, to project again. */
+    private const int TEACHER_ROUNDS_HOURS = 12;
+
     public function __construct(
         private readonly QuizTournamentRepository $tournaments,
         private readonly ClockInterface $clock,
@@ -59,8 +64,15 @@ class TournamentController extends AbstractController
     }
 
     #[Route(path: '/tournaments/{id}', name: 'app_quiz_tournament_show', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function show(int $id, Request $request, QuizTournamentStandingsAssembler $assembler, QuizTournamentAccess $access, QuizTournamentLive $live): Response
-    {
+    public function show(
+        int $id,
+        Request $request,
+        QuizTournamentStandingsAssembler $assembler,
+        QuizTournamentAccess $access,
+        QuizTournamentLive $live,
+        QuizTournamentRounds $rounds,
+        QuizTournamentRoundRepository $roundRepository,
+    ): Response {
         $tournament = $this->viewable($id);
         $now = $this->clock->now();
         $standings = $assembler->assemble($tournament, $now);
@@ -78,6 +90,12 @@ class TournamentController extends AbstractController
             'defyRefusals' => $canPlay ? $this->defyRefusals($tournament, $reader, $standings, $access, $now) : [],
             'tournamentLive' => $live->screen($request, $tournament, $reader, $now),
             'activeTab' => 'standings',
+            // §8: the round card of a student, the rounds of a teacher.
+            'roundEntry' => $rounds->entryFor($tournament, $reader, $now),
+            'canOpenRound' => $this->isGranted(QuizTournamentVoter::OPEN_ROUND, $tournament),
+            'teacherRounds' => $this->isGranted('ROLE_TEACHER')
+                ? $roundRepository->findRecentForTeacher($tournament, $reader, $now->modify(\sprintf('-%d hours', self::TEACHER_ROUNDS_HOURS)))
+                : [],
         ]);
     }
 

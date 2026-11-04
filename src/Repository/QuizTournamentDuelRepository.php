@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\QuizTournament;
 use App\Entity\QuizTournamentDuel;
 use App\Entity\QuizTournamentDuelQuestion;
+use App\Entity\QuizTournamentRound;
 use App\Entity\User;
 use App\Enum\QuizTournamentDuelOrigin;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -261,6 +262,59 @@ class QuizTournamentDuelRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
 
         return $duel;
+    }
+
+    /**
+     * Among these people, those playing a duel right now, in any tournament - the round's pairing
+     * skips them (« un seul duel à la fois », §4.3).
+     *
+     * @param list<int> $userIds
+     *
+     * @return list<int>
+     */
+    public function busyAmong(array $userIds): array
+    {
+        if ([] === $userIds) {
+            return [];
+        }
+
+        /** @var list<array{a: int|string, b: int|string}> $rows */
+        $rows = $this->createQueryBuilder('d')
+            ->select('IDENTITY(d.playerA) AS a', 'IDENTITY(d.playerB) AS b')
+            ->where('d.endedAt IS NULL')
+            ->andWhere('d.playerA IN (:ids) OR d.playerB IN (:ids)')
+            ->setParameter('ids', $userIds)
+            ->getQuery()
+            ->getArrayResult();
+
+        $busy = [];
+        foreach ($rows as $row) {
+            $busy[(int) $row['a']] = true;
+            $busy[(int) $row['b']] = true;
+        }
+
+        return array_values(array_filter($userIds, static fn (int $id): bool => isset($busy[$id])));
+    }
+
+    /**
+     * A round's duels, both players loaded, in the order they were made (by rating, §8).
+     *
+     * @return list<QuizTournamentDuel>
+     */
+    public function findForRound(QuizTournamentRound $round): array
+    {
+        /** @var list<QuizTournamentDuel> $duels */
+        $duels = $this->createQueryBuilder('d')
+            ->addSelect('a', 'b')
+            ->innerJoin('d.playerA', 'a')
+            ->innerJoin('d.playerB', 'b')
+            ->where('d.round = :round')
+            ->setParameter('round', $round)
+            ->orderBy('d.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $duels;
     }
 
     /**

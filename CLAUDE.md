@@ -253,7 +253,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
 - **Tournois de quiz** — `QuizTournament*` entities, `src/Service/QuizTournament/`, spec
   `design/validated/quiz-tournament.md` (being built in lots; lot 1 the model and the rules, lot 2
   the administration and the standings page, lot 3 the challenges, the room, the duel and its
-  history). Students reached by a **targeting** challenge each other to synchronous duels of 20
+  history, lot 4 the rounds in class). Students reached by a **targeting** challenge each other to synchronous duels of 20
   questions drawn from ordinary library quizzes; an Elo rating ranks them. `Feature::QuizTournaments`
   is off for every role; creating and opening is `ROLE_ADMIN` alone whatever the matrix says
   (`QuizTournamentVoter`, the only arbiter, facts from `QuizTournamentAccess`). Rules the code holds:
@@ -318,7 +318,8 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   - **The room** (`RoomController`, `QuizTournamentRooms`, `QuizTournamentRoomRules`): « Prêt » is a
     POST repeated every 20 s, lost after 45 s, cleared by a beacon when the page goes (`pagehide` *and*
     the Stimulus `disconnect`, a Turbo visit fires no pagehide); refused while either player has an
-    unfinished duel anywhere. **`QuizTournamentDuelStarter` is the only door to a challenge's duel**:
+    unfinished duel anywhere. **`QuizTournamentDuelStarter` is the only door to a challenge's duel**
+    (the duel itself is made by `QuizTournamentDuelFactory`, shared with the rounds):
     room lock (LOCK_DSN) + the challenge row FOR UPDATE, an existing duel answered as is, then
     `shouldStart()` on fresh facts, the draw, the frozen questions (choices with local ids,
     `QuizTournamentDuelSnapshot`; images referenced, not copied), ladder flags and ratings before.
@@ -346,6 +347,22 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     (`QuizTournamentRatingChart`, server-drawn SVG, hover by Stimulus). **A duel is its two players'
     alone** - teachers and administrators included get a 404 - and its result and correction exist
     only once it is finished. A player who lost their eligibility keeps them.
+  - **Rounds in class** (§8, `RoundController`, `QuizTournamentRounds`, rules in the pure
+    `QuizTournamentRoundRules`): a teacher of a targeted class (`OPEN_ROUND` for that class) opens
+    one, narrowed or not to **one** Option of the class or **one** group of a `GroupBatch` of that
+    class they own or were shared - **one open round per class at a time**. Expected = the class's
+    students still eligible ∩ the restriction, **read on the day** (a deleted lot expects nobody).
+    Students join from the tournament page or « Mes défis » (the card, `_round_entry.html.twig`),
+    then their page beats every 10 s (`QuizTournamentPlayer::$lastSeenAt`, absent after 30 s). No
+    timer: « Clore et apparier » pairs the entrants - participants still expected, present, able to
+    play, in no unfinished duel anywhere - with `QuizTournamentRoundPairing`, every duel with the
+    **same** start, origin Round; the odd one out is exempted (`recordRoundExemption()`). Students
+    are told on their own counter topic (`{"event": "round"}` / `{"event": "duel", "url"}`), never on
+    a shared one. « Annuler la ronde »; a round never expires. **The projected screen**
+    (`round.html.twig`, outside the app shell, a 16:9 stage sized in em so 1280 × 720 scales whole)
+    is its opener's alone (404 for anybody else, administrators included) and follows the round's
+    topic: roster changes, then a per-duel summary (scores, question - never a question's text)
+    that `QuizTournamentLive::publishDuel()` adds for a round duel; it draws no « Formatool ».
 - **Sondages** — the same three-step shape as Quiz, and deliberately so: `SurveyTemplate` (library,
   `SurveyFolder`s) → `SurveyCampaign` (launched wave, carrying a frozen copy of the questions) →
   `SurveyResponse`. `SurveySeries` replays a campaign to compare waves. Two things freeze at launch

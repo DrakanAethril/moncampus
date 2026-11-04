@@ -15,6 +15,8 @@
         <p class="qt-sticker">{{ 'quizTournamentChallengesEndedSticker'|trans }}</p>
     {% endif %}
 
+    {{ include('quiz_tournament/_round_entry.html.twig', {tournament: tournament, entry: roundEntry, back: 'challenges', live: tournamentLive}, with_context = false) }}
+
     {% if board.isEmpty %}
         <div class="qt-empty">
             <p class="qt-empty__text">{{ 'quizTournamentChallengesEmptyText'|trans }}</p>
