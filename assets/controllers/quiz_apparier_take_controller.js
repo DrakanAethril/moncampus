@@ -8,6 +8,11 @@ import { Controller } from '@hotwired/stimulus';
  * and needs no drag library. Clicking a slot that already holds an item takes that item back.
  * Associations are mirrored into hidden pairs[pairId] fields; the server re-validates both sides of
  * every association (ProgramQuizAttemptController::answer()).
+ *
+ * A right-hand column that repeats one label - a « classement » imported as Apparier, where seven
+ * items fall into two or three categories - would show the same chip seven times over. Identical
+ * text chips are drawn as one, carrying how many are left (« ×5 »): whichever of them is placed,
+ * the server grades the association by what the chip says, never by which copy it was.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
@@ -61,6 +66,7 @@ export default class extends Controller {
             chip.classList.toggle('is-used', usedChips.has(chip));
             chip.classList.toggle('is-selected', chip === this.activeChoice);
         });
+        this.groupIdenticalChips(usedChips);
 
         this.slotTargets.forEach((slot) => {
             const association = this.associations.get(slot.dataset.pairId);
@@ -87,5 +93,26 @@ export default class extends Controller {
                 .replace('%placed%', String(this.associations.size))
                 .replace('%total%', String(this.slotTargets.length));
         }
+    }
+
+    // One chip per label: the first copy not placed yet stands for all of them, with what is left.
+    groupIdenticalChips(usedChips) {
+        const groups = new Map();
+        this.choiceTargets.forEach((chip) => {
+            if (chip.querySelector('img')) return;
+            const label = chip.textContent.trim();
+            if (!groups.has(label)) groups.set(label, []);
+            groups.get(label).push(chip);
+        });
+
+        groups.forEach((chips) => {
+            const left = chips.filter((chip) => !usedChips.has(chip));
+            const shown = left.includes(this.activeChoice) ? this.activeChoice : (left[0] ?? chips[0]);
+            chips.forEach((chip) => {
+                chip.classList.toggle('is-duplicate', chips.length > 1 && chip !== shown);
+                if (chips.length > 1 && chip === shown && left.length > 1) chip.dataset.left = `×${left.length}`;
+                else delete chip.dataset.left;
+            });
+        });
     }
 }

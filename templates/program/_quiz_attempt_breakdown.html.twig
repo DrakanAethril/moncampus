@@ -22,7 +22,7 @@
                     {# A texte à trous *is* its statement: it gets replayed just below with the
                        student's words in place, so repeating it here with raw "..." markers would
                        print the same sentence twice. #}
-                    <span style="font:600 14.5px var(--cm-font-ui); color: var(--cm-ink);">
+                    <span class="cm-multiline" style="font:600 14.5px var(--cm-font-ui); color: var(--cm-ink);">
                         {%- if question.type.value == 'texte_a_trous' -%}
                             {{- question.type.labelKey|trans -}}
                         {%- elseif question.type.usesNumericConfig -%}
@@ -209,7 +209,7 @@
                     {% if question.explanation and not attemptAnswer.isCorrect %}
                         <div class="cm-note" style="margin: 10px 0 0 32px;">
                             <span class="cm-note__icon">i</span>
-                            <div><b>{{ 'programQuizExplanationLabel'|trans }}</b> {{ question.explanation }}</div>
+                            <div class="cm-multiline"><b>{{ 'programQuizExplanationLabel'|trans }}</b> {{ question.explanation }}</div>
                         </div>
                     {% endif %}
                 </div>

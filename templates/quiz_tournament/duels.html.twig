@@ -1,0 +1,80 @@
+{# « Mes duels » (design/validated/quiz-tournament.md §10, mockup H-mes-duels): a student's history in
+   this tournament - the totals (duels, V-N-D, best rating), the rating duel after duel (one line,
+   QuizTournamentRatingChart, hovered by quiz_tournament_rating_chart_controller.js; the list below
+   carries every value too), then the duels newest first, each opening its result. #}
+{% extends 'quiz_tournament/_layout.html.twig' %}
+{% import 'quiz_tournament/_duel_macros.html.twig' as fmt %}
+
+{% block tournament_kicker %}<span class="qt-head__kicker">{{ tournament.name }}</span>{% endblock %}
+{% block tournament_heading %}{{ 'quizTournamentMyDuelsHeading'|trans }}{% endblock %}
+
+{% block tournament_body %}
+    <section class="qt-totals" aria-label="{{ 'quizTournamentTotalsLabel'|trans }}">
+        <div class="qt-total"><span class="qt-total__value">{{ history.count }}</span><span class="qt-total__label">{{ 'quizTournamentTotalDuels'|trans({'%count%': history.count}) }}</span></div>
+        <div class="qt-total qt-total--accent"><span class="qt-total__value qt-total__value--record">{{ history.wins }}-{{ history.draws }}-{{ history.losses }}</span><span class="qt-total__label">{{ 'quizTournamentTotalRecord'|trans }}</span></div>
+        <div class="qt-total"><span class="qt-total__value">{{ history.line.best }}</span><span class="qt-total__label">{{ 'quizTournamentTotalBest'|trans }}</span></div>
+    </section>
+
+    {% if history.count == 0 %}
+        <div class="qt-empty">
+            <p class="qt-empty__text">{{ 'quizTournamentMyDuelsEmpty'|trans }}</p>
+            <a class="qt-empty__link" href="{{ path('app_quiz_tournament_show', {id: tournament.id}) }}">{{ 'quizTournamentChallengesEmptyAction'|trans }}</a>
+        </div>
+    {% else %}
+        {% set chart = history.chart %}
+        {% set last = chart.points|last %}
+        <section class="qt-chart" aria-labelledby="qt-chart-title" data-controller="quiz-tournament-rating-chart">
+            <div class="qt-chart__head">
+                <h2 class="qt-chart__title" id="qt-chart-title">{{ 'quizTournamentChartHeading'|trans }}</h2>
+                <span class="qt-chart__since">{{ 'quizTournamentChartSinceStart'|trans({'%delta%': fmt.delta(history.line.sinceStart)|trim}) }}</span>
+            </div>
+            <div class="qt-chart__frame">
+                <svg class="qt-chart__svg" viewBox="0 0 {{ constant('App\\Service\\QuizTournament\\QuizTournamentRatingChart::WIDTH') }} {{ constant('App\\Service\\QuizTournament\\QuizTournamentRatingChart::HEIGHT') }}" role="img"
+                     aria-label="{{ 'quizTournamentChartLabel'|trans({'%count%': history.count, '%last%': last.rating, '%best%': history.line.best}) }}"
+                     data-quiz-tournament-rating-chart-target="svg" data-action="pointermove->quiz-tournament-rating-chart#move pointerleave->quiz-tournament-rating-chart#leave">
+                    {% set left = constant('App\\Service\\QuizTournament\\QuizTournamentRatingChart::LEFT') %}
+                    {% set right = constant('App\\Service\\QuizTournament\\QuizTournamentRatingChart::RIGHT') %}
+                    {% set bottom = constant('App\\Service\\QuizTournament\\QuizTournamentRatingChart::BOTTOM') %}
+                    {% for line in chart.grid %}
+                        <line class="qt-chart__grid" x1="{{ left }}" y1="{{ line.y }}" x2="{{ right }}" y2="{{ line.y }}"></line>
+                        <text class="qt-chart__tick" x="{{ left - 6 }}" y="{{ line.y + 4 }}" text-anchor="end">{{ line.value }}</text>
+                    {% endfor %}
+                    <text class="qt-chart__tick" x="{{ left }}" y="{{ bottom + 20 }}">{{ 'quizTournamentChartStart'|trans }}</text>
+                    <text class="qt-chart__tick" x="{{ right }}" y="{{ bottom + 20 }}" text-anchor="end">{{ 'quizTournamentChartDuel'|trans({'%count%': history.count}) }}</text>
+                    <line class="qt-chart__cross" data-quiz-tournament-rating-chart-target="cross" x1="0" y1="{{ constant('App\\Service\\QuizTournament\\QuizTournamentRatingChart::TOP') }}" x2="0" y2="{{ bottom }}" hidden></line>
+                    <polyline class="qt-chart__line" points="{{ chart.polyline }}"></polyline>
+                    {% for point in chart.points %}
+                        <circle class="qt-chart__point{{ loop.last ? ' qt-chart__point--last' }}" data-quiz-tournament-rating-chart-target="point"
+                                data-x="{{ point.x }}" data-y="{{ point.y }}" data-rating="{{ point.rating }}"
+                                data-label="{{ point.duel == 0 ? 'quizTournamentChartStart'|trans : 'quizTournamentChartDuel'|trans({'%count%': point.duel}) }}"
+                                cx="{{ point.x }}" cy="{{ point.y }}" r="{{ loop.last ? 6 : 4 }}"></circle>
+                    {% endfor %}
+                    <g class="qt-chart__badge" aria-hidden="true">
+                        <rect x="{{ min(last.x - 31, right - 62) }}" y="{{ max(last.y - 34, 0) }}" width="62" height="24" rx="8"></rect>
+                        <text x="{{ min(last.x, right - 31) }}" y="{{ max(last.y - 34, 0) + 16.5 }}" text-anchor="middle">{{ last.rating }}</text>
+                    </g>
+                </svg>
+                <div class="qt-chart__tip" role="status" data-quiz-tournament-rating-chart-target="tip" hidden></div>
+            </div>
+        </section>
+
+        <section class="qt-section" aria-labelledby="qt-duels-title">
+            <h2 class="qt-section__head" id="qt-duels-title">{{ 'quizTournamentPastDuelsHeading'|trans }}</h2>
+            <ul class="qt-history">
+                {% for row in history.duels %}
+                    <li>
+                        <a class="qt-history__item" href="{{ path('app_quiz_tournament_duel_result', {id: tournament.id, duel: row.duel.id}) }}">
+                            <span class="qt-history__badge qt-history__badge--{{ row.outcome }}" aria-label="{{ ('quizTournamentOutcome' ~ row.outcome|capitalize)|trans }}">{{ ('quizTournamentOutcomeShort' ~ row.outcome|capitalize)|trans }}</span>
+                            <span class="qt-history__main">
+                                <span class="qt-history__name">{{ row.opponent.displayName ?? row.opponent.username }}</span>
+                                <span class="qt-history__meta">{{ row.duel.endedAt|localized_date('d MMM') }} · {{ 'quizTournamentScoreLine'|trans({'%mine%': fmt.score(row.mine), '%theirs%': fmt.score(row.theirs)}) }}</span>
+                            </span>
+                            <span class="qt-history__delta">{{ fmt.delta(row.delta)|trim }}</span>
+                            <span class="qt-history__chevron" aria-hidden="true">›</span>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+{% endblock %}

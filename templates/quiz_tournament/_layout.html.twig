@@ -9,7 +9,10 @@
    - `tournamentLive` - QuizTournamentLive::screen(): the « Défis » counter and its live link;
    - the `tournament_attributes` block - attributes of the root (a screen's Stimulus controller);
    - the `tournament_kicker` / `tournament_heading` blocks - a screen other than the standings
-     carries the tournament's name small and its own title big (H-defis). #}
+     carries the tournament's name small and its own title big (H-defis);
+   - the `tournament_head` block - a screen that draws its own head (the duel's score bar, the
+     correction's back button), and the `tournament_foot` block - one whose foot is its own actions
+     rather than the tab bar (the duel, its result). #}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ tournament.name }}{% endblock %}
@@ -38,16 +41,20 @@
 
 {% block main %}
     <div class="qt" data-tournament-palette="{{ tournament.palette.value }}" {% block tournament_attributes %}{% endblock %}>
-        <header class="qt-head">
-            <div class="qt-head__titles">
-                {% block tournament_kicker %}{% endblock %}
-                <h1 class="qt-head__title">{% block tournament_heading %}{{ tournament.name }}{% endblock %}</h1>
-            </div>
-            {% include 'quiz_tournament/_emblem.html.twig' with {tournament: tournament} only %}
-        </header>
+        {% block tournament_head %}
+            <header class="qt-head">
+                <div class="qt-head__titles">
+                    {% block tournament_kicker %}{% endblock %}
+                    <h1 class="qt-head__title">{% block tournament_heading %}{{ tournament.name }}{% endblock %}</h1>
+                </div>
+                {% include 'quiz_tournament/_emblem.html.twig' with {tournament: tournament} only %}
+            </header>
+        {% endblock %}
         <div class="qt-body">
             {% block tournament_body %}{% endblock %}
         </div>
-        {% include 'quiz_tournament/_tabbar.html.twig' with {tournament: tournament, activeTab: activeTab|default('standings'), live: tournamentLive|default(null)} only %}
+        {% block tournament_foot %}
+            {% include 'quiz_tournament/_tabbar.html.twig' with {tournament: tournament, activeTab: activeTab|default('standings'), live: tournamentLive|default(null)} only %}
+        {% endblock %}
     </div>
 {% endblock %}

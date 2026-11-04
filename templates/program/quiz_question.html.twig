@@ -63,7 +63,7 @@
                    zones types keep their label as the consigne, but their image is the support
                    itself, rendered inside the form by the zone partial - not a heading illustration. #}
                 {% if not is_blanks and not is_numeric %}
-                    <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink); line-height:1.4;">{{ question.label }}</div>
+                    <div class="cm-multiline" style="font: 600 20px var(--cm-font-title); color: var(--cm-ink); line-height:1.4;">{{ question.label }}</div>
                     {% if question.imageStorageKey and not is_zone and not is_legende %}
                         <img src="{{ file_url(question.imageStorageKey) }}" alt="" style="max-height:240px;border-radius:8px;">
                     {% endif %}

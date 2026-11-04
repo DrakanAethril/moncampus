@@ -295,7 +295,7 @@ class QuizTournamentChallengesTest extends FunctionalTestCase
         self::assertResponseRedirects($second['duelUrl']);
         $this->client->request('GET', $second['duelUrl']);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.qt-body', 'Le duel commence');
+        self::assertSelectorExists('[data-controller="quiz-tournament-duel"]');
         $this->client->loginUser($this->chloe);
         $this->client->request('GET', $second['duelUrl']);
         self::assertResponseStatusCodeSame(404);

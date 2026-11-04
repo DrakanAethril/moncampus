@@ -1,0 +1,30 @@
+{# A question's answers in the correction (H-correction): the player's - right or wrong - and, when
+   wrong, the right one; either way whether the other player had it. Parameters: `right` (bool),
+   `mineTexts`, `rightTexts` (lists of strings), `theirs` (the other's points, null when they did not
+   answer), `opponentName`. #}
+{% set theyHadIt = theirs is not null and theirs >= 1 %}
+{% set theirNote = (theyHadIt ? 'quizTournamentCorrectionTheyHadIt' : 'quizTournamentCorrectionTheyMissedIt')|trans({'%name%': opponentName}) %}
+{% if right %}
+    <div class="qt-answer qt-answer--right">
+        <span class="qt-answer__mark" aria-hidden="true">✓</span>
+        <span class="qt-answer__text">
+            <span class="qt-answer__head">{{ 'quizTournamentCorrectionYoursRight'|trans }} · {{ theirNote }}</span>
+            {% for text in mineTexts %}<span class="qt-answer__value qt-multiline">{{ text }}</span>{% endfor %}
+        </span>
+    </div>
+{% else %}
+    <div class="qt-answer qt-answer--wrong">
+        <span class="qt-answer__mark" aria-hidden="true">✗</span>
+        <span class="qt-answer__text">
+            <span class="qt-answer__head">{{ 'quizTournamentCorrectionYours'|trans }}</span>
+            {% for text in mineTexts %}<span class="qt-answer__value qt-multiline">{{ text }}</span>{% endfor %}
+        </span>
+    </div>
+    <div class="qt-answer qt-answer--right">
+        <span class="qt-answer__mark" aria-hidden="true">✓</span>
+        <span class="qt-answer__text">
+            <span class="qt-answer__head">{{ 'quizTournamentCorrectionRight'|trans }} · {{ theirNote }}</span>
+            {% for text in rightTexts %}<span class="qt-answer__value qt-multiline">{{ text }}</span>{% endfor %}
+        </span>
+    </div>
+{% endif %}

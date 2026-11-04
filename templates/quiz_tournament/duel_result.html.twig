@@ -1,0 +1,35 @@
+{# The end of a duel won or drawn (design/validated/quiz-tournament.md §5.4, mockup H-resultat):
+   the verdict and the rating move, both scores with the ratings before and after, the strip per
+   question and the rank now, then « Voir la correction », « Revanche » and « Classement ». A defeat
+   has its own screen (duel_defeat.html.twig). #}
+{% extends 'quiz_tournament/_layout.html.twig' %}
+{% import 'quiz_tournament/_duel_macros.html.twig' as fmt %}
+
+{% block tournament_attributes %}{% if report.rematch %}data-controller="quiz-tournament-sheet"{% endif %}{% endblock %}
+
+{% block tournament_head %}{{ include('quiz_tournament/_duel_end_head.html.twig') }}{% endblock %}
+
+{% block tournament_body %}
+    {% set win = report.outcome == 'win' %}
+    <section class="qt-verdict" aria-labelledby="qt-verdict-title">
+        <h2 class="qt-verdict__title {{ win ? 'qt-verdict__title--win' : 'qt-verdict__title--draw' }}" id="qt-verdict-title">{{ (win ? 'quizTournamentVerdictWin' : 'quizTournamentVerdictDraw')|trans }}</h2>
+        {{ include('quiz_tournament/_duel_burst.html.twig', {delta: report.me.delta, modifier: 'qt-burst--verdict'}) }}
+        <p class="qt-verdict__line">
+            {%- if win -%}
+                {{ 'quizTournamentVerdictWinLine'|trans({'%score%': fmt.score(report.me.score), '%total%': report.total, '%name%': opponentName}) }}
+            {%- else -%}
+                {{ 'quizTournamentVerdictDrawLine'|trans({'%score%': fmt.score(report.me.score)}) }}
+            {%- endif -%}
+        </p>
+    </section>
+
+    {{ include('quiz_tournament/_duel_sides.html.twig') }}
+    {{ include('quiz_tournament/_duel_strip.html.twig') }}
+{% endblock %}
+
+{% block tournament_foot %}
+    {{ include('quiz_tournament/_duel_end_foot.html.twig', {
+        primaryLabel: 'quizTournamentSeeCorrectionAction'|trans,
+        primaryUrl: path('app_quiz_tournament_duel_correction', {id: tournament.id, duel: duel.id}),
+    }) }}
+{% endblock %}
