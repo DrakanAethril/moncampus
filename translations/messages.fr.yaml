@@ -11737,3 +11737,27 @@ seriousGameStatsPlayed: 'A joué'
 seriousGameStatsReached: 'Atteint'
 seriousGameStatsSucceeded: '%units% réussis'
 seriousGameStatsYears: "D'une année à l'autre"
+
+# Quiz tournaments (design/validated/quiz-tournament.md)
+featureQuizTournamentsLabel: 'Tournois de quiz'
+quizTournamentRefusalNotInProgress: "Le tournoi n'est pas en cours."
+quizTournamentRefusalChallengerNotEligible: 'Tu ne peux pas jouer à ce tournoi.'
+quizTournamentRefusalSamePlayer: 'Tu ne peux pas te défier toi-même.'
+quizTournamentRefusalChallengedNotEligible: '%name% ne peut plus jouer à ce tournoi.'
+quizTournamentRefusalOutgoingPending: 'Tu as déjà un défi en attente de réponse.'
+quizTournamentRefusalTooManyIncoming: '%name% a déjà trop de défis en attente.'
+quizTournamentRefusalRecentlyRefused: '%name% a refusé ton défi il y a moins de 48 h.'
+quizTournamentRefusalDailyPairCap: "Vous vous êtes déjà défiés 3 fois aujourd'hui."
+quizTournamentBlockRanked: 'Classement'
+quizTournamentBlockPlacement: 'En placement'
+quizTournamentBlockInactive: 'Inactifs'
+quizTournamentBlockNotPlayed: 'Pas encore joué'
+quizTournamentPaletteLavender: 'Lavande'
+quizTournamentPaletteMint: 'Menthe'
+quizTournamentPalettePeach: 'Pêche'
+quizTournamentChallengePending: 'En attente'
+quizTournamentChallengeAccepted: 'Accepté'
+quizTournamentChallengeRefused: 'Refusé'
+quizTournamentChallengeExpired: 'Expiré'
+quizTournamentChallengePlayed: 'Joué'
+quizTournamentChallengeMissed: 'Rendez-vous manqué'
