@@ -249,6 +249,31 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   Mercure/SSE. The « mode contrôle » times each question **server-side**
   (`QuizAttemptAnswer::$servedAt`, stamped only if null, so F5 cannot reset the clock) — the point of
   that timing is to *exonerate*: three seconds on a question is proof nobody had time to look it up.
+- **Tournois de quiz** — `QuizTournament*` entities, `src/Service/QuizTournament/`, spec
+  `design/validated/quiz-tournament.md` (being built in lots; lot 1 is the model and the rules, no
+  screen yet). Students reached by a **targeting** challenge each other to synchronous duels of 20
+  questions drawn from ordinary library quizzes; an Elo rating ranks them. `Feature::QuizTournaments`
+  is off for every role; creating and opening is `ROLE_ADMIN` alone whatever the matrix says
+  (`QuizTournamentVoter`, the only arbiter, facts from `QuizTournamentAccess`). Rules the code holds:
+  - **Targeting is a shared brick**: `StructureTargetable` + `StructureTargetsTrait` (ManyToMany to
+    Section, Track, Program; join tables named after the using entity) and
+    `App\Service\StructureTargeting\StructureTargeting`, whose decision is the pure
+    `StructureTargetRule`: an **active** Program targeted itself or under a targeted Track or Section,
+    with the test zone's asymmetry. Read at every gesture, never frozen. The serious games will use it
+    too.
+  - **Every rule is a pure function on primitives**, tested as such: `QuizTournamentEligibility`
+    (eligible, in progress, view/play/manage/open a round), `QuizTournamentChallengeRules` (each
+    refusal a `QuizTournamentChallengeRefusal` case the button names; 3 encounters a day per pair is a
+    **Paris** civil day, round duels included), `QuizTournamentElo` (1000, K 40 then 20, the « enjeu »),
+    `QuizTournamentStanding` (four blocks; the ladder rule reads flags **stamped when the duel or the
+    challenge happened** - « nearest ranked at the time » cannot be recomputed later; with nobody else
+    ranked it holds by itself), `QuizTournamentQuestionDraw` (seeded, proportional, vrai/faux capped,
+    never fails; formats from `QuestionType::isPlayableInTournament()`), `QuizTournamentRoundPairing`.
+  - A pending challenge past 24 h **is** expired and an accepted one past its room **is** missed,
+    whatever the stored status says (`QuizTournamentChallenge::statusAt()`); queries count « en
+    attente » with `expiresAt > now` for the same reason.
+  - A duel's questions are frozen through `QuizQuestionDefinitionTrait`, their choices a JSON snapshot
+    in the order both players see; `servedAt` is stamped once.
 - **Sondages** — the same three-step shape as Quiz, and deliberately so: `SurveyTemplate` (library,
   `SurveyFolder`s) → `SurveyCampaign` (launched wave, carrying a frozen copy of the questions) →
   `SurveyResponse`. `SurveySeries` replays a campaign to compare waves. Two things freeze at launch
@@ -650,7 +675,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     (`app:purge-platform-activity`). Connector tools `path_list`, `path_get`, `path_create`,
     `path_set_steps` (a whole list, kept steps kept, refused if it would drop a step people worked
     on) and `path_publish`.
-- **Accès aux fonctionnalités** — `App\Enum\Feature` (61 cases) + `#[RequiresFeature]` +
+- **Accès aux fonctionnalités** — `App\Enum\Feature` (62 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
   exceptions named in `Feature::defaultRoles()` (`student_work`, `shared_documents`, `wiki` for
@@ -913,10 +938,10 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 35 of them: Assignment, AudienceTargetable, ClassBoard,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 36 of them: Assignment, AudienceTargetable, ClassBoard,
 DocumentationArticle, Dossier, EcfBooklet, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
 GuestConsole, InternshipTutorLink, LearningPath, LessonLog, MessageThread, OnlineCourse, Portfolio, Progression, ProxmoxHost, QuizFolder,
-QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SeriousGame, SignupList, Survey, SurveyFolder, TeacherDossier, Ticket,
+QuizTemplate, QuizTournament, SequenceFolder, SequenceInstance, SequenceTemplate, SeriousGame, SignupList, Survey, SurveyFolder, TeacherDossier, Ticket,
 Wall, Wiki, WordCloud).
 New per-object rules belong in a Voter, not inline in a controller.
 

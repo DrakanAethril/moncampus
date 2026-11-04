@@ -57,6 +57,7 @@ enum Feature: string
     case OnlineCourses = 'online_courses';
     case LearningPaths = 'learning_paths';
     case SeriousGames = 'serious_games';
+    case QuizTournaments = 'quiz_tournaments';
 
     // --- Scolarité ---------------------------------------------------------------------------
 
@@ -142,7 +143,7 @@ enum Feature: string
             self::Video, self::Audio, self::FileLibrary, self::SharedDocuments,
             self::ContentSharing, self::Wiki, self::Documentation, self::Surveys,
             self::ClassTools, self::WordCloud, self::Walls, self::TsfReferential, self::Game,
-            self::Dossiers, self::Portfolio, self::OnlineCourses, self::LearningPaths, self::SeriousGames => FeatureFamily::Pedagogy,
+            self::Dossiers, self::Portfolio, self::OnlineCourses, self::LearningPaths, self::SeriousGames, self::QuizTournaments => FeatureFamily::Pedagogy,
 
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
@@ -222,6 +223,7 @@ enum Feature: string
             self::OnlineCourses => 'featureOnlineCoursesLabel',
             self::LearningPaths => 'featureLearningPathsLabel',
             self::SeriousGames => 'featureSeriousGamesLabel',
+            self::QuizTournaments => 'featureQuizTournamentsLabel',
             self::Timetable => 'featureTimetableLabel',
             self::TimetableSettings => 'featureTimetableSettingsLabel',
             self::EvaluationPlanning => 'featureEvaluationPlanningLabel',
@@ -407,6 +409,12 @@ enum Feature: string
             // The serious games (design/validated/serious-games.md §3.1) are named by no role either:
             // the module is lit here, and each game is lit beside it, per role, in the « Serious
             // games » block of the same screen (SeriousGameRoleSetting). Both have to be on.
+
+            // The quiz tournaments (design/validated/quiz-tournament.md §2) are named by no role either:
+            // creating and opening one is the administrator's alone whatever the matrix says
+            // (App\Security\Voter\QuizTournamentVoter), and the tournament reaches its students by
+            // targeting, not by role. Opening the line to students and teachers is what lets the ones
+            // a tournament targets see it.
 
             // The ECF booklet (design/validated/ecf-booklet.md) is read by the administration on the
             // alternance follow-up and written by administrators alone - App\Security\Voter\EcfBookletVoter
