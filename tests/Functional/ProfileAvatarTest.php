@@ -8,6 +8,7 @@ use App\Entity\SeriousGameAvatar;
 use App\Entity\SeriousGameRewardGrant;
 use App\Entity\User;
 use App\Enum\AvatarChoice;
+use App\Service\ObjectStore;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -25,6 +26,20 @@ class ProfileAvatarTest extends FunctionalTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Claiming a staged upload removes the staged copy through App\Service\ObjectStore, which
+        // talks to S3 itself; the test environment keeps uploads in a directory. The double sends
+        // the removal there, as WallTest does - without it the photo test needs a bucket (it passed
+        // on a machine holding AWS credentials and failed in CI). Swapped before the container
+        // builds anything that holds the real one.
+        $storage = static::getContainer()->get('uploads.storage');
+        $objectStore = $this->createStub(ObjectStore::class);
+        $objectStore->method('storageKeyFor')->willReturnArgument(0);
+        $objectStore->method('remove')->willReturnCallback(static function (string $key) use ($storage): void {
+            $storage->delete($key);
+        });
+        static::getContainer()->set(ObjectStore::class, $objectStore);
+
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
     }
 
