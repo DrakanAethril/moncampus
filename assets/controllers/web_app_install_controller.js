@@ -70,9 +70,10 @@ export default class extends Controller {
         this.statusTarget.hidden = '' === text;
     }
 
+    // Only `standalone`, the display the manifest asks for. `fullscreen` also matches an ordinary
+    // browser window put in full screen (F11, macOS full screen), which is not an installed app.
     runsStandalone() {
         return window.matchMedia('(display-mode: standalone)').matches
-            || window.matchMedia('(display-mode: fullscreen)').matches
             || true === window.navigator.standalone;
     }
 
