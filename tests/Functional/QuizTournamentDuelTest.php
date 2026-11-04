@@ -76,6 +76,13 @@ class QuizTournamentDuelTest extends FunctionalTestCase
         self::assertIsArray($choice);
         self::assertArrayNotHasKey('correct', $choice, 'the page never gets the correction');
 
+        // Checked while question 0 is still open, 20 s from its deadline: after both answers the 2 s
+        // reveal may already be over on a slow runner, and question 1 then rightly takes answers.
+        $refused = $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => [2]], 409);
+        self::assertSame('Tu as déjà répondu à cette question.', $refused['refusal']);
+        $refused = $this->answer($this->alice, $duel, ['rank' => 1, 'choices' => [1]], 409);
+        self::assertSame('Trop tard : cette question est close.', $refused['refusal'], 'never the next question before it is served');
+
         $seen = $this->state($this->bruno, $duel);
         self::assertTrue($this->answered($seen, $this->alice), 'Bruno sees that Alice answered');
         self::assertNull($seen['mine'], '… never what she answered');
@@ -86,10 +93,6 @@ class QuizTournamentDuelTest extends FunctionalTestCase
         self::assertSame(0.0, $this->resultOf($state, 0, $this->bruno));
         self::assertEqualsWithDelta(1.0, $this->at($state, 'scores', (string) $this->alice->getId()), 0.001);
 
-        $refused = $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => [2]], 409);
-        self::assertSame('Tu as déjà répondu à cette question.', $refused['refusal']);
-        $refused = $this->answer($this->alice, $duel, ['rank' => 1, 'choices' => [1]], 409);
-        self::assertSame('Trop tard : cette question est close.', $refused['refusal'], 'never the next question before it is served');
         self::assertCount(2, $this->em()->getRepository(QuizTournamentDuelAnswer::class)->findAll());
     }
 
