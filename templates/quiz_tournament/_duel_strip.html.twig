@@ -1,0 +1,27 @@
+{# « Question par question » (H-resultat): a square per question for each player - filled when
+   earned, half when half earned, empty when missed or unanswered. Parameters: `report`
+   (QuizTournamentDuelReports::result()), `opponentName`. #}
+{% import 'quiz_tournament/_duel_macros.html.twig' as fmt %}
+{% set rankText = report.line and report.line.rank is not null
+    ? 'quizTournamentStripRank'|trans({'%rank%': 'quizTournamentRankOrdinal'|trans({'%count%': report.line.rank})})
+    : (report.line ? report.line.block.labelKey|trans : null) %}
+<section class="qt-strip" aria-labelledby="qt-strip-title">
+    <div class="qt-strip__head">
+        <h2 class="qt-strip__title" id="qt-strip-title">{{ 'quizTournamentStripHeading'|trans }}</h2>
+        {% if rankText %}<span class="qt-strip__rank">{{ rankText }}</span>{% endif %}
+    </div>
+    {% for side in [
+        {name: 'quizTournamentYouShort'|trans, key: 'mine', score: report.me.score, modifier: 'mine'},
+        {name: opponentName, key: 'theirs', score: report.them.score, modifier: 'theirs'},
+    ] %}
+        <div class="qt-strip__row">
+            <span class="qt-strip__who">{{ side.name }}</span>
+            <span class="qt-strip__squares qt-strip__squares--{{ side.modifier }}" role="img" aria-label="{{ 'quizTournamentStripRowLabel'|trans({'%name%': side.name, '%score%': fmt.score(side.score), '%total%': report.total}) }}">
+                {%- for strip in report.strips -%}
+                    {% set points = attribute(strip, side.key) %}
+                    <span class="qt-square{{ points is not null and points >= 1 ? ' is-right' : (points is not null and points > 0 ? ' is-half') }}"></span>
+                {%- endfor -%}
+            </span>
+        </div>
+    {% endfor %}
+</section>

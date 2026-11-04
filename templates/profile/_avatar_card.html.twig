@@ -1,0 +1,82 @@
+{# « Mon avatar » (design/validated/quiz-tournament.md §16): what stands for the person across
+   Formatool, for every account. One choice, two paths - send a photo, or draw an avatar in the
+   creation tunnel - and the initials. Both the photo and the drawing stay once made: choosing one
+   deletes nothing, so the other is offered back with « Utiliser … ».
+
+   Expects `avatarCard` ({choice: 'photo'|'drawn'|null, photo: url|null, drawing: config|null}),
+   `avatarForm`, `user`, `profile_initials`. #}
+{% set choice = avatarCard.choice %}
+<section class="card cm-avatar-card" id="mon-avatar">
+    <div class="card-header">
+        <h2 class="card-title">{{ 'profileAvatarCardTitle'|trans }}</h2>
+    </div>
+    <div class="card-body">
+        <p class="text-secondary">{{ 'profileAvatarCardHelp'|trans }}</p>
+        <div class="cm-avatar-card__options">
+            {# The photo #}
+            <div class="cm-avatar-card__option{{ choice == 'photo' ? ' is-chosen' }}">
+                <span class="cm-avatar-card__face{{ avatarCard.photo ? '' : ' is-empty' }}"{% if avatarCard.photo %} style="background-image: url({{ avatarCard.photo }})"{% endif %}>
+                    {% if not avatarCard.photo %}<twig:ux:icon name="photo" width="28" height="28" aria-hidden="true"/>{% endif %}
+                </span>
+                <div class="cm-avatar-card__label">
+                    {{ 'profileAvatarPhotoLabel'|trans }}
+                    {% if choice == 'photo' %}<twig:Cm:Badge tone="green">{{ 'profileAvatarShownBadge'|trans }}</twig:Cm:Badge>{% endif %}
+                </div>
+                <div class="cm-avatar-card__actions">
+                    {% if avatarCard.photo and choice != 'photo' %}
+                        {{ include('profile/_avatar_choice_button.html.twig', {value: 'photo', label: 'profileAvatarUsePhotoAction'|trans, variant: 'primary'}) }}
+                    {% endif %}
+                    <twig:Cm:Button variant="outline" size="sm" data-bs-toggle="collapse" data-bs-target="#avatar-upload-panel" aria-expanded="false" aria-controls="avatar-upload-panel">
+                        {{ (avatarCard.photo ? 'profileAvatarReplacePhotoAction' : 'profileAvatarSendPhotoAction')|trans }}
+                    </twig:Cm:Button>
+                </div>
+            </div>
+
+            {# The drawn avatar #}
+            <div class="cm-avatar-card__option{{ choice == 'drawn' ? ' is-chosen' }}">
+                {% if avatarCard.drawing %}
+                    <span class="cm-avatar-card__face cm-avatar-drawn" data-controller="sg-avatar" data-sg-avatar-config-value="{{ avatarCard.drawing|json_encode }}" data-sg-avatar-size-value="88" data-sg-avatar-round-value="false"></span>
+                {% else %}
+                    <span class="cm-avatar-card__face is-empty"><twig:ux:icon name="palette" width="28" height="28" aria-hidden="true"/></span>
+                {% endif %}
+                <div class="cm-avatar-card__label">
+                    {{ 'profileAvatarDrawnLabel'|trans }}
+                    {% if choice == 'drawn' %}<twig:Cm:Badge tone="green">{{ 'profileAvatarShownBadge'|trans }}</twig:Cm:Badge>{% endif %}
+                </div>
+                <div class="cm-avatar-card__actions">
+                    {% if avatarCard.drawing and choice != 'drawn' %}
+                        {{ include('profile/_avatar_choice_button.html.twig', {value: 'drawn', label: 'profileAvatarUseDrawingAction'|trans, variant: 'primary'}) }}
+                    {% endif %}
+                    <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_profile_avatar_draw') }}">
+                        {{ (avatarCard.drawing ? 'profileAvatarEditDrawingAction' : 'profileAvatarCreateAction')|trans }}
+                    </twig:Cm:Button>
+                </div>
+            </div>
+
+            {# The initials #}
+            <div class="cm-avatar-card__option{{ choice is null ? ' is-chosen' }}">
+                <span class="cm-avatar-card__face cm-avatar-card__face--initials">{{ profile_initials }}</span>
+                <div class="cm-avatar-card__label">
+                    {{ 'profileAvatarInitialsLabel'|trans }}
+                    {% if choice is null %}<twig:Cm:Badge tone="green">{{ 'profileAvatarShownBadge'|trans }}</twig:Cm:Badge>{% endif %}
+                </div>
+                <div class="cm-avatar-card__actions">
+                    {% if choice is not null %}
+                        {{ include('profile/_avatar_choice_button.html.twig', {value: 'none', label: 'profileAvatarUseInitialsAction'|trans, variant: 'outline'}) }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="collapse" id="avatar-upload-panel">
+            <div class="cm-avatar-card__upload">
+                {{ form_start(avatarForm, {action: path('app_profile_avatar')}) }}
+                    {{ form_row(avatarForm.avatarFile, {label: false}) }}
+                    {{ form_widget(avatarForm.submit, {label: 'avatarUploadSubmitAction'|trans, attr: {class: 'cm-btn cm-btn--primary mt-2'}}) }}
+                    {{ form_rest(avatarForm) }}
+                {{ form_end(avatarForm) }}
+                <p class="cm-avatar-card__note">{{ 'profileAvatarPhotoChoosesNote'|trans }}</p>
+            </div>
+        </div>
+    </div>
+</section>

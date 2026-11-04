@@ -1,0 +1,23 @@
+{# The foot of the screens after a duel (H-resultat, H-defaite): the main action, « Revanche » - the
+   Défier sheet for the same opponent, with what the day's cap still allows (§4.1) - and
+   « Classement ». The sheet opens in the dialog at the end (quiz_tournament_sheet_controller.js, on
+   the screen's root). Parameters: `tournament`, `duel`, `report`, `primaryLabel`, `primaryUrl`. #}
+<footer class="qt-end-foot">
+    <a class="qt-btn qt-btn--accent-main qt-btn--big" href="{{ primaryUrl }}">{{ primaryLabel }}</a>
+    <div class="qt-end-foot__row">
+        {% if report.rematch %}
+            <button type="button" class="qt-btn qt-btn--accent{{ report.rematch.left == 0 ? ' is-greyed' }}"
+                    data-action="quiz-tournament-sheet#open"
+                    data-quiz-tournament-sheet-url-param="{{ path('app_quiz_tournament_challenge_sheet', {id: tournament.id, opponent: report.them.user.id}) }}">
+                {{- 'quizTournamentRematchAction'|trans({'%count%': report.rematch.left}) -}}
+            </button>
+        {% endif %}
+        <a class="qt-end-foot__link" href="{{ path('app_quiz_tournament_show', {id: tournament.id}) }}">{{ 'quizTournamentTabStandings'|trans }}</a>
+    </div>
+</footer>
+{% if report.rematch %}
+    <dialog class="qt-sheet" aria-labelledby="qt-sheet-title" data-quiz-tournament-sheet-target="dialog"
+            data-action="click->quiz-tournament-sheet#backdrop close->quiz-tournament-sheet#closed">
+        <div class="qt-sheet__body" data-quiz-tournament-sheet-target="content"></div>
+    </dialog>
+{% endif %}

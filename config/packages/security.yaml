@@ -188,6 +188,9 @@ security:
         # kernel and must stay public: it's fetched directly by iOS (via itms-services://), not by
         # a logged-in browser. Only the listing pages that link to these (11a/11b) require login.
         - { path: ^/downloads, roles: PUBLIC_ACCESS }
+        # The retired Campus web app (App\Controller\CampusAppRetiredController): every old address
+        # answers a 301 to /, for whoever follows it - an old icon may well be signed out.
+        - { path: ^/campus-app, roles: PUBLIC_ACCESS }
         # « Cours en ligne » (design/validated/cours-en-ligne.md §3): a teacher's public page and
         # the courses on it are read without an account. One rule, and deliberately the only one:
         # the learning paths live under /paths, outside it, and so fall to the catch-all below -

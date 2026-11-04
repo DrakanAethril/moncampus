@@ -118,6 +118,23 @@
                                 </a>
                             </li>
                         {% endif %}
+                        {# « Jouer » (design/validated/quiz-tournament.md §15): the student's one door to the
+                           games - the tournaments that reach them and the serious games open to them -
+                           after « Travail à faire », « Mon portfolio » and « Parcours », before the Jeu du
+                           campus' « Ma progression », which has nothing to do with it. Only when something
+                           is behind it: play_hub_visible() is the rule /play itself answers by. **No
+                           counter**, ever: the tournament alerts nobody outside its own screens (§7).
+                           Lit on the page and on the screens it leads to. #}
+                        {% if is_pure_student and play_hub_visible() %}
+                            {% set play_is_active = current_route == 'app_play'
+                                or current_route starts with 'app_quiz_tournament'
+                                or current_route in ['app_serious_games', 'app_serious_games_me', 'app_serious_games_play'] %}
+                            <li class="nav-item {{ play_is_active ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_play') }}"{{ play_is_active ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'playNavLabel'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         {# « Ma progression », right after « Travail à faire » exactly as the mockup's
                            bar draws it. Shown only to somebody whose own formation actually plays:
                            game_badge() answers null unless the feature is on *and* the formation has
@@ -403,7 +420,11 @@
                            the three: a header with nothing under it and a menu that opens on
                            nothing are the same defect, and both become reachable as soon as an
                            establishment switches a few of these off. #}
-                        {% set tools_run = feature('class_tools') or feature('word_cloud') or feature('quiz_live') or feature('walls') %}
+                        {# « Tournois » (design/validated/quiz-tournament.md §15): a teacher once an opened
+                           tournament targets a class they teach - where « Lancer une ronde » is - and an
+                           administrator, who reads every tournament, once one exists. #}
+                        {% set tools_tournaments = (is_granted('ROLE_TEACHER') or is_granted('ROLE_ADMIN')) and quiz_tournaments_followed() %}
+                        {% set tools_run = feature('class_tools') or feature('word_cloud') or feature('quiz_live') or feature('walls') or tools_tournaments %}
                         {# École Directe is tried by administrators only for now, so the entry asks for
                            the role its controllers do (App\Controller\EcoleDirecte\EcoleDirecteControllerTrait). #}
                         {% set tools_ecole_directe = feature('ecole_directe') and is_granted('ROLE_ADMIN') %}
@@ -437,6 +458,7 @@
                                 or current_route starts with 'app_shares'
                                 or current_route starts with 'app_online_courses'
                                 or current_route starts with 'app_survey'
+                                or (tools_tournaments and (current_route == 'app_quiz_tournaments' or current_route starts with 'app_quiz_tournament_'))
                                 or current_route starts with 'app_jobboard'
                                 or current_route starts with 'app_dossier'
                                 or current_route starts with 'app_portfolios'
@@ -503,6 +525,12 @@
                                     {% endif %}
                                     {% if feature('quiz_live') %}
                                         <a class="dropdown-item {{ current_route == 'app_tools_quiz_live' ? 'active' }}" href="{{ path('app_tools_quiz_live') }}">{{ 'quizLiveNavLabel'|trans }}</a>
+                                    {% endif %}
+                                    {# After the live quiz, its cousin: the list of the tournaments one follows,
+                                       each opening its standings and, for a teacher of a targeted class,
+                                       « Lancer une ronde ». #}
+                                    {% if tools_tournaments %}
+                                        <a class="dropdown-item {{ current_route == 'app_quiz_tournaments' or current_route starts with 'app_quiz_tournament_' ? 'active' }}" href="{{ path('app_quiz_tournaments') }}">{{ 'quizTournamentsToolsNavLabel'|trans }}</a>
                                     {% endif %}
                                     </div>
                                     {% endif %}
@@ -761,7 +789,7 @@
                                 </a>
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item {{ current_route in ['app_settings_structure_sections', 'app_settings_structure_tracks', 'app_settings_structure_cohorts', 'app_settings_structure_rooms', 'app_settings_structure_options', 'app_settings_structure_modalities', 'app_settings_structure_lesson_types', 'app_settings_structure_skill_levels'] ? 'active' }}" href="{{ path('app_settings_configuration') }}">{{ 'settingsConfigurationNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route in ['app_settings_structure_school_years', 'app_settings_structure_programs', 'app_settings_structure_periods'] ? 'active' }}" href="{{ path('app_settings_pedagogique') }}">{{ 'settingsPedagogiqueNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route in ['app_settings_structure_school_years', 'app_settings_structure_programs', 'app_settings_structure_periods'] or current_route starts with 'app_settings_quiz_tournaments' ? 'active' }}" href="{{ path('app_settings_pedagogique') }}">{{ 'settingsPedagogiqueNavLabel'|trans }}</a>
                                     {% if is_granted('ROLE_ADMIN') %}
                                         <a class="dropdown-item {{ current_route starts with 'app_settings_groups' ? 'active' }}" href="{{ path('app_settings_groups') }}">{{ 'settingsGroupsNavLabel'|trans }}</a>
                                         {# Administrators only, and it carries no feature guard of its

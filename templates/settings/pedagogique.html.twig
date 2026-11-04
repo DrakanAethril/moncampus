@@ -17,6 +17,8 @@
         {url: path('app_settings_structure_evaluation_period_groups'), label: 'evaluationPeriodGroupsTabLabel'|trans, active: activeTab == 'evaluation_period_groups'},
     ]|merge(feature('portfolio') and is_granted('ROLE_ADMIN') ? [
         {url: path('app_settings_referentials'), label: 'referentialsTabLabel'|trans, active: activeTab == 'referentials'},
+    ] : [])|merge(feature('quiz_tournaments') and is_granted('ROLE_ADMIN') ? [
+        {url: path('app_settings_quiz_tournaments'), label: 'quizTournamentsTabLabel'|trans, active: activeTab == 'quiz_tournaments'},
     ] : [])">
         <twig:block name="action">{% include 'settings/structure/_' ~ activeTab ~ '_button.html.twig' %}</twig:block>
     </twig:Cm:Tabs>

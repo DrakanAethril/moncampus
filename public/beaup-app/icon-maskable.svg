@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>beaup-app</title>
+  <!-- The maskable variant of icon.svg: full-bleed navy (the launcher draws its own shape) and the
+       B scaled into the safe zone, the central circle of radius 0.4 × 512 that every mask keeps.
+       Also the source of the 180 px apple-touch-icon, which iOS rounds itself. -->
+  <rect width="512" height="512" fill="#12344d"/>
+  <g transform="translate(256 256) scale(0.9) translate(-8 0)" fill="none" stroke-width="56">
+    <path d="M -70 -100 H 22 A 47 47 0 0 1 22 -6 H -70" stroke="#dbb35f"/>
+    <path d="M -70 -6 H 34 A 53 53 0 0 1 34 100 H -70" stroke="#ffffff"/>
+    <rect x="-100" y="-128" width="60" height="256" rx="8" fill="#ffffff" stroke="none"/>
+  </g>
+</svg>

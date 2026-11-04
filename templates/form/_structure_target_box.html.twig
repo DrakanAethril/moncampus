@@ -1,0 +1,11 @@
+{# One box of the targeting tree (templates/form/structure_targets.html.twig). `ancestors` are the
+   DOM ids of the boxes above it: when one of them is ticked, this one is already covered, and
+   structure_targets_controller.js says so. #}
+<label class="cm-targets__box cm-targets__box--{{ kind }}" for="{{ child.vars.id }}">
+    <input type="checkbox" class="form-check-input" id="{{ child.vars.id }}" name="{{ child.vars.full_name }}" value="{{ child.vars.value }}"{{ child.vars.checked ? ' checked' }}
+           data-structure-targets-target="box" data-ancestors="{{ ancestors|join(' ') }}" data-action="change->structure-targets#refresh">
+    <span class="cm-targets__label">{{ label }}</span>
+    {% if meta %}<span class="cm-targets__meta">{{ meta }}</span>{% endif %}
+    <span class="cm-targets__covered">{{ 'structureTargetsCoveredHint'|trans }}</span>
+</label>
+{% do child.setRendered %}

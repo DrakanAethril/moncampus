@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\User;
+use App\Service\StructureTargeting\StructureProgramFacts;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -494,6 +495,100 @@ class ProgramRepository extends ServiceEntityRepository
             ->where('p.portfolioEnabled = true')
             ->andWhere('p.inactiveDate IS NULL')
             ->orderBy('y.startDate', 'DESC')
+            ->addOrderBy('p.shortName', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $programs;
+    }
+
+    /**
+     * Where each Program sits in Section > Track > Cohort, with its active and test flags - the facts
+     * App\Service\StructureTargeting\StructureTargetRule decides a targeting on.
+     *
+     * With a member, only the Programs that person is enrolled in as a student, active or not; without
+     * one, every active Program.
+     *
+     * @return list<StructureProgramFacts>
+     */
+    public function findStructureFacts(?User $student = null): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->select('p.id AS programId', 't.id AS trackId', 'IDENTITY(t.section) AS sectionId', 'p.inactiveDate AS inactiveDate', 'p.testProgram AS testProgram')
+            ->innerJoin('p.cohort', 'c')
+            ->innerJoin('c.track', 't');
+
+        if (null !== $student) {
+            $qb->innerJoin('p.students', 's')
+                ->where('s = :student')
+                ->setParameter('student', $student);
+        } else {
+            $qb->where('p.inactiveDate IS NULL');
+        }
+
+        /** @var list<array{programId: int|string, trackId: int|string, sectionId: int|string, inactiveDate: \DateTimeImmutable|null, testProgram: bool|int|string}> $rows */
+        $rows = $qb->getQuery()->getArrayResult();
+
+        return array_map(static fn (array $row): StructureProgramFacts => new StructureProgramFacts(
+            (int) $row['programId'],
+            (int) $row['trackId'],
+            (int) $row['sectionId'],
+            null === $row['inactiveDate'],
+            (bool) $row['testProgram'],
+        ), $rows);
+    }
+
+    /**
+     * The student rosters of these Programs, as (program id, user id) pairs - one query for a whole
+     * targeting, whatever its size.
+     *
+     * @param list<int> $programIds
+     *
+     * @return list<array{programId: int, userId: int}>
+     */
+    public function findStudentEnrolments(array $programIds): array
+    {
+        if ([] === $programIds) {
+            return [];
+        }
+
+        /** @var list<array{programId: int|string, userId: int|string}> $rows */
+        $rows = $this->createQueryBuilder('p')
+            ->select('p.id AS programId', 's.id AS userId')
+            ->innerJoin('p.students', 's')
+            ->where('p.id IN (:ids)')
+            ->setParameter('ids', $programIds)
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_map(static fn (array $row): array => ['programId' => (int) $row['programId'], 'userId' => (int) $row['userId']], $rows);
+    }
+
+    /**
+     * The formations a targeting may name (App\Form\StructureTargetsType): every active Program of
+     * an active school year whose Cohort, Track and Section are active too, the chain fetch-joined,
+     * by section, track, year and short name. Both sides of the test zone - the form shows test
+     * formations apart.
+     *
+     * @return list<Program>
+     */
+    public function findActiveForTargeting(): array
+    {
+        /** @var list<Program> $programs */
+        $programs = $this->createQueryBuilder('p')
+            ->addSelect('c', 't', 's', 'y')
+            ->innerJoin('p.cohort', 'c')
+            ->innerJoin('c.track', 't')
+            ->innerJoin('t.section', 's')
+            ->innerJoin('p.schoolYear', 'y')
+            ->where('p.inactiveDate IS NULL')
+            ->andWhere('c.inactiveDate IS NULL')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->andWhere('s.inactiveDate IS NULL')
+            ->andWhere('y.inactiveDate IS NULL')
+            ->orderBy('s.name', 'ASC')
+            ->addOrderBy('t.name', 'ASC')
+            ->addOrderBy('y.startDate', 'ASC')
             ->addOrderBy('p.shortName', 'ASC')
             ->getQuery()
             ->getResult();

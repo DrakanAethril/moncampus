@@ -1,0 +1,26 @@
+{# The tournament's tab bar (H « Pop »): Classement · Défis · Mes duels. « Défis » is a student's
+   (a teacher or an administrator has no challenge to read) and carries the screen's only signal,
+   its counter - received challenges + open rooms (§7), kept current over Mercure while a tournament
+   screen is open (quiz_tournament_counter_controller.js) and nowhere else. « Mes duels » is a
+   student's too - their history (H-mes-duels). Parameters: `tournament`, `activeTab`, `live`
+   (QuizTournamentLive::screen(), or null). #}
+{% set live = live|default(null) %}
+{% set tabs = [
+    {key: 'standings', label: 'quizTournamentTabStandings'|trans, url: path('app_quiz_tournament_show', {id: tournament.id})},
+    {key: 'challenges', label: 'quizTournamentTabChallenges'|trans, url: is_granted('ROLE_STUDENT') ? path('app_quiz_tournament_challenges', {id: tournament.id}) : null},
+    {key: 'duels', label: 'quizTournamentTabDuels'|trans, url: is_granted('ROLE_STUDENT') ? path('app_quiz_tournament_duels', {id: tournament.id}) : null},
+] %}
+<nav class="qt-tabs" aria-label="{{ 'quizTournamentTabsLabel'|trans }}">
+    {% for tab in tabs %}
+        {% if tab.url %}
+            {% set counted = tab.key == 'challenges' and live and live.challengeCount is not null %}
+            <a class="qt-tab{{ tab.key == activeTab ? ' is-active' }}" href="{{ tab.url }}"{{ tab.key == activeTab ? ' aria-current="page"' }}
+               {%- if counted %} data-controller="quiz-tournament-counter" data-quiz-tournament-counter-url-value="{{ live.url }}" data-quiz-tournament-counter-topic-value="{{ live.counterTopic }}"{% endif %}>
+                {{- tab.label -}}
+                {%- if counted %}<span class="qt-tab__count" data-quiz-tournament-counter-target="count"{{ live.challengeCount == 0 ? ' hidden' }}>&nbsp;({{ live.challengeCount }})</span>{% endif -%}
+            </a>
+        {% else %}
+            <span class="qt-tab is-unavailable" aria-disabled="true">{{ tab.label }}</span>
+        {% endif %}
+    {% endfor %}
+</nav>

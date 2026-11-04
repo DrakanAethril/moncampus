@@ -1,0 +1,16 @@
+{# « Défier » on a line of the standings (§4.1): opens the H-defier sheet
+   (quiz_tournament_sheet_controller.js fetches app_quiz_tournament_challenge_sheet into the page's
+   dialog). When QuizTournamentChallengeRules refuses, the button is greyed and says why - in its
+   title, to a screen reader, and in the sheet it still opens, where « Envoyer le défi » is replaced
+   by the reason. Parameters: `tournament`, `line` (QuizTournamentStandingLine), `refusal`
+   (App\Enum\QuizTournamentChallengeRefusal or null). #}
+{% set refusal = refusal|default(null) %}
+{% set firstName = line.user.firstname ?? line.user.displayName ?? line.user.username %}
+{% set reason = refusal ? refusal.labelKey|trans({'%name%': firstName}) : null %}
+<button type="button" class="qt-defy{{ refusal ? ' is-greyed' }}"
+        data-action="quiz-tournament-sheet#open"
+        data-quiz-tournament-sheet-url-param="{{ path('app_quiz_tournament_challenge_sheet', {id: tournament.id, opponent: line.userId}) }}"
+        {%- if reason %} title="{{ reason }}"{% endif %}>
+    {{- 'quizTournamentDefyAction'|trans -}}
+    <span class="visually-hidden"> {{ line.user.displayName ?? line.user.username }}{% if reason %} - {{ reason }}{% endif %}</span>
+</button>

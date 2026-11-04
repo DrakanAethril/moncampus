@@ -1,0 +1,52 @@
+{# The « Défier » sheet (§4.1, §10, mockup H-defier), fetched into the standings' dialog: the
+   opponent, the enjeu on today's ratings (QuizTournamentElo::stakes(): what a victory, a draw, a
+   defeat would move), the reminders - 24 h to answer, a room open 24 h, the encounters of the day -
+   and « Envoyer le défi ». When QuizTournamentChallengeRules refuses, the reason takes the send
+   button's place. Parameters: `tournament`, `line` (the opponent's QuizTournamentStandingLine),
+   `stakes`, `stronger`, `refusal`, `encountersToday`, `firstName`. #}
+{% set name = line.user.displayName ?? line.user.username %}
+<span class="qt-sheet__grip" aria-hidden="true"></span>
+<div class="qt-sheet__who">
+    {{ include('quiz_tournament/_avatar.html.twig', {user: line.user, avatar: line.avatar, modifier: 'qt-avatar--sheet'}) }}
+    <div class="qt-sheet__titles">
+        <h2 class="qt-sheet__title" id="qt-sheet-title">{{ 'quizTournamentDefySheetTitle'|trans({'%name%': name}) }}</h2>
+        <span class="qt-sheet__meta">{{ include('quiz_tournament/_player_meta.html.twig', {line: line, withRank: true}) }}</span>
+    </div>
+</div>
+
+<div class="qt-stakes">
+    <span class="qt-stakes__head">{{ 'quizTournamentStakesHeading'|trans }}</span>
+    <div class="qt-stakes__grid">
+        {% for outcome in [
+            {key: 'win', label: 'quizTournamentStakesWin', modifier: 'win'},
+            {key: 'draw', label: 'quizTournamentStakesDraw', modifier: 'draw'},
+            {key: 'loss', label: 'quizTournamentStakesLoss', modifier: 'loss'},
+        ] %}
+            {% set delta = stakes[outcome.key] %}
+            <div class="qt-stake qt-stake--{{ outcome.modifier }}">
+                <span class="qt-stake__label">{{ outcome.label|trans }}</span>
+                <span class="qt-stake__value">{{ delta > 0 ? '+' ~ delta : (delta < 0 ? '−' ~ (0 - delta) : '0') }}</span>
+            </div>
+        {% endfor %}
+    </div>
+    {% if stronger %}<span class="qt-stakes__hint">{{ 'quizTournamentStakesStrongerHint'|trans }}</span>{% endif %}
+</div>
+
+<ul class="qt-reminders">
+    <li>{{ 'quizTournamentDefyReminderAnswer'|trans({'%name%': firstName}) }}</li>
+    <li>{{ 'quizTournamentDefyReminderRoom'|trans({'%name%': firstName}) }}</li>
+    <li>{{ 'quizTournamentDefyReminderToday'|trans({'%count%': encountersToday, '%cap%': constant('App\\Service\\QuizTournament\\QuizTournamentChallengeRules::DAILY_PAIR_CAP')}) }}</li>
+</ul>
+
+{% if refusal %}
+    <p class="qt-sheet__refusal" role="status">{{ refusal.labelKey|trans({'%name%': firstName}) }}</p>
+{% endif %}
+
+<form class="qt-sheet__actions{{ refusal ? ' qt-sheet__actions--single' }}" method="post" action="{{ path('app_quiz_tournament_challenge_send', {id: tournament.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('quiz_tournament_challenge' ~ tournament.id) }}">
+    <input type="hidden" name="opponent" value="{{ line.userId }}">
+    <button type="button" class="qt-btn" data-action="quiz-tournament-sheet#close">{{ 'quizTournamentCancelAction'|trans }}</button>
+    {% if not refusal %}
+        <button type="submit" class="qt-btn qt-btn--primary">{{ 'quizTournamentSendChallengeAction'|trans }}</button>
+    {% endif %}
+</form>

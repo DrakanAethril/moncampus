@@ -116,7 +116,7 @@ final class PlatformEmailCatalog
                 'platformEmailMagicLoginMobileWhen',
                 'emails/magic_login_mobile.html.twig',
                 // The lifetime is a setting of the platform, not something that varies per send.
-                ['token' => self::TOKEN, 'webAppUrl' => null, 'minutes' => MagicLoginService::MOBILE_TOKEN_TTL_MINUTES],
+                ['token' => self::TOKEN, 'minutes' => MagicLoginService::MOBILE_TOKEN_TTL_MINUTES],
             ),
             new PlatformEmail(
                 'contact-email-confirmation',

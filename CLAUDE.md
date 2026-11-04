@@ -23,13 +23,21 @@ Treat any leftover template documentation (`docs/*.md`, parts of the README) as 
 as a description of this app.
 
 Companion repositories (separate git repos, same staging workflow):
-- `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app. It also runs
-  **as a PWA at `/campus-app/`** (`public/campus-app/`, a build output of that repo's
-  `tool/build_pwa.sh`, never edited here — its README says what the web build changes): same
-  origin as the API and Mercure, so no URL compiled in; it declares `client: moncampus-web`, which
-  makes the magic link open `/campus-app/?login=…` instead of `campusmanager://` and lists its
-  sessions apart in « Mon profil » (`MobileApp::CampusWeb`). The Ressources page offers it next to
-  the APK.
+- `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app (APK and
+  IPA). Its **web build at `/campus-app/` is retired** (2026-11-04): the site itself is the
+  installable app, « beaup-app » (see « Installer beaup-app » below), and only two PWAs come from
+  this server, beaup-app (scope `/`) and e-CO (`/eco-app/`). `public/campus-app/` now holds one
+  file, the kill-switch service worker `campus_sw.js` at the old worker's address (it clears the
+  old `campus-app-*` caches, unregisters itself and sends its windows to `/`); every other
+  `/campus-app/…` address is a 301 to `/` (`CampusAppRetiredController`). Chrome does not check
+  the old worker for an update when that redirect takes the old icon's start page out of its
+  scope, so every page of the site also unregisters it and deletes those caches
+  (`assets/web_app/retired_campus_app.js`, imported by `app.js`) - only those: e-CO keeps its own
+  caches in the same origin. **Never run that repo's
+  `tool/build_pwa.sh` into this folder again** - it would overwrite the kill switch and bring the
+  old app back. A browser still declaring `client: moncampus-web` (`MobileApp::CampusWeb`) is sent
+  the site's own magic link (`MagicLoginService::requestLinkForApp()`); its last sessions stay
+  listed in « Mon profil » until they expire.
 - `/Users/Shared/Beaupeyrat/e-CO` — the orienteering-race app (GitHub `e-co-mobile`).
 
 ## Commands
@@ -90,6 +98,7 @@ asked — made the second run throw « A lock is already in place ».
 | `app:guest-accounts:prune` | **Maintenance à la demande, jamais planifiée.** Supprime les lignes `guest_account` dont la machine n'existe plus sur l'hyperviseur, ou dont le VMID a été repris depuis par un autre lot — Proxmox rend un numéro dès qu'une machine est détruite, et les lignes de l'ancienne occupante restent classées dessous (cette moitié-là se décide sur les seules données de la plateforme, sans rien demander à l'hyperviseur ; `App\Service\Proxmox\VmidHandover` la ferme à la source lors des créations suivantes). C'est l'état que /infrastructure ne montre pas : ces écrans lisent Proxmox à l'affichage, donc une machine détruite cesse d'y être listée, tandis que ses comptes restent — et « Mes machines virtuelles » est bâti sur ces comptes. Un hôte injoignable ne décide rien : ses comptes sont comptés à part et laissés tels quels. `--dry-run` nomme chaque ligne avant d'y toucher. Jamais planifiée : supprimer est une décision, pas un horaire |
 | `app:ecoledirecte:check` | **Diagnostic, not scheduled.** Runs the one step of an École Directe login that needs no account (the GTK cookie of `login.awp?gtk=1`) and says whether École Directe still answers it from this server. The platform holds no École Directe credentials and must not, so this is the most it can prove on its own |
 | `app:counters:recompute` | **Scheduled, once a night** (`docs/production.md`). Checks every stored counter of the platform (`App\Counter\RecomputableCounter`, one tagged service each) against its source and corrects the drifts - each correction logged at error level, so it reaches Discord: a drift is a bug, not a figure to patch. The counters move in real time with what changes them; this is the safety net. `--counter=`, `--dry-run` |
+| `app:quiz-tournament:close-duels` | **Scheduled every minute.** Finishes the tournament duels both players left: a duel runs on the server's clock whether anybody watches it, and the duel screen finishes it as soon as one player asks after its last question - but nobody asks when both are gone, and an unfinished duel refuses « Prêt » to both players in every tournament. Goes through `QuizTournamentDuelEngine::settle()`, the screens' own door (scores, ratings, exactly once). Also writes the challenges whose 24 h are over as expired / missed (two guarded UPDATEs: a room that starts its duel in the same second keeps « played »). Locked (`SharedLockableTrait`) |
 | `app:eco:read-terrain` | **Scheduled every minute.** Asks the IGN's Géoplateforme what e-CO's statistics read: the terrain analysis of the oldest parcours waiting for one (button « Analyser le terrain », last flag located, or a race on a parcours never analysed), then the terrain altitude / path / wood of every GPS fix of the oldest closed race not yet read. A Géoplateforme that does not answer is a *warning* and a retry next minute, never a non-zero exit. See `docs/production.md`, « e-CO and the IGN's Géoplateforme » |
 | `app:rncp:fetch` | **Scheduled every minute.** Serves the « Récupérer chez France compétences » requests of the portfolio's Référentiels tab: finds the day's `export-fiches-rncp-v4-1-*.zip` through the data.gouv.fr API (no URL written down), downloads it once into `var/rncp/`, streams through it (`XMLReader` over `zip://`) and writes the fiche into the `RncpImport`. Nothing requested, nothing downloaded. A network failure is « En échec » on screen, never a non-zero exit. `--file=` reads a local export |
 | `app:rncp:check` | **Scheduled Mondays 05:30.** Rereads each référentiel's RNCP fiche - still active, end of registration, a fiche that now replaces it - into `Referential::$rncpWatch`; the Référentiels screen turns a change into a banner, logged at *warning*. Never rewrites a référentiel: a new fiche is a new version |
@@ -249,6 +258,129 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   Mercure/SSE. The « mode contrôle » times each question **server-side**
   (`QuizAttemptAnswer::$servedAt`, stamped only if null, so F5 cannot reset the clock) — the point of
   that timing is to *exonerate*: three seconds on a question is proof nobody had time to look it up.
+- **Tournois de quiz** — `QuizTournament*` entities, `src/Service/QuizTournament/`, spec
+  `design/validated/quiz-tournament.md` (being built in lots; lot 1 the model and the rules, lot 2
+  the administration and the standings page, lot 3 the challenges, the room, the duel and its
+  history, lot 4 the rounds in class, lot 6 « Jouer », lot 8 the avatar moved to « Mon profil »). Students reached by a **targeting** challenge each other to synchronous duels of 20
+  questions drawn from ordinary library quizzes; an Elo rating ranks them. `Feature::QuizTournaments`
+  is off for every role; creating and opening is `ROLE_ADMIN` alone whatever the matrix says
+  (`QuizTournamentVoter`, the only arbiter, facts from `QuizTournamentAccess`). Rules the code holds:
+  - **Targeting is a shared brick**: `StructureTargetable` + `StructureTargetsTrait` (ManyToMany to
+    Section, Track, Program; join tables named after the using entity) and
+    `App\Service\StructureTargeting\StructureTargeting`, whose decision is the pure
+    `StructureTargetRule`: an **active** Program targeted itself or under a targeted Track or Section,
+    with the test zone's asymmetry. Read at every gesture, never frozen. The serious games will use it
+    too.
+  - **Every rule is a pure function on primitives**, tested as such: `QuizTournamentEligibility`
+    (eligible, in progress, view/play/manage/open a round), `QuizTournamentChallengeRules` (each
+    refusal a `QuizTournamentChallengeRefusal` case the button names; 3 encounters a day per pair is a
+    **Paris** civil day, round duels included), `QuizTournamentElo` (1000, K 40 then 20, the « enjeu »),
+    `QuizTournamentStanding` (four blocks; the ladder rule reads flags **stamped when the duel or the
+    challenge happened** - « nearest ranked at the time » cannot be recomputed later; with nobody else
+    ranked it holds by itself), `QuizTournamentQuestionDraw` (seeded, proportional, vrai/faux capped,
+    never fails; formats from `QuestionType::isPlayableInTournament()`), `QuizTournamentRoundPairing`.
+  - A pending challenge past 24 h **is** expired and an accepted one past its room **is** missed,
+    whatever the stored status says (`QuizTournamentChallenge::statusAt()`); queries count « en
+    attente » with `expiresAt > now` for the same reason.
+  - A duel's questions are frozen through `QuizQuestionDefinitionTrait`, their choices a JSON snapshot
+    in the order both players see; `servedAt` is stamped once.
+  - **Administration** is Paramètres › Pédagogique › « Tournois » (`App\Controller\Settings\QuizTournamentController`,
+    the tab shown to ROLE_ADMIN once the feature is lit): every tournament, opened or not; « Ouvrir » is
+    its own gesture (born closed). `QuizTournamentEditor` is the one door: the save-time reserve check
+    (`QuizTournamentReserve`, « N questions ignorées : apparier, ordre » and what is missing), and **after
+    the first duel only the name, the end and the targeting are fields** (`QuizTournamentType` `locked`
+    renders nothing else, so a forged POST moves nothing); deleting only before any duel. Sources come
+    from the creator's own quiz library, through the library picker rows of « Lancer un quiz ».
+  - **`StructureTargetsType`** is the one targeting field (`inherit_data`, writes `targetSections` /
+    `targetTracks` / `targetPrograms` onto an entity or an array): the active structure only
+    (`StructureTargetChoices`), test formations apart, what is already named kept even once
+    deactivated. Its boxes are placed in the tree by id (`templates/form/structure_targets.html.twig`);
+    it never ticks a child for the person.
+  - **The standings page** (`/tournaments/{id}`, `App\Controller\QuizTournament\TournamentController`)
+    reads `QuizTournamentStandingsAssembler` - players, eligible students (`reachedStudents()` +
+    ROLE_STUDENT), 14-day activity, ladder facts and rating trend, a fixed number of queries - and
+    **writes « la classe affichée » on the player as it shows it** (§2). Eligibility is read now even
+    for a tournament that is over.
+  - **The tournament's dress is its own stylesheet**, `assets/styles/quiz_tournament.css`, scoped under
+    `.qt[data-tournament-palette]` and loaded by the tournament screens alone (H « Pop », Archivo and
+    Archivo Black self-hosted in `assets/fonts/`); a palette is three custom properties whose values
+    `QuizTournamentPaletteStylesheetTest` pins against `QuizTournamentPalette::colors()`. Every H screen
+    extends `templates/quiz_tournament/_layout.html.twig` (trail, head with the emblem, tab bar). The
+    logo is data uploaded per tournament (`UploadPolicy::images()`, no SVG): the Tournoi RGPD's shield
+    is shipped ready to upload as `public/quiz-tournaments/logo-tournoi-rgpd.png` (its SVG source
+    beside it); without a logo, `QuizTournamentMonogram` draws one from the name.
+  - **Challenges** (`App\Controller\QuizTournament\ChallengeController`, `QuizTournamentChallenges`):
+    send / accept / refuse read every rule again server-side under one lock per tournament, and a
+    refusal comes back as the sentence of its enum (`QuizTournamentRefusal`). The standings' « Défier »
+    is greyed with its reason from `QuizTournamentAccess::challengeFactsByOpponent()` (every line in a
+    fixed number of queries - it must stay equal to `challengeFacts()`, `QuizTournamentFactsTest` pins
+    it) and opens the H-defier sheet, fetched into a `<dialog>`. **« Mes défis » expires lazily**:
+    `QuizTournamentChallenge::settle()` writes what `statusAt()` reads (24 h, and the tournament's end
+    closes pending challenges and rooms) when the board touches a row; `QuizTournamentChallengeBoard`
+    is the pure reading, rooms first, and its `count()` is the tab's counter. Mes défis is a student's
+    screen (404 for anyone else).
+  - **No notification, only page updates over Mercure** (`QuizTournamentLive`): a private topic per
+    student and tournament for the « Défis (n) » counter, one per room for « Prêt » and « start »,
+    subscribed through the bundle's cookie (`subscriber` hub) by the tournament screens alone, and
+    published after each change. Never add a listener outside the tournament screens.
+  - **The room** (`RoomController`, `QuizTournamentRooms`, `QuizTournamentRoomRules`): « Prêt » is a
+    POST repeated every 20 s, lost after 45 s, cleared by a beacon when the page goes (`pagehide` *and*
+    the Stimulus `disconnect`, a Turbo visit fires no pagehide); refused while either player has an
+    unfinished duel anywhere. **`QuizTournamentDuelStarter` is the only door to a challenge's duel**
+    (the duel itself is made by `QuizTournamentDuelFactory`, shared with the rounds):
+    room lock (LOCK_DSN) + the challenge row FOR UPDATE, an existing duel answered as is, then
+    `shouldStart()` on fresh facts, the draw, the frozen questions (choices with local ids,
+    `QuizTournamentDuelSnapshot`; images referenced, not copied), ladder flags and ratings before.
+  - **The duel is server-timed and lazy** (`QuizTournamentDuelEngine`, the one door: the screen's
+    state, an answer, `app:quiz-tournament:close-duels`). `QuizTournamentDuelClock` is the pure
+    timeline: the first question served `LEAD_SECONDS` after the duel's creation (the room's
+    countdown), each one closing at its deadline or as soon as **both** answered, the next served
+    `TRANSITION_SECONDS` later, the duel over two seconds after its last. Every request first stamps
+    the serves whose time has come - **at the computed moment, never the request's**, and only once
+    (`serve()`), so a reload restarts nothing and nobody's absence pauses anything - and finishes a
+    duel that is over: one transaction, the duel row FOR UPDATE, both players locked in id order,
+    `QuizTournamentElo::rate()`, `recordDuel()` on both, `finish()`; a finished duel is left as it
+    is. All under a LOCK_DSN lock per duel. Times are whole seconds, what the columns keep.
+  - **What a player learns during a duel**: the public state (same for both, published on the duel's
+    private topic) carries the question without its correction, who answered, right or wrong for
+    each once the question closed, the scores - never the right answer, never the other's pick; one's
+    own pick comes back only in the answer to one's own request (`mine`). Grading is
+    `QuizAnswerChecker` on the frozen choices (`QuizTournamentDuelGrader`): 0 or 1 a question - the
+    four duel formats are all-or-nothing on this platform, a QCM à réponses multiples included - no
+    penalty, an unanswered question 0.
+  - **After the duel** (`DuelController`): result or defeat (`QuizTournamentDuelReports`, rules in the
+    pure `QuizTournamentDuelReading` - the consolation reads the ratings *before* the duel, the errors
+    are grouped by the question's source quiz), the correction one question at a time behind links
+    (`?filter=errors`, `?theme=`, `?q=`), « Mes duels » with the rating line
+    (`QuizTournamentRatingChart`, server-drawn SVG, hover by Stimulus). **A duel is its two players'
+    alone** - teachers and administrators included get a 404 - and its result and correction exist
+    only once it is finished. A player who lost their eligibility keeps them.
+  - **Rounds in class** (§8, `RoundController`, `QuizTournamentRounds`, rules in the pure
+    `QuizTournamentRoundRules`): a teacher of a targeted class (`OPEN_ROUND` for that class) opens
+    one, narrowed or not to **one** Option of the class or **one** group of a `GroupBatch` of that
+    class they own or were shared - **one open round per class at a time**. Expected = the class's
+    students still eligible ∩ the restriction, **read on the day** (a deleted lot expects nobody).
+    Students join from the tournament page or « Mes défis » (the card, `_round_entry.html.twig`),
+    then their page beats every 10 s (`QuizTournamentPlayer::$lastSeenAt`, absent after 30 s). No
+    timer: « Clore et apparier » pairs the entrants - participants still expected, present, able to
+    play, in no unfinished duel anywhere - with `QuizTournamentRoundPairing`, every duel with the
+    **same** start, origin Round; the odd one out is exempted (`recordRoundExemption()`). Students
+    are told on their own counter topic (`{"event": "round"}` / `{"event": "duel", "url"}`), never on
+    a shared one. « Annuler la ronde »; a round never expires. **The projected screen**
+    (`round.html.twig`, outside the app shell, a 16:9 stage sized in em so 1280 × 720 scales whole)
+    is its opener's alone (404 for anybody else, administrators included) and follows the round's
+    topic: roster changes, then a per-duel summary (scores, question - never a question's text)
+    that `QuizTournamentLive::publishDuel()` adds for a round duel; it draws no « Formatool ».
+  - **« Jouer »** (§15, `PlayController`, `/play`, `App\Service\Play\PlayHub`, rules in the pure
+    `PlayHubRule`): a **pure student's** entry and page - the tournaments that reach them (opened, the
+    feature lit, eligible; listed until 30 days after their end) and the serious games open to them
+    (`SeriousGameShelf`), each card in its content's dress (the tournament's palette and emblem, the
+    catalogue's own `serious_game/_card.html.twig`). The entry is drawn only when one of the two has
+    something (`play_hub_visible()`, the rule the page 404s by) and **never carries a counter**: the
+    card's « n défis en attente » is the page's content, not an alert (§7). The page belongs to two
+    features, read as an OR (`#[RequiresFeature(QuizTournaments, SeriousGames)]`). Adults get no bar
+    entry: Outils › Animer la classe › « Tournois » (`quiz_tournaments_followed()`: a teacher once an
+    opened tournament targets a class they teach, an administrator once one exists) opens `/tournaments`.
 - **Sondages** — the same three-step shape as Quiz, and deliberately so: `SurveyTemplate` (library,
   `SurveyFolder`s) → `SurveyCampaign` (launched wave, carrying a frozen copy of the questions) →
   `SurveyResponse`. `SurveySeries` replays a campaign to compare waves. Two things freeze at launch
@@ -271,14 +403,24 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   cybersécurité, BTS SIO 2 SISR, `serious-games-blackout.md`) and **Rétro Rush** (bases de données
   et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`) and **Fusion** (le plan de bascule, BTS SIO 2 SISR, `serious-games-fusion.md`) and **Service de nuit** (PHP pour débutants, BTS SIO 1, `serious-games-service-de-nuit.md`), the six of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
-  mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus
-  one line per game in the « Serious games » block of Paramètres › Fonctionnalités
-  (`SeriousGameRoleSetting`), **by role only**; `SeriousGameRules` is the whole « qui joue, qui lit »
+  mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus,
+  per game, **for adults** one line in the « Serious games » block of Paramètres › Fonctionnalités
+  (`SeriousGameRoleSetting`, by role, no student column - `SeriousGameRules::matrixRoles()`) and **for
+  students its targeting** (`SeriousGame` is a `StructureTargetable`: sections, filières, formations;
+  `StructureTargeting::reaches()`), set in Paramètres › Serious games › « Qui joue (étudiants) »
+  (`SeriousGameTargetingController`, with whom it reaches today, `SeriousGameStudentReach`). An empty
+  targeting closes the game to every student - and **every game started closed** when the student
+  cells were dropped (2026-11-04, nothing carried over). A student holding an adult role still plays
+  by that role's cell. The targeting decides who *opens* a game, never what is kept: losing access
+  deletes no progress, and a teacher reads past results whatever the targeting
+  (`SeriousGameReadingTest`). `SeriousGameShelf::cardsFor()` lists the games open to a person with
+  their progress; `SeriousGameRules` is the whole « qui joue, qui lit »
   (read by `SeriousGameVoter`): a student's results are read by them, by every teacher of one of
   their **active** classes (history included - asked now, not at the time of play, and never
   through `isProgramTeacher()`, which lets staff in) and by administrators; staff read figures
-  without names; tutors and externals nothing. **No link in a student's menus** - they open the
-  address. Rules the code holds:
+  without names; tutors and externals nothing. **A student's door is « Jouer »** in their bar (the
+  tournaments' page too, see « Tournois de quiz »), the adults' Ressources (play) and Outils
+  (results). Rules the code holds:
   - **The server generates and corrects.** Questions come from declarative JSON templates
     (`moncampus-gabarit/1`, `App\SeriousGame\Template\TemplateInterpreter`, ExpressionLanguage
     over `TemplateFunctions` - no PHP, so an administrator rewrites them with Claude through the
@@ -322,7 +464,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     covers the window otherwise) with a toggle, and shows **the time left** whenever a session
     carries a deadline, read against `serverTime`. The avatar and the reward
     drawings are one JavaScript module each, shared by the platform and the games
-    (`public/serious-games/shared/`); students only collect.
+    (`public/serious-games/shared/`); students only collect. **The avatar is drawn on « Mon profil »**
+    (see « Mon avatar »), never in the module: a game always draws the person's drawing, whatever
+    they show elsewhere, and the default one for whoever never drew one - the host bar, the
+    catalogue and the player page then offer « Créer mon avatar », a link to the profile. Wearing a
+    pin from the player page changes the drawing, never the choice.
   - **Two mechanics** (`SeriousGame::$mechanic`, the manifest's `mechanic`): the four games above are
     **series** of generated questions; Neko-Con is a **scenario** (`src/SeriousGame/Scenario/`,
     `SeriousGameScenarioPlay`, `ScenarioApiController`) - 39 hand-written tickets in
@@ -650,7 +796,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     (`app:purge-platform-activity`). Connector tools `path_list`, `path_get`, `path_create`,
     `path_set_steps` (a whole list, kept steps kept, refused if it would drop a step people worked
     on) and `path_publish`.
-- **Accès aux fonctionnalités** — `App\Enum\Feature` (61 cases) + `#[RequiresFeature]` +
+- **Accès aux fonctionnalités** — `App\Enum\Feature` (62 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
   exceptions named in `Feature::defaultRoles()` (`student_work`, `shared_documents`, `wiki` for
@@ -801,6 +947,36 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
   `config/tech_profile.yaml` avec leur date, `.git/` et `tests/` étant exclus de l'image de
   production ; `/beaup-deploy` les remesure à chaque livraison. Aucun chiffre écrit en dur : la page
   doit rester vraie sans être maintenue.
+- **Installer beaup-app** — `/install` (`InstallController`, profile menu, every role, outside the
+  feature catalogue): the site installable as a web app named **« beaup-app »**,
+  design/validated/quiz-tournament.md §13. It replaced the Flutter web build at `/campus-app/`
+  (retired, see the companion-repos paragraph): two PWAs only, beaup-app and e-CO.
+  `public/manifest.webmanifest` (`id`/`scope` `/`, standalone) and the icons under
+  `public/beaup-app/` sit **outside AssetMapper** - an installed app keeps asking the addresses it
+  was installed from; `icon.svg`/`icon-maskable.svg` (a geometric B) are the sources, the PNGs are
+  rendered from them (headless Chrome screenshot), and the mark is the project's own: never an
+  Institution emblem. Caddy sends the manifest's type itself (`@webAppManifest`): the prod image
+  has no `/etc/mime.types`. **No service worker, no cache, no notification**: Chromium 156 reports
+  no installability error and fires `beforeinstallprompt` with none registered, so adding one would
+  buy nothing. The offer is caught on every page by `assets/web_app/install_prompt.js` (imported by
+  `app.js`, kept across Turbo visits) and used only by the screen's button; an SVG icon in the
+  manifest made Chrome refuse installation, so it lists PNGs only. A page installable as something
+  else replaces `base.html.twig`'s `web_app_meta` block whole (the e-CO GPS probe). The Ressources
+  page of the mobile app links here instead of offering a web build.
+- **Mon avatar** (« Mon profil », `App\Controller\ProfileAvatarController`, every account, outside
+  the feature catalogue; design/validated/quiz-tournament.md §16) — what stands for a person wherever
+  Formatool draws a face is **their explicit choice**, `User::$avatarChoice` (`AvatarChoice`: `photo` |
+  `drawn`, null = initials), for every role alike. `App\Service\UserAvatars` is the one reading
+  (`decide()` is the rule on primitives; `of()` / `forUsers()` batched, memoised per request,
+  `ResetInterface`); templates ask `user_avatar(user)` and draw a square face with
+  `partials/_user_face.html.twig`. **Choosing deletes nothing**: the photo and the drawing both stay
+  and « Utiliser … » switches back; a choice with nothing behind it shows the initials and is refused
+  by the server. Sending a photo (`app_profile_avatar`) chooses it; saving a drawing in the creation
+  tunnel (`/profile/avatar/draw`, the serious games' editor moved here - `sg_avatar_editor_controller.js`
+  over `public/serious-games/shared/avatar.js`) chooses it (`SeriousGameAvatars::draw()`). The
+  drawing is still the `SeriousGameAvatar` row (name and table kept), with no feature condition; pins
+  are offered to whoever holds one and a pin not obtained is refused - nothing is earned in the
+  profile. `/serious-games/avatar` answers a 301 to the tunnel, for anybody.
 - **Aide** — `HelpSection`/`HelpArticle` (an article, a FAQ answer or a glossary term, one entity),
   reached from the profile menu only. Every entry names its audiences (`HelpAudience`:
   enseignant/administration/étudiant/tuteur) and `App\Service\HelpAccess` is the single place that
@@ -873,7 +1049,7 @@ Prefer these over re-implementing:
   pill family (`cm-audio-pill`, `cm-wc-tag`, `cm-step`, Tabler's `bg-*-lt`) keep their own
   `badgeClass()`.
 - `Cm:*` Twig components — see "Design" below.
-- Twig helpers in `src/Twig/`: `is_staff`, `is_program_teacher`, `file_url`, `avatar_url`,
+- Twig helpers in `src/Twig/`: `is_staff`, `is_program_teacher`, `file_url`, `user_avatar`, `avatar_url`,
   `visibility_allows`, `structure_nav_*`, `student_nav_*`, `ufa_nav_*`, `unread_message_thread_count`.
 
 ### Test accounts / "zone de test"
@@ -913,10 +1089,10 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 35 of them: Assignment, AudienceTargetable, ClassBoard,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 36 of them: Assignment, AudienceTargetable, ClassBoard,
 DocumentationArticle, Dossier, EcfBooklet, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
 GuestConsole, InternshipTutorLink, LearningPath, LessonLog, MessageThread, OnlineCourse, Portfolio, Progression, ProxmoxHost, QuizFolder,
-QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SeriousGame, SignupList, Survey, SurveyFolder, TeacherDossier, Ticket,
+QuizTemplate, QuizTournament, SequenceFolder, SequenceInstance, SequenceTemplate, SeriousGame, SignupList, Survey, SurveyFolder, TeacherDossier, Ticket,
 Wall, Wiki, WordCloud).
 New per-object rules belong in a Voter, not inline in a controller.
 

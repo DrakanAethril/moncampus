@@ -1,0 +1,6 @@
+{# The starburst carrying a rating move (H-resultat, H-defaite). Parameters: `delta`, `modifier`. #}
+{% import 'quiz_tournament/_duel_macros.html.twig' as fmt %}
+<svg class="qt-burst {{ modifier|default('') }}" viewBox="0 0 64 64" role="img" aria-label="{{ 'quizTournamentRatingMoveLabel'|trans({'%delta%': fmt.delta(delta)|trim}) }}">
+    <path d="M32 2l6 12 13-6-2 14 14 3-10 10 10 10-14 3 2 14-13-6-6 12-6-12-13 6 2-14-14-3 10-10L1 25l14-3-2-14 13 6z"></path>
+    <text x="32" y="38" text-anchor="middle">{{ fmt.delta(delta)|trim }}</text>
+</svg>

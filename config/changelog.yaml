@@ -26,6 +26,31 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.04'
+      date: '2026-11-04'
+      summary: "Formatool s'installe désormais comme une application, sous le nom beaup-app, et remplace l'ancienne version web de l'application mobile. Des tournois de quiz en duels entre étudiants entrent à l'essai auprès de l'administration, et chacun choisit son avatar dans son profil."
+      entries:
+          - type: nouveaute
+            title: "Formatool s'installe comme une application : beaup-app"
+            detail: "Sur téléphone, tablette ou ordinateur, depuis le menu profil, pour l'ouvrir en plein écran - pratique pendant un concours en direct ; l'ancienne version web de l'application mobile renvoie désormais vers le site."
+          - type: nouveaute
+            title: "Tournois de quiz : des duels entre étudiants et un classement"
+            detail: "Défis acceptés ou refusés, duels de vingt questions chronométrées joués en même temps, cote façon échecs et rondes lancées en classe par l'enseignant ; à l'essai auprès de l'administration."
+          - type: modification
+            title: "Les jeux d'entraînement s'ouvrent aux étudiants par section, filière ou formation"
+            detail: "L'administration choisit, jeu par jeu, qui joue parmi les étudiants ; leur progression est toujours conservée."
+          - type: nouveaute
+            title: "Une entrée « Jouer » pour les étudiants"
+            detail: "Elle réunit leurs tournois et leurs jeux d'entraînement, et n'apparaît que lorsque l'un d'eux leur est ouvert."
+          - type: modification
+            title: "Chacun choisit son avatar dans son profil : une photo, un avatar dessiné ou ses initiales"
+            detail: "L'avatar à dessiner, jusqu'ici réservé aux jeux d'entraînement, est ouvert à tous les comptes ; changer d'avis ne supprime rien."
+          - type: fix
+            title: "Quiz : les énoncés et les corrections gardent leurs retours à la ligne"
+          - type: fix
+            title: "Quiz à apparier : une même réponse proposée plusieurs fois n'apparaît plus qu'une fois, avec son nombre"
+          - type: interne
+            title: "Deux tests rendus indépendants de la machine qui les exécute"
     - version: '2026.11.03.2'
       date: '2026-11-03'
       summary: "Un sixième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration, le premier pour les débutants : un petit hôtel dont l'élève reprend le site, pour apprendre PHP en première année de BTS SIO. Les étudiants sans photo apparaissent avec leur avatar."

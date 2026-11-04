@@ -1,0 +1,121 @@
+{# The projected stage of a round (round.html.twig), also served alone by app_quiz_tournament_round_board
+   when the round moves. Parameters: `tournament`, `round`, `board` (QuizTournamentRoundBoard::read()).
+   Sizes are in em of the stage, so the whole screen scales with the window and stays 16:9. #}
+{% import 'quiz_tournament/_round_macros.html.twig' as rounds %}
+{% set state = round.open ? 'join' : (round.pairedAt ? 'duels' : 'cancelled') %}
+<div class="qt-stage__inner" data-state="{{ state }}" data-all-finished="{{ state == 'duels' and board.finished == board.duels|length ? 'true' : 'false' }}">
+    <header class="qt-stage__head">
+        {% include 'quiz_tournament/_emblem.html.twig' with {tournament: tournament, size: 76} only %}
+        <div class="qt-stage__titles">
+            <h1 class="qt-stage__title">{{ 'quizTournamentRoundHeading'|trans }}</h1>
+            <span class="qt-stage__where">{{ tournament.name }} · {{ rounds.where(round) }}</span>
+        </div>
+        {% if state == 'join' %}
+            <span class="qt-stage__badge qt-stage__badge--open">{{ 'quizTournamentRoundBadgeOpen'|trans }}</span>
+        {% elseif state == 'duels' %}
+            <span class="qt-stage__badge">{{ 'quizTournamentRoundBadgeFinished'|trans({'%count%': board.finished, '%total%': board.duels|length}) }}</span>
+        {% else %}
+            <span class="qt-stage__badge qt-stage__badge--open">{{ 'quizTournamentRoundBadgeCancelled'|trans }}</span>
+        {% endif %}
+    </header>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <p class="qt-stage__flash" role="alert">{{ message }}</p>
+        {% endfor %}
+    {% endfor %}
+
+    {% if state == 'join' %}
+        {% set present = board.present|length %}
+        {% set dense = board.expected > 18 %}
+        {% set capacity = dense ? 32 : 18 %}
+        {% set shown = board.present|slice(0, capacity) %}
+        {% set placeholders = min(board.missing, capacity - shown|length) %}
+        <main class="qt-stage__join">
+            <section class="qt-stage__how" aria-label="{{ 'quizTournamentRoundHowLabel'|trans }}">
+                <h2 class="qt-stage__call">{{ 'quizTournamentRoundCall'|trans }}</h2>
+                <p class="qt-stage__path">{{ tournament.name }} › <mark>{{ 'quizTournamentRoundJoinAction'|trans }}</mark></p>
+                <div class="qt-stage__count">
+                    <span class="qt-stage__count-n">{{ present }}</span>
+                    <span class="qt-stage__count-text">
+                        <span class="qt-stage__count-of">{{ 'quizTournamentRoundPresentOf'|trans({'%count%': present, '%expected%': board.expected}) }}</span>
+                        <span class="qt-stage__count-scope">{{ rounds.scope(round) }}</span>
+                    </span>
+                </div>
+            </section>
+            <section class="qt-stage__joined" aria-label="{{ 'quizTournamentRoundJoinedLabel'|trans }}">
+                <ul class="qt-stage__stickers{{ dense ? ' qt-stage__stickers--dense' }}">
+                    {% for user in shown %}
+                        <li class="qt-stage__sticker">
+                            {{ include('quiz_tournament/_avatar.html.twig', {user: user, avatar: board.avatars[user.id] ?? {photo: null, drawn: null}, modifier: 'qt-avatar--stage'}, with_context = false) }}
+                            <span class="qt-stage__sticker-name">{{ user.shortDisplayName ?? user.username }}</span>
+                        </li>
+                    {% endfor %}
+                    {% if placeholders > 0 %}
+                        {% for i in 1..placeholders %}
+                            <li class="qt-stage__sticker qt-stage__sticker--missing" aria-hidden="true">?</li>
+                        {% endfor %}
+                    {% endif %}
+                </ul>
+                {% if board.present|length > shown|length %}
+                    <p class="qt-stage__more">{{ 'quizTournamentRoundMorePresent'|trans({'%count%': board.present|length - shown|length}) }}</p>
+                {% endif %}
+                <div class="qt-stage__actions">
+                    <form method="post" action="{{ path('app_quiz_tournament_round_cancel', {id: tournament.id, round: round.id}) }}" data-turbo="false">
+                        <input type="hidden" name="_token" value="{{ csrf_token('quiz_tournament_round' ~ round.id) }}">
+                        <button type="submit" class="qt-stage__btn">{{ 'quizTournamentRoundCancelAction'|trans }}</button>
+                    </form>
+                    <form method="post" action="{{ path('app_quiz_tournament_round_close', {id: tournament.id, round: round.id}) }}" data-turbo="false">
+                        <input type="hidden" name="_token" value="{{ csrf_token('quiz_tournament_round' ~ round.id) }}">
+                        <button type="submit" class="qt-stage__btn qt-stage__btn--main"{{ present < 2 ? ' disabled' }}>{{ 'quizTournamentRoundCloseAction'|trans({'%count%': present}) }}</button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    {% elseif state == 'duels' %}
+        {% set cards = board.duels|length + (board.exempt ? 1 : 0) %}
+        {% set columns = cards > 16 ? 5 : (cards > 2 ? 4 : max(cards, 1)) %}
+        {% set rows = max(1, (cards / columns)|round(0, 'ceil')) %}
+        <main class="qt-stage__duels qt-stage__duels--cols-{{ columns }} qt-stage__duels--rows-{{ min(rows, 6) }}">
+            {% for row in board.duels %}
+                <article class="qt-round-duel{{ row.finished ? ' is-done' }}"
+                         data-duel-id="{{ row.duel.id }}" data-player-a="{{ row.a.id }}" data-player-b="{{ row.b.id }}">
+                    {% if row.finished %}<span class="qt-round-duel__done">{{ 'quizTournamentRoundDuelDone'|trans }}</span>{% endif %}
+                    <div class="qt-round-duel__side{{ row.winner and row.winner.id == row.a.id ? ' is-winner' }}">
+                        <span class="qt-round-duel__name">{{ row.a.shortDisplayName ?? row.a.username }}</span>
+                        <span class="qt-round-duel__score" data-score="a">{{ rounds.score(row.scoreA) }}</span>
+                    </div>
+                    <div class="qt-round-duel__side{{ row.winner and row.winner.id == row.b.id ? ' is-winner' }}">
+                        <span class="qt-round-duel__name">{{ row.b.shortDisplayName ?? row.b.username }}</span>
+                        <span class="qt-round-duel__score" data-score="b">{{ rounds.score(row.scoreB) }}</span>
+                    </div>
+                    <div class="qt-round-duel__foot">
+                        <div class="qt-round-duel__bar"><div class="qt-round-duel__fill" data-progress style="width: {{ row.progress }}%"></div></div>
+                        <span class="qt-round-duel__status" data-status>
+                            {%- if row.finished -%}
+                                {{ row.winner ? 'quizTournamentRoundDuelWinner'|trans({'%name%': row.winner.shortDisplayName ?? row.winner.username}) : 'quizTournamentRoundDuelDraw'|trans }}
+                            {%- elseif row.question -%}
+                                {{ 'quizTournamentRoundDuelQuestion'|trans({'%number%': row.question, '%total%': row.total}) }}
+                            {%- else -%}
+                                {{ 'quizTournamentRoundDuelStarting'|trans }}
+                            {%- endif -%}
+                        </span>
+                    </div>
+                </article>
+            {% endfor %}
+            {% if board.exempt %}
+                <article class="qt-round-duel qt-round-duel--exempt">
+                    <span class="qt-round-duel__exempt-head">{{ 'quizTournamentRoundExemptHead'|trans }}</span>
+                    <span class="qt-round-duel__name">{{ board.exempt.shortDisplayName ?? board.exempt.username }}</span>
+                    <span class="qt-round-duel__exempt-text">{{ 'quizTournamentRoundExemptProjected'|trans }}</span>
+                </article>
+            {% endif %}
+        </main>
+    {% else %}
+        <main class="qt-stage__cancelled">
+            <p>{{ 'quizTournamentRoundCancelledText'|trans }}</p>
+        </main>
+    {% endif %}
+
+    <a class="qt-stage__back" href="{{ path('app_quiz_tournament_show', {id: tournament.id}) }}" data-turbo="false">{{ 'quizTournamentRoundBackAction'|trans }}</a>
+</div>

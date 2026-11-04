@@ -44,12 +44,22 @@ class FeatureCoverageTest extends KernelTestCase
                 'app_about',
                 'app_changelog',
                 'app_technical',
+                // « Mon avatar » included (app_profile_avatar*, design/validated/quiz-tournament.md
+                // §16): sending a photo or drawing an avatar is for every account, never behind the
+                // serious games module it was born in.
                 'app_profile',
+                // The serious games' former avatar address, now a 301 to « Mon avatar »: a bookmark
+                // must land there whatever the module says.
+                'app_serious_games_avatar',
                 'app_locale_switch',
                 'app_logout',
                 'app_password_renewal',
                 'app_home',
                 'app_resources',
+                // « Installer beaup-app » (design/validated/quiz-tournament.md §13): putting the
+                // platform on one's home screen is how somebody uses their own account, for every
+                // role, and switching it off would only hide the iPhone sign-in advice it carries.
+                'app_install',
             ],
             // Reached without being logged in, so there is no account to resolve a feature against:
             // the resolver would answer the catalogue's defaults for an anonymous visitor and could
@@ -74,6 +84,10 @@ class FeatureCoverageTest extends KernelTestCase
                 // establishment runs - « la plateforme redémarre » is not switchable, and a
                 // catalogue entry could only ever hide the warning from the people who need it.
                 'app_deployment_notice_',
+                // The retired Campus web app: every old /campus-app/ address answers a 301 to /, for
+                // whoever follows it (App\Controller\CampusAppRetiredController) - an old icon or
+                // an old mail, quite possibly signed out. Nothing an establishment runs.
+                'app_campus_app_retired',
                 // « Cours en ligne », the public half (design/validated/cours-en-ligne.md §3): a
                 // teacher's public page and the courses on it are read by visitors who hold no
                 // account, so the resolver would answer « off » and 404 the very pages the feature

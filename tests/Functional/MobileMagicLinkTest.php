@@ -14,9 +14,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mime\Email;
 
 /**
- * The mobile app's mailed link, and the same app compiled as a PWA (public/campus-app/): the phone
- * is reached by its `campusmanager://` scheme, the PWA by nothing but its own address - so the mail
- * names whichever asked, and the session it opens is listed under the app that consumed it.
+ * The mobile app's mailed link: the phone is reached by its `campusmanager://` scheme; the browser
+ * build of the app (once at /campus-app/, retired) by the site's own link. A session a browser build
+ * still opens stays listed under its own name.
  */
 class MobileMagicLinkTest extends FunctionalTestCase
 {
@@ -34,17 +34,31 @@ class MobileMagicLinkTest extends FunctionalTestCase
     /**
      * The service rather than POST /api/magic-login/request: its rate limiter (per IP, over a cache
      * pool that survives the run) would make the answer depend on how often the suite ran today.
+     *
+     * The browser build of the app (/campus-app/) is retired: a browser still running it is sent the
+     * site's own sign-in link, never the old /campus-app/?login= nor the phone's deep link.
      */
-    public function testThePwaIsSentItsOwnAddress(): void
+    public function testTheRetiredWebBuildIsSentTheSitesOwnLink(): void
     {
         $user = $this->createConfirmedUser('magic.pwa');
 
         static::getContainer()->get(MagicLoginService::class)
-            ->requestMobileLink($user, '127.0.0.1', 'https://campus.example.org/campus-app/');
+            ->requestLinkForApp($user, '127.0.0.1', MobileApp::CampusWeb);
 
         $html = $this->sentHtml();
-        self::assertMatchesRegularExpression('#href="https://campus\.example\.org/campus-app/\?login=[0-9a-f]+\.[0-9a-f]+"#', $html);
+        self::assertMatchesRegularExpression('#href="https?://[^/"]+/login/magic/[0-9a-f]+\.[0-9a-f]+"#', $html);
+        self::assertStringNotContainsString('/campus-app/', $html);
         self::assertStringNotContainsString('campusmanager://', $html);
+    }
+
+    public function testThePhoneAppsKeepTheirDeepLink(): void
+    {
+        $user = $this->createConfirmedUser('magic.app');
+
+        static::getContainer()->get(MagicLoginService::class)
+            ->requestLinkForApp($user, '127.0.0.1', MobileApp::Campus);
+
+        self::assertStringContainsString('href="campusmanager://login/', $this->sentHtml());
     }
 
     public function testALinkConsumedByThePwaOpensAWebSession(): void

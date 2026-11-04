@@ -20,6 +20,9 @@ use App\Entity\QuizAttemptAnswer;
 use App\Entity\QuizInstance;
 use App\Entity\QuizInstanceQuestion;
 use App\Entity\QuizTemplate;
+use App\Entity\QuizTournament;
+use App\Entity\QuizTournamentDuel;
+use App\Entity\QuizTournamentRound;
 use App\Entity\SeriousGame;
 use App\Entity\SeriousGameRoleSetting;
 use App\Entity\Topic;
@@ -33,6 +36,8 @@ use App\Enum\FeatureAccessState;
 use App\Enum\GameTrack;
 use App\Enum\QuestionType;
 use App\Enum\QuizMode;
+use App\Enum\QuizTournamentDuelOrigin;
+use App\Enum\QuizTournamentPalette;
 use App\Enum\WallFormat;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -266,6 +271,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            // « Mon avatar »'s creation tunnel: every account draws one, outside any feature
+            // (design/validated/quiz-tournament.md §16).
+            '/profile/avatar/draw' => 200,
             // The Claude connector is a door of its own: a browser session opens nothing there, whatever
             // the role - only an OAuth access token does (App\Security\McpAccessTokenAuthenticator).
             '/mcp' => 401,
@@ -274,6 +282,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            // « Installer beaup-app » (§13 of quiz-tournament.md): every role, outside the catalogue.
+            '/install' => 200,
             // Jobboard. This base class opens the whole catalogue, so what is pinned here is the
             // role axis: a student may read the board (their own filière's offers, which is
             // JobboardPerimeterTest's business), and the two configuration screens are an
@@ -469,12 +479,16 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            // « Mon avatar »'s creation tunnel: every account draws one, outside any feature
+            // (design/validated/quiz-tournament.md §16).
+            '/profile/avatar/draw' => 200,
             '/mcp' => 401,
             '/about' => 200,
             '/help' => 200,
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/install' => 200,
             // Jobboard: the board is readable, the keys handed to the collecting agent are not a
             // teacher's business.
             '/jobboard' => 200,
@@ -664,12 +678,16 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            // « Mon avatar »'s creation tunnel: every account draws one, outside any feature
+            // (design/validated/quiz-tournament.md §16).
+            '/profile/avatar/draw' => 200,
             '/mcp' => 401,
             '/about' => 200,
             '/help' => 200,
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/install' => 200,
             // Jobboard. The administrator has every feature by construction, so the board opens
             // even though nobody is delivered it - and the two configuration screens are theirs
             // alone: the ingestion keys, and the manual import of a file of offers.
@@ -829,6 +847,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            // « Mon avatar »'s creation tunnel: every account draws one, outside any feature
+            // (design/validated/quiz-tournament.md §16).
+            '/profile/avatar/draw' => 200,
             '/mcp' => 401,
             '/about' => 200,
             // Open to every account, and empty for anyone no article is addressed to: there is
@@ -837,6 +858,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/install' => 200,
             // Jobboard: with the catalogue open the door is open, and what a tutor then reads is
             // nothing at all - they belong to no formation, so their perimeter is empty. An empty
             // board rather than a 404: the feature exists, it simply has nothing for them.
@@ -1599,9 +1621,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     }
 
     /**
-     * The serious games (design/validated/serious-games.md §3): a student plays once the module and
-     * the game are lit for their role, and reaches the module **by its address alone** - no link in
-     * their menus. The teachers of the class read the class and its students; another student is
+     * The serious games (design/validated/serious-games.md §3): a student plays once the module is lit
+     * for them and the game's targeting reaches their class (design/validated/quiz-tournament.md
+     * §14), an adult once the module and the game are lit for their role; a student reaches the
+     * games through « Jouer » (/play, §15), the adults through Ressources. The teachers of the class read the class and its students; another student is
      * nobody's to read but their own teachers'. A tutor gets nothing anywhere, and the staff reads
      * no student by name. The statistics of every game are read by every teacher - a class of
      * theirs or not - and the administrator, never by the staff (design/validated/serious-games-neko-con.md §6).
@@ -1611,9 +1634,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
         $game = (new SeriousGame('observatoire', 'L’Observatoire'))->setPublished(true);
         $entityManager->persist($game);
-        foreach (['ROLE_STUDENT', 'ROLE_TEACHER'] as $role) {
-            $entityManager->persist(new SeriousGameRoleSetting($game, $role, true));
-        }
+        $entityManager->persist(new SeriousGameRoleSetting($game, 'ROLE_TEACHER', true));
+        $game->addTargetProgram($this->program);
         $stranger = $this->createUser(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_CAMPUS'], 'smoke.stranger');
         $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.staff');
         $entityManager->flush();
@@ -1621,14 +1643,22 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $class = '/serious-games/results/'.$this->program->getId().'/observatoire';
         $studentCard = '/serious-games/results/student/'.$this->student->getId();
         $strangerCard = '/serious-games/results/student/'.$stranger->getId();
-        $own = ['/serious-games' => 200, '/serious-games/avatar' => 200, '/serious-games/me' => 200, '/serious-games/play/observatoire' => 200];
+        $own = ['/serious-games' => 200, '/serious-games/me' => 200, '/serious-games/play/observatoire' => 200];
 
-        $this->assertScreens($this->student, $own + ['/serious-games/play/nope' => 404, '/serious-games/results' => 404, $class => 404, $strangerCard => 404]);
-        $this->assertScreens($this->teacher, $own + ['/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 404]);
-        $this->assertScreens($this->admin, $own + ['/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 200, '/settings/serious-games' => 200]);
-        $this->assertScreens($staff, ['/serious-games' => 404, '/serious-games/results' => 200, $class => 404, $studentCard => 404, '/settings/serious-games' => 404]);
-        $this->assertScreens($this->tutor, array_fill_keys(array_keys($own), 404) + ['/serious-games/results' => 404, $class => 404, $studentCard => 404]);
-        $this->assertScreens($this->teacher, ['/settings/serious-games' => 403]);
+        $this->assertScreens($this->student, $own + ['/play' => 200, '/serious-games/play/nope' => 404, '/serious-games/results' => 404, $class => 404, $strangerCard => 404]);
+        $this->assertScreens($this->teacher, $own + ['/play' => 404, '/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 404]);
+        $targeting = '/settings/serious-games/observatoire/students';
+        $this->assertScreens($this->admin, $own + ['/play' => 404, '/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 200, '/settings/serious-games' => 200, $targeting => 200]);
+        $this->assertScreens($staff, ['/serious-games' => 404, '/serious-games/results' => 200, $class => 404, $studentCard => 404, '/settings/serious-games' => 404, $targeting => 404]);
+        $this->assertScreens($stranger, ['/play' => 404, '/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
+        $this->assertScreens($this->tutor, array_fill_keys(array_keys($own), 404) + ['/play' => 404, '/serious-games/results' => 404, $class => 404, $studentCard => 404]);
+        // The editor moved to « Mon profil » (design/validated/quiz-tournament.md §16): its old
+        // address sends everybody there, module lit or not.
+        foreach ([$this->student, $this->teacher, $this->tutor, $staff] as $user) {
+            $this->assertScreens($user, ['/serious-games/avatar' => 301]);
+        }
+        $this->assertScreens($this->teacher, ['/settings/serious-games' => 403, $targeting => 403]);
+        $this->assertScreens($this->student, [$targeting => 403]);
 
         $stats = ['/serious-games/stats' => 200, '/serious-games/stats?game=observatoire&program='.$this->program->getId() => 200];
         $this->assertScreens($this->teacher, $stats);
@@ -1638,21 +1668,75 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($staff, ['/serious-games/stats' => 404]);
         $this->assertScreens($this->tutor, ['/serious-games/stats' => 404]);
 
-        // No link in the student's menus, one in the teacher's (Ressources), read off the home page.
+        // The student's door is « Jouer » in their bar, the teacher's Ressources, read off the home page.
         $this->client->loginUser($this->student);
         $this->client->request('GET', '/');
+        self::assertStringContainsString('href="/play"', (string) $this->client->getResponse()->getContent());
         self::assertStringNotContainsString('href="/serious-games"', (string) $this->client->getResponse()->getContent());
         $this->client->loginUser($this->teacher);
         $this->client->request('GET', '/');
         self::assertStringContainsString('href="/serious-games"', (string) $this->client->getResponse()->getContent());
 
-        // The game unlit for students: the module no longer exists for them.
-        $entityManager->createQuery('UPDATE App\Entity\SeriousGameRoleSetting s SET s.enabled = false WHERE s.role = :role')->setParameter('role', 'ROLE_STUDENT')->execute();
-        $this->assertScreens($this->student, ['/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
+        // The targeting emptied: the module no longer exists for students.
+        $entityManager->getConnection()->executeStatement('DELETE FROM serious_game_program');
+        $this->assertScreens($this->student, ['/play' => 404, '/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
 
         // The module switched off: nobody but the administrator plays.
         $this->switchOffEveryRole(Feature::SeriousGames);
         $this->assertScreens($this->teacher, ['/serious-games' => 404, '/serious-games/results' => 404]);
         $this->assertScreens($this->admin, ['/serious-games' => 200]);
+    }
+
+    /**
+     * The quiz tournaments (design/validated/quiz-tournament.md §2 and §3): the standings are read by
+     * the students the targeting reaches, the teachers of a targeted class and the staff once the
+     * tournament is opened, by the administrators always; a tutor reads nothing. « Mes défis » is a
+     * student's alone (§7), « Mes duels » too; a duel, its result and its correction are its two
+     * players' alone (QuizTournamentChallengesTest, QuizTournamentDuelTest). Creating, editing and
+     * opening is the administrators' alone (Paramètres › Pédagogique › Tournois) - the staff reach
+     * Paramètres but find no such screen. A closed tournament is nobody else's to see. A round in class
+     * (§8) is opened by a teacher of a targeted class and projected by them alone - administrators
+     * included get a 404 (QuizTournamentRoundsTest); its card is a student's. A student reaches them
+     * from « Jouer » (/play, §15), a pure student's page (PlayHubTest).
+     */
+    public function testQuizTournamentsAreReadByThoseTheyReachAndRunByTheAdministrators(): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $opened = new QuizTournament('Tournoi RGPD', new \DateTimeImmutable('-1 week'), new \DateTimeImmutable('+2 months'), QuizTournamentPalette::Lavender, $this->admin);
+        $opened->addTargetProgram($this->program)->open($this->admin, new \DateTimeImmutable('-1 week'));
+        $closed = new QuizTournament('Tournoi réseau', new \DateTimeImmutable('-1 week'), new \DateTimeImmutable('+2 months'), QuizTournamentPalette::Mint, $this->admin);
+        $closed->addTargetProgram($this->program);
+        $entityManager->persist($opened);
+        $entityManager->persist($closed);
+        $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.tournament.staff');
+        $rival = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'smoke.tournament.rival');
+        // A duel without questions: over as soon as one of its players opens it.
+        $duel = new QuizTournamentDuel($opened, $this->student, $rival, QuizTournamentDuelOrigin::Challenge, 1, new \DateTimeImmutable('-1 minute'), 1000, 1000, false, false);
+        $entityManager->persist($duel);
+        $round = new QuizTournamentRound($opened, $this->program, $this->teacher, new \DateTimeImmutable('-5 minutes'));
+        $entityManager->persist($round);
+        $entityManager->flush();
+
+        $page = '/tournaments/'.$opened->getId();
+        $newRound = $page.'/rounds/new';
+        $roundPage = $page.'/rounds/'.$round->getId();
+        $roundEntry = $page.'/round-entry';
+        $duels = $page.'/duels';
+        $duelPage = $duels.'/'.$duel->getId();
+        $closedPage = '/tournaments/'.$closed->getId();
+        $edit = '/settings/tournaments/'.$opened->getId().'/edit';
+
+        $challenges = $page.'/challenges';
+        $this->assertScreens($this->student, ['/play' => 200, '/tournaments' => 200, $page => 200, $challenges => 200, $duels => 200, $duelPage => 302, $duelPage.'/result' => 200, $duelPage.'/correction' => 200, $closedPage => 404, $closedPage.'/challenges' => 404, $closedPage.'/duels' => 404, '/settings/tournaments' => 403, $newRound => 404, $roundPage => 404, $roundPage.'/board' => 404, $roundEntry => 200]);
+        $this->assertScreens($this->teacher, ['/play' => 404, '/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $closedPage => 404, '/settings/tournaments' => 403, $edit => 403, $newRound => 200, $roundPage => 200, $roundPage.'/board' => 200, $roundEntry => 404]);
+        $this->assertScreens($staff, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $closedPage => 404, '/settings/tournaments' => 404, '/settings/tournaments/new' => 404, $edit => 404, $newRound => 404, $roundPage => 404]);
+        $this->assertScreens($this->tutor, ['/tournaments' => 200, $page => 404, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, '/settings/tournaments' => 403, $newRound => 404, $roundPage => 404]);
+        $this->assertScreens($this->admin, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage => 404, $duelPage.'/result' => 404, $closedPage => 200, '/settings/tournaments' => 200, '/settings/tournaments/new' => 200, $edit => 200, $newRound => 404, $roundPage => 404]);
+
+        // The feature switched off: nobody but the administrator finds a tournament.
+        $this->switchOffEveryRole(Feature::QuizTournaments);
+        $this->assertScreens($this->student, ['/play' => 404, '/tournaments' => 404, $page => 404, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $roundEntry => 404]);
+        $this->assertScreens($this->teacher, [$newRound => 404, $roundPage => 404]);
+        $this->assertScreens($this->admin, ['/tournaments' => 200, '/settings/tournaments' => 200]);
     }
 }

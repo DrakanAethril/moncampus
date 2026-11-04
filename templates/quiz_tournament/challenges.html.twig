@@ -1,0 +1,104 @@
+{# « Mes défis » (design/validated/quiz-tournament.md §7, mockup H-defis): the open rooms first -
+   the one where the opponent already waits marked « Il t'attend ! » -, the challenges received with
+   « Refuser » / « Accepter » of equal weight, then the one sent. The only place a challenge is
+   seen: nothing is sent to anybody. Read at this moment, the rows whose time is over already
+   rewritten (QuizTournamentChallenges::board()). #}
+{% extends 'quiz_tournament/_layout.html.twig' %}
+{% import 'quiz_tournament/_time.html.twig' as time %}
+
+{% block tournament_kicker %}<span class="qt-head__kicker">{{ tournament.name }}</span>{% endblock %}
+{% block tournament_heading %}{{ 'quizTournamentChallengesHeading'|trans }}{% endblock %}
+
+{% block tournament_body %}
+    {% set nowTs = now.timestamp %}
+    {% if status.value == 'ended' %}
+        <p class="qt-sticker">{{ 'quizTournamentChallengesEndedSticker'|trans }}</p>
+    {% endif %}
+
+    {{ include('quiz_tournament/_round_entry.html.twig', {tournament: tournament, entry: roundEntry, back: 'challenges', live: tournamentLive}, with_context = false) }}
+
+    {% if board.isEmpty %}
+        <div class="qt-empty">
+            <p class="qt-empty__text">{{ 'quizTournamentChallengesEmptyText'|trans }}</p>
+            <a class="qt-empty__link" href="{{ path('app_quiz_tournament_show', {id: tournament.id}) }}">{{ 'quizTournamentChallengesEmptyAction'|trans }}</a>
+        </div>
+    {% endif %}
+
+    {% if board.rooms is not empty %}
+        <section class="qt-section" aria-labelledby="qt-rooms-head">
+            <h2 class="qt-section__head" id="qt-rooms-head">{{ 'quizTournamentRoomsHeading'|trans({'%count%': board.rooms|length}) }}</h2>
+            {% for room in board.rooms %}
+                {% set other = room.opponentOf(app.user) %}
+                {% set line = lines[other.id] ?? null %}
+                {% set waiting = board.isOpponentWaiting(room, now) %}
+                {% set otherName = other.displayName ?? other.username %}
+                <article class="qt-card-room{{ waiting ? ' is-waiting' }}">
+                    {% if waiting %}<span class="qt-card-room__sticker">{{ 'quizTournamentOpponentWaitingSticker'|trans }}</span>{% endif %}
+                    <div class="qt-person">
+                        {{ include('quiz_tournament/_avatar.html.twig', {user: other, avatar: line ? line.avatar : {photo: null, drawn: null}, modifier: 'qt-avatar--card'}) }}
+                        <span class="qt-person__text">
+                            <span class="qt-person__name">{{ (waiting ? 'quizTournamentRoomOpponentReady' : 'quizTournamentRoomWith')|trans({'%name%': otherName}) }}</span>
+                            <span class="qt-person__meta">{{ include('quiz_tournament/_player_meta.html.twig', {line: line}) }} · {{ 'quizTournamentRoomLeft'|trans({'%time%': time.short(room.roomClosesAt.timestamp - nowTs)}) }}</span>
+                        </span>
+                    </div>
+                    <a class="qt-btn qt-btn--dark" href="{{ path('app_quiz_tournament_room', {id: tournament.id, challenge: room.id}) }}">{{ 'quizTournamentEnterRoomAction'|trans }}</a>
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    {% if board.received is not empty %}
+        <section class="qt-section" aria-labelledby="qt-received-head">
+            <h2 class="qt-section__head" id="qt-received-head">{{ 'quizTournamentReceivedHeading'|trans({'%count%': board.received|length}) }}</h2>
+            {% for challenge in board.received %}
+                {% set other = challenge.challenger %}
+                {% set line = lines[other.id] ?? null %}
+                <article class="qt-card-challenge">
+                    <div class="qt-person">
+                        {{ include('quiz_tournament/_avatar.html.twig', {user: other, avatar: line ? line.avatar : {photo: null, drawn: null}, modifier: 'qt-avatar--card'}) }}
+                        <span class="qt-person__text">
+                            <span class="qt-person__name">{{ 'quizTournamentChallengesYou'|trans({'%name%': other.displayName ?? other.username}) }}</span>
+                            <span class="qt-person__meta">{{ include('quiz_tournament/_player_meta.html.twig', {line: line}) }} · {{ 'quizTournamentExpiresIn'|trans({'%time%': time.short(challenge.expiresAt.timestamp - nowTs)}) }}</span>
+                        </span>
+                    </div>
+                    <div class="qt-card-challenge__answers">
+                        <form method="post" action="{{ path('app_quiz_tournament_challenge_refuse', {id: tournament.id, challenge: challenge.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('quiz_tournament_answer' ~ challenge.id) }}">
+                            <button type="submit" class="qt-btn">{{ 'quizTournamentRefuseAction'|trans }}</button>
+                        </form>
+                        <form method="post" action="{{ path('app_quiz_tournament_challenge_accept', {id: tournament.id, challenge: challenge.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('quiz_tournament_answer' ~ challenge.id) }}">
+                            <button type="submit" class="qt-btn qt-btn--accent">{{ 'quizTournamentAcceptAction'|trans }}</button>
+                        </form>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    {% if board.sent is not empty %}
+        <section class="qt-section" aria-labelledby="qt-sent-head">
+            <h2 class="qt-section__head" id="qt-sent-head">{{ 'quizTournamentSentHeading'|trans({'%count%': board.sent|length}) }}</h2>
+            {% for challenge in board.sent %}
+                {% set other = challenge.challenged %}
+                {% set line = lines[other.id] ?? null %}
+                {% set outcome = challenge.statusAt(now) %}
+                <article class="qt-card-sent">
+                    <div class="qt-person">
+                        {{ include('quiz_tournament/_avatar.html.twig', {user: other, avatar: line ? line.avatar : {photo: null, drawn: null}}) }}
+                        <span class="qt-person__text">
+                            <span class="qt-person__name">{{ other.displayName ?? other.username }}</span>
+                            <span class="qt-person__meta">
+                                {%- if outcome.value == 'pending' -%}
+                                    {{ 'quizTournamentSentPendingMeta'|trans({'%time%': time.short(nowTs - challenge.createdAt.timestamp)}) }}
+                                {%- else -%}
+                                    {{ outcome.labelKey|trans }}
+                                {%- endif -%}
+                            </span>
+                        </span>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+{% endblock %}

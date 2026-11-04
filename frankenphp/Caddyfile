@@ -76,6 +76,17 @@
 	@hugerte path /hugerte/*
 	header @hugerte ?Cache-Control "public, max-age=86400"
 
+	# Formatool installable as an app, « beaup-app » (design/validated/quiz-tournament.md, §13): its manifest and
+	# icons sit unhashed under public/, at the addresses an installed app keeps asking. The type is
+	# said here because the production image (debian:13-slim) carries no /etc/mime.types, and Caddy's
+	# built-in table does not know .webmanifest - it would go out as application/octet-stream.
+	# file_server keeps a Content-Type it finds already set. no-cache for the same reason as the
+	# PWAs below: the names never change, a new icon must still reach a browser.
+	@webAppManifest path /manifest.webmanifest
+	header @webAppManifest Content-Type "application/manifest+json"
+	@webAppFiles path /manifest.webmanifest /beaup-app/*
+	header @webAppFiles ?Cache-Control "no-cache"
+
 	# The e-CO PWA (public/eco-app/, built by the e-CO repo's tool/build_pwa.sh) keeps its file
 	# names across builds - main.dart.js above all - so every fetch revalidates (a 304 once the
 	# ETag matches). Its service worker is what keeps it offline, not the HTTP cache: a stale
@@ -87,12 +98,13 @@
 	redir /eco-app /eco-app/ 308
 	rewrite /eco-app/ /eco-app/index.html
 
-	# The Campus PWA (public/campus-app/, built by the moncampus-mobile repo's tool/build_pwa.sh):
-	# the same three rules, for the same reasons.
-	@campusApp path /campus-app/*
-	header @campusApp ?Cache-Control "no-cache"
-	redir /campus-app /campus-app/ 308
-	rewrite /campus-app/ /campus-app/index.html
+	# The retired Campus web app (design/validated/quiz-tournament.md §13): one file is left under
+	# /campus-app/, the kill-switch service worker at the address the old one was registered from,
+	# served as a file like any other. Everything else there is no file, so @phpRoute hands it to
+	# Symfony, whose CampusAppRetiredController answers a 301 to /. The worker must revalidate: a
+	# browser checks it for an update, and must see this version, not a copy of the old one.
+	@campusAppKillSwitch path /campus-app/campus_sw.js
+	header @campusAppKillSwitch Cache-Control "no-cache"
 
 	# The serious games' static packages (public/serious-games/{slug}/, design/validated/serious-games.md
 	# §6.1) and their shared modules: played in a sandboxed frame of /serious-games/play/{slug}, they

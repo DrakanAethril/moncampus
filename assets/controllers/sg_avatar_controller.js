@@ -2,10 +2,11 @@ import { Controller } from '@hotwired/stimulus';
 import { loadAvatarModule } from '../serious_game/avatar_module.js';
 
 /**
- * Draws a serious-games avatar (design/validated/serious-games.md §7) with the one module the
+ * Draws a person's drawn avatar (design/validated/serious-games.md §7) with the one module the
  * platform and the games share - public/serious-games/shared/avatar.js. Outside the serious games
- * it stands in for a student's missing photo (App\Service\UserAvatars): there `round` is false and
- * the drawing fills the square frame it is put in, whose initials it replaces once loaded.
+ * it is the face of whoever chose it on « Mon profil » (App\Service\UserAvatars,
+ * design/validated/quiz-tournament.md §16): there `round` is false and the drawing fills the square
+ * frame it is put in, whose initials it replaces once loaded.
  *
  *   <span data-controller="sg-avatar" data-sg-avatar-config-value="{…}" data-sg-avatar-size-value="40"></span>
  */

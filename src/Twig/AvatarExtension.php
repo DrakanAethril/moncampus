@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
-use App\Entity\User;
 use App\Service\UserAvatars;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
-// Powers the navbar avatar rendered in templates/layout/app.html.twig (shared across every
-// authenticated page), plus the profile page - a Twig function rather than passing this from
-// every controller, same reasoning as StructureNavigationExtension.
+/**
+ * The face of a person in a template, by the choice they made on « Mon profil »
+ * (App\Service\UserAvatars, design/validated/quiz-tournament.md §16): the main bar asks on every
+ * page, hence a Twig function rather than a variable passed by every controller.
+ *
+ * `user_avatar(user)` answers both halves at once (`{photo, drawn}`); `avatar_url` and
+ * `drawn_avatar` each answer one - null when the other, or the initials, stand for the person.
+ */
 class AvatarExtension extends AbstractExtension
 {
     public function __construct(
@@ -23,15 +27,9 @@ class AvatarExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('avatar_url', $this->getAvatarUrl(...)),
-            // A student's serious-games avatar, standing in for the photo they did not upload
-            // (App\Service\UserAvatars) - null when the photo or the initials answer.
+            new TwigFunction('user_avatar', $this->userAvatars->of(...)),
+            new TwigFunction('avatar_url', $this->userAvatars->photoUrl(...)),
             new TwigFunction('drawn_avatar', $this->userAvatars->drawnConfig(...)),
         ];
-    }
-
-    public function getAvatarUrl(?User $user): ?string
-    {
-        return $this->userAvatars->photoUrl($user);
     }
 }

@@ -1,0 +1,89 @@
+{# The correction of a finished duel (design/validated/quiz-tournament.md §5.4, mockup H-correction):
+   « Toutes » or « Mes erreurs » (and a theme, from the defeat's « Revoir »), one question at a time
+   with « Précédente » / « Suivante » - links, the screen holds no state of its own -, the player's
+   answer, the right one and whether the other had it, then the question's explanation: its
+   paragraphs, its example, its source (QuizTournamentDuelReading::explanationParts()). #}
+{% extends 'quiz_tournament/_layout.html.twig' %}
+{% import 'quiz_tournament/_duel_macros.html.twig' as fmt %}
+
+{% set baseParams = {id: tournament.id, duel: duel.id} %}
+{% set listParams = baseParams|merge(errorsOnly ? {filter: 'errors'} : {})|merge(theme != '' ? {theme: theme} : {}) %}
+
+{% block tournament_head %}
+    <header class="qt-corr-head">
+        <div class="qt-corr-head__top">
+            <a class="qt-back" href="{{ path('app_quiz_tournament_duel_result', baseParams) }}" aria-label="{{ 'quizTournamentBackToResult'|trans }}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+            </a>
+            <div class="qt-corr-head__titles">
+                <h1 class="qt-corr-head__title">{{ 'quizTournamentCorrectionHeading'|trans }}</h1>
+                <span class="qt-corr-head__meta">{{ 'quizTournamentCorrectionAgainst'|trans({'%name%': opponentName, '%mine%': fmt.score(myScore), '%theirs%': fmt.score(theirScore)}) }}</span>
+            </div>
+            {% include 'quiz_tournament/_emblem.html.twig' with {tournament: tournament, size: 40} only %}
+        </div>
+        <nav class="qt-filter" aria-label="{{ 'quizTournamentCorrectionFilterLabel'|trans }}">
+            <a class="qt-filter__item{{ not errorsOnly ? ' is-active' }}" href="{{ path('app_quiz_tournament_duel_correction', baseParams|merge(theme != '' ? {theme: theme} : {})) }}"{{ not errorsOnly ? ' aria-current="page"' }}>{{ 'quizTournamentCorrectionAll'|trans({'%count%': allCount}) }}</a>
+            <a class="qt-filter__item qt-filter__item--errors{{ errorsOnly ? ' is-active' }}" href="{{ path('app_quiz_tournament_duel_correction', baseParams|merge({filter: 'errors'})|merge(theme != '' ? {theme: theme} : {})) }}"{{ errorsOnly ? ' aria-current="page"' }}>{{ 'quizTournamentCorrectionErrors'|trans({'%count%': errorCount}) }}</a>
+        </nav>
+        {% if theme != '' %}
+            <a class="qt-chip qt-chip--link" href="{{ path('app_quiz_tournament_duel_correction', baseParams|merge(errorsOnly ? {filter: 'errors'} : {})) }}">{{ 'quizTournamentCorrectionThemeChip'|trans({'%theme%': theme}) }} <span aria-hidden="true">✕</span><span class="visually-hidden">{{ 'quizTournamentCorrectionThemeClear'|trans }}</span></a>
+        {% endif %}
+    </header>
+{% endblock %}
+
+{% block tournament_body %}
+    {% if question is null %}
+        <p class="qt-empty">{{ (errorsOnly ? 'quizTournamentCorrectionNoErrors' : 'quizTournamentCorrectionNothing')|trans }}</p>
+    {% else %}
+        {% set right = not question.error %}
+        <div class="qt-corr-where">
+            <span class="qt-corr-where__count">
+                {{- (errorsOnly ? 'quizTournamentCorrectionErrorPosition' : 'quizTournamentCorrectionPosition')|trans({'%position%': position + 1, '%count%': count, '%rank%': question.rank + 1}) -}}
+            </span>
+            {% if question.theme %}<span class="qt-chip qt-chip--square">{{ question.theme }}</span>{% endif %}
+        </div>
+
+        <section class="qt-corr-card" aria-labelledby="qt-corr-label">
+            <h2 class="qt-corr-card__label qt-multiline" id="qt-corr-label">{{ question.label }}</h2>
+            {% if question.image %}<img class="qt-duel-question__image" src="{{ question.image }}" alt="">{% endif %}
+
+            {% if question.numeric %}
+                {{ include('quiz_tournament/_correction_answer.html.twig', {right: right, mineTexts: [question.numeric.mine ?? 'quizTournamentCorrectionNoAnswer'|trans], rightTexts: [question.numeric.right ?? '—'], theirs: question.theirs}) }}
+            {% else %}
+                {% set mineTexts = question.choices|filter(c => c.mine)|map(c => c.label) %}
+                {% set rightTexts = question.choices|filter(c => c.correct)|map(c => c.label) %}
+                {{ include('quiz_tournament/_correction_answer.html.twig', {right: right, mineTexts: mineTexts|length ? mineTexts : ['quizTournamentCorrectionNoAnswer'|trans], rightTexts: rightTexts, theirs: question.theirs}) }}
+            {% endif %}
+        </section>
+
+        {% set why = question.explanation %}
+        {% if why.why is not empty %}
+            <section class="qt-corr-why" aria-labelledby="qt-corr-why">
+                <h3 class="qt-corr-why__head" id="qt-corr-why">{{ 'quizTournamentCorrectionWhy'|trans }}</h3>
+                {% for paragraph in why.why %}<p class="qt-multiline">{{ paragraph }}</p>{% endfor %}
+            </section>
+        {% endif %}
+        {% if why.example %}
+            <section class="qt-corr-example" aria-labelledby="qt-corr-example">
+                <h3 class="qt-corr-why__head" id="qt-corr-example">{{ 'quizTournamentCorrectionExample'|trans }}</h3>
+                <p class="qt-multiline">{{ why.example }}</p>
+            </section>
+        {% endif %}
+        {% if why.source %}<span class="qt-chip qt-chip--bg">{{ why.source }}</span>{% endif %}
+    {% endif %}
+{% endblock %}
+
+{% block tournament_foot %}
+    <footer class="qt-corr-foot">
+        {% if question is not null and position > 0 %}
+            <a class="qt-btn qt-btn--big" href="{{ path('app_quiz_tournament_duel_correction', listParams|merge({q: position - 1})) }}">{{ 'quizTournamentCorrectionPrevious'|trans }}</a>
+        {% else %}
+            <span class="qt-btn qt-btn--big is-disabled" aria-disabled="true">{{ 'quizTournamentCorrectionPrevious'|trans }}</span>
+        {% endif %}
+        {% if question is not null and position < count - 1 %}
+            <a class="qt-btn qt-btn--accent-main qt-btn--big" href="{{ path('app_quiz_tournament_duel_correction', listParams|merge({q: position + 1})) }}">{{ 'quizTournamentCorrectionNext'|trans }}</a>
+        {% else %}
+            <a class="qt-btn qt-btn--accent-main qt-btn--big" href="{{ path('app_quiz_tournament_duel_result', baseParams) }}">{{ 'quizTournamentCorrectionDone'|trans }}</a>
+        {% endif %}
+    </footer>
+{% endblock %}

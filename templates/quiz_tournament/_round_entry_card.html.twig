@@ -1,0 +1,45 @@
+{# The card itself (see _round_entry.html.twig), also served alone by app_quiz_tournament_round_entry
+   when the round changes. Parameters: `tournament`, `entry` (QuizTournamentRoundEntry or null),
+   `back`. Nothing at all when there is nothing to say. #}
+{% import 'quiz_tournament/_round_macros.html.twig' as rounds %}
+{% if entry %}
+    {% set round = entry.round %}
+    <article class="qt-round-card qt-round-card--{{ entry.state|replace({'_': '-'}) }}"
+             {%- if entry.state == 'joined' %}
+                 data-beat-url="{{ path('app_quiz_tournament_round_beat', {id: tournament.id, round: round.id}) }}"
+                 data-beat-token="{{ csrf_token('quiz_tournament_round_entry' ~ round.id) }}"
+             {%- endif %}>
+        <span class="qt-round-card__sticker">{{ 'quizTournamentRoundSticker'|trans }}</span>
+        <p class="qt-round-card__where">{{ rounds.where(round) }}</p>
+
+        {% if entry.state == 'open' %}
+            <h2 class="qt-round-card__title">{{ 'quizTournamentRoundOpenTitle'|trans }}</h2>
+            <p class="qt-round-card__text">{{ 'quizTournamentRoundOpenText'|trans({'%teacher%': round.teacher.displayName ?? round.teacher.username}) }}</p>
+            <form method="post" action="{{ path('app_quiz_tournament_round_join', {id: tournament.id, round: round.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('quiz_tournament_round_entry' ~ round.id) }}">
+                <input type="hidden" name="back" value="{{ back }}">
+                <button type="submit" class="qt-btn qt-btn--primary qt-btn--big qt-round-card__action">{{ 'quizTournamentRoundJoinAction'|trans }}</button>
+            </form>
+        {% elseif entry.state == 'joined' %}
+            <h2 class="qt-round-card__title">{{ 'quizTournamentRoundJoinedTitle'|trans }}</h2>
+            <p class="qt-waiting qt-round-card__text">
+                <span class="qt-waiting__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                {{ 'quizTournamentRoundJoinedText'|trans }}
+            </p>
+            <form method="post" action="{{ path('app_quiz_tournament_round_leave', {id: tournament.id, round: round.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('quiz_tournament_round_entry' ~ round.id) }}">
+                <input type="hidden" name="back" value="{{ back }}">
+                <button type="submit" class="qt-btn qt-round-card__action">{{ 'quizTournamentRoundLeaveAction'|trans }}</button>
+            </form>
+        {% elseif entry.state == 'playing' %}
+            <h2 class="qt-round-card__title">{{ 'quizTournamentRoundPlayingTitle'|trans }}</h2>
+            <a class="qt-btn qt-btn--dark qt-btn--big qt-round-card__action" href="{{ path('app_quiz_tournament_duel', {id: tournament.id, duel: entry.duel.id}) }}">{{ 'quizTournamentRoundGoToDuelAction'|trans }}</a>
+        {% elseif entry.state == 'exempt' %}
+            <h2 class="qt-round-card__title">{{ 'quizTournamentRoundExemptTitle'|trans }}</h2>
+            <p class="qt-round-card__text">{{ 'quizTournamentRoundExemptText'|trans }}</p>
+        {% else %}
+            <h2 class="qt-round-card__title">{{ 'quizTournamentRoundLeftOutTitle'|trans }}</h2>
+            <p class="qt-round-card__text">{{ 'quizTournamentRoundLeftOutText'|trans }}</p>
+        {% endif %}
+    </article>
+{% endif %}

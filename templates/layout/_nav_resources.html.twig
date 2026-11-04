@@ -18,7 +18,7 @@
     or (is_pure_student and current_route starts with 'app_program_quiz_')
     or (is_pure_student and current_route starts with 'app_wall')
     or current_route starts with 'app_wall_students' or app.request.attributes.get('wall_supervised')
-    or (not is_pure_student and current_route in ['app_serious_games', 'app_serious_games_avatar', 'app_serious_games_me', 'app_serious_games_play']) %}
+    or (not is_pure_student and current_route in ['app_serious_games', 'app_serious_games_me', 'app_serious_games_play']) %}
 {# Each entry's condition is read once into a variable, and the same variables decide both whether
    the entry renders and whether the dropdown renders at all. Written the other way round - a
    summary boolean beside the conditions it summarises - the two drift the first time an entry is
@@ -49,8 +49,8 @@
 {% set resources_quiz_programs = is_pure_student ? student_nav_quiz_programs() : [] %}
 {% set resources_documentation = feature('documentation') %}
 {# « Serious games » for the adults a game is lit for (design/validated/serious-games.md §3.3):
-   **never for a pure student**, who opens the address /serious-games the establishment hands out -
-   the access rule is the same, only the link is absent (§1.12). #}
+   **never for a pure student**, whose door is « Jouer » in their bar (design/validated/quiz-tournament.md
+   §15, the games beside the tournaments) - the access rule is the same, only the entry differs. #}
 {% set resources_serious_games = not is_pure_student and feature('serious_games') and serious_games_playable() %}
 {% set resources_apps = is_granted('ROLE_ADMIN') %}
 {# « Jobboard », student-only here: every other profile reads it from Outils >
@@ -158,7 +158,7 @@
             <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>
         {% endif %}
         {% if resources_serious_games %}
-            <a class="dropdown-item {{ current_route in ['app_serious_games', 'app_serious_games_avatar', 'app_serious_games_me', 'app_serious_games_play'] ? 'active' }}" href="{{ path('app_serious_games') }}">{{ 'seriousGamesNavLabel'|trans }}</a>
+            <a class="dropdown-item {{ current_route in ['app_serious_games', 'app_serious_games_me', 'app_serious_games_play'] ? 'active' }}" href="{{ path('app_serious_games') }}">{{ 'seriousGamesNavLabel'|trans }}</a>
         {% endif %}
         {# The two app-download entries keep the ROLE_ADMIN gate they were given by explicit product
            request. #}

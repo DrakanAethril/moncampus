@@ -1,0 +1,63 @@
+{# The end of a duel lost (design/validated/quiz-tournament.md §10, mockup H-defaite): « Raté… » and
+   the rating move, what the defeat cost against a stronger player and what a win would have brought
+   (QuizTournamentDuelReading::consolation(), only when the other was rated higher before the duel),
+   the reminder that a duel lost still counts for the activity, the errors by theme - the quiz each
+   question came from - each with « Revoir », then both scores and the strip. #}
+{% extends 'quiz_tournament/_layout.html.twig' %}
+{% import 'quiz_tournament/_duel_macros.html.twig' as fmt %}
+
+{% block tournament_attributes %}{% if report.rematch %}data-controller="quiz-tournament-sheet"{% endif %}{% endblock %}
+
+{% block tournament_head %}{{ include('quiz_tournament/_duel_end_head.html.twig') }}{% endblock %}
+
+{% block tournament_body %}
+    {% set rankText = report.line and report.line.rank is not null
+        ? 'quizTournamentRankOrdinal'|trans({'%count%': report.line.rank})
+        : (report.line ? report.line.block.labelKey|trans : null) %}
+    <section class="qt-verdict qt-verdict--defeat" aria-labelledby="qt-verdict-title">
+        <h2 class="qt-verdict__title qt-verdict__title--loss" id="qt-verdict-title">{{ 'quizTournamentVerdictLoss'|trans }}</h2>
+        {{ include('quiz_tournament/_duel_burst.html.twig', {delta: report.me.delta, modifier: 'qt-burst--verdict qt-burst--loss'}) }}
+        <p class="qt-verdict__line qt-verdict__line--strong">{{ 'quizTournamentVerdictLossLine'|trans({'%name%': opponentName, '%theirs%': fmt.score(report.them.score), '%mine%': fmt.score(report.me.score)}) }}</p>
+    </section>
+
+    <section class="qt-consolation" aria-label="{{ 'quizTournamentConsolationLabel'|trans }}">
+        <p class="qt-consolation__text">
+            {%- if report.consolation -%}
+                {{ 'quizTournamentConsolationStronger'|trans({'%name%': opponentName, '%gap%': report.consolation.gap, '%cost%': report.consolation.cost, '%win%': report.consolation.wouldWin})|raw }}
+            {%- else -%}
+                {{ 'quizTournamentConsolationNeutral'|trans({'%count%': max(-report.me.delta, 0), '%cost%': max(-report.me.delta, 0)}) }}
+            {%- endif -%}
+            {{ ' ' }}{{ 'quizTournamentConsolationActivity'|trans }}
+        </p>
+        <div class="qt-chips">
+            <span class="qt-chip">{{ 'quizTournamentRatingChip'|trans({'%before%': report.me.before, '%after%': report.me.after}) }}</span>
+            {% if rankText %}<span class="qt-chip">{{ rankText }}</span>{% endif %}
+            <span class="qt-chip">{{ 'quizTournamentActivityChip'|trans({'%count%': report.activity, '%needed%': constant('App\\Service\\QuizTournament\\QuizTournamentStanding::ACTIVITY_DUELS')}) }}{{ report.activity >= constant('App\\Service\\QuizTournament\\QuizTournamentStanding::ACTIVITY_DUELS') ? ' ✓' }}</span>
+        </div>
+    </section>
+
+    {% if report.themes is not empty %}
+        <section class="qt-section" aria-labelledby="qt-themes-title">
+            <h2 class="qt-section__head" id="qt-themes-title">{{ 'quizTournamentErrorsByTheme'|trans({'%count%': report.errors}) }}</h2>
+            <ul class="qt-themes">
+                {% for theme in report.themes %}
+                    <li class="qt-theme">
+                        <span class="qt-theme__count qt-theme__count--{{ loop.index0 % 3 }}">{{ theme.count }}</span>
+                        <span class="qt-theme__name">{{ theme.theme ?: 'quizTournamentThemeUnknown'|trans }}</span>
+                        <a class="qt-theme__link" href="{{ path('app_quiz_tournament_duel_correction', {id: tournament.id, duel: duel.id, filter: 'errors', theme: theme.theme}) }}">{{ 'quizTournamentReviewAction'|trans }}<span class="visually-hidden"> {{ theme.theme }}</span> ›</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    {{ include('quiz_tournament/_duel_sides.html.twig') }}
+    {{ include('quiz_tournament/_duel_strip.html.twig') }}
+{% endblock %}
+
+{% block tournament_foot %}
+    {{ include('quiz_tournament/_duel_end_foot.html.twig', {
+        primaryLabel: 'quizTournamentReviewErrorsAction'|trans({'%count%': report.errors}),
+        primaryUrl: path('app_quiz_tournament_duel_correction', {id: tournament.id, duel: duel.id, filter: report.errors > 0 ? 'errors' : null}),
+    }) }}
+{% endblock %}

@@ -311,6 +311,7 @@ starts the worker by itself: `up --wait` brings it up with the rest.
 | `app:ldap:apply-account-requests` | every minute | Closing the loop on account operations |
 | `app:eco:read-terrain` | every minute | e-CO and the IGN's Géoplateforme, below |
 | `app:rncp:fetch` | every minute | Portfolio: France compétences' open data, below |
+| `app:quiz-tournament:close-duels` | every minute | the command's own docblock (finishes the duels both players left; needs `MERCURE_URL`, it flushes) |
 | `app:proxmox:check` | every 5 minutes | the command's own docblock |
 | `app:proxmox:scan-addresses` | every 5 minutes, offset by 2 | the command's own docblock |
 | `app:class-board:photo` | every hour, at :07 | The virtual board's photograph of the day, below |

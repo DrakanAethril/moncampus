@@ -1,0 +1,81 @@
+{# « Lancer une ronde » (design/validated/quiz-tournament.md §8): the class - one of the targeted classes
+   the teacher teaches - then who plays: the whole class, one of its options, or one group of a
+   lot of « Création de groupes » saved for that class, theirs or shared with them. Formatool's own
+   design: the tournament's dress is for the projected screen this opens. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'quizTournamentRoundNewHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'quizTournamentsBreadcrumbLabel'|trans, url: path('app_quiz_tournaments')},
+        {label: tournament.name, url: path('app_quiz_tournament_show', {id: tournament.id})},
+        {label: 'quizTournamentRoundNewHeading'|trans, url: path('app_quiz_tournament_round_new', {id: tournament.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'quizTournamentRoundNewHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-pf-card cm-pf-card--pad cm-qt-round-form">
+        <twig:Cm:Subhead :title="tournament.name" :hint="'quizTournamentRoundNewHint'|trans"/>
+
+        {% if programs|length > 1 %}
+            {# Choosing the class says which options and lots exist: a GET, answered by this page. #}
+            <form method="get" class="cm-pf-field">
+                <label class="cm-pf-label" for="qt-round-program">{{ 'quizTournamentRoundClassFieldLabel'|trans }}</label>
+                <select id="qt-round-program" name="program" class="cm-select" data-controller="auto-submit" data-action="change->auto-submit#submit">
+                    {% for candidate in programs %}
+                        <option value="{{ candidate.id }}"{{ candidate.id == program.id ? ' selected' }}>{{ candidate.displayShortName }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        {% else %}
+            <div class="cm-pf-field">
+                <span class="cm-pf-label">{{ 'quizTournamentRoundClassFieldLabel'|trans }}</span>
+                <span>{{ program.displayShortName }}</span>
+            </div>
+        {% endif %}
+
+        {% if openRound %}
+            <div class="alert alert-warning mb-0" role="status">
+                {% if openRound.teacher == app.user %}
+                    {{ 'quizTournamentRoundAlreadyOpenMine'|trans }}
+                    <a href="{{ path('app_quiz_tournament_round', {id: tournament.id, round: openRound.id}) }}">{{ 'quizTournamentRoundProjectAction'|trans }}</a>
+                {% else %}
+                    {{ 'quizTournamentRoundAlreadyOpenOther'|trans({'%teacher%': openRound.teacher.displayName ?? openRound.teacher.username}) }}
+                {% endif %}
+            </div>
+        {% else %}
+            <form method="post" action="{{ path('app_quiz_tournament_round_open', {id: tournament.id}) }}" class="cm-qt-round-form__open">
+                <input type="hidden" name="_token" value="{{ csrf_token('quiz_tournament_round_open' ~ tournament.id) }}">
+                <input type="hidden" name="program" value="{{ program.id }}">
+                <div class="cm-pf-field">
+                    <label class="cm-pf-label" for="qt-round-who">{{ 'quizTournamentRoundWhoFieldLabel'|trans }}</label>
+                    <select id="qt-round-who" name="who" class="cm-select" required>
+                        <option value="">{{ 'quizTournamentRoundWhoPlaceholder'|trans }}</option>
+                        <option value="class">{{ 'quizTournamentRoundWhoClass'|trans }}</option>
+                        {% if options is not empty %}
+                            <optgroup label="{{ 'quizTournamentRoundWhoOptions'|trans }}">
+                                {% for option in options %}
+                                    <option value="option:{{ option.id }}">{{ 'quizTournamentRoundWhoOption'|trans({'%name%': option.name}) }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endif %}
+                        {% for batch in batches %}
+                            <optgroup label="{{ (batch.teacher == app.user ? 'quizTournamentRoundWhoLot' : 'quizTournamentRoundWhoSharedLot')|trans({'%name%': batch.name, '%teacher%': batch.teacher.displayName ?? batch.teacher.username}) }}">
+                                {% for members in batch.groups %}
+                                    <option value="group:{{ batch.id }}:{{ loop.index0 }}">{{ 'quizTournamentRoundWhoGroup'|trans({'%number%': loop.index, '%count%': members|length}) }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+                    </select>
+                    <span class="cm-pf-hint">{{ 'quizTournamentRoundWhoHelp'|trans }}</span>
+                </div>
+                <div>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'quizTournamentRoundOpenSubmit'|trans }}</twig:Cm:Button>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}

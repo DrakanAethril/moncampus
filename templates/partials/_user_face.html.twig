@@ -1,0 +1,11 @@
+{# A person's face in a square frame, by the choice they made on « Mon profil »
+   (App\Service\UserAvatars, design/validated/quiz-tournament.md §16): the photo as the frame's
+   background; the drawn avatar drawn into it by the shared module (sg_avatar_controller.js, round
+   off), over the initials it replaces once loaded; else the initials.
+
+   Parameters: face ({photo, drawn}, from user_avatar()), initials, class (the frame's own classes),
+   size (the drawing's size in px - the frame's). #}
+<span class="{{ class }}{{ face.drawn ? ' cm-avatar-drawn' }}"
+    {%- if face.photo %} style="background-image: url({{ face.photo }})"
+    {%- elseif face.drawn %} data-controller="sg-avatar" data-sg-avatar-config-value="{{ face.drawn|json_encode }}" data-sg-avatar-size-value="{{ size }}" data-sg-avatar-round-value="false"
+    {%- endif %}>{% if not face.photo %}{{ initials }}{% endif %}</span>

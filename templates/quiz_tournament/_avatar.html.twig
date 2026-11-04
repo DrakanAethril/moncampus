@@ -1,0 +1,8 @@
+{# A face in a tournament screen, as the player chose it on « Mon profil » (App\Service\UserAvatars):
+   the photo, the drawn avatar, or the initials on a colour of the direction's. Parameters: `user`, `avatar`
+   ({photo, drawn} from UserAvatars::forUsers()), `modifier` (an extra class). #}
+{% set initials = user.initials ?? user.username|slice(0, 1)|upper %}
+<span class="qt-avatar qt-avatar--initials-{{ (user.id ?? 0) % 6 }}{{ modifier is defined and modifier ? ' ' ~ modifier }}"
+      {%- if avatar.photo %} style="background-image: url({{ avatar.photo }})"
+      {%- elseif avatar.drawn %} data-controller="sg-avatar" data-sg-avatar-config-value="{{ avatar.drawn|json_encode }}" data-sg-avatar-size-value="54" data-sg-avatar-round-value="false"
+      {%- endif %} aria-hidden="true">{% if not avatar.photo %}{{ initials }}{% endif %}</span>

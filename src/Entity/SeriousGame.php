@@ -13,7 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
  * A published serious game (design/validated/serious-games.md §4) - here L'Observatoire.
  *
  * Games are **data, not cases of an enum**: the row is written from
- * `config/serious_games/{slug}/game.yaml` by `app:serious-games:sync`, and the per-role switches of
+ * `config/serious_games/{slug}/game.yaml` by `app:serious-games:sync`, and the adults' per-role switches of
  * Paramètres › Fonctionnalités hang off it (SeriousGameRoleSetting). The game itself is a static
  * package under `public/serious-games/{slug}/`, played in an isolated frame.
  *
@@ -26,12 +26,18 @@ use Doctrine\ORM\Mapping as ORM;
  *
  * `$mechanic` is how the game is played (design/validated/serious-games-neko-con.md §3): series of
  * generated questions, or a scenario of hand-written tickets. Read from the manifest at each sync.
+ *
+ * **Who plays it among the students is its targeting** (StructureTargetsTrait, Sections, filières
+ * and formations, design/validated/quiz-tournament.md §14), set in Paramètres › Serious games; the
+ * matrix keeps the adults' cells only. An empty targeting opens the game to no student.
  */
 #[ORM\Entity(repositoryClass: SeriousGameRepository::class)]
 #[ORM\Table(name: 'serious_game')]
 #[ORM\UniqueConstraint(name: 'uniq_serious_game_slug', columns: ['slug'])]
-class SeriousGame
+class SeriousGame implements StructureTargetable
 {
+    use StructureTargetsTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -81,6 +87,7 @@ class SeriousGame
     {
         $this->slug = $slug;
         $this->title = $title;
+        $this->initStructureTargets();
     }
 
     public function getId(): ?int

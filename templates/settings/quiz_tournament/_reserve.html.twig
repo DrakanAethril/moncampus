@@ -1,0 +1,9 @@
+{# What the sources give a duel (§3): the questions it may play, how many are not vrai/faux, and
+   which ones it ignores - « 12 questions ignorées : apparier, ordre ». Parameter: `reserve`
+   (App\Service\QuizTournament\QuizTournamentReserve). #}
+<p class="cm-pf-hint">
+    {{ 'quizTournamentReserveSummary'|trans({'%count%': reserve.admitted, '%notTrueFalse%': reserve.admittedNotTrueFalse}) }}
+    {% if reserve.ignoredCount > 0 %}
+        {{ 'quizTournamentReserveIgnored'|trans({'%count%': reserve.ignoredCount, '%types%': reserve.ignoredTypes|map(t => t.labelKey|trans|lower)|join(', ')}) }}
+    {% endif %}
+</p>

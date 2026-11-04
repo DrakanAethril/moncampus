@@ -1,14 +1,17 @@
-{# Somebody's mark on a wall: their photo when the platform has one, their initials otherwise, in
+{# Somebody's mark on a wall: the face they chose on « Mon profil » - their photo, their drawn
+   avatar (App\Service\UserAvatars) - their initials otherwise, in
    one of five grounds picked by their id so that the same person is the same colour on every card.
    A card whose author's account is gone draws nothing.
 
    Parameters: user, size (24 | 26 | 28 | 30 | 36, default 24). #}
 {% if user %}
     {% set size = size|default(24) %}
-    {% set url = avatar_url(user) %}
+    {% set face = user_avatar(user) %}
     {% set name = user.displayName ?? user.username %}
-    {% if url %}
-        <img class="cm-wall-avatar cm-wall-avatar--{{ size }}" src="{{ url }}" alt="" title="{{ name }}" width="{{ size }}" height="{{ size }}">
+    {% if face.photo %}
+        <img class="cm-wall-avatar cm-wall-avatar--{{ size }}" src="{{ face.photo }}" alt="" title="{{ name }}" width="{{ size }}" height="{{ size }}">
+    {% elseif face.drawn %}
+        <span class="cm-wall-avatar cm-wall-avatar--{{ size }} cm-avatar-drawn" title="{{ name }}" aria-hidden="true" data-controller="sg-avatar" data-sg-avatar-config-value="{{ face.drawn|json_encode }}" data-sg-avatar-size-value="{{ size }}" data-sg-avatar-round-value="false">{{ user.initials ?? (user.username|slice(0, 1)|upper) }}</span>
     {% else %}
         <span class="cm-wall-avatar cm-wall-avatar--{{ size }} cm-wall-avatar--c{{ user.id % 5 }}" title="{{ name }}" aria-hidden="true">{{ user.initials ?? (user.username|slice(0, 1)|upper) }}</span>
     {% endif %}

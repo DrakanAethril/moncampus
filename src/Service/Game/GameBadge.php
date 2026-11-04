@@ -23,7 +23,7 @@ final readonly class GameBadge
         public string $title,
         public string $initials,
         public ?string $avatarUrl = null,
-        /** @var array<string, mixed>|null the serious-games avatar drawn when there is no photo */
+        /** @var array<string, mixed>|null the drawn avatar, when the person chose it on « Mon profil » (UserAvatars) */
         public ?array $drawnAvatar = null,
     ) {
     }

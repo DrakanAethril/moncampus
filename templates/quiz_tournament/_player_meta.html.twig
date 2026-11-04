@@ -1,0 +1,8 @@
+{# A player's « Classe · rang · cote » as the challenge screens show it, from their line of the
+   standings (or nothing beyond the rating when they have none). Parameters: `line`
+   (QuizTournamentStandingLine or null), `withRank` (bool). #}
+{%- set parts = [] -%}
+{%- if line and line.program -%}{% set parts = parts|merge([line.program.shortName]) %}{%- endif -%}
+{%- if withRank|default(false) and line and line.rank is not null -%}{% set parts = parts|merge(['quizTournamentRankOrdinal'|trans({'%count%': line.rank})]) %}{%- endif -%}
+{%- set parts = parts|merge(['quizTournamentRatingMeta'|trans({'%rating%': line ? line.rating : constant('App\\Service\\QuizTournament\\QuizTournamentElo::START')})]) -%}
+{{- parts|join(' · ') -}}

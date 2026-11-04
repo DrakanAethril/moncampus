@@ -1,0 +1,106 @@
+{# The duel (design/validated/quiz-tournament.md §5.2, mockup H-question): both scores and the
+   progress over the questions on top, the timer driven by the server's deadline, the question, its
+   answers, the other player's « a répondu » - never their answer -, then two seconds of « JUSTE ! »
+   / « RATÉ » for each and the score, never the right answer. quiz_tournament_duel_controller.js
+   draws every question from the state QuizTournamentDuelEngine answers, asks again at the moment the
+   state says something changes, and follows the duel's topic over Mercure. No tab bar: a duel is
+   played to its end, leaving pauses nothing. #}
+{% extends 'quiz_tournament/_layout.html.twig' %}
+
+{% block tournament_attributes -%}
+    data-controller="quiz-tournament-duel"
+    data-quiz-tournament-duel-state-url-value="{{ path('app_quiz_tournament_duel_state', {id: tournament.id, duel: duel.id}) }}"
+    data-quiz-tournament-duel-answer-url-value="{{ path('app_quiz_tournament_duel_answer', {id: tournament.id, duel: duel.id}) }}"
+    data-quiz-tournament-duel-token-value="{{ csrf_token('quiz_tournament_duel' ~ duel.id) }}"
+    data-quiz-tournament-duel-hub-url-value="{{ tournamentLive.url }}"
+    data-quiz-tournament-duel-topic-value="{{ duelTopic }}"
+    data-quiz-tournament-duel-me-value="{{ me.id }}"
+    data-quiz-tournament-duel-opponent-value="{{ opponent.id }}"
+    data-quiz-tournament-duel-state-value="{{ state|json_encode }}"
+    data-quiz-tournament-duel-texts-value="{{ {
+        counter: 'quizTournamentDuelCounter'|trans({'%rank%': '%rank%', '%total%': '%total%'}),
+        types: {
+            qcm: 'quizTournamentDuelTypeQcm'|trans,
+            qcm_multi: 'quizTournamentDuelTypeQcmMulti'|trans,
+            vrai_faux: 'quizTournamentDuelTypeTrueFalse'|trans,
+            numerique: 'quizTournamentDuelTypeNumeric'|trans,
+        },
+        opponentThinking: 'quizTournamentDuelOpponentThinking'|trans({'%name%': opponentName}),
+        opponentAnswered: 'quizTournamentDuelOpponentAnswered'|trans({'%name%': opponentName}),
+        opponentRight: 'quizTournamentDuelOpponentRight'|trans({'%name%': opponentName}),
+        opponentWrong: 'quizTournamentDuelOpponentWrong'|trans({'%name%': opponentName}),
+        opponentNone: 'quizTournamentDuelOpponentNone'|trans({'%name%': opponentName}),
+        right: 'quizTournamentDuelRightSticker'|trans,
+        wrong: 'quizTournamentDuelWrongSticker'|trans,
+        sent: 'quizTournamentDuelAnswerSent'|trans({'%name%': opponentName}),
+        footRight: 'quizTournamentDuelFootNext'|trans,
+        footWrong: 'quizTournamentDuelFootCorrectionLater'|trans,
+        footNone: 'quizTournamentDuelFootNoAnswer'|trans,
+        timer: 'quizTournamentDuelTimerLabel'|trans({'%seconds%': '%seconds%'}),
+        waiting: 'quizTournamentDuelStartsIn'|trans({'%seconds%': '%seconds%'}),
+        finished: 'quizTournamentDuelOver'|trans,
+        unitPlaceholder: 'quizTournamentDuelUnitPlaceholder'|trans,
+        valuePlaceholder: 'quizTournamentDuelValuePlaceholder'|trans,
+        error: 'quizTournamentDuelNetworkError'|trans,
+    }|json_encode }}"
+{%- endblock %}
+
+{% block tournament_head %}
+    {% set scores = state.scores %}
+    <header class="qt-duel-head">
+        <div class="qt-duel-score">
+            {{ include('quiz_tournament/_avatar.html.twig', {user: me, avatar: avatars[me.id], modifier: 'qt-avatar--duel'}) }}
+            <span class="qt-duel-score__value" data-quiz-tournament-duel-target="myScore" aria-label="{{ 'quizTournamentDuelMyScoreLabel'|trans }}">{{ (scores[me.id] ?? 0)|number_format(1, ',', '')|replace({',0': ''}) }}</span>
+            <span class="qt-duel-score__counter" data-quiz-tournament-duel-target="counter">
+                {%- if state.rank is not null %}{{ 'quizTournamentDuelCounter'|trans({'%rank%': state.rank + 1, '%total%': state.total}) }}{% endif -%}
+            </span>
+            <span class="qt-duel-score__value" data-quiz-tournament-duel-target="opponentScore" aria-label="{{ 'quizTournamentDuelOpponentScoreLabel'|trans({'%name%': opponentName}) }}">{{ (scores[opponent.id] ?? 0)|number_format(1, ',', '')|replace({',0': ''}) }}</span>
+            {{ include('quiz_tournament/_avatar.html.twig', {user: opponent, avatar: avatars[opponent.id], modifier: 'qt-avatar--duel'}) }}
+        </div>
+        <ol class="qt-duel-steps" aria-hidden="true" data-quiz-tournament-duel-target="steps" style="--qt-steps: {{ max(state.total, 1) }}">
+            {% for i in 0..(max(state.total, 1) - 1) %}<li class="qt-duel-step"></li>{% endfor %}
+        </ol>
+    </header>
+{% endblock %}
+
+{% block tournament_body %}
+    <div class="qt-duel-waiting" data-quiz-tournament-duel-target="waiting" hidden>
+        <span class="qt-countdown__head">{{ 'quizTournamentCountdownHeading'|trans }}</span>
+        <span class="qt-countdown__number" data-quiz-tournament-duel-target="waitingNumber">3</span>
+    </div>
+
+    <div class="qt-duel" data-quiz-tournament-duel-target="play" hidden>
+        <div class="qt-duel-top">
+            <div class="qt-timer" role="timer" data-quiz-tournament-duel-target="timer">
+                <span class="qt-timer__value" data-quiz-tournament-duel-target="timerValue"></span>
+            </div>
+            <div class="qt-duel-top__chips">
+                <span class="qt-chip qt-chip--type" data-quiz-tournament-duel-target="type"></span>
+                <span class="qt-chip" data-quiz-tournament-duel-target="opponentChip" aria-live="polite"></span>
+            </div>
+        </div>
+
+        <section class="qt-duel-question" aria-labelledby="qt-duel-label">
+            <h2 class="qt-duel-question__label qt-multiline" id="qt-duel-label" data-quiz-tournament-duel-target="label"></h2>
+            <img class="qt-duel-question__image" alt="" data-quiz-tournament-duel-target="image" hidden>
+            <span class="qt-duel-sticker" data-quiz-tournament-duel-target="sticker" aria-live="assertive" hidden></span>
+        </section>
+
+        <section class="qt-duel-answers" aria-label="{{ 'quizTournamentDuelAnswersLabel'|trans }}" data-quiz-tournament-duel-target="answers"></section>
+
+        <div class="qt-duel-numeric" data-quiz-tournament-duel-target="numeric" hidden>
+            <label class="visually-hidden" for="qt-duel-value">{{ 'quizTournamentDuelValueLabel'|trans }}</label>
+            <input class="qt-input" id="qt-duel-value" type="text" inputmode="decimal" autocomplete="off" data-quiz-tournament-duel-target="value" data-action="keydown.enter->quiz-tournament-duel#submit">
+            <label class="visually-hidden" for="qt-duel-unit">{{ 'quizTournamentDuelUnitLabel'|trans }}</label>
+            <input class="qt-input qt-input--unit" id="qt-duel-unit" type="text" autocomplete="off" data-quiz-tournament-duel-target="unit" data-action="keydown.enter->quiz-tournament-duel#submit" hidden>
+            <span class="qt-duel-numeric__suffix" data-quiz-tournament-duel-target="suffix" hidden></span>
+        </div>
+
+        <button type="button" class="qt-btn qt-btn--primary qt-btn--big" data-quiz-tournament-duel-target="submit" data-action="quiz-tournament-duel#submit" hidden>{{ 'quizTournamentDuelValidateAction'|trans }}</button>
+
+        <p class="qt-duel-foot" data-quiz-tournament-duel-target="foot" aria-live="polite"></p>
+        <p class="qt-sheet__refusal" role="alert" data-quiz-tournament-duel-target="refusal" hidden></p>
+    </div>
+{% endblock %}
+
+{% block tournament_foot %}{% endblock %}
