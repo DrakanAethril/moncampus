@@ -26,6 +26,12 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.04.2'
+      date: '2026-11-04'
+      summary: "L'écran d'installation de beaup-app ne se croit plus installé quand le navigateur est simplement en plein écran."
+      entries:
+          - type: fix
+            title: "Installer beaup-app : un navigateur en plein écran n'est plus pris pour l'application installée"
     - version: '2026.11.04'
       date: '2026-11-04'
       summary: "Formatool s'installe désormais comme une application, sous le nom beaup-app, et remplace l'ancienne version web de l'application mobile. Des tournois de quiz en duels entre étudiants entrent à l'essai auprès de l'administration, et chacun choisit son avatar dans son profil."
