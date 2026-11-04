@@ -1,5 +1,5 @@
-{# A face in a tournament screen, by App\Service\UserAvatars' rule: the photo, else the drawn avatar,
-   else the initials on a colour of the direction's. Parameters: `user`, `avatar`
+{# A face in a tournament screen, as the player chose it on « Mon profil » (App\Service\UserAvatars):
+   the photo, the drawn avatar, or the initials on a colour of the direction's. Parameters: `user`, `avatar`
    ({photo, drawn} from UserAvatars::forUsers()), `modifier` (an extra class). #}
 {% set initials = user.initials ?? user.username|slice(0, 1)|upper %}
 <span class="qt-avatar qt-avatar--initials-{{ (user.id ?? 0) % 6 }}{{ modifier is defined and modifier ? ' ' ~ modifier }}"

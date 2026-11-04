@@ -44,7 +44,13 @@ class FeatureCoverageTest extends KernelTestCase
                 'app_about',
                 'app_changelog',
                 'app_technical',
+                // « Mon avatar » included (app_profile_avatar*, design/validated/quiz-tournament.md
+                // §16): sending a photo or drawing an avatar is for every account, never behind the
+                // serious games module it was born in.
                 'app_profile',
+                // The serious games' former avatar address, now a 301 to « Mon avatar »: a bookmark
+                // must land there whatever the module says.
+                'app_serious_games_avatar',
                 'app_locale_switch',
                 'app_logout',
                 'app_password_renewal',

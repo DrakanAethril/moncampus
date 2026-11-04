@@ -77,6 +77,9 @@ final readonly class SeriousGamePlayerPage
             'own' => $own,
             'collects' => $collects,
             'avatar' => $this->avatars->configFor($player),
+            // Drawn on « Mon profil » (design/validated/quiz-tournament.md §16): the page links there,
+            // « Créer mon avatar » until there is one to edit.
+            'avatarDrawn' => $this->avatars->hasOne($player),
             'games' => $games,
             'showcase' => $collects ? $this->showcase($held) : [],
             'pins' => $collects ? $this->avatars->heldPins($player) : [],

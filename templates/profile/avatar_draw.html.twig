@@ -1,0 +1,47 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'profileAvatarDrawHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'profilePageHeading'|trans, url: path('app_profile')},
+        {label: 'profileAvatarDrawHeading'|trans, url: path('app_profile_avatar_draw')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'profileAvatarDrawHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <twig:Cm:Button variant="outline" href="{{ path('app_profile', {_fragment: 'mon-avatar'}) }}">{{ 'profileAvatarBackAction'|trans }}</twig:Cm:Button>
+{% endblock %}
+
+{% block main %}
+    {# The creation tunnel of « Mon avatar » (design/validated/quiz-tournament.md §16), the serious
+       games' editor moved here: drawn by sg_avatar_editor_controller.js from the shared module's
+       catalogue (public/serious-games/shared/avatar.js) - the one drawing of the avatar, shared with
+       the games. Saving chooses the drawing (App\Controller\ProfileAvatarController). #}
+    <div class="cm-sg-ed" data-controller="sg-avatar-editor"
+         data-sg-avatar-editor-config-value="{{ config|json_encode }}"
+         data-sg-avatar-editor-saved-value="{{ saved and shown ? 'true' : 'false' }}"
+         data-sg-avatar-editor-pins-value="{{ pins|json_encode }}"
+         data-sg-avatar-editor-collects-value="{{ collects ? 'true' : 'false' }}"
+         data-sg-avatar-editor-url-value="{{ path('app_profile_avatar_draw_save') }}"
+         data-sg-avatar-editor-csrf-value="{{ csrf_token('profile_avatar_draw') }}"
+         data-sg-avatar-editor-save-label-value="{{ 'profileAvatarDrawSaveAction'|trans }}"
+         data-sg-avatar-editor-saved-label-value="{{ 'profileAvatarDrawSavedLabel'|trans }}"
+         data-sg-avatar-editor-error-label-value="{{ 'profileAvatarDrawSaveError'|trans }}">
+        <div class="card cm-sg-ed__left">
+            <div class="cm-sg-ed__preview" data-sg-avatar-editor-target="preview" aria-live="polite"></div>
+            <div class="cm-sg-ed__row">
+                <button type="button" class="cm-sg-ed__btn" data-action="sg-avatar-editor#randomize">{{ 'profileAvatarDrawRandomAction'|trans }}</button>
+                <button type="button" class="cm-sg-ed__btn" data-action="sg-avatar-editor#reset">{{ 'profileAvatarDrawResetAction'|trans }}</button>
+            </div>
+            <button type="button" class="cm-sg-ed__save" data-sg-avatar-editor-target="save" data-action="sg-avatar-editor#save">{{ 'profileAvatarDrawSaveAction'|trans }}</button>
+            <p class="cm-sg-ed__note">{{ 'profileAvatarDrawScopeNote'|trans }}</p>
+        </div>
+        <div class="card cm-sg-ed__right">
+            <div class="cm-sg-ed__cats" role="tablist" data-sg-avatar-editor-target="tabs"></div>
+            <div class="cm-sg-ed__groups" data-sg-avatar-editor-target="groups"></div>
+        </div>
+    </div>
+{% endblock %}

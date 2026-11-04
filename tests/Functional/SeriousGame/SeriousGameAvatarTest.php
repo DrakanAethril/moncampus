@@ -5,69 +5,92 @@ declare(strict_types=1);
 namespace App\Tests\Functional\SeriousGame;
 
 use App\Entity\SeriousGame;
+use App\Entity\SeriousGameAvatar;
 use App\Entity\SeriousGameRewardGrant;
 use App\Entity\SeriousGameRoleSetting;
 use App\Entity\User;
+use App\Enum\AvatarChoice;
+use App\SeriousGame\Avatar\AvatarConfig;
 use App\Tests\Functional\FunctionalTestCase;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Saving an avatar (design/validated/serious-games.md §7): the server keeps the values the editor
- * offers and refuses a pin the student has not obtained.
+ * The avatar in the serious games, since it moved to « Mon profil » (design/validated/
+ * quiz-tournament.md §16): the game always draws the drawing, whatever the person shows elsewhere;
+ * whoever never drew one plays with the default avatar and is offered « Créer mon avatar », on the
+ * profile. The module's screens lead there; wearing a pin, still the player page's gesture, changes
+ * the drawing and never the choice.
  */
 class SeriousGameAvatarTest extends FunctionalTestCase
 {
     use SeriousGameTestTrait;
 
-    public function testAPinIsWornOnlyOnceObtained(): void
+    public function testAPlayerWithoutADrawingPlaysWithTheDefaultAndIsOfferedOne(): void
     {
-        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'avatar.student');
-        $this->openTheGameTo('ROLE_STUDENT');
-
-        $this->client->loginUser($student);
-        $this->client->request('GET', '/serious-games/avatar');
-        self::assertResponseIsSuccessful();
-        $token = $this->csrfToken('serious-games');
-
-        $this->post($token, ['hair' => 'afro', 'pin' => 'pin-etoile']);
-        self::assertResponseStatusCodeSame(422);
-
-        $this->post($token, ['hair' => 'afro', 'hat' => 'chapeau', 'sex' => 'f']);
-        self::assertResponseIsSuccessful();
-        /** @var array{config: array<string, mixed>} $body */
-        $body = json_decode((string) $this->client->getResponse()->getContent(), true);
-        $config = $body['config'];
-        self::assertSame('afro', $config['hair']);
-        self::assertSame('b', $config['start']);
-        self::assertArrayNotHasKey('hat', $config);
-
-        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        $entityManager->persist(new SeriousGameRewardGrant($entityManager->getReference(User::class, $student->getId()), 'pin-etoile'));
-        $entityManager->flush();
-
-        $this->post($token, ['pin' => 'pin-etoile']);
-        self::assertResponseIsSuccessful();
-    }
-
-    public function testAnAdultNeverWearsAPin(): void
-    {
-        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'avatar.teacher');
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'avatar.default');
         $this->openTheGameTo('ROLE_TEACHER');
-        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        $entityManager->persist(new SeriousGameRewardGrant($teacher, 'pin-etoile'));
-        $entityManager->flush();
-
         $this->client->loginUser($teacher);
-        $this->client->request('GET', '/serious-games/avatar');
-        $this->post($this->csrfToken('serious-games'), ['pin' => 'pin-etoile']);
 
-        self::assertResponseStatusCodeSame(422);
+        $this->client->request('GET', '/serious-games/play/observatoire');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.cm-sg-host__bar a[href="/profile/avatar/draw"]', 'Créer mon avatar');
+
+        self::assertSame(AvatarConfig::DEFAULTS, $this->gameUser()['avatar']);
+
+        $this->client->request('GET', '/serious-games');
+        self::assertSelectorTextContains('a.cm-sg-pill[href="/profile/avatar/draw"]', 'Créer mon avatar');
     }
 
-    /** @param array<string, mixed> $config */
-    private function post(string $token, array $config): void
+    public function testTheGameDrawsTheDrawingWhateverTheProfileShows(): void
     {
-        $this->client->request('POST', '/serious-games/avatar', [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_X_CSRF_TOKEN' => $token], (string) json_encode($config));
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'avatar.drawn');
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist(new SeriousGameAvatar($student, ['hair' => 'afro'], 2));
+        $student->setAvatarKey('avatars/drawn.png')->setAvatarChoice(AvatarChoice::Photo);
+        $entityManager->flush();
+        $this->openTheGameTo('ROLE_STUDENT');
+        $this->client->loginUser($student);
+
+        $this->client->request('GET', '/serious-games/play/observatoire');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorNotExists('.cm-sg-host__avatar');
+        self::assertSame('afro', $this->gameUser()['avatar']['hair']);
+
+        $this->client->request('GET', '/serious-games/me');
+        self::assertSelectorTextContains('a.cm-sg-pill[href="/profile/avatar/draw"]', 'Modifier mon avatar');
+    }
+
+    public function testWearingAPinChangesTheDrawingAndNeverTheChoice(): void
+    {
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'avatar.pin');
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $student->setAvatarKey('avatars/pin.png')->setAvatarChoice(AvatarChoice::Photo);
+        $entityManager->persist(new SeriousGameRewardGrant($student, 'pin-etoile'));
+        $entityManager->flush();
+        $this->openTheGameTo('ROLE_STUDENT');
+        $this->client->loginUser($student);
+
+        $this->client->request('GET', '/serious-games/me');
+        $this->client->request('POST', '/serious-games/me/pin', ['_token' => $this->csrfToken('serious-games'), 'pin' => 'pin-etoile']);
+        self::assertResponseRedirects();
+
+        $entityManager->clear();
+        $reloaded = $entityManager->find(User::class, $student->getId());
+        self::assertInstanceOf(User::class, $reloaded);
+        self::assertSame(AvatarChoice::Photo, $reloaded->getAvatarChoice());
+        $drawing = $entityManager->getRepository(SeriousGameAvatar::class)->findOneBy(['user' => $reloaded]);
+        self::assertSame('pin-etoile', $drawing?->getConfig()['pin'] ?? null);
+    }
+
+    /** @return array{avatar: array<string, mixed>} */
+    private function gameUser(): array
+    {
+        $this->client->request('GET', '/serious-games/api/observatoire/user');
+        self::assertResponseIsSuccessful();
+        /** @var array{avatar: array<string, mixed>} $body */
+        $body = json_decode((string) $this->client->getResponse()->getContent(), true);
+
+        return $body;
     }
 
     private function openTheGameTo(string $role): void

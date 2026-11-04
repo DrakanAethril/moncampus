@@ -1,0 +1,8 @@
+{# One « Utiliser … » of « Mon avatar »: a small form, since it changes the account
+   (App\Controller\ProfileAvatarController::choose()). Parameters: value ('photo'|'drawn'|'none'),
+   label, variant. #}
+<form method="post" action="{{ path('app_profile_avatar_choice') }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('profile_avatar_choice') }}">
+    <input type="hidden" name="choice" value="{{ value }}">
+    <twig:Cm:Button variant="{{ variant }}" size="sm" type="submit">{{ label }}</twig:Cm:Button>
+</form>

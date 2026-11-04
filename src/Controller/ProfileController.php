@@ -13,13 +13,12 @@ use App\Form\ContactEmailType;
 use App\Form\MessagingPreferencesType;
 use App\Repository\LdapManagePasswordRepository;
 use App\Repository\UserSshKeyRepository;
+use App\SeriousGame\Avatar\SeriousGameAvatars;
 use App\Service\ContactEmailVerifier;
-use App\Service\FileUploadService;
 use App\Service\Guest\SshPublicKey;
 use App\Service\JsonRequestPayload;
 use App\Service\QueueStateFormatter;
-use App\Service\StagedUpload;
-use App\Service\UploadIntake;
+use App\Service\UserAvatars;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -33,10 +32,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 class ProfileController extends AbstractController
 {
-    private const string AVATAR_PREFIX = 'avatars/';
-
     #[Route(path: '/profile', name: 'app_profile')]
-    public function index(LdapManagePasswordRepository $passwordRequestRepository, QueueStateFormatter $stateFormatter, UserSshKeyRepository $sshKeys): Response
+    public function index(LdapManagePasswordRepository $passwordRequestRepository, QueueStateFormatter $stateFormatter, UserSshKeyRepository $sshKeys, UserAvatars $avatars, SeriousGameAvatars $drawings): Response
     {
         $user = $this->currentUser();
         $passwordRequest = $passwordRequestRepository->findMostRecentForUser($user);
@@ -47,6 +44,13 @@ class ProfileController extends AbstractController
             // query is not worth making for anybody else.
             'sshKeys' => $this->isGranted('ROLE_ADMIN') ? $sshKeys->findForUser($user) : [],
             'avatarForm' => $this->createForm(AvatarUploadType::class),
+            // « Mon avatar » (design/validated/quiz-tournament.md §16) shows both, whichever is
+            // chosen, so that switching back is one click (App\Controller\ProfileAvatarController).
+            'avatarCard' => [
+                'choice' => $user->getAvatarChoice()?->value,
+                'photo' => $avatars->uploadedPhotoUrl($user),
+                'drawing' => $drawings->hasOne($user) ? $drawings->configFor($user) : null,
+            ],
             'contactEmailForm' => $this->createForm(ContactEmailType::class, $user),
             'messagingPreferencesForm' => $this->createForm(MessagingPreferencesType::class, $user),
             'changePasswordForm' => $this->createForm(ChangePasswordType::class),
@@ -281,42 +285,7 @@ class ProfileController extends AbstractController
     // who isn't logged in at all (see that class's docblock), which this class's
     // #[IsGranted('ROLE_USER')] can never allow.
 
-    #[Route(path: '/profile/avatar', name: 'app_profile_avatar', methods: ['POST'])]
-    public function uploadAvatar(Request $request, EntityManagerInterface $entityManager, FileUploadService $fileUploadService, UploadIntake $uploadIntake): Response
-    {
-        $user = $this->currentUser();
-
-        $form = $this->createForm(AvatarUploadType::class);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            /** @var StagedUpload $file */
-            $file = $form->get('avatarFile')->getData();
-            $extension = UploadIntake::extension($file);
-
-            // Timestamp in the filename (not a query-string cache-buster) so the URL itself
-            // changes on every replace - CloudFront/browsers never need to be told to revalidate
-            // a stale cached image. The old object is only deleted after the new one is safely
-            // persisted, so a mid-upload failure never leaves the user with a broken avatar.
-            $oldKey = $user->getAvatarKey();
-            $newKey = $uploadIntake->store($file, self::AVATAR_PREFIX, sprintf('%d-%d.%s', $user->getId(), time(), $extension));
-
-            $user->setAvatarKey($newKey);
-            $entityManager->flush();
-
-            if (null !== $oldKey) {
-                $fileUploadService->delete($oldKey);
-            }
-
-            $this->addFlash('success', 'avatarUploadedFlashMessage');
-        } else {
-            foreach ($form->getErrors(true) as $error) {
-                $this->addFlash('error', $error->getMessage());
-            }
-        }
-
-        return $this->redirectToRoute('app_profile');
-    }
+    // Uploading the photo, and the rest of « Mon avatar », live in App\Controller\ProfileAvatarController.
 
     // Also called for anonymous visitors from the login page (see security/login.html.twig) via
     // a separate unauthenticated route below - this one only ever runs for a logged-in user, so

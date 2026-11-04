@@ -10,7 +10,7 @@
             <p class="cm-sg-player__meta">{{ 'seriousGamePlayerGamesCount'|trans({'%count%': games|filter(g => g.history is not empty)|length}) }}</p>
         </div>
         {% if own %}
-            <a class="cm-sg-pill" href="{{ path('app_serious_games_avatar') }}">{{ 'seriousGameEditAvatarAction'|trans }}</a>
+            <a class="cm-sg-pill" href="{{ path('app_profile_avatar_draw') }}">{{ (avatarDrawn ? 'seriousGameEditAvatarAction' : 'seriousGameCreateAvatarAction')|trans }}</a>
         {% endif %}
     </section>
 

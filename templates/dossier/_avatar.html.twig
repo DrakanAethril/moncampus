@@ -1,12 +1,14 @@
-{# The cible's or validateur's mark: their photo when the platform has one, their initials
-   otherwise. The box is the handoff's own - a rounded square of 26 to 32 px - either way, so the
+{# The cible's or validateur's mark: the face they chose on « Mon profil » - their photo, their
+   drawn avatar - their initials otherwise (App\Service\UserAvatars). The box is the handoff's own - a rounded square of 26 to 32 px - either way, so the
    two never shift the row they sit in.
 
    Parameters: user, size (26 | 28 | 30 | 32, default 28). #}
 {% set size = size|default(28) %}
-{% set url = avatar_url(user) %}
-{% if url %}
-    <img class="cm-dd-avatar{{ 28 != size ? ' cm-dd-avatar--' ~ size }}" src="{{ url }}" alt="" width="{{ size }}" height="{{ size }}">
+{% set face = user_avatar(user) %}
+{% if face.photo %}
+    <img class="cm-dd-avatar{{ 28 != size ? ' cm-dd-avatar--' ~ size }}" src="{{ face.photo }}" alt="" width="{{ size }}" height="{{ size }}">
+{% elseif face.drawn %}
+    <span class="cm-dd-avatar{{ 28 != size ? ' cm-dd-avatar--' ~ size }} cm-avatar-drawn" aria-hidden="true" data-controller="sg-avatar" data-sg-avatar-config-value="{{ face.drawn|json_encode }}" data-sg-avatar-size-value="{{ size }}" data-sg-avatar-round-value="false">{{ user.initials ?? (user.username|slice(0, 1)|upper) }}</span>
 {% else %}
     <span class="cm-dd-avatar{{ 28 != size ? ' cm-dd-avatar--' ~ size }}" aria-hidden="true">{{ user.initials ?? (user.username|slice(0, 1)|upper) }}</span>
 {% endif %}

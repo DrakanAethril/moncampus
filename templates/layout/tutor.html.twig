@@ -21,13 +21,12 @@
                 <div class="navbar-nav flex-row order-md-last cm-topbar__right">
                     {% set current_theme = app.user.themePreference %}
                     <div class="nav-item dropdown">
-                        {% set navbar_avatar_url = avatar_url(app.user) %}
                         <a href="#" class="nav-link d-flex align-items-center lh-1 text-reset p-0 cm-user__toggle" data-bs-toggle="dropdown" aria-label="{{ 'openUserMenuLabel'|trans }}">
                             <div class="d-none d-md-block cm-user__id">
                                 <div class="cm-user__name">{{ app.user.displayName ?? app.user.username }}</div>
                                 <div class="cm-user__login">{{ app.user.username }}</div>
                             </div>
-                            <span class="cm-user__avatar"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+                            {{ include('partials/_user_face.html.twig', {face: user_avatar(app.user), initials: app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper), class: 'cm-user__avatar', size: 34}) }}
                         </a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                             <div class="cm-user__menu-head">

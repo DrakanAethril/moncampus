@@ -128,7 +128,7 @@
                         {% if is_pure_student and play_hub_visible() %}
                             {% set play_is_active = current_route == 'app_play'
                                 or current_route starts with 'app_quiz_tournament'
-                                or current_route in ['app_serious_games', 'app_serious_games_avatar', 'app_serious_games_me', 'app_serious_games_play'] %}
+                                or current_route in ['app_serious_games', 'app_serious_games_me', 'app_serious_games_play'] %}
                             <li class="nav-item {{ play_is_active ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_play') }}"{{ play_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'playNavLabel'|trans }}</span>

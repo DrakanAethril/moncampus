@@ -41,6 +41,7 @@ class CatalogController extends AbstractController
             'levels' => $levels,
             'collects' => $collects,
             'avatar_config' => $avatars->configFor($user),
+            'avatar_drawn' => $avatars->hasOne($user),
             'readsResults' => $this->isGranted('ROLE_TEACHER') || $this->isGranted('ROLE_ADMIN'),
         ]);
     }

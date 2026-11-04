@@ -10,7 +10,9 @@ use App\Entity\QuizTemplate;
 use App\Entity\QuizTournament;
 use App\Entity\QuizTournamentDuel;
 use App\Entity\QuizTournamentPlayer;
+use App\Entity\SeriousGameAvatar;
 use App\Entity\User;
+use App\Enum\AvatarChoice;
 use App\Enum\QuestionType;
 use App\Enum\QuizTournamentDuelOrigin;
 use App\Enum\QuizTournamentPalette;
@@ -224,6 +226,38 @@ class QuizTournamentScreensTest extends FunctionalTestCase
         self::assertSelectorTextContains('.qt-me', 'Pas encore joué');
         self::assertSelectorTextContains('#qt-not-played', 'Qt.bruno Test (TEST-1)');
         self::assertSelectorTextContains('.qt-monogram', 'RGPD');
+    }
+
+    /**
+     * The standings draw each player as they chose on « Mon profil » (design/validated/
+     * quiz-tournament.md §16), and so does the main bar: a drawing chosen, a photo chosen, the
+     * initials for a photo sent and then put aside.
+     */
+    public function testTheStandingsAndTheBarShowTheFaceEachPlayerChose(): void
+    {
+        $tournament = $this->tournament(opened: true);
+        $this->em->persist(new SeriousGameAvatar($this->student, ['hair' => 'afro'], 2));
+        $this->student->setAvatarChoice(AvatarChoice::Drawn);
+        $this->otherStudent->setAvatarKey('avatars/bruno.png')->setAvatarChoice(AvatarChoice::Photo);
+        $this->em->flush();
+
+        $this->client->loginUser($this->student);
+        $crawler = $this->client->request('GET', '/tournaments/'.$tournament->getId());
+        self::assertResponseIsSuccessful();
+        $faces = $crawler->filter('#qt-not-played .qt-avatar');
+        self::assertCount(2, $faces);
+        $drawn = $faces->reduce(static fn ($face): bool => str_contains((string) $face->attr('data-sg-avatar-config-value'), 'afro'));
+        $photo = $faces->reduce(static fn ($face): bool => str_contains((string) $face->attr('style'), 'avatars/bruno.png'));
+        self::assertCount(1, $drawn, 'Alice chose her drawing');
+        self::assertCount(1, $photo, 'Bruno chose his photo');
+        self::assertSelectorExists('.cm-user__avatar[data-controller="sg-avatar"]');
+
+        $this->otherStudent->setAvatarChoice(null);
+        $this->em->flush();
+        $this->client->loginUser($this->otherStudent);
+        $this->client->request('GET', '/tournaments/'.$tournament->getId());
+        self::assertSelectorNotExists('#qt-not-played .qt-avatar[style]');
+        self::assertSelectorNotExists('.cm-user__avatar[style]');
     }
 
     public function testTheAssemblerCountsTheLastFourteenDaysAndRemembersTheClass(): void

@@ -2,14 +2,16 @@ import { Controller } from '@hotwired/stimulus';
 import { loadAvatarModule } from '../serious_game/avatar_module.js';
 
 /**
- * The avatar editor of the serious games (design/validated/serious-games.md §7,
- * design/conception_serious_games/avatar.html): a preview, « Aléatoire », « Réinitialiser »,
- * « Enregistrer mon avatar », and one tab per heading of the shared module's catalogue (`CATS`).
- * Every shape option is a thumbnail of the current avatar with that option applied.
+ * The avatar editor - the creation tunnel of « Mon avatar », on the profile
+ * (design/validated/quiz-tournament.md §16; drawn for the serious games first,
+ * design/validated/serious-games.md §7, design/conception_serious_games/avatar.html): a preview,
+ * « Aléatoire », « Réinitialiser », « Enregistrer mon avatar », and one tab per heading of the shared
+ * module's catalogue (`CATS`). Every shape option is a thumbnail of the current avatar with that
+ * option applied.
  *
  * The editor saves the whole config as JSON; the server keeps only the values it knows and refuses
- * a pin the person has not obtained. A student also gets the « Épinglettes » tab - an adult never
- * holds one.
+ * a pin the person has not obtained. Whoever holds a pin also gets the « Épinglettes » tab - pins are
+ * won in the serious games, never here.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
