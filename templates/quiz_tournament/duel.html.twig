@@ -1,0 +1,14 @@
+{# A duel (design/validated/quiz-tournament.md §5) - **a placeholder**: the route
+   (app_quiz_tournament_duel) and its access are what the room relies on; the duel screen of the
+   second half of lot 3 replaces this page (H-question). #}
+{% extends 'quiz_tournament/_layout.html.twig' %}
+
+{% block tournament_kicker %}<span class="qt-head__kicker">{{ tournament.name }}</span>{% endblock %}
+{% block tournament_heading %}{{ 'quizTournamentDuelHeading'|trans }}{% endblock %}
+
+{% block tournament_body %}
+    <p class="qt-sticker qt-sticker--accent">{{ 'quizTournamentDuelStarting'|trans }}</p>
+    {% if opponent %}
+        <p class="qt-empty">{{ 'quizTournamentDuelAgainst'|trans({'%name%': opponent.displayName ?? opponent.username, '%count%': duel.questions|length}) }}</p>
+    {% endif %}
+{% endblock %}

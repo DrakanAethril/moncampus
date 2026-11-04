@@ -251,7 +251,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   that timing is to *exonerate*: three seconds on a question is proof nobody had time to look it up.
 - **Tournois de quiz** — `QuizTournament*` entities, `src/Service/QuizTournament/`, spec
   `design/validated/quiz-tournament.md` (being built in lots; lot 1 the model and the rules, lot 2
-  the administration and the standings page). Students reached by a **targeting** challenge each other to synchronous duels of 20
+  the administration and the standings page, lot 3 the challenges, the room and the duel). Students reached by a **targeting** challenge each other to synchronous duels of 20
   questions drawn from ordinary library quizzes; an Elo rating ranks them. `Feature::QuizTournaments`
   is off for every role; creating and opening is `ROLE_ADMIN` alone whatever the matrix says
   (`QuizTournamentVoter`, the only arbiter, facts from `QuizTournamentAccess`). Rules the code holds:
@@ -299,6 +299,27 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     logo is data uploaded per tournament (`UploadPolicy::images()`, no SVG): the Tournoi RGPD's shield
     is shipped ready to upload as `public/quiz-tournaments/logo-tournoi-rgpd.png` (its SVG source
     beside it); without a logo, `QuizTournamentMonogram` draws one from the name.
+  - **Challenges** (`App\Controller\QuizTournament\ChallengeController`, `QuizTournamentChallenges`):
+    send / accept / refuse read every rule again server-side under one lock per tournament, and a
+    refusal comes back as the sentence of its enum (`QuizTournamentRefusal`). The standings' « Défier »
+    is greyed with its reason from `QuizTournamentAccess::challengeFactsByOpponent()` (every line in a
+    fixed number of queries - it must stay equal to `challengeFacts()`, `QuizTournamentFactsTest` pins
+    it) and opens the H-defier sheet, fetched into a `<dialog>`. **« Mes défis » expires lazily**:
+    `QuizTournamentChallenge::settle()` writes what `statusAt()` reads (24 h, and the tournament's end
+    closes pending challenges and rooms) when the board touches a row; `QuizTournamentChallengeBoard`
+    is the pure reading, rooms first, and its `count()` is the tab's counter. Mes défis is a student's
+    screen (404 for anyone else).
+  - **No notification, only page updates over Mercure** (`QuizTournamentLive`): a private topic per
+    student and tournament for the « Défis (n) » counter, one per room for « Prêt » and « start »,
+    subscribed through the bundle's cookie (`subscriber` hub) by the tournament screens alone, and
+    published after each change. Never add a listener outside the tournament screens.
+  - **The room** (`RoomController`, `QuizTournamentRooms`, `QuizTournamentRoomRules`): « Prêt » is a
+    POST repeated every 20 s, lost after 45 s, cleared by a beacon when the page goes (`pagehide` *and*
+    the Stimulus `disconnect`, a Turbo visit fires no pagehide); refused while either player has an
+    unfinished duel anywhere. **`QuizTournamentDuelStarter` is the only door to a challenge's duel**:
+    room lock (LOCK_DSN) + the challenge row FOR UPDATE, an existing duel answered as is, then
+    `shouldStart()` on fresh facts, the draw, the frozen questions (choices with local ids,
+    `QuizTournamentDuelSnapshot`; images referenced, not copied), ladder flags and ratings before.
 - **Sondages** — the same three-step shape as Quiz, and deliberately so: `SurveyTemplate` (library,
   `SurveyFolder`s) → `SurveyCampaign` (launched wave, carrying a frozen copy of the questions) →
   `SurveyResponse`. `SurveySeries` replays a campaign to compare waves. Two things freeze at launch

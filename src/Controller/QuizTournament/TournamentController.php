@@ -8,11 +8,18 @@ use App\Attribute\RequiresFeature;
 use App\Entity\QuizTournament;
 use App\Entity\User;
 use App\Enum\Feature;
+use App\Enum\QuizTournamentChallengeRefusal;
 use App\Repository\QuizTournamentRepository;
 use App\Security\Voter\QuizTournamentVoter;
+use App\Service\QuizTournament\QuizTournamentAccess;
+use App\Service\QuizTournament\QuizTournamentChallengeFacts;
+use App\Service\QuizTournament\QuizTournamentChallengeRules;
+use App\Service\QuizTournament\QuizTournamentLive;
 use App\Service\QuizTournament\QuizTournamentStandingsAssembler;
+use App\Service\QuizTournament\QuizTournamentStandingsView;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -52,7 +59,7 @@ class TournamentController extends AbstractController
     }
 
     #[Route(path: '/tournaments/{id}', name: 'app_quiz_tournament_show', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function show(int $id, QuizTournamentStandingsAssembler $assembler): Response
+    public function show(int $id, Request $request, QuizTournamentStandingsAssembler $assembler, QuizTournamentAccess $access, QuizTournamentLive $live): Response
     {
         $tournament = $this->viewable($id);
         $now = $this->clock->now();
@@ -60,15 +67,39 @@ class TournamentController extends AbstractController
 
         /** @var User $reader */
         $reader = $this->getUser();
+        $canPlay = $this->isGranted(QuizTournamentVoter::PLAY, $tournament);
 
         return $this->render('quiz_tournament/show.html.twig', [
             'tournament' => $tournament,
             'status' => $tournament->statusAt($now),
             'standings' => $standings,
             'readerLine' => $standings->lineFor($reader->getId()),
-            'canPlay' => $this->isGranted(QuizTournamentVoter::PLAY, $tournament),
+            'canPlay' => $canPlay,
+            'defyRefusals' => $canPlay ? $this->defyRefusals($tournament, $reader, $standings, $access, $now) : [],
+            'tournamentLive' => $live->screen($request, $tournament, $reader, $now),
             'activeTab' => 'standings',
         ]);
+    }
+
+    /**
+     * Why each « Défier » of the standings is greyed out, if it is: QuizTournamentChallengeRules on
+     * the facts of every eligible line, loaded at once.
+     *
+     * @return array<int, QuizTournamentChallengeRefusal|null> user id => the first refusal
+     */
+    private function defyRefusals(QuizTournament $tournament, User $reader, QuizTournamentStandingsView $standings, QuizTournamentAccess $access, \DateTimeImmutable $now): array
+    {
+        $eligible = [];
+        foreach ($standings->standings->all() as $row) {
+            if ($row->entry->eligible && $row->entry->userId !== $reader->getId()) {
+                $eligible[$row->entry->userId] = true;
+            }
+        }
+
+        return array_map(
+            static fn (QuizTournamentChallengeFacts $facts): ?QuizTournamentChallengeRefusal => QuizTournamentChallengeRules::firstRefusal($facts, $now),
+            $access->challengeFactsByOpponent($tournament, $reader, $eligible, $now),
+        );
     }
 
     private function viewable(int $id): QuizTournament

@@ -6,6 +6,7 @@ namespace App\Service\QuizTournament;
 
 use App\Entity\Program;
 use App\Entity\QuizTournament;
+use App\Entity\QuizTournamentChallenge;
 use App\Entity\User;
 use App\Enum\Feature;
 use App\Repository\ProgramRepository;
@@ -120,6 +121,69 @@ class QuizTournamentAccess
                 ...$this->duels->roundEncounterTimes($tournament, $challenger, $challenged, $from, $to),
             ],
         );
+    }
+
+    /**
+     * Everything QuizTournamentRoomRules needs, for this player in this room now: the room, the
+     * tournament, both players' readiness and eligibility (read now, §2), and whether either is
+     * already in a duel - in any tournament (« un seul duel à la fois », §4.3).
+     */
+    public function roomFacts(QuizTournamentChallenge $challenge, User $player, \DateTimeImmutable $now): QuizTournamentRoomFacts
+    {
+        $tournament = $challenge->getTournament();
+        $opponent = $challenge->opponentOf($player) ?? $challenge->getChallenged();
+
+        return new QuizTournamentRoomFacts(
+            $challenge->isRoomOpen($now),
+            $tournament->isInProgress($now),
+            null !== $challenge->getDuel(),
+            $challenge->isReady($player, $now),
+            $challenge->isReady($opponent, $now),
+            $this->canPlay($tournament, $player, $now),
+            $this->canPlay($tournament, $opponent, $now),
+            null !== $this->duels->findUnfinishedFor($player),
+            null !== $this->duels->findUnfinishedFor($opponent),
+        );
+    }
+
+    /**
+     * challengeFacts() for this challenger against every line of the standings at once, in a fixed
+     * number of queries - what greys the « Défier » buttons out, each with its reason.
+     *
+     * @param array<int, bool> $eligibleOpponents user id => is that player eligible (the standings' own reading)
+     *
+     * @return array<int, QuizTournamentChallengeFacts> user id => facts
+     */
+    public function challengeFactsByOpponent(QuizTournament $tournament, User $challenger, array $eligibleOpponents, \DateTimeImmutable $now): array
+    {
+        if ([] === $eligibleOpponents) {
+            return [];
+        }
+
+        [$from, $to] = QuizTournamentChallengeRules::dayBounds($now);
+        $inProgress = $tournament->isInProgress($now);
+        $challengerEligible = $this->isFeatureLit($challenger) && $this->isEligible($tournament, $challenger);
+        $outgoing = $this->challenges->countPendingOutgoing($tournament, $challenger, $now);
+        $incoming = $this->challenges->pendingIncomingCounts($tournament, $now);
+        $refusals = $this->challenges->lastRefusalsOf($tournament, $challenger);
+        $challengeTimes = $this->challenges->encounterTimesByOpponent($tournament, $challenger, $from, $to);
+        $roundTimes = $this->duels->roundEncounterTimesByOpponent($tournament, $challenger, $from, $to);
+
+        $facts = [];
+        foreach ($eligibleOpponents as $userId => $eligible) {
+            $facts[$userId] = new QuizTournamentChallengeFacts(
+                $inProgress,
+                $challengerEligible,
+                $eligible,
+                $userId === $challenger->getId(),
+                $outgoing,
+                $incoming[$userId] ?? 0,
+                $refusals[$userId] ?? null,
+                [...$challengeTimes[$userId] ?? [], ...$roundTimes[$userId] ?? []],
+            );
+        }
+
+        return $facts;
     }
 
     /**

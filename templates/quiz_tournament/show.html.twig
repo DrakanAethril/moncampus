@@ -1,7 +1,10 @@
 {# A tournament's page (design/validated/quiz-tournament.md §6.2 and §10, mockup H-classement): the
    reader's own card, the podium, then the four blocks of the standings - « Classement », « En
-   placement », « Inactifs », « Pas encore joué ». The challenges and the duels come with lot 3. #}
+   placement », « Inactifs », « Pas encore joué » - each line with its « Défier », which opens the
+   H-defier sheet in the dialog at the foot (quiz_tournament_sheet_controller.js). #}
 {% extends 'quiz_tournament/_layout.html.twig' %}
+
+{% block tournament_attributes %}{% if canPlay %}data-controller="quiz-tournament-sheet"{% endif %}{% endblock %}
 
 {% block tournament_body %}
     {% set readerId = app.user.id %}
@@ -43,7 +46,7 @@
             {% else %}
                 <ol class="qt-lines">
                     {% for line in ranked %}
-                        {{ include('quiz_tournament/_line.html.twig', {line: line, tournament: tournament, readerId: readerId, canPlay: canPlay}) }}
+                        {{ include('quiz_tournament/_line.html.twig', {line: line, tournament: tournament, readerId: readerId, canPlay: canPlay, defyRefusals: defyRefusals}) }}
                     {% endfor %}
                 </ol>
             {% endif %}
@@ -72,11 +75,18 @@
                 <p class="qt-block__hint">{{ other.hint|trans }}</p>
                 <ul class="qt-lines">
                     {% for line in lines %}
-                        {{ include('quiz_tournament/_line.html.twig', {line: line, tournament: tournament, readerId: readerId, canPlay: canPlay}) }}
+                        {{ include('quiz_tournament/_line.html.twig', {line: line, tournament: tournament, readerId: readerId, canPlay: canPlay, defyRefusals: defyRefusals}) }}
                     {% endfor %}
                 </ul>
             </section>
             {% endif %}
         {% endfor %}
+    {% endif %}
+
+    {% if canPlay %}
+        <dialog class="qt-sheet" aria-labelledby="qt-sheet-title" data-quiz-tournament-sheet-target="dialog"
+                data-action="click->quiz-tournament-sheet#backdrop close->quiz-tournament-sheet#closed">
+            <div class="qt-sheet__body" data-quiz-tournament-sheet-target="content"></div>
+        </dialog>
     {% endif %}
 {% endblock %}

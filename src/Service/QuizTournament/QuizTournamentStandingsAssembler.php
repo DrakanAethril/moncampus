@@ -49,31 +49,7 @@ class QuizTournamentStandingsAssembler
 
     public function assemble(QuizTournament $tournament, \DateTimeImmutable $now): QuizTournamentStandingsView
     {
-        $moment = $tournament->standingsMoment($now);
-        $since = $moment->modify(\sprintf('-%d days', QuizTournamentStanding::ACTIVITY_DAYS));
-
-        $players = $this->players->findByTournamentIndexedByUser($tournament);
-        $reached = array_filter(
-            $this->targeting->reachedStudents($tournament),
-            static fn (ReachedStudent $student): bool => QuizTournamentEligibility::isEligible($student->user->getRoles(), true),
-        );
-
-        $ladder = array_values(array_unique([
-            ...$this->duels->ladderPlayerIds($tournament, $since, $moment),
-            ...$this->challenges->ladderDeclinedChallengerIds($tournament, $since, $moment),
-        ]));
-
-        $entries = self::entries(
-            array_map(static fn (QuizTournamentPlayer $player): array => [
-                'sortName' => self::sortName($player->getUser()),
-                'rating' => $player->getRating(),
-                'duels' => $player->getDuels(),
-            ], $players),
-            array_map(static fn (ReachedStudent $student): string => self::sortName($student->user), $reached),
-            $this->duels->finishedDuelCounts($tournament, $since, $moment),
-            $ladder,
-        );
-        $standings = QuizTournamentStanding::compute($entries);
+        [$standings, $players, $reached, $moment, $since] = $this->compute($tournament, $now);
         $deltas = QuizTournamentRatingTrend::deltas($this->duels->ratingMoves($tournament, $since, $moment));
 
         $users = [];
@@ -116,6 +92,48 @@ class QuizTournamentStandingsAssembler
         }
 
         return new QuizTournamentStandingsView($standings, $blocks, $moment);
+    }
+
+    /**
+     * The standings alone - no line, no avatar, nothing written: what a challenge sent or a duel
+     * started stamps its ladder flags from (QuizTournamentStandings::rankedRatings()).
+     */
+    public function standings(QuizTournament $tournament, \DateTimeImmutable $now): QuizTournamentStandings
+    {
+        return $this->compute($tournament, $now)[0];
+    }
+
+    /**
+     * @return array{0: QuizTournamentStandings, 1: array<int, QuizTournamentPlayer>, 2: array<int, ReachedStudent>, 3: \DateTimeImmutable, 4: \DateTimeImmutable}
+     */
+    private function compute(QuizTournament $tournament, \DateTimeImmutable $now): array
+    {
+        $moment = $tournament->standingsMoment($now);
+        $since = $moment->modify(\sprintf('-%d days', QuizTournamentStanding::ACTIVITY_DAYS));
+
+        $players = $this->players->findByTournamentIndexedByUser($tournament);
+        $reached = array_filter(
+            $this->targeting->reachedStudents($tournament),
+            static fn (ReachedStudent $student): bool => QuizTournamentEligibility::isEligible($student->user->getRoles(), true),
+        );
+
+        $ladder = array_values(array_unique([
+            ...$this->duels->ladderPlayerIds($tournament, $since, $moment),
+            ...$this->challenges->ladderDeclinedChallengerIds($tournament, $since, $moment),
+        ]));
+
+        $entries = self::entries(
+            array_map(static fn (QuizTournamentPlayer $player): array => [
+                'sortName' => self::sortName($player->getUser()),
+                'rating' => $player->getRating(),
+                'duels' => $player->getDuels(),
+            ], $players),
+            array_map(static fn (ReachedStudent $student): string => self::sortName($student->user), $reached),
+            $this->duels->finishedDuelCounts($tournament, $since, $moment),
+            $ladder,
+        );
+
+        return [QuizTournamentStanding::compute($entries), $players, $reached, $moment, $since];
     }
 
     /**

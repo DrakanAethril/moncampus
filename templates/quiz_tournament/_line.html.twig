@@ -1,7 +1,8 @@
 {# A line of the standings (§6.2): rank (« Classement » only), avatar, « Prénom Nom (Classe) »,
    rating, duels, victories / draws / defeats, the rating's move over 14 days; what an inactive or a
    placement player still lacks; « Défier » or « TOI ». Parameters: `line`
-   (App\Service\QuizTournament\QuizTournamentStandingLine), `tournament`, `readerId`, `canPlay`. #}
+   (App\Service\QuizTournament\QuizTournamentStandingLine), `tournament`, `readerId`, `canPlay`,
+   `defyRefusals` (user id => why « Défier » is greyed, or null). #}
 {% set me = line.userId == readerId %}
 {% set block = line.block.value %}
 <li class="qt-line{{ me ? ' qt-line--me' }}">
@@ -28,6 +29,6 @@
     {% if me %}
         <span class="qt-line__me">{{ 'quizTournamentYouLabel'|trans }}</span>
     {% elseif canPlay and line.eligible %}
-        {{ include('quiz_tournament/_defy_button.html.twig', {tournament: tournament, line: line}) }}
+        {{ include('quiz_tournament/_defy_button.html.twig', {tournament: tournament, line: line, refusal: defyRefusals[line.userId] ?? null}) }}
     {% endif %}
 </li>
