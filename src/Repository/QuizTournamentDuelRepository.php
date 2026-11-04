@@ -143,6 +143,44 @@ class QuizTournamentDuelRepository extends ServiceEntityRepository
     }
 
     /**
+     * The ratings before and after of every duel **finished** in [$since, $until) - what
+     * App\Service\QuizTournament\QuizTournamentRatingTrend sums into « l'écart de cote sur 14 jours »
+     * (§6.2). Same window as finishedDuelCounts(): a duel counts on the day it started.
+     *
+     * @return list<array{a: int, b: int, beforeA: int, afterA: int|null, beforeB: int, afterB: int|null}>
+     */
+    public function ratingMoves(QuizTournament $tournament, \DateTimeImmutable $since, \DateTimeImmutable $until): array
+    {
+        /** @var list<array{a: int|string, b: int|string, beforeA: int|string, afterA: int|string|null, beforeB: int|string, afterB: int|string|null}> $rows */
+        $rows = $this->createQueryBuilder('d')
+            ->select(
+                'IDENTITY(d.playerA) AS a',
+                'IDENTITY(d.playerB) AS b',
+                'd.ratingBeforeA AS beforeA',
+                'd.ratingAfterA AS afterA',
+                'd.ratingBeforeB AS beforeB',
+                'd.ratingAfterB AS afterB',
+            )
+            ->where('d.tournament = :tournament')
+            ->andWhere('d.endedAt IS NOT NULL')
+            ->andWhere('d.startedAt >= :since AND d.startedAt < :until')
+            ->setParameter('tournament', $tournament)
+            ->setParameter('since', $since)
+            ->setParameter('until', $until)
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_map(static fn (array $row): array => [
+            'a' => (int) $row['a'],
+            'b' => (int) $row['b'],
+            'beforeA' => (int) $row['beforeA'],
+            'afterA' => null === $row['afterA'] ? null : (int) $row['afterA'],
+            'beforeB' => (int) $row['beforeB'],
+            'afterB' => null === $row['afterB'] ? null : (int) $row['afterB'],
+        ], $rows);
+    }
+
+    /**
      * The source questions this player saw in their last three duels of the tournament - what the
      * draw leaves out while the reserve allows (§5.1).
      *

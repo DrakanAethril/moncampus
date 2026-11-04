@@ -563,4 +563,36 @@ class ProgramRepository extends ServiceEntityRepository
 
         return array_map(static fn (array $row): array => ['programId' => (int) $row['programId'], 'userId' => (int) $row['userId']], $rows);
     }
+
+    /**
+     * The formations a targeting may name (App\Form\StructureTargetsType): every active Program of
+     * an active school year whose Cohort, Track and Section are active too, the chain fetch-joined,
+     * by section, track, year and short name. Both sides of the test zone - the form shows test
+     * formations apart.
+     *
+     * @return list<Program>
+     */
+    public function findActiveForTargeting(): array
+    {
+        /** @var list<Program> $programs */
+        $programs = $this->createQueryBuilder('p')
+            ->addSelect('c', 't', 's', 'y')
+            ->innerJoin('p.cohort', 'c')
+            ->innerJoin('c.track', 't')
+            ->innerJoin('t.section', 's')
+            ->innerJoin('p.schoolYear', 'y')
+            ->where('p.inactiveDate IS NULL')
+            ->andWhere('c.inactiveDate IS NULL')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->andWhere('s.inactiveDate IS NULL')
+            ->andWhere('y.inactiveDate IS NULL')
+            ->orderBy('s.name', 'ASC')
+            ->addOrderBy('t.name', 'ASC')
+            ->addOrderBy('y.startDate', 'ASC')
+            ->addOrderBy('p.shortName', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $programs;
+    }
 }

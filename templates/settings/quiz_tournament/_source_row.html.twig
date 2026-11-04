@@ -1,0 +1,11 @@
+{# One source quiz of a tournament (§3) - a library picker over the administrator's own quiz library,
+   the merge rows of « Lancer un quiz » again (templates/library/_quiz_pool_row.html.twig). The same
+   template serves the rows submitted and the prototype quiz_pool_controller.js clones. #}
+<div class="cm-quizpool__row" data-quiz-pool-row>
+    {% include '_library_picker_field.html.twig' with {
+        field: entry,
+        placeholder: 'quizTournamentSourcePlaceholder'|trans,
+        select_attr: {'data-quiz-pool-target': 'select', 'data-action': 'change->quiz-pool#update'},
+    } only %}
+    <button type="button" class="cm-quizpool__remove" data-action="quiz-pool#remove" aria-label="{{ 'quizTournamentRemoveSourceAction'|trans }}">&times;</button>
+</div>

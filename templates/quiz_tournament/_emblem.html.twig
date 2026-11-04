@@ -1,0 +1,10 @@
+{# A tournament's emblem (§10.1): its uploaded logo, else the monogram drawn from its name
+   (App\Service\QuizTournament\QuizTournamentMonogram). Parameters: `tournament`, `size` (px, 64 by
+   default). #}
+{% set size = size|default(64) %}
+{% if tournament.logoKey %}
+    <img class="qt-emblem" src="{{ file_url(tournament.logoKey) }}" width="{{ size }}" height="{{ size }}" alt="{{ 'quizTournamentLogoAlt'|trans({'%name%': tournament.name}) }}">
+{% else %}
+    {% set monogram = tournament.monogram %}
+    <span class="qt-monogram{{ monogram|length > 3 ? ' qt-monogram--long' }}" role="img" aria-label="{{ 'quizTournamentMonogramAlt'|trans({'%name%': tournament.name}) }}">{{ monogram }}</span>
+{% endif %}

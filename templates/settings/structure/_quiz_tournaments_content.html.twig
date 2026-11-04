@@ -1,0 +1,39 @@
+{# Paramètres > Pédagogique > Tournois (design/validated/quiz-tournament.md §3): every quiz tournament,
+   opened or not. A tournament is born closed - « Ouvrir » shows it to the students it reaches. #}
+<div class="cm-pf-rows">
+    {% for row in tournamentRows %}
+        {% set tournament = row.tournament %}
+        <div class="cm-pf-row cm-qt-row">
+            <span class="cm-qt-swatch" aria-hidden="true">
+                {% for colour in tournament.palette.colors %}<i style="background: {{ colour }}"></i>{% endfor %}
+            </span>
+            <div class="cm-qt-row__main">
+                <a class="cm-pf-row__title" href="{{ path('app_quiz_tournament_show', {id: tournament.id}) }}">{{ tournament.name }}</a>
+                <div class="cm-pf-row__meta">
+                    {{ 'quizTournamentPeriodMeta'|trans({'%start%': tournament.startsAt|date('d/m/Y H:i'), '%end%': tournament.endsAt|date('d/m/Y H:i')}) }}
+                    · {{ 'quizTournamentReachedMeta'|trans({'%count%': row.reached}) }}
+                    · {{ 'quizTournamentSourcesMeta'|trans({'%count%': tournament.sources|length}) }}
+                </div>
+                <div class="cm-pf-row__meta">
+                    {%- set targets = tournament.targetSections|map(s => s.name)|merge(tournament.targetTracks|map(t => t.name))|merge(tournament.targetPrograms|map(p => p.shortName)) -%}
+                    {{ targets is empty ? 'quizTournamentNoTargetMeta'|trans : targets|join(', ') }}
+                </div>
+            </div>
+            <div class="cm-pf-row__right cm-qt-row__actions">
+                <twig:Cm:Badge :of="row.status"/>
+                {% if not tournament.opened %}
+                    <form method="post" action="{{ path('app_settings_quiz_tournaments_open', {id: tournament.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('quiz_tournament_open' ~ tournament.id) }}">
+                        <twig:Cm:Button variant="primary" size="sm" type="submit"
+                                data-controller="confirm-submit"
+                                data-confirm-submit-message-value="{{ 'quizTournamentOpenConfirmText'|trans({'%name%': tournament.name, '%count%': row.reached}) }}"
+                                data-action="click->confirm-submit#confirm">{{ 'quizTournamentOpenAction'|trans }}</twig:Cm:Button>
+                    </form>
+                {% endif %}
+                <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_settings_quiz_tournaments_edit', {id: tournament.id}) }}">{{ 'editActionLabel'|trans }}</twig:Cm:Button>
+            </div>
+        </div>
+    {% else %}
+        <p class="cm-pf-empty">{{ 'quizTournamentsAdminEmptyText'|trans }}</p>
+    {% endfor %}
+</div>

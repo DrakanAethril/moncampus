@@ -1,0 +1,312 @@
+/* The quiz tournaments' own dress - direction H « Pop » (design/validated/quiz-tournament.md §10.1):
+   thick black outlines, offset shadows, slightly tilted stickers, Archivo Black over Archivo.
+
+   Everything is scoped under `.qt`, the root of every tournament screen
+   (templates/quiz_tournament/_layout.html.twig); nothing here touches the rest of Formatool, whose
+   menus and breadcrumb keep their own design around it. The screens are fixed light whatever the
+   theme: the direction is ink on pastel, and a dark pastel is no longer the direction.
+
+   **A tournament's palette is three custom properties** set on `[data-tournament-palette="…"]` - one
+   block per App\Enum\QuizTournamentPalette case, with the very colours of its colors() (pinned by
+   tests/Enum/QuizTournamentPaletteStylesheetTest.php). Every rule below reads --qt-bg, --qt-accent
+   and --qt-accent2, never a colour of its own beyond the ink and the paper.
+
+   Archivo and Archivo Black are self-hosted like Source Sans 3 and Spectral (assets/fonts/,
+   SIL Open Font License 1.1): a pupil's browser asks nothing of a third party. */
+
+@font-face {
+    font-family: 'Archivo';
+    font-style: normal;
+    font-weight: 500 800;
+    font-display: swap;
+    src: url('../fonts/archivo-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+    font-family: 'Archivo';
+    font-style: normal;
+    font-weight: 500 800;
+    font-display: swap;
+    src: url('../fonts/archivo-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'Archivo Black';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/archivo-black-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+    font-family: 'Archivo Black';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/archivo-black-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* --- Palettes (App\Enum\QuizTournamentPalette::colors()) ------------------------------------ */
+
+.qt[data-tournament-palette="lavender"] { --qt-bg: #E9E4FF; --qt-accent: #FFDD3C; --qt-accent2: #FF8FA3; }
+.qt[data-tournament-palette="mint"] { --qt-bg: #DDF6EE; --qt-accent: #7CF0C5; --qt-accent2: #8DB8FF; }
+.qt[data-tournament-palette="peach"] { --qt-bg: #FFE8DC; --qt-accent: #FFB37A; --qt-accent2: #B9AEFF; }
+
+/* --- The shell ----------------------------------------------------------------------------- */
+
+.qt {
+    --qt-ink: #111;
+    --qt-paper: #fff;
+    --qt-line: 3px solid var(--qt-ink);
+    --qt-shadow: 5px 5px 0 var(--qt-ink);
+    --qt-shadow-sm: 3px 3px 0 var(--qt-ink);
+    --qt-display: 'Archivo Black', 'Arial Black', sans-serif;
+    position: relative;
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: min(844px, calc(100dvh - 140px));
+    background: var(--qt-bg, #E9E4FF);
+    color: var(--qt-ink);
+    font-family: 'Archivo', system-ui, sans-serif;
+    font-size: 15px;
+    border: var(--qt-line);
+    border-radius: 22px;
+    overflow: clip;
+    color-scheme: light;
+}
+.qt a { color: var(--qt-ink); }
+.qt a:hover { color: #000; }
+.qt button { font: inherit; color: var(--qt-ink); }
+.qt :focus-visible { outline: 3px solid var(--qt-ink); outline-offset: 2px; }
+
+/* A phone shows the tournament edge to edge, as it was drawn. */
+@media (max-width: 575.98px) {
+    .qt:not(.qt-card) { margin: 0 calc(-1 * var(--tblr-gutter-x, 1.5rem) * 0.5); border-left: 0; border-right: 0; border-radius: 0; }
+}
+
+.qt-head { display: flex; align-items: center; gap: 10px; padding: 20px 18px 8px; }
+.qt-head__titles { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.qt-head__kicker { font-size: 13px; font-weight: 800; text-transform: uppercase; }
+.qt-head__title { margin: 0; font-family: var(--qt-display); font-size: 25px; line-height: 1.05; text-transform: uppercase; overflow-wrap: anywhere; }
+
+/* The tournament's emblem, top right: its logo, or the monogram drawn from its name. */
+.qt-emblem { flex: none; width: 64px; height: 64px; object-fit: contain; }
+.qt-monogram {
+    flex: none;
+    width: 58px;
+    height: 58px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: var(--qt-line);
+    background: var(--qt-accent2);
+    transform: rotate(-8deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--qt-display);
+    font-size: 16px;
+    line-height: 1;
+}
+.qt-monogram--long { font-size: 13px; }
+
+.qt-body { flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 8px 16px 20px; }
+
+/* A sticker: the period, « Pas encore ouvert », a block's heading. */
+.qt-sticker {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: var(--qt-line);
+    border-radius: 10px;
+    background: var(--qt-paper);
+    font-size: 12px;
+    font-weight: 800;
+    transform: rotate(-1.5deg);
+}
+.qt-sticker--accent { background: var(--qt-accent); }
+.qt-sticker--alert { background: var(--qt-accent2); }
+
+/* --- The reader's own card ----------------------------------------------------------------- */
+
+.qt-me {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--qt-accent);
+    border: var(--qt-line);
+    border-radius: 18px;
+    box-shadow: var(--qt-shadow);
+}
+.qt-me__rank { font-family: var(--qt-display); font-size: 44px; line-height: 1; white-space: nowrap; }
+.qt-me__rank--block { font-size: 15px; line-height: 1.1; max-width: 6.5em; text-transform: uppercase; }
+.qt-me__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-right: 40px; }
+.qt-me__who { font-weight: 800; font-size: 15px; }
+.qt-me__state { font-size: 13px; font-weight: 600; }
+.qt-me__missing { font-size: 13px; font-weight: 700; }
+.qt-me__burst { position: absolute; right: -10px; top: -18px; width: 64px; height: 64px; transform: rotate(10deg); }
+.qt-me__burst path { fill: var(--qt-paper); stroke: var(--qt-ink); stroke-width: 2.5; }
+.qt-me__burst text { font-family: var(--qt-display); font-size: 15px; fill: var(--qt-ink); }
+
+/* --- The podium ---------------------------------------------------------------------------- */
+
+.qt-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: end; margin: 6px 0 0; padding: 0; list-style: none; }
+.qt-podium__place { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.qt-podium__place--1 { order: 2; }
+.qt-podium__place--2 { order: 1; }
+.qt-podium__place--3 { order: 3; }
+.qt-podium__name { font-size: 13px; font-weight: 800; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qt-podium__step {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: var(--qt-line);
+    border-radius: 12px 12px 0 0;
+    box-shadow: 4px 4px 0 var(--qt-ink);
+}
+.qt-podium__step strong { font-family: var(--qt-display); font-weight: 400; line-height: 1; }
+.qt-podium__step span { font-size: 13px; font-weight: 700; }
+.qt-podium__place--1 .qt-podium__step { height: 116px; background: var(--qt-accent); }
+.qt-podium__place--1 .qt-podium__step strong { font-size: 42px; }
+.qt-podium__place--2 .qt-podium__step { height: 86px; background: var(--qt-accent2); }
+.qt-podium__place--2 .qt-podium__step strong { font-size: 32px; }
+.qt-podium__place--3 .qt-podium__step { height: 68px; background: var(--qt-paper); }
+.qt-podium__place--3 .qt-podium__step strong { font-size: 28px; }
+
+/* --- Avatars -------------------------------------------------------------------------------- */
+
+.qt-avatar {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 2px solid var(--qt-ink);
+    background: var(--qt-paper) center / cover no-repeat;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 800;
+}
+.qt-avatar svg { width: 100%; height: 100%; display: block; }
+.qt-avatar--podium { width: 44px; height: 44px; border-width: 3px; font-size: 13px; }
+.qt-podium__place--1 .qt-avatar--podium { width: 54px; height: 54px; }
+.qt-avatar--initials-0 { background-color: #C7B8E8; }
+.qt-avatar--initials-1 { background-color: #F4C6C6; }
+.qt-avatar--initials-2 { background-color: #A8D5D1; }
+.qt-avatar--initials-3 { background-color: #F2D27A; }
+.qt-avatar--initials-4 { background-color: #D7C3A6; }
+.qt-avatar--initials-5 { background-color: #BFD3EE; }
+
+/* --- The standings' lines ------------------------------------------------------------------- */
+
+.qt-block { display: flex; flex-direction: column; gap: 10px; scroll-margin-top: 80px; }
+.qt-block__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 6px 0 0; font-family: var(--qt-display); font-weight: 400; font-size: 18px; text-transform: uppercase; }
+.qt-block__count { font-family: 'Archivo', sans-serif; font-size: 13px; font-weight: 800; }
+.qt-block__hint { margin: -4px 0 0; font-size: 13px; font-weight: 600; }
+.qt-lines { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+
+.qt-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--qt-paper);
+    border: var(--qt-line);
+    border-radius: 14px;
+    box-shadow: var(--qt-shadow-sm);
+}
+.qt-line--me { background: var(--qt-accent); }
+.qt-line__rank { flex: none; min-width: 26px; font-family: var(--qt-display); font-size: 20px; }
+.qt-line__main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.qt-line__name { font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
+.qt-line__meta { font-size: 12px; font-weight: 600; }
+.qt-line__meta strong { font-weight: 800; }
+.qt-line__missing { font-size: 12px; font-weight: 700; }
+.qt-line__me { flex: none; width: 66px; text-align: center; font-family: var(--qt-display); font-size: 14px; text-transform: uppercase; }
+.qt-trend--up { white-space: nowrap; }
+.qt-trend--down { white-space: nowrap; }
+
+.qt .qt-defy {
+    flex: none;
+    width: 70px;
+    height: 38px;
+    border: var(--qt-line);
+    border-radius: 10px;
+    background: var(--qt-accent2);
+    font-family: var(--qt-display);
+    font-size: 13px;
+    text-transform: uppercase;
+    transform: rotate(-3deg);
+    cursor: pointer;
+}
+.qt .qt-defy:disabled, .qt .qt-defy[aria-disabled="true"] { opacity: .55; cursor: not-allowed; transform: none; }
+
+/* The jumps to the three other blocks, under « Classement ». */
+.qt-jumps { display: flex; gap: 8px; }
+.qt-jump {
+    flex: 1;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4px 6px;
+    border: var(--qt-line);
+    border-radius: 12px;
+    background: var(--qt-paper);
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.qt-jump--empty { opacity: .5; }
+
+.qt-empty { margin: 0; padding: 14px 16px; border: var(--qt-line); border-radius: 14px; background: var(--qt-paper); font-weight: 700; }
+
+/* --- The tab bar ------------------------------------------------------------------------------ */
+
+.qt-tabs {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    border-top: var(--qt-line);
+    background: var(--qt-paper);
+}
+.qt-tab {
+    flex: 1;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 3px solid transparent;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+}
+.qt-tab.is-active { border-color: var(--qt-ink); background: var(--qt-accent); font-family: var(--qt-display); font-weight: 400; text-transform: uppercase; }
+.qt-tab.is-unavailable { opacity: .45; }
+
+/* --- The list of tournaments (/tournaments) --------------------------------------------------- */
+
+.qt-cards { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); margin: 0; padding: 0; list-style: none; }
+.qt-card { border-radius: 18px; min-height: 0; box-shadow: var(--qt-shadow); }
+.qt-card .qt-head { padding-bottom: 6px; }
+.qt-card .qt-head__title { font-size: 20px; }
+.qt-card__link { text-decoration: none; display: block; }
+.qt-card__body { padding: 0 18px 16px; display: flex; flex-direction: column; gap: 8px; }

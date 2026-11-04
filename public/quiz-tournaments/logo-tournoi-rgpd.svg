@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 210 210" role="img" aria-label="Tournoi RGPD : bouclier avec cadenas">
+  <!-- The Tournoi RGPD's shield (design/validated/quiz-tournament.md §1, decision 19, logo 3). A
+       tournament's logo is data, uploaded per tournament: logo-tournoi-rgpd.png is this drawing
+       rendered with Archivo Black, ready for the upload field (UploadPolicy::images() takes no SVG). -->
+  <path d="M106 18 L182 46 V106 C182 156 148 184 106 198 C64 184 30 156 30 106 V46 Z" fill="#111"/>
+  <path d="M100 12 L176 40 V100 C176 150 142 178 100 192 C58 178 24 150 24 100 V40 Z" fill="#FF8FA3" stroke="#111" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M80 80 V64 a20 20 0 0 1 40 0 V80" fill="none" stroke="#111" stroke-width="10" stroke-linecap="round"/>
+  <rect x="66" y="78" width="68" height="52" rx="10" fill="#fff" stroke="#111" stroke-width="6"/>
+  <circle cx="100" cy="99" r="7" fill="#111"/>
+  <rect x="97" y="101" width="6" height="15" rx="2" fill="#111"/>
+  <path d="M6 140 H194 L182 157 L194 174 H6 L18 157 Z" fill="#FFDD3C" stroke="#111" stroke-width="5" stroke-linejoin="round"/>
+  <text x="100" y="167" text-anchor="middle" font-family="'Archivo Black', 'Arial Black', sans-serif" font-size="26" letter-spacing="3" fill="#111">RGPD</text>
+</svg>

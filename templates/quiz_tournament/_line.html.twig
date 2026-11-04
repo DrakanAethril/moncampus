@@ -1,0 +1,33 @@
+{# A line of the standings (§6.2): rank (« Classement » only), avatar, « Prénom Nom (Classe) »,
+   rating, duels, victories / draws / defeats, the rating's move over 14 days; what an inactive or a
+   placement player still lacks; « Défier » or « TOI ». Parameters: `line`
+   (App\Service\QuizTournament\QuizTournamentStandingLine), `tournament`, `readerId`, `canPlay`. #}
+{% set me = line.userId == readerId %}
+{% set block = line.block.value %}
+<li class="qt-line{{ me ? ' qt-line--me' }}">
+    {% if line.rank is not null %}<span class="qt-line__rank">{{ line.rank }}</span>{% endif %}
+    {{ include('quiz_tournament/_avatar.html.twig', {user: line.user, avatar: line.avatar}) }}
+    <span class="qt-line__main">
+        <span class="qt-line__name">{{ line.user.displayName ?? line.user.username }}{% if line.program %} ({{ line.program.shortName }}){% endif %}</span>
+        {% if block == 'not_played' %}
+            <span class="qt-line__meta">{{ 'quizTournamentLineNotPlayedMeta'|trans }}</span>
+        {% else %}
+            <span class="qt-line__meta">
+                <strong>{{ line.rating }}</strong>
+                · {{ 'quizTournamentLineDuelsMeta'|trans({'%count%': line.duels}) }}
+                · {{ 'quizTournamentLineRecordMeta'|trans({'%wins%': line.wins, '%draws%': line.draws, '%losses%': line.losses}) }}
+                · {{ include('quiz_tournament/_trend.html.twig', {delta: line.delta}) }}
+            </span>
+            {% if block == 'placement' %}
+                <span class="qt-line__missing">{{ 'quizTournamentMissingPlacement'|trans({'%count%': line.missingPlacementDuels}) }}</span>
+            {% elseif block == 'inactive' %}
+                <span class="qt-line__missing">{{ include('quiz_tournament/_missing.html.twig', {row: line.row}) }}</span>
+            {% endif %}
+        {% endif %}
+    </span>
+    {% if me %}
+        <span class="qt-line__me">{{ 'quizTournamentYouLabel'|trans }}</span>
+    {% elseif canPlay and line.eligible %}
+        {{ include('quiz_tournament/_defy_button.html.twig', {tournament: tournament, line: line}) }}
+    {% endif %}
+</li>

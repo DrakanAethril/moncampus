@@ -1,0 +1,5 @@
+{# « Défier » on a line of the standings (§4.1). The challenges arrive with lot 3 of
+   design/validated/quiz-tournament.md §17, which replaces this partial with the real gesture - the
+   enjeu sheet (H-defier) and QuizTournamentChallengeRules' reason when it is greyed. Until then the
+   button is drawn and does nothing. Parameters: `tournament`, `line` (QuizTournamentStandingLine). #}
+<button type="button" class="qt-defy" disabled aria-disabled="true" title="{{ 'quizTournamentDefyUnavailableTitle'|trans }}">{{ 'quizTournamentDefyAction'|trans }}</button>

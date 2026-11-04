@@ -1,0 +1,82 @@
+{# A tournament's page (design/validated/quiz-tournament.md §6.2 and §10, mockup H-classement): the
+   reader's own card, the podium, then the four blocks of the standings - « Classement », « En
+   placement », « Inactifs », « Pas encore joué ». The challenges and the duels come with lot 3. #}
+{% extends 'quiz_tournament/_layout.html.twig' %}
+
+{% block tournament_body %}
+    {% set readerId = app.user.id %}
+    {% set ranked = standings.lines(enum('App\\Enum\\QuizTournamentStandingBlock').Ranked) %}
+
+    {% if status.value == 'closed' %}
+        <p class="qt-sticker qt-sticker--alert">{{ 'quizTournamentClosedSticker'|trans }}</p>
+    {% elseif status.value == 'upcoming' %}
+        <p class="qt-sticker qt-sticker--accent">{{ 'quizTournamentStartsSticker'|trans({'%date%': tournament.startsAt|date('d/m/Y'), '%time%': tournament.startsAt|date('H:i')}) }}</p>
+    {% elseif status.value == 'ended' %}
+        <p class="qt-sticker">{{ 'quizTournamentEndedSticker'|trans({'%date%': tournament.endsAt|date('d/m/Y')}) }}</p>
+    {% else %}
+        <p class="qt-sticker">{{ 'quizTournamentUntilSticker'|trans({'%date%': tournament.endsAt|date('d/m/Y')}) }}</p>
+    {% endif %}
+
+    {% if readerLine %}
+        {{ include('quiz_tournament/_me.html.twig', {line: readerLine}) }}
+    {% endif %}
+
+    {% if ranked is not empty %}
+        <ol class="qt-podium" aria-label="{{ 'quizTournamentPodiumLabel'|trans }}">
+            {% for line in standings.podium %}
+                <li class="qt-podium__place qt-podium__place--{{ loop.index }}">
+                    {{ include('quiz_tournament/_avatar.html.twig', {user: line.user, avatar: line.avatar, modifier: 'qt-avatar--podium'}) }}
+                    <span class="qt-podium__name">{{ line.user.shortDisplayName ?? line.user.username }}</span>
+                    <div class="qt-podium__step"><strong>{{ line.rank }}</strong><span>{{ line.rating }}</span></div>
+                </li>
+            {% endfor %}
+        </ol>
+    {% endif %}
+
+    {% if standings.isEmpty %}
+        <p class="qt-empty">{{ 'quizTournamentNobodyText'|trans }}</p>
+    {% else %}
+        <section class="qt-block" id="qt-ranked" aria-labelledby="qt-ranked-head">
+            <h2 class="qt-block__head" id="qt-ranked-head">{{ 'quizTournamentBlockRanked'|trans }} <span class="qt-block__count">{{ ranked|length }}</span></h2>
+            {% if ranked is empty %}
+                <p class="qt-empty">{{ 'quizTournamentNobodyRankedText'|trans }}</p>
+            {% else %}
+                <ol class="qt-lines">
+                    {% for line in ranked %}
+                        {{ include('quiz_tournament/_line.html.twig', {line: line, tournament: tournament, readerId: readerId, canPlay: canPlay}) }}
+                    {% endfor %}
+                </ol>
+            {% endif %}
+        </section>
+
+        {% set others = [
+            {block: enum('App\\Enum\\QuizTournamentStandingBlock').Placement, anchor: 'qt-placement', hint: 'quizTournamentBlockPlacementHint'},
+            {block: enum('App\\Enum\\QuizTournamentStandingBlock').Inactive, anchor: 'qt-inactive', hint: 'quizTournamentBlockInactiveHint'},
+            {block: enum('App\\Enum\\QuizTournamentStandingBlock').NotPlayed, anchor: 'qt-not-played', hint: 'quizTournamentBlockNotPlayedHint'},
+        ] %}
+        <nav class="qt-jumps" aria-label="{{ 'quizTournamentJumpsLabel'|trans }}">
+            {% for other in others %}
+                {% if standings.count(other.block) > 0 %}
+                    <a class="qt-jump" href="#{{ other.anchor }}">{{ other.block.labelKey|trans }} {{ standings.count(other.block) }}</a>
+                {% else %}
+                    <span class="qt-jump qt-jump--empty">{{ other.block.labelKey|trans }} 0</span>
+                {% endif %}
+            {% endfor %}
+        </nav>
+
+        {% for other in others %}
+            {% set lines = standings.lines(other.block) %}
+            {% if lines is not empty %}
+            <section class="qt-block" id="{{ other.anchor }}" aria-labelledby="{{ other.anchor }}-head">
+                <h2 class="qt-block__head" id="{{ other.anchor }}-head">{{ other.block.labelKey|trans }} <span class="qt-block__count">{{ lines|length }}</span></h2>
+                <p class="qt-block__hint">{{ other.hint|trans }}</p>
+                <ul class="qt-lines">
+                    {% for line in lines %}
+                        {{ include('quiz_tournament/_line.html.twig', {line: line, tournament: tournament, readerId: readerId, canPlay: canPlay}) }}
+                    {% endfor %}
+                </ul>
+            </section>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+{% endblock %}
