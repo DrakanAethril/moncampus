@@ -67,6 +67,38 @@ class QuizTournamentPlayerRepository extends ServiceEntityRepository
     }
 
     /**
+     * When a tournament screen last saw each of these people - a round's « présents » (§8). Somebody
+     * without a line has never been seen.
+     *
+     * @param list<int> $userIds
+     *
+     * @return array<int, \DateTimeImmutable|null> user id => last beat
+     */
+    public function lastSeenOf(QuizTournament $tournament, array $userIds): array
+    {
+        if ([] === $userIds) {
+            return [];
+        }
+
+        /** @var list<array{userId: int|string, lastSeenAt: \DateTimeImmutable|null}> $rows */
+        $rows = $this->createQueryBuilder('p')
+            ->select('IDENTITY(p.user) AS userId', 'p.lastSeenAt AS lastSeenAt')
+            ->where('p.tournament = :tournament')
+            ->andWhere('p.user IN (:ids)')
+            ->setParameter('tournament', $tournament)
+            ->setParameter('ids', $userIds)
+            ->getQuery()
+            ->getArrayResult();
+
+        $seen = array_fill_keys($userIds, null);
+        foreach ($rows as $row) {
+            $seen[(int) $row['userId']] = $row['lastSeenAt'];
+        }
+
+        return $seen;
+    }
+
+    /**
      * Both players of a duel, locked for the rest of the transaction - the rating update of §6.1
      * moves both lines at once. Locked in id order so two concurrent duels cannot deadlock. Must run
      * inside a transaction.

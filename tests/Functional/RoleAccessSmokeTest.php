@@ -22,6 +22,7 @@ use App\Entity\QuizInstanceQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\QuizTournament;
 use App\Entity\QuizTournamentDuel;
+use App\Entity\QuizTournamentRound;
 use App\Entity\SeriousGame;
 use App\Entity\SeriousGameRoleSetting;
 use App\Entity\Topic;
@@ -1667,7 +1668,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
      * student's alone (§7), « Mes duels » too; a duel, its result and its correction are its two
      * players' alone (QuizTournamentChallengesTest, QuizTournamentDuelTest). Creating, editing and
      * opening is the administrators' alone (Paramètres › Pédagogique › Tournois) - the staff reach
-     * Paramètres but find no such screen. A closed tournament is nobody else's to see.
+     * Paramètres but find no such screen. A closed tournament is nobody else's to see. A round in class
+     * (§8) is opened by a teacher of a targeted class and projected by them alone - administrators
+     * included get a 404 (QuizTournamentRoundsTest); its card is a student's.
      */
     public function testQuizTournamentsAreReadByThoseTheyReachAndRunByTheAdministrators(): void
     {
@@ -1683,24 +1686,30 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         // A duel without questions: over as soon as one of its players opens it.
         $duel = new QuizTournamentDuel($opened, $this->student, $rival, QuizTournamentDuelOrigin::Challenge, 1, new \DateTimeImmutable('-1 minute'), 1000, 1000, false, false);
         $entityManager->persist($duel);
+        $round = new QuizTournamentRound($opened, $this->program, $this->teacher, new \DateTimeImmutable('-5 minutes'));
+        $entityManager->persist($round);
         $entityManager->flush();
 
         $page = '/tournaments/'.$opened->getId();
+        $newRound = $page.'/rounds/new';
+        $roundPage = $page.'/rounds/'.$round->getId();
+        $roundEntry = $page.'/round-entry';
         $duels = $page.'/duels';
         $duelPage = $duels.'/'.$duel->getId();
         $closedPage = '/tournaments/'.$closed->getId();
         $edit = '/settings/tournaments/'.$opened->getId().'/edit';
 
         $challenges = $page.'/challenges';
-        $this->assertScreens($this->student, ['/tournaments' => 200, $page => 200, $challenges => 200, $duels => 200, $duelPage => 302, $duelPage.'/result' => 200, $duelPage.'/correction' => 200, $closedPage => 404, $closedPage.'/challenges' => 404, $closedPage.'/duels' => 404, '/settings/tournaments' => 403]);
-        $this->assertScreens($this->teacher, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $closedPage => 404, '/settings/tournaments' => 403, $edit => 403]);
-        $this->assertScreens($staff, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $closedPage => 404, '/settings/tournaments' => 404, '/settings/tournaments/new' => 404, $edit => 404]);
-        $this->assertScreens($this->tutor, ['/tournaments' => 200, $page => 404, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, '/settings/tournaments' => 403]);
-        $this->assertScreens($this->admin, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage => 404, $duelPage.'/result' => 404, $closedPage => 200, '/settings/tournaments' => 200, '/settings/tournaments/new' => 200, $edit => 200]);
+        $this->assertScreens($this->student, ['/tournaments' => 200, $page => 200, $challenges => 200, $duels => 200, $duelPage => 302, $duelPage.'/result' => 200, $duelPage.'/correction' => 200, $closedPage => 404, $closedPage.'/challenges' => 404, $closedPage.'/duels' => 404, '/settings/tournaments' => 403, $newRound => 404, $roundPage => 404, $roundPage.'/board' => 404, $roundEntry => 200]);
+        $this->assertScreens($this->teacher, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $closedPage => 404, '/settings/tournaments' => 403, $edit => 403, $newRound => 200, $roundPage => 200, $roundPage.'/board' => 200, $roundEntry => 404]);
+        $this->assertScreens($staff, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $closedPage => 404, '/settings/tournaments' => 404, '/settings/tournaments/new' => 404, $edit => 404, $newRound => 404, $roundPage => 404]);
+        $this->assertScreens($this->tutor, ['/tournaments' => 200, $page => 404, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, '/settings/tournaments' => 403, $newRound => 404, $roundPage => 404]);
+        $this->assertScreens($this->admin, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage => 404, $duelPage.'/result' => 404, $closedPage => 200, '/settings/tournaments' => 200, '/settings/tournaments/new' => 200, $edit => 200, $newRound => 404, $roundPage => 404]);
 
         // The feature switched off: nobody but the administrator finds a tournament.
         $this->switchOffEveryRole(Feature::QuizTournaments);
-        $this->assertScreens($this->student, ['/tournaments' => 404, $page => 404, $challenges => 404, $duels => 404, $duelPage.'/result' => 404]);
+        $this->assertScreens($this->student, ['/tournaments' => 404, $page => 404, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $roundEntry => 404]);
+        $this->assertScreens($this->teacher, [$newRound => 404, $roundPage => 404]);
         $this->assertScreens($this->admin, ['/tournaments' => 200, '/settings/tournaments' => 200]);
     }
 }

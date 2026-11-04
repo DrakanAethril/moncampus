@@ -851,3 +851,225 @@
 .qt-history__meta { font-size: 12px; font-weight: 600; }
 .qt-history__delta { flex: none; min-width: 40px; text-align: right; font-family: var(--qt-display); font-size: 16px; }
 .qt-history__chevron { font-size: 18px; font-weight: 800; }
+
+/* --- A round in class: the student's card and the teacher's rounds (§8) --------------------------- */
+
+.qt-round-entry:empty, .qt-round-entry__content:empty { display: none; }
+.qt-round-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 14px 14px;
+    border: var(--qt-line);
+    border-radius: 18px;
+    background: var(--qt-accent);
+    box-shadow: var(--qt-shadow);
+}
+.qt-round-card--joined, .qt-round-card--left-out { background: var(--qt-paper); }
+.qt-round-card--exempt { background: var(--qt-paper); border-style: dashed; box-shadow: none; }
+.qt-round-card__sticker {
+    position: absolute;
+    right: -8px;
+    top: -14px;
+    padding: 3px 10px;
+    border: var(--qt-line);
+    border-radius: 10px;
+    background: var(--qt-accent2);
+    font-family: var(--qt-display);
+    font-size: 12px;
+    text-transform: uppercase;
+    transform: rotate(5deg);
+}
+.qt-round-card__where { margin: 0; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.qt-round-card__title { margin: 0; color: var(--qt-ink); font-family: var(--qt-display); font-weight: 400; font-size: 21px; line-height: 1.1; text-transform: uppercase; }
+.qt-round-card__text { margin: 0; font-size: 14px; font-weight: 600; }
+.qt-round-card .qt-waiting { justify-content: flex-start; background: var(--qt-bg, #E9E4FF); }
+.qt-round-card form { margin: 0; }
+.qt .qt-round-card__action { width: 100%; }
+
+.qt-round-teacher {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border: var(--qt-line);
+    border-radius: 18px;
+    background: var(--qt-paper);
+    box-shadow: var(--qt-shadow-sm);
+}
+.qt-round-teacher__text { margin: 0; font-size: 13px; font-weight: 600; }
+.qt-round-teacher__list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.qt-round-teacher__item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: var(--qt-line); border-radius: 14px; background: var(--qt-bg, #E9E4FF); text-decoration: none; }
+.qt-round-teacher__go { flex: none; font-family: var(--qt-display); font-size: 13px; text-transform: uppercase; }
+
+/* --- A round in class, projected (H-ronde) ----------------------------------------------------------
+   The whole window, outside the app shell. The stage is the largest 16:9 box the window holds, and
+   its font size is 16px on a 1280 × 720 screen: every length below is in em of it, so the screen
+   drawn at 1280 × 720 scales as a whole to the projector, and reads from the back of the room. */
+
+.qt.qt-projector {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--qt-ink);
+}
+.qt-stage {
+    position: relative;
+    width: min(100vw, 177.78vh);
+    height: min(100vh, 56.25vw);
+    font-size: min(1.25vw, 2.2222vh);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--qt-bg, #E9E4FF);
+}
+.qt-stage__inner { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+.qt-stage__head { display: flex; align-items: center; gap: 1.125em; padding: 1.25em 2em; border-bottom: .25em solid var(--qt-ink); background: var(--qt-paper); }
+.qt-stage__head .qt-emblem { width: 4.75em; height: 4.75em; }
+.qt-stage__head .qt-monogram { width: 3.4em; height: 3.4em; border-width: .15em; font-size: 1.4em; }
+.qt-stage__titles { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .2em; }
+.qt-stage__title { margin: 0; color: var(--qt-ink); font-family: var(--qt-display); font-weight: 400; font-size: 2.5em; line-height: 1; text-transform: uppercase; }
+.qt-stage__where { font-size: 1.125em; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qt-stage__badge {
+    flex: none;
+    padding: .4em .9em;
+    border: .2em solid var(--qt-ink);
+    border-radius: .7em;
+    background: var(--qt-accent);
+    box-shadow: .2em .2em 0 var(--qt-ink);
+    font-family: var(--qt-display);
+    font-size: 1.25em;
+    text-transform: uppercase;
+    transform: rotate(2deg);
+}
+.qt-stage__badge--open { background: var(--qt-accent2); }
+.qt-stage__flash { margin: 1em 2em 0; padding: .6em 1em; border: .2em solid var(--qt-ink); border-radius: .8em; background: var(--qt-accent2); font-size: 1.125em; font-weight: 800; }
+
+.qt-stage__join { flex: 1; min-height: 0; display: flex; gap: 2em; padding: 1.75em 2em 2em; }
+.qt-stage__how { width: 23.75em; flex: none; display: flex; flex-direction: column; gap: 1.25em; }
+.qt-stage__call { margin: 0; color: var(--qt-ink); font-family: var(--qt-display); font-weight: 400; font-size: 2.75em; line-height: 1.02; text-transform: uppercase; transform: rotate(-2deg); }
+.qt-stage__path { margin: 0; padding: .73em .82em; border: .18em solid var(--qt-ink); border-radius: .82em; background: var(--qt-paper); box-shadow: .27em .27em 0 var(--qt-ink); font-size: 1.375em; font-weight: 800; line-height: 1.3; }
+.qt-stage__path mark { padding: 0 .27em; border-radius: .27em; background: var(--qt-accent); color: inherit; }
+.qt-stage__count { display: flex; align-items: center; gap: 1em; padding: .875em 1.125em; border: .25em solid var(--qt-ink); border-radius: 1.125em; background: var(--qt-accent); box-shadow: .3125em .3125em 0 var(--qt-ink); }
+.qt-stage__count-n { font-family: var(--qt-display); font-size: 3.5em; line-height: 1; }
+.qt-stage__count-text { display: flex; flex-direction: column; }
+.qt-stage__count-of { font-size: 1.25em; font-weight: 800; }
+.qt-stage__count-scope { font-size: .9375em; font-weight: 700; }
+
+.qt-stage__joined { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1em; }
+.qt-stage__stickers { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .75em; margin: 0; padding: 0; list-style: none; }
+.qt-stage__sticker {
+    min-height: 6.5em;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .375em;
+    padding: .625em .375em;
+    border: .1875em solid var(--qt-ink);
+    border-radius: 1em;
+    background: var(--qt-paper);
+    box-shadow: .1875em .1875em 0 var(--qt-ink);
+    transform: rotate(-2deg);
+}
+.qt-stage__sticker:nth-child(6n+2) { transform: rotate(1.5deg); }
+.qt-stage__sticker:nth-child(6n+3) { transform: rotate(-1deg); }
+.qt-stage__sticker:nth-child(6n+4) { transform: rotate(2deg); }
+.qt-stage__sticker:nth-child(6n+5) { transform: rotate(-1.5deg); }
+.qt-stage__sticker:nth-child(6n) { transform: rotate(1deg); }
+.qt-stage__sticker-name { max-width: 100%; font-size: .9375em; font-weight: 800; text-align: center; overflow-wrap: anywhere; }
+.qt-stage__sticker--missing { justify-content: center; border-style: dashed; background: transparent; box-shadow: none; font-size: 1.75em; min-height: 3.72em; font-weight: 800; opacity: .5; transform: none; }
+.qt-stage__sticker--missing:nth-child(n) { transform: none; }
+.qt-avatar--stage { width: 3.375em; height: 3.375em; border-width: .1875em; font-family: var(--qt-display); font-weight: 400; font-size: 1em; }
+.qt-stage__stickers--dense { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: .6em; }
+.qt-stage__stickers--dense .qt-stage__sticker { min-height: 5em; padding: .4em .25em; }
+.qt-stage__stickers--dense .qt-stage__sticker--missing { min-height: 2.86em; }
+.qt-stage__stickers--dense .qt-avatar--stage { width: 2.5em; height: 2.5em; }
+.qt-stage__stickers--dense .qt-stage__sticker-name { font-size: .8125em; }
+.qt-stage__more { margin: 0; font-size: 1em; font-weight: 800; }
+
+.qt-stage__actions { margin-top: auto; display: flex; justify-content: flex-end; gap: .875em; }
+.qt-stage__actions form { margin: 0; }
+.qt .qt-stage__btn {
+    height: 3.33em;
+    padding: 0 1.44em;
+    border: .22em solid var(--qt-ink);
+    border-radius: .89em;
+    background: var(--qt-paper);
+    color: var(--qt-ink);
+    font-size: 1.125em;
+    font-weight: 800;
+    cursor: pointer;
+}
+.qt .qt-stage__btn--main { height: 3em; padding: 0 1.5em; border-width: .2em; border-radius: .8em; background: var(--qt-accent); box-shadow: .3em .3em 0 var(--qt-ink); font-family: var(--qt-display); font-weight: 400; font-size: 1.25em; text-transform: uppercase; }
+.qt .qt-stage__btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.qt-stage__duels { flex: 1; min-height: 0; display: grid; gap: 1.125em; padding: 1.625em 2em 2em; }
+.qt-stage__duels--cols-1 { grid-template-columns: minmax(0, 24em); justify-content: center; }
+.qt-stage__duels--cols-2 { grid-template-columns: repeat(2, minmax(0, 24em)); justify-content: center; }
+.qt-stage__duels--cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.qt-stage__duels--cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.qt-stage__duels--rows-1 { grid-template-rows: minmax(0, 13em); align-content: center; }
+.qt-stage__duels--rows-2 { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.qt-stage__duels--rows-3 { grid-template-rows: repeat(3, minmax(0, 1fr)); }
+.qt-stage__duels--rows-4 { grid-template-rows: repeat(4, minmax(0, 1fr)); gap: .8em; }
+.qt-stage__duels--rows-5 { grid-template-rows: repeat(5, minmax(0, 1fr)); gap: .7em; }
+.qt-stage__duels--rows-6 { grid-template-rows: repeat(6, minmax(0, 1fr)); gap: .6em; }
+
+.qt-round-duel {
+    position: relative;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .5em;
+    padding: 1em;
+    border: .25em solid var(--qt-ink);
+    border-radius: 1.25em;
+    background: var(--qt-paper);
+    box-shadow: .3125em .3125em 0 var(--qt-ink);
+}
+.qt-stage__duels--rows-3 .qt-round-duel { font-size: .9em; padding: .8em; }
+.qt-stage__duels--rows-4 .qt-round-duel, .qt-stage__duels--rows-5 .qt-round-duel, .qt-stage__duels--rows-6 .qt-round-duel { font-size: .75em; gap: .3em; padding: .6em .8em; }
+.qt-round-duel.is-done { background: var(--qt-accent); }
+.qt-round-duel__done {
+    position: absolute;
+    right: -.6em;
+    top: -.9em;
+    padding: .15em .75em;
+    border: .23em solid var(--qt-ink);
+    border-radius: .75em;
+    background: var(--qt-accent2);
+    font-family: var(--qt-display);
+    font-size: .8125em;
+    text-transform: uppercase;
+    transform: rotate(6deg);
+}
+.qt-round-duel__side { display: flex; align-items: center; gap: .625em; }
+.qt-round-duel__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.125em; font-weight: 600; }
+.qt-round-duel__side.is-winner .qt-round-duel__name { font-weight: 900; }
+.qt-round-duel__score { font-family: var(--qt-display); font-size: 1.75em; line-height: 1; }
+.qt-round-duel__foot { margin-top: auto; display: flex; flex-direction: column; gap: .375em; }
+.qt-round-duel__bar { height: .75em; overflow: hidden; border: .125em solid var(--qt-ink); border-radius: .375em; background: var(--qt-paper); }
+.qt-round-duel__fill { height: 100%; background: var(--qt-ink); transition: width .4s ease; }
+.qt-round-duel__status { font-size: .875em; font-weight: 800; }
+.qt-round-duel--exempt { justify-content: center; gap: .375em; border-style: dashed; background: transparent; box-shadow: none; }
+.qt-round-duel--exempt .qt-round-duel__name { flex: none; white-space: normal; font-weight: 800; }
+.qt-round-duel__exempt-head { font-family: var(--qt-display); font-size: 1.25em; text-transform: uppercase; }
+.qt-round-duel__exempt-text { font-size: .875em; font-weight: 600; }
+
+.qt-stage__cancelled { flex: 1; display: flex; align-items: center; justify-content: center; font-family: var(--qt-display); font-size: 2em; text-transform: uppercase; }
+.qt-stage__back { position: absolute; left: 2.6em; bottom: .6em; font-size: .75em; font-weight: 700; opacity: .55; }
+.qt-stage__back:hover { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .qt-round-duel__fill { transition: none; }
+}

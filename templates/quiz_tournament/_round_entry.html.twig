@@ -1,0 +1,16 @@
+{# The round card of a student's tournament screen (design/validated/quiz-tournament.md §8): « Rejoindre
+   la ronde » when a round that expects them is open, « Tu as rejoint » while they wait, then their
+   duel, their exemption, or that the round started without them. quiz_tournament_round_entry_controller.js
+   keeps it current: it listens to the student's own counter topic (QuizTournamentLive - a round
+   opened, cancelled, their duel), beats while they have joined, and goes to the duel when the
+   pairing gives them one. Parameters: `tournament`, `entry` (QuizTournamentRoundEntry or null),
+   `back` ('standings' or 'challenges'), `live` (QuizTournamentLive::screen()). #}
+<div class="qt-round-entry"
+     data-controller="quiz-tournament-round-entry"
+     data-quiz-tournament-round-entry-card-url-value="{{ path('app_quiz_tournament_round_entry', {id: tournament.id, back: back}) }}"
+     data-quiz-tournament-round-entry-hub-url-value="{{ live.url|default('') }}"
+     data-quiz-tournament-round-entry-topic-value="{{ live.counterTopic|default('') }}">
+    <div class="qt-round-entry__content" data-quiz-tournament-round-entry-target="content">
+        {{- include('quiz_tournament/_round_entry_card.html.twig', {tournament: tournament, entry: entry, back: back}, with_context = false) -}}
+    </div>
+</div>

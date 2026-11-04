@@ -14,6 +14,7 @@ use App\Service\QuizTournament\QuizTournamentChallenges;
 use App\Service\QuizTournament\QuizTournamentElo;
 use App\Service\QuizTournament\QuizTournamentLive;
 use App\Service\QuizTournament\QuizTournamentRefusal;
+use App\Service\QuizTournament\QuizTournamentRounds;
 use App\Service\QuizTournament\QuizTournamentStandingsAssembler;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -48,7 +49,7 @@ class ChallengeController extends AbstractController
     }
 
     #[Route(path: '/tournaments/{id}/challenges', name: 'app_quiz_tournament_challenges', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function index(int $id, Request $request, QuizTournamentLive $live): Response
+    public function index(int $id, Request $request, QuizTournamentLive $live, QuizTournamentRounds $rounds): Response
     {
         $tournament = $this->viewableTournament($id, $this->entityManager);
         // A student's screen: the teachers and the administration read the standings, not challenges.
@@ -77,6 +78,7 @@ class ChallengeController extends AbstractController
             'tournamentLive' => $live->screen($request, $tournament, $reader, $now),
             'activeTab' => 'challenges',
             'tournamentCrumbs' => [['label' => $this->translator->trans('quizTournamentChallengesHeading'), 'url' => $this->generateUrl('app_quiz_tournament_challenges', ['id' => $id])]],
+            'roundEntry' => $rounds->entryFor($tournament, $reader, $now),
         ]);
     }
 

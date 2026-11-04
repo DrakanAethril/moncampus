@@ -7,6 +7,7 @@ namespace App\Service\QuizTournament;
 use App\Entity\QuizTournament;
 use App\Entity\QuizTournamentChallenge;
 use App\Entity\QuizTournamentDuel;
+use App\Entity\QuizTournamentRound;
 use App\Entity\User;
 use App\Repository\QuizTournamentChallengeRepository;
 use Psr\Log\LoggerInterface;
@@ -36,7 +37,17 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  *   duel's screen: the duel's public state (QuizTournamentDuelEngine - the question in play, who has
  *   answered, right or wrong for each once it closed, the scores), published whenever it moves -
  *   an answer, a question served, the end. **Never an answer's content**: what a player picked is
- *   only in the answers to their own requests.
+ *   only in the answers to their own requests;
+ * - **a round in class**, `/quiz-tournaments/{tournament}/rounds/{round}`, subscribed by the
+ *   projected screen of the teacher who opened it (§8, §10): `{"event": "roster"}` when somebody
+ *   joins or leaves (the screen asks for its board again), and, once paired, a summary of each of
+ *   its duels as it moves - `{"event": "duel", "duel": id, "phase", "rank", "total", "scores"}`,
+ *   the scores only, never a question.
+ *
+ * The students of a round are told on their own counter topic, which every tournament screen of
+ * theirs already follows: `{"event": "round"}` when a round they are expected in opens, is
+ * cancelled, or leaves them out, and `{"event": "duel", "url": …}` when the pairing gives them a
+ * duel - the page then goes to it.
  *
  * Publishing is a comfort, never a condition: a hub that does not answer is logged and the screens
  * catch up at their next request (the room's heartbeat answers the same state).
@@ -60,6 +71,11 @@ class QuizTournamentLive
     public function roomTopic(QuizTournamentChallenge $challenge): string
     {
         return \sprintf('/quiz-tournaments/%d/rooms/%d', (int) $challenge->getTournament()->getId(), (int) $challenge->getId());
+    }
+
+    public function roundTopic(QuizTournamentRound $round): string
+    {
+        return \sprintf('/quiz-tournaments/%d/rounds/%d', (int) $round->getTournament()->getId(), (int) $round->getId());
     }
 
     public function duelTopic(QuizTournamentDuel $duel): string
@@ -155,6 +171,41 @@ class QuizTournamentLive
     public function publishDuel(QuizTournamentDuel $duel, array $state): void
     {
         $this->publish($this->duelTopic($duel), $state);
+
+        $round = $duel->getRound();
+        if (null !== $round) {
+            $this->publish($this->roundTopic($round), [
+                'event' => 'duel',
+                'duel' => $duel->getId(),
+                'phase' => $state['phase'] ?? null,
+                'rank' => $state['rank'] ?? null,
+                'total' => $state['total'] ?? null,
+                'scores' => $state['scores'] ?? null,
+            ]);
+        }
+    }
+
+    /** Something changed in a round the projected screen draws: it asks for its board again. */
+    public function publishRoster(QuizTournamentRound $round): void
+    {
+        $this->publish($this->roundTopic($round), ['event' => 'roster']);
+    }
+
+    /**
+     * A round concerns these students: their tournament screens ask for the round's card again
+     * (QuizTournamentLive's class comment).
+     */
+    public function publishRoundChanged(QuizTournament $tournament, User ...$students): void
+    {
+        foreach ($students as $student) {
+            $this->publish($this->counterTopic($tournament, $student), ['event' => 'round']);
+        }
+    }
+
+    /** The pairing gave this student a duel: their tournament screen goes to it. */
+    public function publishRoundDuel(QuizTournamentDuel $duel, User $student): void
+    {
+        $this->publish($this->counterTopic($duel->getTournament(), $student), ['event' => 'duel', 'url' => $this->duelUrl($duel)]);
     }
 
     public function duelUrl(QuizTournamentDuel $duel): string
