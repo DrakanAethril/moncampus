@@ -23,13 +23,21 @@ Treat any leftover template documentation (`docs/*.md`, parts of the README) as 
 as a description of this app.
 
 Companion repositories (separate git repos, same staging workflow):
-- `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app. It also runs
-  **as a PWA at `/campus-app/`** (`public/campus-app/`, a build output of that repo's
-  `tool/build_pwa.sh`, never edited here — its README says what the web build changes): same
-  origin as the API and Mercure, so no URL compiled in; it declares `client: moncampus-web`, which
-  makes the magic link open `/campus-app/?login=…` instead of `campusmanager://` and lists its
-  sessions apart in « Mon profil » (`MobileApp::CampusWeb`). The Ressources page offers it next to
-  the APK.
+- `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app (APK and
+  IPA). Its **web build at `/campus-app/` is retired** (2026-11-04): the site itself is the
+  installable app, « beaup-app » (see « Installer beaup-app » below), and only two PWAs come from
+  this server, beaup-app (scope `/`) and e-CO (`/eco-app/`). `public/campus-app/` now holds one
+  file, the kill-switch service worker `campus_sw.js` at the old worker's address (it clears the
+  old `campus-app-*` caches, unregisters itself and sends its windows to `/`); every other
+  `/campus-app/…` address is a 301 to `/` (`CampusAppRetiredController`). Chrome does not check
+  the old worker for an update when that redirect takes the old icon's start page out of its
+  scope, so every page of the site also unregisters it and deletes those caches
+  (`assets/web_app/retired_campus_app.js`, imported by `app.js`) - only those: e-CO keeps its own
+  caches in the same origin. **Never run that repo's
+  `tool/build_pwa.sh` into this folder again** - it would overwrite the kill switch and bring the
+  old app back. A browser still declaring `client: moncampus-web` (`MobileApp::CampusWeb`) is sent
+  the site's own magic link (`MagicLoginService::requestLinkForApp()`); its last sessions stay
+  listed in « Mon profil » until they expire.
 - `/Users/Shared/Beaupeyrat/e-CO` — the orienteering-race app (GitHub `e-co-mobile`).
 
 ## Commands
@@ -935,6 +943,22 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
   `config/tech_profile.yaml` avec leur date, `.git/` et `tests/` étant exclus de l'image de
   production ; `/beaup-deploy` les remesure à chaque livraison. Aucun chiffre écrit en dur : la page
   doit rester vraie sans être maintenue.
+- **Installer beaup-app** — `/install` (`InstallController`, profile menu, every role, outside the
+  feature catalogue): the site installable as a web app named **« beaup-app »**,
+  design/validated/quiz-tournament.md §13. It replaced the Flutter web build at `/campus-app/`
+  (retired, see the companion-repos paragraph): two PWAs only, beaup-app and e-CO.
+  `public/manifest.webmanifest` (`id`/`scope` `/`, standalone) and the icons under
+  `public/beaup-app/` sit **outside AssetMapper** - an installed app keeps asking the addresses it
+  was installed from; `icon.svg`/`icon-maskable.svg` (a geometric B) are the sources, the PNGs are
+  rendered from them (headless Chrome screenshot), and the mark is the project's own: never an
+  Institution emblem. Caddy sends the manifest's type itself (`@webAppManifest`): the prod image
+  has no `/etc/mime.types`. **No service worker, no cache, no notification**: Chromium 156 reports
+  no installability error and fires `beforeinstallprompt` with none registered, so adding one would
+  buy nothing. The offer is caught on every page by `assets/web_app/install_prompt.js` (imported by
+  `app.js`, kept across Turbo visits) and used only by the screen's button; an SVG icon in the
+  manifest made Chrome refuse installation, so it lists PNGs only. A page installable as something
+  else replaces `base.html.twig`'s `web_app_meta` block whole (the e-CO GPS probe). The Ressources
+  page of the mobile app links here instead of offering a web build.
 - **Aide** — `HelpSection`/`HelpArticle` (an article, a FAQ answer or a glossary term, one entity),
   reached from the profile menu only. Every entry names its audiences (`HelpAudience`:
   enseignant/administration/étudiant/tuteur) and `App\Service\HelpAccess` is the single place that

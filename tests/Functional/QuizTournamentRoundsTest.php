@@ -83,7 +83,9 @@ class QuizTournamentRoundsTest extends FunctionalTestCase
         self::assertSelectorTextContains('.qt-stage__count', '0');
         self::assertSelectorTextContains('.qt-stage__count-of', 'présent sur 4');
         self::assertSelectorTextContains('.qt-stage__path', 'Tournoi RGPD › Rejoindre la ronde');
-        self::assertStringNotContainsString('Formatool', (string) $this->client->getResponse()->getContent());
+        // The projected board names the tournament, never the platform (the rest of the page may:
+        // the head, the menu).
+        self::assertStringNotContainsString('Formatool', $this->client->getCrawler()->filter('.qt-stage')->text());
 
         // A student of the class sees the card, joins, then waits.
         $this->client->loginUser($this->alice);

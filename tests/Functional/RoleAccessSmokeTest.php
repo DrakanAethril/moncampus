@@ -279,6 +279,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            // « Installer beaup-app » (§13 of quiz-tournament.md): every role, outside the catalogue.
+            '/install' => 200,
             // Jobboard. This base class opens the whole catalogue, so what is pinned here is the
             // role axis: a student may read the board (their own filière's offers, which is
             // JobboardPerimeterTest's business), and the two configuration screens are an
@@ -480,6 +482,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/install' => 200,
             // Jobboard: the board is readable, the keys handed to the collecting agent are not a
             // teacher's business.
             '/jobboard' => 200,
@@ -675,6 +678,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/install' => 200,
             // Jobboard. The administrator has every feature by construction, so the board opens
             // even though nobody is delivered it - and the two configuration screens are theirs
             // alone: the ingestion keys, and the manual import of a file of offers.
@@ -842,6 +846,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            '/install' => 200,
             // Jobboard: with the catalogue open the door is open, and what a tutor then reads is
             // nothing at all - they belong to no formation, so their perimeter is empty. An empty
             // board rather than a 404: the feature exists, it simply has nothing for them.

@@ -11,8 +11,11 @@ namespace App\Enum;
 enum MobileApp: string
 {
     case Campus = 'moncampus';
-    // The same app compiled for the browser (public/campus-app/): its sessions are listed apart,
-    // a browser being signed out on its own.
+    // The same app compiled for the browser, once served at /campus-app/ and retired since the
+    // site itself became the installable app (« beaup-app », design/validated/quiz-tournament.md
+    // §13). Kept so that its last sessions stay listed apart in « Mon profil » until they expire,
+    // and so that a browser still running it is sent the site's own sign-in link
+    // (Api\MagicLoginController).
     case CampusWeb = 'moncampus-web';
     case Eco = 'eco';
     case Other = 'other';

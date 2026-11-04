@@ -1,0 +1,86 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Installer beaup-app » - see App\Controller\InstallController. Two cards, as on the Ressources
+   pages (resources/_platform_card.html.twig's look, without its QR and download): the browser's
+   offer for Android and computers, the Share-menu steps for iPhone and iPad. Both are drawn for
+   everybody - a teacher on a computer shows the iPhone steps to a class - and
+   web_app_install_controller.js marks the one that applies, or replaces both with « déjà
+   installée » when the page runs from its icon. #}
+
+{% block title %}{{ 'webAppInstallPageHeading'|trans }}{% endblock %}
+{# Two segments: the screen hangs straight off the user menu, like « À propos ». #}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'webAppInstallPageHeading'|trans, url: path('app_install')},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'webAppInstallPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div data-controller="web-app-install"
+         data-web-app-install-unavailable-text-value="{{ 'webAppInstallUnavailableText'|trans }}"
+         data-web-app-install-ios-text-value="{{ 'webAppInstallOnIosText'|trans }}"
+         data-web-app-install-accepted-text-value="{{ 'webAppInstallAcceptedText'|trans }}"
+         data-web-app-install-dismissed-text-value="{{ 'webAppInstallDismissedText'|trans }}">
+        <div class="cm-app-hero cm-app-hero--brand mb-3">
+            <img class="cm-app-hero__icon" src="/beaup-app/icon-192.png" alt="" width="84" height="84">
+            <div class="cm-app-hero__body">
+                <div class="cm-app-hero__name">beaup-app</div>
+                <div class="cm-app-hero__desc">{{ 'webAppInstallHeroDescription'|trans }}</div>
+                <div class="cm-app-hero__meta">{{ 'webAppInstallHeroMeta'|trans }}</div>
+            </div>
+        </div>
+
+        <div class="cm-note mb-3" data-web-app-install-target="installed" hidden>
+            <span class="cm-note__icon"><twig:ux:icon name="check" width="12" height="12"/></span>
+            <div>{{ 'webAppInstallAlreadyInstalledText'|trans }}</div>
+        </div>
+
+        <div data-web-app-install-target="choices">
+            <div class="cm-app-cards">
+                <div class="cm-app-card cm-app-install" data-web-app-install-target="promptCard">
+                    <div class="cm-app-card__head">
+                        <twig:ux:icon name="device-desktop" width="22" height="22" class="cm-app-install__icon"/>
+                        <span class="cm-app-card__platform">{{ 'webAppInstallBrowserPlatformLabel'|trans }}</span>
+                    </div>
+                    <p class="cm-app-install__text">{{ 'webAppInstallBrowserText'|trans }}</p>
+                    <div>
+                        <twig:Cm:Button variant="primary" disabled data-web-app-install-target="button" data-action="web-app-install#install">{{ 'webAppInstallAction'|trans }}</twig:Cm:Button>
+                    </div>
+                    <p class="cm-app-install__status" role="status" data-web-app-install-target="status" hidden></p>
+                </div>
+
+                <div class="cm-app-card cm-app-install" data-web-app-install-target="iosCard">
+                    <div class="cm-app-card__head">
+                        <twig:ux:icon name="device-mobile" width="22" height="22" class="cm-app-install__icon"/>
+                        <span class="cm-app-card__platform">{{ 'webAppInstallIosPlatformLabel'|trans }}</span>
+                    </div>
+                    <div class="cm-app-card__install">
+                        {% for step in ['webAppInstallIosStep1Text', 'webAppInstallIosStep2Text', 'webAppInstallIosStep3Text'] %}
+                            <div class="cm-app-card__step">
+                                <span class="cm-app-card__step-index">{{ loop.index }}</span>
+                                <span>
+                                    {{ step|trans }}
+                                    {% if loop.index == 2 %}<twig:ux:icon name="share" width="16" height="16" class="cm-app-install__share" aria-hidden="true"/>{% endif %}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# The session, as §13 says it: the installed app on an iPhone does not share Safari's
+           cookies, and the mailed sign-in link opens in a browser, never in the app - so the
+           password is the way in once inside. Shown in every state, « déjà installée » included:
+           that is when somebody finds the app asking them to sign in again. #}
+        <div class="cm-note mt-3">
+            <span class="cm-note__icon">i</span>
+            <div>
+                <strong>{{ 'webAppInstallSessionHeading'|trans }}</strong><br>
+                {{ 'webAppInstallSessionIosText'|trans }}
+                {{ 'webAppInstallSessionMagicLinkText'|trans }}
+            </div>
+        </div>
+    </div>
+{% endblock %}

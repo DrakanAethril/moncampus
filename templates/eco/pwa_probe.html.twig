@@ -7,10 +7,10 @@
 
 {% block title %}{{ 'ecoPwaProbePageHeading'|trans }}{% endblock %}
 
-{% block stylesheets %}
-    {{ parent() }}
-    {# Makes the page installable on its own (display: standalone), which is the mode a PWA of
-       e-CO would run in - the wake lock and the background behaviour are not the same in a tab. #}
+{# Makes the page installable on its own (display: standalone), which is the mode a PWA of e-CO
+   would run in - the wake lock and the background behaviour are not the same in a tab. It replaces
+   Formatool's own manifest (base.html.twig): two manifest links and the browser takes the first. #}
+{% block web_app_meta %}
     <link rel="manifest" href="/eco-pwa-probe/manifest.json">
     <meta name="theme-color" content="#1B6BA8">
     <meta name="mobile-web-app-capable" content="yes">

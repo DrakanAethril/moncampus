@@ -50,14 +50,10 @@ class MagicLoginController extends AbstractController
         if ($limiter->create('ip:'.$request->getClientIp())->consume(1)->isAccepted()
             && $limiter->create('email:'.mb_strtolower($email))->consume(1)->isAccepted()
         ) {
-            $magicLoginService->requestMobileLink(
+            $magicLoginService->requestLinkForApp(
                 $userRepository->findOneBy(['contactEmail' => $email]),
                 $request->getClientIp(),
-                // The PWA cannot be reached by the app's deep link: the mail opens the PWA itself,
-                // on this server, which is where it is served from (public/campus-app/).
-                MobileApp::CampusWeb === $this->declaredApp($request)
-                    ? $request->getSchemeAndHttpHost().'/campus-app/'
-                    : null,
+                $this->declaredApp($request),
             );
         }
 
