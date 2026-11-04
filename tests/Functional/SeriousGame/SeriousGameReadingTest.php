@@ -72,6 +72,48 @@ class SeriousGameReadingTest extends FunctionalTestCase
         $this->assertScreens($stranger, [$class => 404, $card => 404, $replay => 404]);
     }
 
+    /**
+     * Closing a game to students closes who may *play* it, nothing else (design/validated/quiz-tournament.md
+     * §14): the student's progress, sessions, answers, comets and rewards stay as they were, the
+     * teachers of the class still read them, and the student finds everything intact when the game
+     * is opened to them again. The cell the migration removed carried nothing either.
+     */
+    public function testClosingAGameToStudentsKeepsTheirProgressAndItsReading(): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $grant = new SeriousGameRewardGrant($entityManager->getReference(User::class, $this->student->getId()), 'pin-etoile');
+        $entityManager->persist($grant);
+        $entityManager->flush();
+        $before = $this->progressOf($this->student);
+        self::assertGreaterThan(0, $before['answers']);
+
+        // Closed: the targeting emptied, and the matrix row the migration deletes deleted too.
+        $game = static::getContainer()->get(SeriousGameRepository::class)->find($this->game->getId()) ?? self::fail('game');
+        foreach ($game->getTargetSections()->toArray() as $section) {
+            $game->removeTargetSection($section);
+        }
+        $entityManager->flush();
+        $entityManager->getConnection()->executeStatement("DELETE FROM serious_game_role_setting WHERE role = 'ROLE_STUDENT'");
+
+        $class = '/serious-games/results/'.$this->program->getId().'/observatoire';
+        $card = '/serious-games/results/student/'.$this->student->getId();
+        $this->assertScreens($this->student, ['/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
+        $this->assertScreens($this->teacher, [$class => 200, $card => 200]);
+        self::assertStringContainsString('Taux d&#039;évolution', (string) $this->client->getResponse()->getContent());
+        $this->client->request('GET', $class);
+        self::assertStringContainsString('Martin', (string) $this->client->getResponse()->getContent());
+        self::assertSame($before, $this->progressOf($this->student));
+
+        // Opened again: everything is where the student left it.
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $game = static::getContainer()->get(SeriousGameRepository::class)->find($this->game->getId()) ?? self::fail('game');
+        $game->addTargetProgram($entityManager->getReference(Program::class, $this->program->getId()));
+        $entityManager->flush();
+        $this->assertScreens($this->student, ['/serious-games' => 200, '/serious-games/play/observatoire' => 200, '/serious-games/me' => 200]);
+        self::assertStringContainsString('Taux d&#039;évolution', (string) $this->client->getResponse()->getContent());
+        self::assertSame($before, $this->progressOf($this->student));
+    }
+
     public function testTheStaffReadsFiguresWithoutNames(): void
     {
         $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'reading.staff');
@@ -132,6 +174,31 @@ class SeriousGameReadingTest extends FunctionalTestCase
             $play->answer($player, $session, $input);
         }
         $play->end($player, $session);
+    }
+
+    /**
+     * Every row of a player's serious-game history, as counts and the unit states' readings.
+     *
+     * @return array<string, mixed>
+     */
+    private function progressOf(User $student): array
+    {
+        $connection = static::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $id = (int) $student->getId();
+        $count = static function (string $sql) use ($connection, $id): int {
+            $count = $connection->fetchOne($sql, ['id' => $id]);
+
+            return is_numeric($count) ? (int) $count : -1;
+        };
+
+        return [
+            'progress' => $connection->fetchAllAssociative('SELECT * FROM serious_game_progress WHERE player_id = :id ORDER BY id', ['id' => $id]),
+            'units' => $connection->fetchAllAssociative('SELECT * FROM serious_game_unit_state WHERE player_id = :id ORDER BY id', ['id' => $id]),
+            'sessions' => $count('SELECT COUNT(*) FROM serious_game_session WHERE player_id = :id'),
+            'answers' => $count('SELECT COUNT(*) FROM serious_game_answer a INNER JOIN serious_game_session s ON s.id = a.session_id WHERE s.player_id = :id'),
+            'comets' => $count('SELECT COUNT(*) FROM serious_game_comet WHERE player_id = :id'),
+            'grants' => $count('SELECT COUNT(*) FROM serious_game_reward_grant WHERE student_id = :id'),
+        ];
     }
 
     private function anAnswer(): SeriousGameAnswer

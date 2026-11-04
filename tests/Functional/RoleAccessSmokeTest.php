@@ -1604,9 +1604,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     }
 
     /**
-     * The serious games (design/validated/serious-games.md §3): a student plays once the module and
-     * the game are lit for their role, and reaches the module **by its address alone** - no link in
-     * their menus. The teachers of the class read the class and its students; another student is
+     * The serious games (design/validated/serious-games.md §3): a student plays once the module is lit
+     * for them and the game's targeting reaches their class (design/validated/quiz-tournament.md
+     * §14), an adult once the module and the game are lit for their role; a student reaches the
+     * module **by its address alone** - no link in their menus. The teachers of the class read the class and its students; another student is
      * nobody's to read but their own teachers'. A tutor gets nothing anywhere, and the staff reads
      * no student by name. The statistics of every game are read by every teacher - a class of
      * theirs or not - and the administrator, never by the staff (design/validated/serious-games-neko-con.md §6).
@@ -1616,9 +1617,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
         $game = (new SeriousGame('observatoire', 'L’Observatoire'))->setPublished(true);
         $entityManager->persist($game);
-        foreach (['ROLE_STUDENT', 'ROLE_TEACHER'] as $role) {
-            $entityManager->persist(new SeriousGameRoleSetting($game, $role, true));
-        }
+        $entityManager->persist(new SeriousGameRoleSetting($game, 'ROLE_TEACHER', true));
+        $game->addTargetProgram($this->program);
         $stranger = $this->createUser(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_CAMPUS'], 'smoke.stranger');
         $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.staff');
         $entityManager->flush();
@@ -1630,10 +1630,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
 
         $this->assertScreens($this->student, $own + ['/serious-games/play/nope' => 404, '/serious-games/results' => 404, $class => 404, $strangerCard => 404]);
         $this->assertScreens($this->teacher, $own + ['/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 404]);
-        $this->assertScreens($this->admin, $own + ['/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 200, '/settings/serious-games' => 200]);
-        $this->assertScreens($staff, ['/serious-games' => 404, '/serious-games/results' => 200, $class => 404, $studentCard => 404, '/settings/serious-games' => 404]);
+        $targeting = '/settings/serious-games/observatoire/students';
+        $this->assertScreens($this->admin, $own + ['/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 200, '/settings/serious-games' => 200, $targeting => 200]);
+        $this->assertScreens($staff, ['/serious-games' => 404, '/serious-games/results' => 200, $class => 404, $studentCard => 404, '/settings/serious-games' => 404, $targeting => 404]);
+        $this->assertScreens($stranger, ['/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
         $this->assertScreens($this->tutor, array_fill_keys(array_keys($own), 404) + ['/serious-games/results' => 404, $class => 404, $studentCard => 404]);
-        $this->assertScreens($this->teacher, ['/settings/serious-games' => 403]);
+        $this->assertScreens($this->teacher, ['/settings/serious-games' => 403, $targeting => 403]);
+        $this->assertScreens($this->student, [$targeting => 403]);
 
         $stats = ['/serious-games/stats' => 200, '/serious-games/stats?game=observatoire&program='.$this->program->getId() => 200];
         $this->assertScreens($this->teacher, $stats);
@@ -1651,8 +1654,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->client->request('GET', '/');
         self::assertStringContainsString('href="/serious-games"', (string) $this->client->getResponse()->getContent());
 
-        // The game unlit for students: the module no longer exists for them.
-        $entityManager->createQuery('UPDATE App\Entity\SeriousGameRoleSetting s SET s.enabled = false WHERE s.role = :role')->setParameter('role', 'ROLE_STUDENT')->execute();
+        // The targeting emptied: the module no longer exists for students.
+        $entityManager->getConnection()->executeStatement('DELETE FROM serious_game_program');
         $this->assertScreens($this->student, ['/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
 
         // The module switched off: nobody but the administrator plays.

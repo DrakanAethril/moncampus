@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace App\Service\SeriousGame;
 
+use App\Enum\Feature;
+
 /**
  * « Qui joue, qui collectionne, qui lit » in the serious games (design/validated/serious-games.md
  * §3.2), as pure functions on primitives. App\Security\Voter\SeriousGameVoter gathers the facts and
  * asks here; nothing else decides.
  *
- * - **Play**: the module (`Feature::SeriousGames`) lit for the person, the game published, and the
- *   game lit for one of their roles. The administrator plays everything, unpublished included.
- *   Tutors and external accounts get nothing, whatever the matrix says (§1.9).
+ * - **Play**: the module (`Feature::SeriousGames`) lit for the person, the game published, and
+ *   either the game lit in the matrix for one of their roles, or - for a student - the game's
+ *   **targeting** reaching them (design/validated/quiz-tournament.md §14). The matrix has no student
+ *   column any more (matrixRoles()): a student is let in by the targeting alone, and an empty
+ *   targeting opens the game to no student. An account that also holds an adult role plays by that
+ *   role's cell, as before. The administrator plays everything, unpublished included. Tutors and
+ *   external accounts get nothing, whatever the matrix or the targeting says (§1.9).
  * - **Collect**: students only. An adult plays, keeps their progress, and collects nothing (§1.10).
  * - **Read a student**: the student themself, the administrator, and a teacher of one of the
  *   student's **active** classes - asked now, not at the time of the game, which is what gives the
@@ -31,11 +37,26 @@ final class SeriousGameRules
     /** The adult roles: a student holding one of them plays as the adult. */
     private const array ADULTS = ['ROLE_TEACHER', 'ROLE_STAFF', 'ROLE_STAFF-LEAD', 'ROLE_ADMIN'];
 
+    private const string STUDENT = 'ROLE_STUDENT';
+
     /**
-     * @param list<string>        $roles          the player's roles
-     * @param array<string, bool> $gameRoleSwitch role => lit, the game's line of the matrix
+     * The columns of the game matrix (Paramètres › Fonctionnalités, « Serious games »): every managed
+     * role but the students, whom the game's targeting opens it to.
+     *
+     * @return list<string>
      */
-    public static function canPlay(array $roles, bool $moduleLit, bool $gamePublished, array $gameRoleSwitch): bool
+    public static function matrixRoles(): array
+    {
+        return array_values(array_diff(Feature::managedRoles(), [self::STUDENT]));
+    }
+
+    /**
+     * @param list<string>        $roles              the player's roles
+     * @param array<string, bool> $gameRoleSwitch     role => lit, the game's line of the matrix
+     * @param bool                $reachedByTargeting whether the game's targeting reaches the player
+     *                                                today - read for a student only
+     */
+    public static function canPlay(array $roles, bool $moduleLit, bool $gamePublished, array $gameRoleSwitch, bool $reachedByTargeting): bool
     {
         if (self::isAdmin($roles)) {
             return true;
@@ -46,18 +67,18 @@ final class SeriousGameRules
         }
 
         foreach ($roles as $role) {
-            if (true === ($gameRoleSwitch[$role] ?? false)) {
+            if (self::STUDENT !== $role && true === ($gameRoleSwitch[$role] ?? false)) {
                 return true;
             }
         }
 
-        return false;
+        return \in_array(self::STUDENT, $roles, true) && $reachedByTargeting;
     }
 
     /** @param list<string> $roles */
     public static function canCollect(array $roles): bool
     {
-        return \in_array('ROLE_STUDENT', $roles, true) && [] === array_intersect(self::ADULTS, $roles);
+        return \in_array(self::STUDENT, $roles, true) && [] === array_intersect(self::ADULTS, $roles);
     }
 
     /**

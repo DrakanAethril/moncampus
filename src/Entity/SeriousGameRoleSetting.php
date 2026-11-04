@@ -12,9 +12,10 @@ use Doctrine\ORM\Mapping as ORM;
  * (design/validated/serious-games.md §3.1): is this game lit for this role.
  *
  * The same shape as FeatureRoleSetting, one level down: the module itself is
- * `Feature::SeriousGames`, and a game is playable for a role only when both are lit. **By role
- * only**: there is no per-formation setting and no individual derogation for a game, and no
- * teacher ever opens a game to a class.
+ * `Feature::SeriousGames`, and a game is playable for a role only when both are lit. **The adults'
+ * roles only** (SeriousGameRules::matrixRoles()): students are let in by the game's targeting
+ * (design/validated/quiz-tournament.md §14), and the ROLE_STUDENT rows were dropped. No individual
+ * derogation, and no teacher ever opens a game to a class.
  *
  * An absent pair is off - a game arrives switched off for everybody but the administrator.
  */
