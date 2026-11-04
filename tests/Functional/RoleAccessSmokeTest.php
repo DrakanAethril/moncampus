@@ -1607,7 +1607,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
      * The serious games (design/validated/serious-games.md §3): a student plays once the module is lit
      * for them and the game's targeting reaches their class (design/validated/quiz-tournament.md
      * §14), an adult once the module and the game are lit for their role; a student reaches the
-     * module **by its address alone** - no link in their menus. The teachers of the class read the class and its students; another student is
+     * games through « Jouer » (/play, §15), the adults through Ressources. The teachers of the class read the class and its students; another student is
      * nobody's to read but their own teachers'. A tutor gets nothing anywhere, and the staff reads
      * no student by name. The statistics of every game are read by every teacher - a class of
      * theirs or not - and the administrator, never by the staff (design/validated/serious-games-neko-con.md §6).
@@ -1628,13 +1628,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $strangerCard = '/serious-games/results/student/'.$stranger->getId();
         $own = ['/serious-games' => 200, '/serious-games/avatar' => 200, '/serious-games/me' => 200, '/serious-games/play/observatoire' => 200];
 
-        $this->assertScreens($this->student, $own + ['/serious-games/play/nope' => 404, '/serious-games/results' => 404, $class => 404, $strangerCard => 404]);
-        $this->assertScreens($this->teacher, $own + ['/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 404]);
+        $this->assertScreens($this->student, $own + ['/play' => 200, '/serious-games/play/nope' => 404, '/serious-games/results' => 404, $class => 404, $strangerCard => 404]);
+        $this->assertScreens($this->teacher, $own + ['/play' => 404, '/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 404]);
         $targeting = '/settings/serious-games/observatoire/students';
-        $this->assertScreens($this->admin, $own + ['/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 200, '/settings/serious-games' => 200, $targeting => 200]);
+        $this->assertScreens($this->admin, $own + ['/play' => 404, '/serious-games/results' => 200, $class => 200, $studentCard => 200, $strangerCard => 200, '/settings/serious-games' => 200, $targeting => 200]);
         $this->assertScreens($staff, ['/serious-games' => 404, '/serious-games/results' => 200, $class => 404, $studentCard => 404, '/settings/serious-games' => 404, $targeting => 404]);
-        $this->assertScreens($stranger, ['/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
-        $this->assertScreens($this->tutor, array_fill_keys(array_keys($own), 404) + ['/serious-games/results' => 404, $class => 404, $studentCard => 404]);
+        $this->assertScreens($stranger, ['/play' => 404, '/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
+        $this->assertScreens($this->tutor, array_fill_keys(array_keys($own), 404) + ['/play' => 404, '/serious-games/results' => 404, $class => 404, $studentCard => 404]);
         $this->assertScreens($this->teacher, ['/settings/serious-games' => 403, $targeting => 403]);
         $this->assertScreens($this->student, [$targeting => 403]);
 
@@ -1646,9 +1646,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($staff, ['/serious-games/stats' => 404]);
         $this->assertScreens($this->tutor, ['/serious-games/stats' => 404]);
 
-        // No link in the student's menus, one in the teacher's (Ressources), read off the home page.
+        // The student's door is « Jouer » in their bar, the teacher's Ressources, read off the home page.
         $this->client->loginUser($this->student);
         $this->client->request('GET', '/');
+        self::assertStringContainsString('href="/play"', (string) $this->client->getResponse()->getContent());
         self::assertStringNotContainsString('href="/serious-games"', (string) $this->client->getResponse()->getContent());
         $this->client->loginUser($this->teacher);
         $this->client->request('GET', '/');
@@ -1656,7 +1657,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
 
         // The targeting emptied: the module no longer exists for students.
         $entityManager->getConnection()->executeStatement('DELETE FROM serious_game_program');
-        $this->assertScreens($this->student, ['/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
+        $this->assertScreens($this->student, ['/play' => 404, '/serious-games' => 404, '/serious-games/play/observatoire' => 404]);
 
         // The module switched off: nobody but the administrator plays.
         $this->switchOffEveryRole(Feature::SeriousGames);
@@ -1673,7 +1674,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
      * opening is the administrators' alone (Paramètres › Pédagogique › Tournois) - the staff reach
      * Paramètres but find no such screen. A closed tournament is nobody else's to see. A round in class
      * (§8) is opened by a teacher of a targeted class and projected by them alone - administrators
-     * included get a 404 (QuizTournamentRoundsTest); its card is a student's.
+     * included get a 404 (QuizTournamentRoundsTest); its card is a student's. A student reaches them
+     * from « Jouer » (/play, §15), a pure student's page (PlayHubTest).
      */
     public function testQuizTournamentsAreReadByThoseTheyReachAndRunByTheAdministrators(): void
     {
@@ -1703,15 +1705,15 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $edit = '/settings/tournaments/'.$opened->getId().'/edit';
 
         $challenges = $page.'/challenges';
-        $this->assertScreens($this->student, ['/tournaments' => 200, $page => 200, $challenges => 200, $duels => 200, $duelPage => 302, $duelPage.'/result' => 200, $duelPage.'/correction' => 200, $closedPage => 404, $closedPage.'/challenges' => 404, $closedPage.'/duels' => 404, '/settings/tournaments' => 403, $newRound => 404, $roundPage => 404, $roundPage.'/board' => 404, $roundEntry => 200]);
-        $this->assertScreens($this->teacher, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $closedPage => 404, '/settings/tournaments' => 403, $edit => 403, $newRound => 200, $roundPage => 200, $roundPage.'/board' => 200, $roundEntry => 404]);
+        $this->assertScreens($this->student, ['/play' => 200, '/tournaments' => 200, $page => 200, $challenges => 200, $duels => 200, $duelPage => 302, $duelPage.'/result' => 200, $duelPage.'/correction' => 200, $closedPage => 404, $closedPage.'/challenges' => 404, $closedPage.'/duels' => 404, '/settings/tournaments' => 403, $newRound => 404, $roundPage => 404, $roundPage.'/board' => 404, $roundEntry => 200]);
+        $this->assertScreens($this->teacher, ['/play' => 404, '/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $closedPage => 404, '/settings/tournaments' => 403, $edit => 403, $newRound => 200, $roundPage => 200, $roundPage.'/board' => 200, $roundEntry => 404]);
         $this->assertScreens($staff, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $closedPage => 404, '/settings/tournaments' => 404, '/settings/tournaments/new' => 404, $edit => 404, $newRound => 404, $roundPage => 404]);
         $this->assertScreens($this->tutor, ['/tournaments' => 200, $page => 404, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, '/settings/tournaments' => 403, $newRound => 404, $roundPage => 404]);
         $this->assertScreens($this->admin, ['/tournaments' => 200, $page => 200, $challenges => 404, $duels => 404, $duelPage => 404, $duelPage.'/result' => 404, $closedPage => 200, '/settings/tournaments' => 200, '/settings/tournaments/new' => 200, $edit => 200, $newRound => 404, $roundPage => 404]);
 
         // The feature switched off: nobody but the administrator finds a tournament.
         $this->switchOffEveryRole(Feature::QuizTournaments);
-        $this->assertScreens($this->student, ['/tournaments' => 404, $page => 404, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $roundEntry => 404]);
+        $this->assertScreens($this->student, ['/play' => 404, '/tournaments' => 404, $page => 404, $challenges => 404, $duels => 404, $duelPage.'/result' => 404, $roundEntry => 404]);
         $this->assertScreens($this->teacher, [$newRound => 404, $roundPage => 404]);
         $this->assertScreens($this->admin, ['/tournaments' => 200, '/settings/tournaments' => 200]);
     }

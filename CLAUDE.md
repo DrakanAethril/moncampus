@@ -253,7 +253,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
 - **Tournois de quiz** — `QuizTournament*` entities, `src/Service/QuizTournament/`, spec
   `design/validated/quiz-tournament.md` (being built in lots; lot 1 the model and the rules, lot 2
   the administration and the standings page, lot 3 the challenges, the room, the duel and its
-  history, lot 4 the rounds in class). Students reached by a **targeting** challenge each other to synchronous duels of 20
+  history, lot 4 the rounds in class, lot 6 « Jouer »). Students reached by a **targeting** challenge each other to synchronous duels of 20
   questions drawn from ordinary library quizzes; an Elo rating ranks them. `Feature::QuizTournaments`
   is off for every role; creating and opening is `ROLE_ADMIN` alone whatever the matrix says
   (`QuizTournamentVoter`, the only arbiter, facts from `QuizTournamentAccess`). Rules the code holds:
@@ -363,6 +363,16 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     is its opener's alone (404 for anybody else, administrators included) and follows the round's
     topic: roster changes, then a per-duel summary (scores, question - never a question's text)
     that `QuizTournamentLive::publishDuel()` adds for a round duel; it draws no « Formatool ».
+  - **« Jouer »** (§15, `PlayController`, `/play`, `App\Service\Play\PlayHub`, rules in the pure
+    `PlayHubRule`): a **pure student's** entry and page - the tournaments that reach them (opened, the
+    feature lit, eligible; listed until 30 days after their end) and the serious games open to them
+    (`SeriousGameShelf`), each card in its content's dress (the tournament's palette and emblem, the
+    catalogue's own `serious_game/_card.html.twig`). The entry is drawn only when one of the two has
+    something (`play_hub_visible()`, the rule the page 404s by) and **never carries a counter**: the
+    card's « n défis en attente » is the page's content, not an alert (§7). The page belongs to two
+    features, read as an OR (`#[RequiresFeature(QuizTournaments, SeriousGames)]`). Adults get no bar
+    entry: Outils › Animer la classe › « Tournois » (`quiz_tournaments_followed()`: a teacher once an
+    opened tournament targets a class they teach, an administrator once one exists) opens `/tournaments`.
 - **Sondages** — the same three-step shape as Quiz, and deliberately so: `SurveyTemplate` (library,
   `SurveyFolder`s) → `SurveyCampaign` (launched wave, carrying a frozen copy of the questions) →
   `SurveyResponse`. `SurveySeries` replays a campaign to compare waves. Two things freeze at launch
@@ -400,8 +410,9 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   (read by `SeriousGameVoter`): a student's results are read by them, by every teacher of one of
   their **active** classes (history included - asked now, not at the time of play, and never
   through `isProgramTeacher()`, which lets staff in) and by administrators; staff read figures
-  without names; tutors and externals nothing. **No link in a student's menus** - they open the
-  address. Rules the code holds:
+  without names; tutors and externals nothing. **A student's door is « Jouer »** in their bar (the
+  tournaments' page too, see « Tournois de quiz »), the adults' Ressources (play) and Outils
+  (results). Rules the code holds:
   - **The server generates and corrects.** Questions come from declarative JSON templates
     (`moncampus-gabarit/1`, `App\SeriousGame\Template\TemplateInterpreter`, ExpressionLanguage
     over `TemplateFunctions` - no PHP, so an administrator rewrites them with Claude through the

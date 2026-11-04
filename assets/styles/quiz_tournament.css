@@ -77,6 +77,8 @@
     overflow: clip;
     color-scheme: light;
 }
+/* Every heading of a tournament screen is in its ink: Tabler colours h1-h6 with its own navy. */
+.qt :is(h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6) { color: var(--qt-ink); }
 .qt a { color: var(--qt-ink); }
 .qt a:hover { color: #000; }
 .qt button { font: inherit; color: var(--qt-ink); }
@@ -145,7 +147,9 @@
     box-shadow: var(--qt-shadow);
 }
 .qt-me__rank { font-family: var(--qt-display); font-size: 44px; line-height: 1; white-space: nowrap; }
-.qt-me__rank--block { font-size: 15px; line-height: 1.1; max-width: 6.5em; text-transform: uppercase; }
+/* A block's name wraps on its own lines (« Pas encore / joué ») instead of running under the text
+   beside it: the rank's nowrap is for « #12 », never for words. */
+.qt-me__rank--block { flex: none; font-size: 15px; line-height: 1.1; max-width: 6.5em; text-transform: uppercase; white-space: normal; overflow-wrap: break-word; }
 .qt-me__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-right: 40px; }
 .qt-me__who { font-weight: 800; font-size: 15px; }
 .qt-me__state { font-size: 13px; font-weight: 600; }
@@ -311,11 +315,17 @@
 /* --- The list of tournaments (/tournaments) --------------------------------------------------- */
 
 .qt-cards { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); margin: 0; padding: 0; list-style: none; }
-.qt-card { border-radius: 18px; min-height: 0; box-shadow: var(--qt-shadow); }
+/* margin 0: the shell's « auto » would shrink a card to its content inside its grid cell. */
+.qt-card { margin: 0; border-radius: 18px; min-height: 0; box-shadow: var(--qt-shadow); }
 .qt-card .qt-head { padding-bottom: 6px; }
 .qt-card .qt-head__title { font-size: 20px; }
 .qt-card__link { text-decoration: none; display: block; }
 .qt-card__body { padding: 0 18px 16px; display: flex; flex-direction: column; gap: 8px; }
+/* The student's place on a card of their « Jouer » page (§15): rank or block, then the rating. */
+.qt-card__place { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.qt-card__rank { font-family: var(--qt-display); font-size: 32px; line-height: 1; }
+.qt-card__block { font-family: var(--qt-display); font-size: 15px; line-height: 1.1; text-transform: uppercase; }
+.qt-card__rating { font-size: 15px; font-weight: 800; }
 
 /* --- Buttons --------------------------------------------------------------------------------- */
 

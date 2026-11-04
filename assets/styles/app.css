@@ -13948,6 +13948,12 @@ dialog.cm-wall-panel::backdrop { background: rgba(18, 52, 77, .2); }
 }
 @media (max-width: 760px) { .cm-sg-catalog { grid-template-columns: 1fr; } }
 
+/* --- « Jouer », the student's page of games (design/validated/quiz-tournament.md §15) --- */
+/* Formatool's page around cards that each wear their own dress: a tournament's (quiz_tournament.css)
+   and a serious game's (.cm-sg-card above). */
+.cm-playhub { display: grid; gap: 32px; }
+.cm-playhub__section { display: grid; gap: 16px; min-width: 0; }
+
 /* --- Paramètres › Serious games --- */
 .cm-sg-kinds { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 .cm-sg-kinds .form-check { margin: 0; }

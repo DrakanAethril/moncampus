@@ -49,8 +49,8 @@
 {% set resources_quiz_programs = is_pure_student ? student_nav_quiz_programs() : [] %}
 {% set resources_documentation = feature('documentation') %}
 {# « Serious games » for the adults a game is lit for (design/validated/serious-games.md §3.3):
-   **never for a pure student**, who opens the address /serious-games the establishment hands out -
-   the access rule is the same, only the link is absent (§1.12). #}
+   **never for a pure student**, whose door is « Jouer » in their bar (design/validated/quiz-tournament.md
+   §15, the games beside the tournaments) - the access rule is the same, only the entry differs. #}
 {% set resources_serious_games = not is_pure_student and feature('serious_games') and serious_games_playable() %}
 {% set resources_apps = is_granted('ROLE_ADMIN') %}
 {# « Jobboard », student-only here: every other profile reads it from Outils >
