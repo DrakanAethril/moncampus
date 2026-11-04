@@ -13,6 +13,7 @@ use App\Repository\SeriousGameRepository;
 use App\Repository\SeriousGameRoleSettingRepository;
 use App\Security\FeatureAccess;
 use App\Security\StructureAccessChecker;
+use App\Service\StructureTargeting\StructureTargeting;
 use Symfony\Contracts\Service\ResetInterface;
 
 /**
@@ -24,6 +25,10 @@ use Symfony\Contracts\Service\ResetInterface;
  * classes and their teacher lists, with the viewer's test-mode side checked. It is deliberately
  * **not** StructureAccessChecker::isProgramTeacher(), which lets the staff through: staff read
  * aggregates only (§12, « Cinq choses à ne pas faire », 4).
+ *
+ * « Atteint par le ciblage » (design/validated/quiz-tournament.md §14) is StructureTargeting's, read
+ * at every call and only when it can change the answer - for a student, the module lit and the game
+ * published.
  *
  * The matrix is memoised for the request, hence ResetInterface: the FrankenPHP worker keeps this
  * service alive from one request to the next.
@@ -39,20 +44,30 @@ class SeriousGameAccess implements ResetInterface
         private readonly SeriousGameRoleSettingRepository $roleSettings,
         private readonly ProgramRepository $programs,
         private readonly StructureAccessChecker $structureAccess,
+        private readonly StructureTargeting $targeting,
     ) {
     }
 
     public function canPlay(User $user, SeriousGame $game): bool
     {
+        $roles = $user->getRoles();
+        $moduleLit = $this->featureAccess->isEnabled(Feature::SeriousGames, $user);
+
         return SeriousGameRules::canPlay(
-            $user->getRoles(),
-            $this->featureAccess->isEnabled(Feature::SeriousGames, $user),
+            $roles,
+            $moduleLit,
             $game->isPublished(),
             $this->switchesFor($game),
+            $moduleLit && $game->isPublished() && \in_array('ROLE_STUDENT', $roles, true) && $this->targeting->reaches($game, $user),
         );
     }
 
-    /** @return list<SeriousGame> the games this person may play, in title order */
+    /**
+     * The games this person may play, in title order - for a student, the published games whose
+     * targeting reaches them.
+     *
+     * @return list<SeriousGame>
+     */
     public function playableGames(User $user): array
     {
         return array_values(array_filter($this->games->findAllOrdered(), fn (SeriousGame $game): bool => $this->canPlay($user, $game)));

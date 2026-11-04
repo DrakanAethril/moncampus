@@ -11,6 +11,7 @@ use App\Repository\FeatureRoleSettingRepository;
 use App\Repository\SeriousGameRepository;
 use App\Repository\SeriousGameRoleSettingRepository;
 use App\Repository\UserFeatureAccessRepository;
+use App\Service\SeriousGame\SeriousGameRules;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -89,11 +90,14 @@ class FeatureMatrixController extends AbstractController
         // The « Serious games » block (design/validated/serious-games.md §3.1): one line per
         // published game, after the families of the enum. Games are data, not cases, so they get
         // a block of their own rather than rows of the Pédagogie family; an absent pair is off.
+        // No student column: a game is opened to students by its targeting, in Paramètres › Serious
+        // games (design/validated/quiz-tournament.md §14).
+        $gameRoles = SeriousGameRules::matrixRoles();
         $gameMatrix = $this->seriousGameRoleSettings->matrix();
         $seriousGames = [];
         foreach ($this->seriousGames->findPublished() as $game) {
             $cells = [];
-            foreach ($roles as $role) {
+            foreach ($gameRoles as $role) {
                 $cells[$role] = $gameMatrix[(int) $game->getId()][$role] ?? false;
             }
             $seriousGames[] = ['game' => $game, 'cells' => $cells];
@@ -103,6 +107,7 @@ class FeatureMatrixController extends AbstractController
             'roles' => $roles,
             'families' => $families,
             'seriousGames' => $seriousGames,
+            'seriousGameRoles' => $gameRoles,
         ]);
     }
 

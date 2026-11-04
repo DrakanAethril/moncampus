@@ -18,6 +18,7 @@ use App\SeriousGame\SeriousGameTemplates;
 use App\SeriousGame\Template\TemplateBench;
 use App\SeriousGame\Template\TemplateDefinition;
 use App\Service\QueryValue;
+use App\Service\SeriousGame\SeriousGameStudentReach;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,8 +30,9 @@ use Symfony\Component\Routing\Attribute\Route;
  * publication, the answer kinds they accept, their question templates and their health.
  * Administrators only - every other account gets the 404 of a screen that does not exist.
  *
- * A game arrives unpublished from `app:serious-games:sync`; once published it is lit per role in
- * Paramètres › Fonctionnalités, in the « Serious games » block. A template version is read here,
+ * A game arrives unpublished from `app:serious-games:sync`; once published it is lit for the adults
+ * per role in Paramètres › Fonctionnalités, in the « Serious games » block, and opened to students by
+ * its targeting (« Qui joue (étudiants) », SeriousGameTargetingController). A template version is read here,
  * put on the bench again, and - a draft whose bench is green - made the unit's current version.
  * Drafts are written with Claude through the connector (§9); nothing is deleted.
  */
@@ -41,7 +43,7 @@ class SeriousGameController extends AbstractController
     public const array ANSWER_KINDS = ['short' => 'seriousGameAnswerKindShort', 'choice' => 'seriousGameAnswerKindChoice', 'order' => 'seriousGameAnswerKindOrder', 'spot' => 'seriousGameAnswerKindSpot'];
 
     #[Route(path: '/settings/serious-games', name: 'app_settings_serious_games', methods: ['GET'])]
-    public function index(SeriousGameRepository $games, SeriousGameTemplateRepository $templates): Response
+    public function index(SeriousGameRepository $games, SeriousGameTemplateRepository $templates, SeriousGameStudentReach $reach): Response
     {
         $this->assertManager();
 
@@ -54,6 +56,7 @@ class SeriousGameController extends AbstractController
                 'units' => \count($manifest->units()),
                 'installed' => \count($current),
                 'hidden' => \count(array_filter($current, static fn (SeriousGameTemplate $t): bool => !self::servable($game, $t))),
+                'reached' => $game->hasStructureTargets() ? $reach->count($game) : null,
             ];
         }
 

@@ -94,6 +94,18 @@ class FeatureAccess implements ResetInterface
     }
 
     /**
+     * Is this feature lit for one role, read off the matrix alone - no person, no derogation, no
+     * formation axis. For a screen that speaks of a role as a whole: Paramètres › Serious games warns
+     * that a game targeted on classes still reaches no student while the module is off for them.
+     */
+    public function isEnabledForRole(Feature $feature, string $role): bool
+    {
+        $matrix = $this->matrix ??= $this->roleSettings->matrix();
+
+        return $matrix[$feature->value.'|'.$role] ?? $feature->defaultForRoles();
+    }
+
+    /**
      * Does **anybody** still have this feature - is the establishment still running it at all?
      *
      * Read off the matrix alone, without a person: it answers a question about the platform, not

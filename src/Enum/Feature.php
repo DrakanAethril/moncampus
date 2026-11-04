@@ -407,8 +407,9 @@ enum Feature: string
             // published while ROLE_TEACHER is unlit is one its holder cannot see yet.
 
             // The serious games (design/validated/serious-games.md §3.1) are named by no role either:
-            // the module is lit here, and each game is lit beside it, per role, in the « Serious
-            // games » block of the same screen (SeriousGameRoleSetting). Both have to be on.
+            // the module is lit here, and each game is lit beside it, per adult role, in the « Serious
+            // games » block of the same screen (SeriousGameRoleSetting), and for students by its
+            // targeting (Paramètres › Serious games). Both have to be on.
 
             // The quiz tournaments (design/validated/quiz-tournament.md §2) are named by no role either:
             // creating and opening one is the administrator's alone whatever the matrix says

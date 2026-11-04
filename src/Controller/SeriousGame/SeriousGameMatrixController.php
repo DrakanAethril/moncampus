@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Controller\SeriousGame;
 
 use App\Entity\SeriousGameRoleSetting;
-use App\Enum\Feature;
 use App\Repository\SeriousGameRepository;
 use App\Repository\SeriousGameRoleSettingRepository;
+use App\Service\SeriousGame\SeriousGameRules;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,8 +20,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * (design/validated/serious-games.md §3.1): which roles a game is lit for.
  *
  * The neighbour of App\Controller\FeatureMatrixController, and administered the same way: admin
- * only, no `RequiresFeature` of its own, one POST per line. **By role only** - no per-formation
- * setting, no individual derogation, no teacher opening a game to a class.
+ * only, no `RequiresFeature` of its own, one POST per line. **The adults' roles only**: students
+ * are let in by the game's targeting (Paramètres › Serious games, SeriousGameTargetingController,
+ * design/validated/quiz-tournament.md §14), so the line has no student cell and writes none. No
+ * individual derogation, no teacher opening a game to a class.
  */
 #[IsGranted('ROLE_ADMIN')]
 class SeriousGameMatrixController extends AbstractController
@@ -49,7 +51,7 @@ class SeriousGameMatrixController extends AbstractController
             $existing[$row->getRole()] = $row;
         }
 
-        foreach (Feature::managedRoles() as $role) {
+        foreach (SeriousGameRules::matrixRoles() as $role) {
             $enabled = \array_key_exists($role, $ticked);
             $row = $existing[$role] ?? null;
 

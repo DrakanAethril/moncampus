@@ -385,9 +385,18 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   cybersécurité, BTS SIO 2 SISR, `serious-games-blackout.md`) and **Rétro Rush** (bases de données
   et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`) and **Fusion** (le plan de bascule, BTS SIO 2 SISR, `serious-games-fusion.md`) and **Service de nuit** (PHP pour débutants, BTS SIO 1, `serious-games-service-de-nuit.md`), the six of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
-  mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus
-  one line per game in the « Serious games » block of Paramètres › Fonctionnalités
-  (`SeriousGameRoleSetting`), **by role only**; `SeriousGameRules` is the whole « qui joue, qui lit »
+  mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus,
+  per game, **for adults** one line in the « Serious games » block of Paramètres › Fonctionnalités
+  (`SeriousGameRoleSetting`, by role, no student column - `SeriousGameRules::matrixRoles()`) and **for
+  students its targeting** (`SeriousGame` is a `StructureTargetable`: sections, filières, formations;
+  `StructureTargeting::reaches()`), set in Paramètres › Serious games › « Qui joue (étudiants) »
+  (`SeriousGameTargetingController`, with whom it reaches today, `SeriousGameStudentReach`). An empty
+  targeting closes the game to every student - and **every game started closed** when the student
+  cells were dropped (2026-11-04, nothing carried over). A student holding an adult role still plays
+  by that role's cell. The targeting decides who *opens* a game, never what is kept: losing access
+  deletes no progress, and a teacher reads past results whatever the targeting
+  (`SeriousGameReadingTest`). `SeriousGameShelf::cardsFor()` lists the games open to a person with
+  their progress; `SeriousGameRules` is the whole « qui joue, qui lit »
   (read by `SeriousGameVoter`): a student's results are read by them, by every teacher of one of
   their **active** classes (history included - asked now, not at the time of play, and never
   through `isProgramTeacher()`, which lets staff in) and by administrators; staff read figures

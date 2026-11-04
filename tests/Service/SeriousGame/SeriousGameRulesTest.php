@@ -21,33 +21,63 @@ class SeriousGameRulesTest extends TestCase
     private const array TUTOR = ['ROLE_USER', 'ROLE_TUTOR'];
     private const array EXTERNAL = ['ROLE_USER', 'ROLE_EXTERNAL'];
 
-    public function testAGameIsPlayableWhenTheModuleAndTheGameAreLitForOneOfTheRoles(): void
+    public function testAStudentPlaysAGameWhoseTargetingReachesThem(): void
     {
-        self::assertTrue(SeriousGameRules::canPlay(self::STUDENT, true, true, ['ROLE_STUDENT' => true]));
-        self::assertTrue(SeriousGameRules::canPlay(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_ECO'], true, true, ['ROLE_ECO' => true]));
+        self::assertTrue(SeriousGameRules::canPlay(self::STUDENT, true, true, [], true));
+    }
+
+    public function testAStudentTheTargetingDoesNotReachDoesNotPlay(): void
+    {
+        self::assertFalse(SeriousGameRules::canPlay(self::STUDENT, true, true, [], false));
+    }
+
+    public function testTheMatrixNoLongerOpensAGameToStudents(): void
+    {
+        // A leftover student cell of the matrix is not read: the targeting is the students' only door.
+        self::assertFalse(SeriousGameRules::canPlay(self::STUDENT, true, true, ['ROLE_STUDENT' => true], false));
+    }
+
+    public function testAnAdultPlaysByTheMatrixWhateverTheTargeting(): void
+    {
+        self::assertTrue(SeriousGameRules::canPlay(self::TEACHER, true, true, ['ROLE_TEACHER' => true], false));
+        self::assertTrue(SeriousGameRules::canPlay(self::STAFF, true, true, ['ROLE_STAFF' => true], false));
+        self::assertTrue(SeriousGameRules::canPlay(self::STAFF_LEAD, true, true, ['ROLE_STAFF-LEAD' => true], false));
+        self::assertFalse(SeriousGameRules::canPlay(self::TEACHER, true, true, ['ROLE_STAFF' => true], false));
+        // Being reached means nothing to an account that is not a student.
+        self::assertFalse(SeriousGameRules::canPlay(self::TEACHER, true, true, [], true));
+    }
+
+    public function testAStudentHoldingAnAdultRolePlaysAsTheAdult(): void
+    {
+        self::assertTrue(SeriousGameRules::canPlay(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_TEACHER'], true, true, ['ROLE_TEACHER' => true], false));
+        // ... and another lit role of the matrix still opens the game to them, as before.
+        self::assertTrue(SeriousGameRules::canPlay(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_ECO'], true, true, ['ROLE_ECO' => true], false));
     }
 
     public function testTheModuleSwitchedOffClosesEveryGame(): void
     {
-        self::assertFalse(SeriousGameRules::canPlay(self::STUDENT, false, true, ['ROLE_STUDENT' => true]));
-    }
-
-    public function testAGameUnlitForTheRoleIsNotPlayable(): void
-    {
-        self::assertFalse(SeriousGameRules::canPlay(self::STUDENT, true, true, ['ROLE_STUDENT' => false, 'ROLE_TEACHER' => true]));
-        self::assertFalse(SeriousGameRules::canPlay(self::STUDENT, true, true, []));
+        self::assertFalse(SeriousGameRules::canPlay(self::STUDENT, false, true, [], true));
+        self::assertFalse(SeriousGameRules::canPlay(self::TEACHER, false, true, ['ROLE_TEACHER' => true], false));
     }
 
     public function testAnUnpublishedGameIsPlayedByTheAdministratorAlone(): void
     {
-        self::assertFalse(SeriousGameRules::canPlay(self::TEACHER, true, false, ['ROLE_TEACHER' => true]));
-        self::assertTrue(SeriousGameRules::canPlay(self::ADMIN, false, false, []));
+        self::assertFalse(SeriousGameRules::canPlay(self::TEACHER, true, false, ['ROLE_TEACHER' => true], false));
+        self::assertFalse(SeriousGameRules::canPlay(self::STUDENT, true, false, [], true));
+        self::assertTrue(SeriousGameRules::canPlay(self::ADMIN, false, false, [], false));
     }
 
-    public function testATutorOrAnExternalAccountNeverPlaysWhateverTheMatrixSays(): void
+    public function testATutorOrAnExternalAccountNeverPlaysWhateverTheMatrixOrTheTargetingSays(): void
     {
-        self::assertFalse(SeriousGameRules::canPlay(self::TUTOR, true, true, ['ROLE_TUTOR' => true]));
-        self::assertFalse(SeriousGameRules::canPlay(self::EXTERNAL, true, true, ['ROLE_EXTERNAL' => true]));
+        self::assertFalse(SeriousGameRules::canPlay(self::TUTOR, true, true, ['ROLE_TUTOR' => true], false));
+        self::assertFalse(SeriousGameRules::canPlay(self::EXTERNAL, true, true, ['ROLE_EXTERNAL' => true], false));
+        self::assertFalse(SeriousGameRules::canPlay(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_TUTOR'], true, true, [], true));
+    }
+
+    public function testTheMatrixHasNoStudentColumn(): void
+    {
+        self::assertNotContains('ROLE_STUDENT', SeriousGameRules::matrixRoles());
+        self::assertContains('ROLE_TEACHER', SeriousGameRules::matrixRoles());
     }
 
     public function testOnlyAStudentCollects(): void

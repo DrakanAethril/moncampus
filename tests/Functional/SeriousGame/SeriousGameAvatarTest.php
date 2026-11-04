@@ -17,6 +17,8 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 class SeriousGameAvatarTest extends FunctionalTestCase
 {
+    use SeriousGameTestTrait;
+
     public function testAPinIsWornOnlyOnceObtained(): void
     {
         $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'avatar.student');
@@ -73,7 +75,12 @@ class SeriousGameAvatarTest extends FunctionalTestCase
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
         $game = (new SeriousGame('observatoire', 'L’Observatoire'))->setPublished(true);
         $entityManager->persist($game);
-        $entityManager->persist(new SeriousGameRoleSetting($game, $role, true));
+        if ('ROLE_STUDENT' === $role) {
+            // Students are let in by the targeting (design/validated/quiz-tournament.md §14).
+            $this->openToStudents($game);
+        } else {
+            $entityManager->persist(new SeriousGameRoleSetting($game, $role, true));
+        }
         $entityManager->flush();
     }
 }

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\SeriousGame;
 
+use App\Entity\Section;
 use App\Entity\SeriousGame;
 use App\Entity\SeriousGameRoleSetting;
 use App\Entity\SeriousGameTemplate;
+use App\Entity\User;
 use App\Enum\SeriousGameMechanic;
+use App\Repository\ProgramRepository;
 use App\SeriousGame\Scenario\ScenarioManifest;
 use App\SeriousGame\SeriousGamePlay;
 use App\SeriousGame\Template\TemplateDefinition;
@@ -17,6 +20,12 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * A game installed as `app:serious-games:sync` installs it - the manifest of game.yaml, and the
  * shipped templates of the units a test needs, validated, version 1 - without running the bench.
+ *
+ * `ROLE_STUDENT` among the roles opens the game to students the way the migration of the students'
+ * matrix cell did (design/validated/quiz-tournament.md §14): targeted on every Section, every
+ * student already there enrolled in an active formation (one is created for those who have none).
+ * A student created afterwards is reached only once enrolled under a Section - see
+ * openToStudents().
  */
 trait SeriousGameTestTrait
 {
@@ -58,7 +67,13 @@ trait SeriousGameTestTrait
             ->setManifest($manifest);
         $entityManager->persist($game);
         foreach ($roles as $role) {
-            $entityManager->persist(new SeriousGameRoleSetting($game, $role, true));
+            // The students' cell left the matrix: they are let in by the targeting.
+            if ('ROLE_STUDENT' !== $role) {
+                $entityManager->persist(new SeriousGameRoleSetting($game, $role, true));
+            }
+        }
+        if (\in_array('ROLE_STUDENT', $roles, true)) {
+            $this->openToStudents($game);
         }
 
         foreach (glob($directory.'/templates/*.json') ?: [] as $file) {
@@ -74,5 +89,34 @@ trait SeriousGameTestTrait
         $entityManager->flush();
 
         return $game;
+    }
+
+    /**
+     * Opens the game to every student there is: those enrolled in no active formation get one, and
+     * the game is targeted on every Section.
+     */
+    private function openToStudents(SeriousGame $game): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $programs = static::getContainer()->get(ProgramRepository::class);
+        $loose = array_values(array_filter(
+            $entityManager->getRepository(User::class)->findAll(),
+            static fn (User $user): bool => \in_array('ROLE_STUDENT', $user->getRoles(), true) && [] === $programs->findAllActiveForStudent($user),
+        ));
+        if ([] !== $loose) {
+            $this->createProgram($loose, [], $this->fixtureAuthor());
+        }
+
+        foreach ($entityManager->getRepository(Section::class)->findAll() as $section) {
+            $game->addTargetSection($section);
+        }
+        $entityManager->flush();
+    }
+
+    private function fixtureAuthor(): User
+    {
+        $existing = static::getContainer()->get(EntityManagerInterface::class)->getRepository(User::class)->findOneBy(['username' => 'fixture.author']);
+
+        return $existing ?? $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'fixture.author');
     }
 }

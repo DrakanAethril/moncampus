@@ -87,7 +87,9 @@
 
         {# The « Serious games » block (design/validated/serious-games.md §3.1): one line per
            published game, each lit per role beside the module's own line above (Pédagogie ›
-           « Serious games »). A game is playable for a role only when both are ticked. #}
+           « Serious games »). A game is playable for a role only when both are ticked. No student
+           column: students are let in by the game's targeting, set in Paramètres › Serious games
+           (design/validated/quiz-tournament.md §14). #}
         {% if seriousGames is not empty %}
             <div class="cm-featmatrix">
                 <h2 class="cm-featmatrix__family">{{ 'seriousGameMatrixFamilyLabel'|trans }}</h2>
@@ -101,7 +103,7 @@
                         <thead>
                             <tr>
                                 <th>{{ 'seriousGameMatrixColumnLabel'|trans }}</th>
-                                {% for role in roles %}
+                                {% for role in seriousGameRoles %}
                                     <th class="cm-featmatrix__role">{{ role|replace({'ROLE_': ''}) }}</th>
                                 {% endfor %}
                                 <th class="cm-featmatrix__overrides"></th>
@@ -116,7 +118,7 @@
                                         <div class="cm-featmatrix__key">{{ row.game.slug }}</div>
                                         <div class="cm-featmatrix__note">{{ 'seriousGameMatrixNote'|trans({'%module%': 'featureSeriousGamesLabel'|trans}) }}</div>
                                     </td>
-                                    {% for role in roles %}
+                                    {% for role in seriousGameRoles %}
                                         <td class="cm-featmatrix__cell">
                                             <input class="form-check-input" type="checkbox"
                                                    form="serious-game-form-{{ row.game.slug }}"

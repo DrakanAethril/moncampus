@@ -21,6 +21,7 @@
                             <th>{{ 'seriousGameSettingsVersionColumn'|trans }}</th>
                             <th>{{ 'seriousGameSettingsKindsColumn'|trans }}</th>
                             <th>{{ 'seriousGameSettingsTemplatesColumn'|trans }}</th>
+                            <th>{{ 'seriousGameTargetingNavLabel'|trans }}</th>
                             <th>{{ 'seriousGameSettingsPublishedColumn'|trans }}</th>
                         </tr>
                     </thead>
@@ -59,6 +60,14 @@
                                     <a href="{{ path('app_settings_serious_games_game', {slug: game.slug}) }}">{{ 'seriousGameSettingsTemplatesCount'|trans({'%installed%': row.installed, '%units%': row.units}) }}</a>
                                     {% if row.hidden > 0 %}<div><twig:Cm:Badge tone="gold">{{ 'seriousGameSettingsHiddenUnits'|trans({'%count%': row.hidden}) }}</twig:Cm:Badge></div>{% endif %}
                                     {% endif %}
+                                </td>
+                                <td>
+                                    {% if row.reached is null %}
+                                        <span class="small text-secondary">{{ 'seriousGameTargetingClosedShort'|trans }}</span>
+                                    {% else %}
+                                        <span class="small">{{ 'seriousGameTargetingReachTotal'|trans({'%count%': row.reached}) }}</span>
+                                    {% endif %}
+                                    <div><a class="small" href="{{ path('app_settings_serious_games_students', {slug: game.slug}) }}">{{ 'seriousGameTargetingEditAction'|trans }}</a></div>
                                 </td>
                                 <td>
                                     <form method="post" action="{{ path('app_settings_serious_games_publish', {slug: game.slug}) }}">
