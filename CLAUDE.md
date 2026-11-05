@@ -255,7 +255,22 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     a two-click button (the label becomes « Confirmer la suppression »), never a `confirm()`.
 - **Quiz** — `QuizTemplate`/`QuizQuestion` (library, filed in `QuizFolder`s) → `QuizInstance`
   (launched snapshot) → `QuizAttempt` (passation). Live multiplayer (`QuizLiveSession`) runs over
-  Mercure/SSE. The « mode contrôle » times each question **server-side**
+  Mercure/SSE and **follows Kahoot's run of a question** (2026-11-05, `App\Enum\LiveSessionStatus`):
+  the statement alone, then the answers and the clock - closed by the last answer, the clock (the
+  host's screen posts it) or « Passer » -, the results, the scoreboard (skipped after a vote and after
+  the last question), the podium. Every transition names the step it was asked on and runs under a
+  lock on the session row (`QuizLiveSessionService::locked()`, not `wrapInTransaction()`, which closes
+  the entity manager on a refused answer). The room plays **every type a Kahoot carries**
+  (`App\Service\QuizLive\LiveAnswerKind`): QCM and QCM multiple up to six shapes, ordre tapped shape
+  by shape, numérique on a slider (`numericConfig.range`), réponse courte, vrai/faux and the
+  **`vote`** type - propositions with no right one, played live only (`QuestionType::
+  isAvailableOutsideLive()` keeps it out of every other launch). Texte à trous, zones, apparier and
+  calculée are left out at launch and named. A live answer is one JSON `response`
+  (`App\Service\QuizLive\LiveResponse`); right is right whatever the type, no partial points.
+  **Kahoot reports (.xlsx)** are imported by the screen and by the connector's `quiz_import_kahoot`
+  (a .zip of them too) through `App\Service\Kahoot\KahootReportReader`: both report layouts, every
+  type, each question's own time (`seconds` in « moncampus-quiz/1 »), a slider's margin guessed from
+  who scored (`KahootSliderTolerance`); nothing of the players is kept, and a report has no images. The « mode contrôle » times each question **server-side**
   (`QuizAttemptAnswer::$servedAt`, stamped only if null, so F5 cannot reset the clock) — the point of
   that timing is to *exonerate*: three seconds on a question is proof nobody had time to look it up.
 - **Tournois de quiz** — `QuizTournament*` entities, `src/Service/QuizTournament/`, spec
@@ -654,6 +669,9 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `calendar` shape), and the body - streamed to disk, never a string - goes through
   `FileLibraryWriter::writeFile()`: type, quota, antivirus like any upload. Every answer is JSON,
   refusals included: curl's output is all the model reads.
+  `quiz_import_kahoot` turns Kahoot game reports deposited in the library (an .xlsx, or a .zip of
+  them) into quizzes, one per report: the whole batch is read first, `dryRun` says what would be
+  created, a game exported twice or a quiz of the same name already in the folder is skipped.
   `library_move` files quizzes, files and whole folders elsewhere in the quiz or file library -
   a move through each library's own manager, never a copy, so ids and links survive; the call is
   checked whole before anything moves, then each move is flushed in turn inside one transaction

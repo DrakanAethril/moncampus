@@ -145,10 +145,11 @@ class QuizBlankGradingTest extends TestCase
         self::assertSame([], $question->getDistractors());
     }
 
-    public function testFillInTheBlanksIsTheOnlyTypeKeptOutOfALiveContest(): void
+    public function testFillInTheBlanksIsKeptOutOfALiveContest(): void
     {
         self::assertFalse(QuestionType::TexteATrous->isAvailableInLiveContest());
-        foreach ([QuestionType::Qcm, QuestionType::QcmMulti, QuestionType::VraiFaux, QuestionType::Image, QuestionType::Ordre] as $type) {
+        // Every type a Kahoot carries plays in the room (2026-11-05).
+        foreach ([QuestionType::Qcm, QuestionType::QcmMulti, QuestionType::VraiFaux, QuestionType::Image, QuestionType::Ordre, QuestionType::Numerique, QuestionType::ReponseCourte, QuestionType::Vote] as $type) {
             self::assertTrue($type->isAvailableInLiveContest());
         }
     }

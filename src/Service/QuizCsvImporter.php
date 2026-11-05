@@ -127,6 +127,8 @@ final class QuizCsvImporter
         'texte_trous' => 'texte_a_trous',
         'texte_a_trou' => 'texte_a_trous',
         'remise_en_ordre' => 'ordre',
+        'sondage' => 'vote',
+        'poll' => 'vote',
     ];
 
     private const array DIFFICULTY_ALIASES = [
@@ -401,6 +403,13 @@ final class QuizCsvImporter
             $errors[] = $this->error('quizImportRowErrorNotEnoughOptionsTemplate', $line);
 
             return null;
+        }
+
+        // A vote has propositions and no right one: « bonnes » is not read.
+        if (!$type->hasRightAnswer()) {
+            $question['answers'] = array_map(static fn (string $option): array => ['label' => $option, 'correct' => false], $options);
+
+            return $question;
         }
 
         $correctIndexes = $this->parseCorrectIndexes($this->cell($row, $columns, 'bonnes'));

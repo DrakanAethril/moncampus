@@ -50,10 +50,25 @@
         </div>
     </div>
 
-    <div class="d-flex align-items-center gap-2" data-quiz-numeric-editor-target="answerPanel">
-        <label class="form-label mb-0" for="quiz-numeric-answer">{{ 'quizNumericAnswerFieldLabel'|trans }}</label>
-        <input type="number" id="quiz-numeric-answer" class="form-control" style="width: 180px; flex: none;"
-               name="numeric[answer]" step="any" value="{{ question.numericAnswer }}">
+    <div class="d-flex flex-column gap-2" data-quiz-numeric-editor-target="answerPanel">
+        <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0" for="quiz-numeric-answer">{{ 'quizNumericAnswerFieldLabel'|trans }}</label>
+            <input type="number" id="quiz-numeric-answer" class="form-control" style="width: 180px; flex: none;"
+                   name="numeric[answer]" step="any" value="{{ question.numericAnswer }}">
+        </div>
+        {# Optional: the slider a live concours draws instead of a field to type in (Kahoot's
+           « Slider »). Left empty, the number is typed everywhere. #}
+        {% set range = question.numericRange %}
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <label class="form-label mb-0" for="quiz-numeric-range-min">{{ 'quizNumericRangeFieldLabel'|trans }}</label>
+            <input type="number" id="quiz-numeric-range-min" class="form-control" style="width: 120px; flex: none;"
+                   name="numeric[rangeMin]" step="any" value="{{ range ? range.min }}" placeholder="{{ 'quizNumericRangeMinPlaceholder'|trans }}">
+            <input type="number" class="form-control" style="width: 120px; flex: none;" aria-label="{{ 'quizNumericRangeMaxPlaceholder'|trans }}"
+                   name="numeric[rangeMax]" step="any" value="{{ range ? range.max }}" placeholder="{{ 'quizNumericRangeMaxPlaceholder'|trans }}">
+            <input type="number" class="form-control" style="width: 100px; flex: none;" aria-label="{{ 'quizNumericRangeStepPlaceholder'|trans }}"
+                   name="numeric[rangeStep]" step="any" min="0" value="{{ range ? range.step }}" placeholder="{{ 'quizNumericRangeStepPlaceholder'|trans }}">
+        </div>
+        <div class="text-secondary small">{{ 'quizNumericRangeHint'|trans }}</div>
     </div>
 
     <div class="row g-3">

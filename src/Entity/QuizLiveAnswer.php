@@ -10,11 +10,11 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * One participant's answer to one question of a QuizLiveSession - the live-mode counterpart of
- * QuizAttemptAnswer, simpler since every in-scope live question type is single-answer (no
- * QuizAttemptSelectedAnswer-style child collection needed). Unique per (participant,
- * instanceQuestion) - submitAnswer() is first-write-wins, a duplicate/late POST for the same
- * question is a no-op, mirroring ProgramQuizAttemptController::answer()'s ignore-and-move-on
- * pattern.
+ * QuizAttemptAnswer. The answer itself is one JSON value whatever the type
+ * (App\Service\QuizLive\LiveResponse: the propositions tapped, an order, a number, a word), since
+ * the room plays every type a Kahoot carries. Unique per (participant, instanceQuestion) -
+ * submitAnswer() is first-write-wins, a duplicate/late POST for the same question is a no-op,
+ * mirroring ProgramQuizAttemptController::answer()'s ignore-and-move-on pattern.
  */
 #[ORM\Entity(repositoryClass: QuizLiveAnswerRepository::class)]
 #[ORM\Table(name: 'quiz_live_answer')]
@@ -34,18 +34,20 @@ class QuizLiveAnswer
     #[ORM\JoinColumn(name: 'instance_question_id', nullable: false)]
     private ?QuizInstanceQuestion $instanceQuestion = null;
 
-    // Null = no answer submitted before the question closed (locked out).
-    #[ORM\ManyToOne(targetEntity: QuizInstanceAnswer::class)]
-    #[ORM\JoinColumn(name: 'selected_answer_id', nullable: true)]
-    private ?QuizInstanceAnswer $selectedAnswer = null;
+    // App\Service\QuizLive\LiveResponse::toArray(). Null = no answer submitted before the
+    // question closed (locked out).
+    /** @var array<string, mixed>|null */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $response = null;
 
-    // Computed once at submit/close time via App\Service\QuizAttemptGrader::isCorrect() (reused
-    // as-is), then frozen - same convention as QuizAttemptAnswer::$isCorrect.
+    // Computed once at submit time via App\Service\QuizAttemptGrader::isCorrect() (reused as-is),
+    // then frozen - same convention as QuizAttemptAnswer::$isCorrect. Null for a vote, which is
+    // neither right nor wrong.
     #[ORM\Column(name: 'is_correct', nullable: true)]
     private ?bool $isCorrect = null;
 
     // Server receipt timestamp - the speed-bonus input, see QuizLiveSessionService's scoring
-    // formula. Null for the backfilled rows created at Question->Reveal for non-answerers.
+    // formula. Null for the backfilled rows created at Question->Results for non-answerers.
     #[ORM\Column(name: 'answered_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $answeredAt = null;
 
@@ -73,14 +75,16 @@ class QuizLiveAnswer
         return $this->instanceQuestion;
     }
 
-    public function getSelectedAnswer(): ?QuizInstanceAnswer
+    /** @return array<string, mixed>|null */
+    public function getResponse(): ?array
     {
-        return $this->selectedAnswer;
+        return $this->response;
     }
 
-    public function setSelectedAnswer(?QuizInstanceAnswer $selectedAnswer): static
+    /** @param array<string, mixed>|null $response */
+    public function setResponse(?array $response): static
     {
-        $this->selectedAnswer = $selectedAnswer;
+        $this->response = $response;
 
         return $this;
     }

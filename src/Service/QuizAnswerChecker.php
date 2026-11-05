@@ -46,6 +46,8 @@ final class QuizAnswerChecker
             QuestionType::Legende => $this->areLegendePlacementsCorrect($question, $zoneResponses),
             QuestionType::Apparier => $this->areMatchingsCorrect($question, $matchingResponses),
             QuestionType::Numerique, QuestionType::Calculee => $this->isNumericCorrect($question, $numericValue, $numericUnit, $numericVariables),
+            // Nothing to be right about: a vote is counted, never marked.
+            QuestionType::Vote => false,
         };
     }
 

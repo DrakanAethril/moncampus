@@ -19,7 +19,7 @@ import { Controller } from '@hotwired/stimulus';
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imagePreview', 'classicSection', 'blanksSection', 'zoneSection', 'matchingSection', 'numericSection', 'shortAnswerSection', 'imageSection', 'labelField', 'labelText', 'labelHint', 'blankCount'];
-    static values = { trueLabel: String, falseLabel: String, hintDefault: String, hintOrdre: String, labelEnonce: String, labelBlanks: String, labelCalculee: String, hintCalculee: String };
+    static values = { trueLabel: String, falseLabel: String, hintDefault: String, hintOrdre: String, hintVote: String, labelEnonce: String, labelBlanks: String, labelCalculee: String, hintCalculee: String };
 
     connect() {
         this.nextIndex = this.answerRowTargets.length;
@@ -47,6 +47,7 @@ export default class extends Controller {
         const isCalculee = this.typeSelectTarget.value === 'calculee';
         const isNumeric = isCalculee || this.typeSelectTarget.value === 'numerique';
         const isShortAnswer = this.typeSelectTarget.value === 'reponse_courte';
+        const isVote = this.typeSelectTarget.value === 'vote';
 
         // Texte à trous, the zones types and apparier have no answer rows - each swaps the lower
         // half of the editor for its own panel. The sections are toggled with d-none only, never
@@ -94,8 +95,11 @@ export default class extends Controller {
         this.answerListTarget.classList.toggle('cm-answers--ordre', isOrdre);
         this.answerListTarget.classList.toggle('cm-answers--multi', isMulti);
         this.answerListTarget.classList.toggle('cm-answers--vraifaux', isVraiFaux);
+        // A vote has propositions and no right one: the ✓ toggles go, and the server drops any
+        // tick a switch from another type left behind (QuizLibraryController::applyAnswers()).
+        this.answerListTarget.classList.toggle('cm-answers--vote', isVote);
         this.addAnswerButtonTarget.classList.toggle('d-none', isVraiFaux);
-        this.hintTextTarget.textContent = isOrdre ? this.hintOrdreValue : this.hintDefaultValue;
+        this.hintTextTarget.textContent = isOrdre ? this.hintOrdreValue : (isVote ? this.hintVoteValue : this.hintDefaultValue);
 
         if (isOrdre) {
             this.refreshOrderPositions();

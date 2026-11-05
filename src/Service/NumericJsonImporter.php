@@ -10,6 +10,7 @@ use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
 use App\Enum\ToleranceMode;
 use App\Util\FormulaEvaluator;
+use App\Util\NumericRange;
 use App\Util\NumericVariableParser;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -197,6 +198,9 @@ final class NumericJsonImporter implements InteractiveQuizImporter
             $item['unit'] = $question->getNumericUnit();
             $item['unitRequired'] = $question->isNumericUnitRequired();
         }
+        if (null !== $question->getNumericRange() && !$question->getType()->usesFormula()) {
+            $item['range'] = $question->getNumericRange();
+        }
         if (null !== $question->getExplanation()) {
             $item['explanation'] = $question->getExplanation();
         }
@@ -260,6 +264,12 @@ final class NumericJsonImporter implements InteractiveQuizImporter
         if (null !== $unit) {
             $config['unit'] = $unit;
             $config['unitRequired'] = (bool) ($raw['unitRequired'] ?? false);
+        }
+
+        // The slider of a live concours, optional: a range that does not make sense is no range.
+        $range = \is_array($raw['range'] ?? null) ? NumericRange::normalize($raw['range']['min'] ?? null, $raw['range']['max'] ?? null, $raw['range']['step'] ?? null) : null;
+        if (null !== $range && !$type->usesFormula()) {
+            $config['range'] = $range;
         }
 
         if ($type->usesFormula()) {

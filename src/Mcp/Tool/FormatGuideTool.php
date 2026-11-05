@@ -37,6 +37,11 @@ final readonly class FormatGuideTool implements McpTool
         # Pour le connecteur MonCampus
         Le document décrit ci-dessous est l'argument `document` de `quiz_create` (et chaque élément de "questions" celui de `quiz_add_questions`) : passe-le à l'outil au lieu de l'afficher.
         Le connecteur ne transporte pas d'images : pas de "mediaRef" ni de "imageKey". Une question de type "image", ou "zone"/"legende" sur une image, est créée en attente de son image, que l'enseignant ajoute ensuite dans MonCampus — préfère les autres types sauf demande explicite.
+        Pour un quiz destiné au concours live, trois champs de plus, facultatifs :
+        - "seconds" sur n'importe quelle question : son temps de réponse en secondes (5 à 3600), ou "unlimited" ; absent, la question suit le temps du quiz.
+        - "range":{"min":0,"max":4000,"step":10} sur une "numerique" : le concours live fait choisir la valeur sur un curseur au lieu de la taper.
+        - "type":"vote" : des propositions ("answers") sans bonne réponse, pas de "correct" ; joué en concours live seulement, ignoré partout ailleurs.
+        Pour reprendre un Kahoot existant, n'écris pas le document : utilise `quiz_import_kahoot` sur le rapport de la partie.
         TXT;
 
     private const string SEQUENCE_PREAMBLE = <<<'TXT'

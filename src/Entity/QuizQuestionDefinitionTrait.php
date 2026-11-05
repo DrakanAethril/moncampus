@@ -10,6 +10,7 @@ use App\Enum\QuestionType;
 use App\Enum\ToleranceMode;
 use App\Enum\ZoneSupportKind;
 use App\Util\BlankTextParser;
+use App\Util\NumericRange;
 use App\Util\NumericVariableParser;
 use App\Util\ZoneTextParser;
 use Doctrine\DBAL\Types\Types;
@@ -913,6 +914,19 @@ trait QuizQuestionDefinitionTrait
     public function isNumericUnitRequired(): bool
     {
         return null !== $this->getNumericUnit() && (bool) ($this->numericConfig['unitRequired'] ?? false);
+    }
+
+    /**
+     * The slider a numérique is answered on in a live concours, null when it is typed
+     * (App\Util\NumericRange). Ignored by a calculée, whose value changes with each draw.
+     *
+     * @return array{min: float, max: float, step: float}|null
+     */
+    public function getNumericRange(): ?array
+    {
+        $range = $this->numericConfig['range'] ?? null;
+
+        return \is_array($range) ? NumericRange::normalize($range['min'] ?? null, $range['max'] ?? null, $range['step'] ?? null) : null;
     }
 
     /** How many decimals the expected value is shown with in the correction. */

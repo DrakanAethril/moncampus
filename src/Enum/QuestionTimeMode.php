@@ -29,6 +29,37 @@ enum QuestionTimeMode: string
     }
 
     /**
+     * The `seconds` of a « moncampus-quiz/1 » question: a whole number of seconds (5 to 3600) is
+     * that question's own time, "unlimited" lifts the limit, and anything else - absent included -
+     * leaves the quiz's own setting in charge.
+     *
+     * @return array{0: self, 1: int|null}
+     */
+    public static function fromDocument(mixed $seconds): array
+    {
+        if (\is_string($seconds) && \in_array(mb_strtolower(trim($seconds)), ['unlimited', 'illimite', 'illimité'], true)) {
+            return [self::Unlimited, null];
+        }
+        if (is_numeric($seconds) && (int) $seconds >= 5 && (int) $seconds <= 3600) {
+            return [self::Fixed, (int) $seconds];
+        }
+
+        return [self::Quiz, null];
+    }
+
+    /**
+     * The same `seconds`, written back out - null when the question follows its quiz.
+     */
+    public function toDocument(?int $ownSeconds): int|string|null
+    {
+        return match ($this) {
+            self::Quiz => null,
+            self::Unlimited => 'unlimited',
+            self::Fixed => $ownSeconds,
+        };
+    }
+
+    /**
      * The seconds a question actually gets, null meaning no limit at all.
      *
      * @param int|null $ownSeconds  the question's own count, only read in Fixed mode

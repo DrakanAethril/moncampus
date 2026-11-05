@@ -14,7 +14,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * The "moncampus-simple/1" format: the six types that had no JSON reader - QCM, QCM multiple,
- * vrai/faux, image, remise en ordre and texte à trous.
+ * vrai/faux, image, remise en ordre and texte à trous - and the vote, whose propositions have no
+ * right one (`correct` is ignored there).
  *
  * They are the types whose answers are rows rather than a configuration JSON, plus the one
  * config-driven type nobody had written a document format for. Until now they arrived by CSV only,
@@ -62,6 +63,7 @@ final class SimpleJsonImporter implements InteractiveQuizImporter
         QuestionType::Image,
         QuestionType::Ordre,
         QuestionType::TexteATrous,
+        QuestionType::Vote,
     ];
 
     public function __construct(
@@ -326,6 +328,11 @@ final class SimpleJsonImporter implements InteractiveQuizImporter
 
         if (\count($options) < 2) {
             throw new \InvalidArgumentException('simpleImportQuestionNotEnoughAnswersError');
+        }
+        if (!$type->hasRightAnswer()) {
+            $question['answers'] = array_map(static fn (string $option): array => ['label' => $option, 'correct' => false], $options);
+
+            return $question;
         }
         if ([] === $correct) {
             throw new \InvalidArgumentException('simpleImportQuestionNoCorrectError');
