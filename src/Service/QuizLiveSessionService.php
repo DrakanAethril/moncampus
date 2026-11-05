@@ -27,6 +27,7 @@ use App\Service\QuizLive\LiveScoring;
 use App\Util\BlankTextParser;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Jwt\TokenFactoryInterface;
 use Symfony\Component\Mercure\Update;
@@ -90,6 +91,7 @@ class QuizLiveSessionService
         private readonly HubInterface $mercureHub,
         private readonly TokenFactoryInterface $subscriberTokenFactory,
         private readonly UserAvatars $userAvatars,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -959,12 +961,29 @@ class QuizLiveSessionService
     /** @param array<string, mixed> $payload */
     private function publishToHost(QuizLiveSession $session, array $payload): void
     {
-        $this->mercureHub->publish(new Update($this->hostTopic($session), json_encode($payload, \JSON_THROW_ON_ERROR), true));
+        $this->publish($this->hostTopic($session), $payload);
     }
 
     /** @param array<string, mixed> $payload */
     private function publishToPlayers(QuizLiveSession $session, array $payload): void
     {
-        $this->mercureHub->publish(new Update($this->playersTopic($session), json_encode($payload, \JSON_THROW_ON_ERROR), true));
+        $this->publish($this->playersTopic($session), $payload);
+    }
+
+    /**
+     * Publishing is a comfort, never a condition - the tournaments' rule (QuizTournamentLive): the
+     * change is already written when the hub is told, so a hub that does not answer must not turn a
+     * recorded answer into an error. It is logged, and the screens catch up by asking for their
+     * phase again (the play and projector `…/state` routes).
+     *
+     * @param array<string, mixed> $payload
+     */
+    private function publish(string $topic, array $payload): void
+    {
+        try {
+            $this->mercureHub->publish(new Update($topic, json_encode($payload, \JSON_THROW_ON_ERROR), true));
+        } catch (\Throwable $exception) {
+            $this->logger->warning('A live contest screen could not be told of a change.', ['topic' => $topic, 'exception' => $exception]);
+        }
     }
 }
