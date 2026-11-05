@@ -26,6 +26,35 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.05'
+      date: '2026-11-05'
+      summary: "Le concours en direct se joue désormais comme un Kahoot : la question d'abord, puis les réponses et le chrono, les résultats, le classement et le podium, avec tous les types de questions d'un Kahoot. Les rapports de parties Kahoot s'importent en quiz, et les étudiants jouent depuis beaup-app."
+      entries:
+          - type: modification
+            title: "Concours en direct : le déroulé d'un Kahoot"
+            detail: "La question s'affiche seule, puis les réponses et le chrono ; la question se ferme d'elle-même quand tout le monde a répondu ou que le temps est écoulé, suivie des résultats en barres et du classement."
+          - type: nouveaute
+            title: "Concours en direct : QCM à plusieurs réponses, remise en ordre, curseur numérique, réponse tapée et vote"
+            detail: "Le nouveau type « Vote » recueille l'avis de la salle, sans bonne réponse ; les questions qui ne se jouent pas en direct sont écartées au lancement et nommées."
+          - type: nouveaute
+            title: "Import des rapports de parties Kahoot, depuis l'écran d'import ou par le connecteur Claude"
+            detail: "Chaque question garde son type et son temps ; la marge d'un curseur est déduite de la partie. Le connecteur importe aussi une archive de plusieurs rapports."
+          - type: modification
+            title: "Les étudiants jouent le concours depuis beaup-app"
+            detail: "La partie reprend où elle en est après une mise en veille ou une coupure réseau, une réponse perdue est proposée de nouveau et l'écran reste allumé."
+          - type: modification
+            title: "Tournois de quiz : 30 secondes par question, 40 pour un QCM à plusieurs réponses, et le tiers temps de chaque étudiant"
+            detail: "Ce qui est coché ou tapé sans être validé compte comme réponse à la fin du temps."
+          - type: fix
+            title: "Jeux d'entraînement : les propositions arrivent mélangées, la bonne réponse n'est plus toujours à la même place"
+          - type: fix
+            title: "Jeux d'entraînement : une carte prévue pour ordinateur s'ouvre dans beaup-app installée"
+          - type: modification
+            title: "Black-out : tester l'accès à Internet est expliqué et fonctionne"
+          - type: interne
+            title: "Le concours en direct tient bon quand le service de mise à jour en direct ne répond pas"
+          - type: interne
+            title: "Intégration continue : mémoire du conteneur de développement au premier démarrage"
     - version: '2026.11.04.2'
       date: '2026-11-04'
       summary: "L'écran d'installation de beaup-app ne se croit plus installé quand le navigateur est simplement en plein écran."
