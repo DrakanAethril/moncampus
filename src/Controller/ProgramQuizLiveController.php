@@ -19,7 +19,6 @@ use App\Service\QuizLiveSessionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mercure\Authorization;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -73,7 +72,7 @@ class ProgramQuizLiveController extends AbstractController
     // Same cookie-based auth as QuizLiveHostController::projector() - see its docblock.
     #[Route(path: '/programs/{id}/quiz/live/{sessionId}/play', name: 'app_program_quiz_live_play', requirements: ['sessionId' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function play(int $id, int $sessionId, Request $request, ProgramRepository $repository, QuizLiveSessionRepository $sessionRepository, QuizLiveParticipantRepository $participantRepository, QuizLiveSessionService $liveSessionService, HubInterface $mercureHub, Authorization $mercureAuthorization): Response
+    public function play(int $id, int $sessionId, Request $request, ProgramRepository $repository, QuizLiveSessionRepository $sessionRepository, QuizLiveParticipantRepository $participantRepository, QuizLiveSessionService $liveSessionService, HubInterface $mercureHub): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $session = $this->findSessionOrNotFound($program, $sessionId, $sessionRepository);
@@ -86,7 +85,7 @@ class ProgramQuizLiveController extends AbstractController
             return $this->redirectToRoute('app_program_quiz_live_join', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
         }
 
-        $mercureAuthorization->setCookie($request, [$liveSessionService->playersTopic($session)], [], [], 'subscriber');
+        $liveSessionService->subscribe($request, $liveSessionService->playersTopic($session));
 
         return $this->render('program/quiz_live_play.html.twig', [
             'program' => $program,

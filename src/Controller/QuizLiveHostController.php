@@ -28,7 +28,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mercure\Authorization;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -173,12 +172,12 @@ class QuizLiveHostController extends AbstractController
     // the response. The template then just opens `new EventSource(url, {withCredentials: true})` -
     // no token ever touches page JS.
     #[Route(path: '/programs/{id}/quiz/live/{sessionId}/projector', name: 'app_program_quiz_live_projector', requirements: ['sessionId' => '\d+'])]
-    public function projector(int $id, int $sessionId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizLiveSessionRepository $sessionRepository, QuizLiveSessionService $liveSessionService, HubInterface $mercureHub, Authorization $mercureAuthorization): Response
+    public function projector(int $id, int $sessionId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizLiveSessionRepository $sessionRepository, QuizLiveSessionService $liveSessionService, HubInterface $mercureHub): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $session = $this->findSessionOrNotFound($program, $sessionId, $sessionRepository);
 
-        $mercureAuthorization->setCookie($request, [$liveSessionService->hostTopic($session)], [], [], 'subscriber');
+        $liveSessionService->subscribe($request, $liveSessionService->hostTopic($session));
 
         return $this->render('program/quiz_live_projector.html.twig', [
             'program' => $program,
