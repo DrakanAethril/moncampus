@@ -179,6 +179,41 @@ class QuizLiveSessionTest extends FunctionalTestCase
     }
 
     /**
+     * A phone back from the background asks for the phase again - beaup-app above all, whose stream
+     * misses what was published while it slept. It is told whether it already answered, and a
+     * classmate's answer tells it nothing.
+     */
+    public function testAPhoneBackFromTheBackgroundIsToldWhereTheRoomIs(): void
+    {
+        $service = $this->service();
+        $session = $service->createSession([$this->quiz], $this->program, $this->teacher, 20);
+        $this->sessionId = (int) $session->getId();
+        $service->join($session, $this->alice, 'Alice');
+        $service->join($session, $this->bruno, 'Bruno');
+        $service->start($session, $this->teacher);
+        $this->advance(LiveSessionStatus::Countdown);
+        $this->advance(LiveSessionStatus::Reading);
+
+        $this->answer($this->alice, ['answerIds' => [$this->right()[0]]]);
+
+        foreach ([[$this->alice, true], [$this->bruno, false]] as [$student, $answered]) {
+            $this->client->loginUser($student);
+            $this->client->request('GET', \sprintf('/programs/%d/quiz/live/%d/play/state', $this->program->getId(), $this->sessionId));
+            self::assertResponseIsSuccessful();
+            $body = json_decode((string) $this->client->getResponse()->getContent(), true);
+            self::assertIsArray($body);
+            self::assertIsArray($body['state']);
+            self::assertSame(['question-opened', $answered], [$body['state']['type'], $body['state']['answered'] ?? null]);
+            self::assertArrayNotHasKey('label', $body['state'], 'the text stays on the board');
+        }
+
+        $this->client->loginUser($this->teacher);
+        $this->client->request('GET', \sprintf('/programs/%d/quiz/live/%d/projector/state', $this->program->getId(), $this->sessionId));
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Le SI est', (string) $this->client->getResponse()->getContent());
+    }
+
+    /**
      * @param array<string, bool> $answers
      */
     private function question(QuestionType $type, string $label, array $answers): QuizQuestion
