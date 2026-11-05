@@ -12,7 +12,7 @@
       { file: 'ap-salle:/etc/hostapd/hostapd.conf', find: 'ap_isolate=1', replace: 'ap_isolate=0' }
     ],
     checks: [
-      { label: 'Un invité va sur Internet', test: function (h) { return h.ping('invite', '203.0.113.80'); } },
+      { label: 'Un invité va sur Internet (depuis invite : ping 8.8.8.8)', test: function (h) { return h.ping('invite', '8.8.8.8'); } },
       { label: 'Il ne joint pas les PC des joueurs', test: function (h) { var r = h.ping('invite', 'pc-a01'); return { ok: !r.ok, detail: 'l\'invité joint pc-a01' }; } },
       { label: 'Il ne joint pas la régie', test: function (h) { var r = h.ping('invite', 'regie'); return { ok: !r.ok, detail: 'l\'invité joint la régie' }; } },
       { label: 'Il ne joint pas un autre invité', test: function (h) { var r = h.ping('invite', 'invite2'); return { ok: !r.ok, detail: 'les deux invités se voient' }; } }

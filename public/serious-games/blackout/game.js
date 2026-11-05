@@ -364,7 +364,7 @@
     // Two consoles can be on screen (the workstation's and the enlarged map's): each its own input id.
     var cmdId = 'cmd' + (++consoleSeq);
     var panel = h('<section class="panneau outils" aria-label="Console"><div class="tabs" role="tablist"><button type="button" role="tab" aria-selected="true">CONSOLE</button><select aria-label="Machine"></select></div>' +
-      '<div class="console"><div class="sortie" aria-live="polite"></div><div class="entree"><label for="' + cmdId + '"></label><input id="' + cmdId + '" autocomplete="off" spellcheck="false" placeholder="ping srv-jeu, ip a, ip r, dhclient -v ens18, dig bracket… (aide)"></div></div></section>');
+      '<div class="console"><div class="sortie" aria-live="polite"></div><div class="entree"><label for="' + cmdId + '"></label><input id="' + cmdId + '" autocomplete="off" spellcheck="false" placeholder="ping srv-jeu, ping 8.8.8.8 (Internet), ip a, ip r, dig bracket… (aide)"></div></div></section>');
     var sel = $('select', panel);
     devs.forEach(function (id) { var o = document.createElement('option'); o.value = id; o.textContent = id; if (id === G.consoleDev) o.selected = true; sel.appendChild(o); });
     sel.addEventListener('change', function () { G.consoleDev = sel.value; $('label', panel).textContent = 'root@' + G.consoleDev + ':~#'; });
@@ -536,7 +536,7 @@
     if (!st) return;
     if (st.kind === 'fix') {
       p.appendChild(h('<p class="consigne">' + esc(st.prompt) + '</p>'));
-      p.appendChild(h('<p class="note">Lis le ticket, teste depuis la console, regarde la carte, puis corrige les fichiers au centre. Modifiables : ' + G.def.edit.map(function (f) { return esc(f.replace(':', ' · ')); }).join(', ') + '.</p>'));
+      p.appendChild(h('<p class="note">Lis le ticket, teste depuis la console (« aide » liste les commandes ; ping 8.8.8.8 teste Internet depuis la machine choisie), regarde la carte, puis corrige les fichiers au centre. Modifiables : ' + G.def.edit.map(function (f) { return esc(f.replace(':', ' · ')); }).join(', ') + '.</p>'));
       var reset = h('<button type="button" class="btn btn-cyan" style="align-self:flex-start;min-height:36px;padding:0 14px;font-size:12px">Remettre la configuration de départ</button>');
       reset.addEventListener('click', function () {
         var orig = N.ticketFiles(G.def);

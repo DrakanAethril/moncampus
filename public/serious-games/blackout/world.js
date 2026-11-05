@@ -272,6 +272,10 @@
     internet: {
       hosts: {
         '203.0.113.80': { label: 'un site web', services: ['tcp/80', 'tcp/443'] },
+        // The addresses a technician pings to test « Internet » - what the console's « aide » and
+        // the checks name. Without them, the reflex « ping 8.8.8.8 » failed in a room that worked.
+        '8.8.8.8': { label: 'un résolveur public', services: ['udp/53'] },
+        '1.1.1.1': { label: 'un résolveur public', services: ['udp/53'] },
         '203.0.113.53': { label: 'le résolveur public', services: ['udp/53'] },
         '198.51.100.40': { label: 'un parent, chez lui', services: [] },
         '198.51.100.77': { label: 'l\'arbitre, chez lui', services: [] },

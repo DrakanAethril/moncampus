@@ -136,11 +136,11 @@ class FusionPlayTest extends FunctionalTestCase
 
         $ticket = SeriousGameScenarioPlay::scenario($this->game)->ticket('E40') ?? self::fail('ticket E40');
         $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'corriger', 'input' => ['passed' => true, 'failed' => []]]);
-        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'solution', 'input' => $this->rightInput($ticket->steps[1])]);
+        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'solution', 'input' => $this->rightInput($ticket->steps[1], $start)]);
         $wrong = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'chaine', 'input' => [0, 1, 2, 3, 4, 5, 6, 7]]);
         self::assertFalse($wrong['ok']);
         self::assertSame('helene', self::arr($wrong, 'reaction')['who'] ?? null);
-        $right = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'chaine', 'input' => $this->rightInput($ticket->steps[2])]);
+        $right = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'chaine', 'input' => $this->rightInput($ticket->steps[2], $start)]);
         self::assertTrue($right['ok']);
         self::assertTrue($right['done']);
 
@@ -162,19 +162,20 @@ class FusionPlayTest extends FunctionalTestCase
         $start = $this->call('POST', 'tickets', ['ticket' => $id]);
         $session = self::int($start, 'session');
         foreach (\array_slice($ticket->steps, self::int($start, 'step')) as $step) {
-            $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => $step->id, 'input' => $this->rightInput($step)]);
+            $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => $step->id, 'input' => $this->rightInput($step, $start)]);
         }
 
         return $this->call('POST', 'ticket-sessions/'.$session.'/end');
     }
 
-    private function rightInput(ScenarioStep $step): mixed
+    /** @param array<array-key, mixed> $start the answer to `POST tickets` */
+    private function rightInput(ScenarioStep $step, array $start): mixed
     {
         return match ($step->kind) {
             ScenarioStepKind::Fix => ['passed' => true, 'failed' => []],
             ScenarioStepKind::Line => $step->answers[0],
             ScenarioStepKind::Order => $step->order,
-            default => array_search(true, array_column($step->options, 'ok'), true),
+            default => $this->shown($this->game, $start, $step->id, (int) array_search(true, array_column($step->options, 'ok'), true)),
         };
     }
 

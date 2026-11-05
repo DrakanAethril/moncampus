@@ -172,6 +172,37 @@ class ScenarioRulesTest extends TestCase
         self::assertArrayNotHasKey('order', $view);
     }
 
+    public function testTheOptionsAreShuffledPerSeedAndTheAnswerFollowsTheShuffle(): void
+    {
+        // The students' report (2026-11-05): written right answers sat at the same letter every time.
+        $order = ScenarioRules::optionOrder(4, '812:T01:solution');
+        self::assertSame($order, ScenarioRules::optionOrder(4, '812:T01:solution'), 'one seed, one order: a reload changes nothing');
+        $sorted = $order;
+        sort($sorted);
+        self::assertSame([0, 1, 2, 3], $sorted, 'a permutation of the options');
+
+        $places = [];
+        for ($session = 1; $session <= 200; ++$session) {
+            $places[array_search(1, ScenarioRules::optionOrder(4, $session.':T01:solution'), true)] = true;
+        }
+        ksort($places);
+        self::assertSame([0, 1, 2, 3], array_keys($places), 'the written second option lands on every letter');
+
+        self::assertSame([], ScenarioRules::optionOrder(0, 'x'));
+        self::assertSame([0], ScenarioRules::optionOrder(1, 'x'));
+
+        $step = ScenarioStep::fromArray(['id' => 'q', 'kind' => 'choice', 'prompt' => '?', 'options' => [
+            ['text' => 'Juste', 'ok' => true],
+            ['text' => 'Faux 1', 'misconception' => 'a'],
+            ['text' => 'Faux 2', 'misconception' => 'b'],
+        ]]);
+        self::assertNotNull($step);
+        $shuffled = ScenarioRules::optionOrder(3, 'seed');
+        $view = $step->publicView($shuffled);
+        self::assertSame(array_map(static fn (int $rank): string => ['Juste', 'Faux 1', 'Faux 2'][$rank], $shuffled), $view['options']);
+        self::assertSame(['Juste', 'Faux 1', 'Faux 2'], $step->publicView()['options'], 'without an order, the order written');
+    }
+
     public function testADefaultReactionIsSaidByTheScenarioHelper(): void
     {
         $step = ScenarioFixture::scenario()->ticket('T1')?->step('expliquer');

@@ -85,9 +85,9 @@ class SeriousGameStatsTest extends FunctionalTestCase
         $started = $play->startTicket($player, $game, 'T01');
         $session = $play->ownedTicketSession($player, $game, \is_int($started['session']) ? $started['session'] : 0);
         $play->submitStep($player, $session, 'corriger', ['passed' => true, 'failed' => []]);
-        $play->submitStep($player, $session, 'expliquer', $firstChoice);
+        $play->submitStep($player, $session, 'expliquer', $this->shown($game, $started, 'expliquer', $firstChoice));
         if (1 !== $firstChoice) {
-            $play->submitStep($player, $session, 'expliquer', 1);
+            $play->submitStep($player, $session, 'expliquer', $this->shown($game, $started, 'expliquer', 1));
         }
         $play->endTicket($player, $session);
     }

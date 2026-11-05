@@ -122,7 +122,7 @@ class BlackoutPlayTest extends FunctionalTestCase
         self::assertFalse($wrong['ok']);
         self::assertSame('nadia', self::arr($wrong, 'reaction')['who'] ?? null);
         $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'designer', 'input' => 'udp  src=10.20.20.66 dst=198.51.100.23 sport=51820 dport=51820 [ASSURED] · 14 Mo envoyés']);
-        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'quoi', 'input' => 1]);
+        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'quoi', 'input' => $this->shown($this->game, $start, 'quoi', 1)]);
 
         return $this->call('POST', 'ticket-sessions/'.$session.'/end');
     }
@@ -143,7 +143,7 @@ class BlackoutPlayTest extends FunctionalTestCase
         self::assertArrayNotHasKey('answer', $order);
 
         $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'corriger', 'input' => ['passed' => true, 'failed' => []]]);
-        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'solution', 'input' => 1]);
+        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'solution', 'input' => $this->shown($this->game, $start, 'solution', 1)]);
         $wrong = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'chronologie', 'input' => [0, 1, 2, 3, 4, 5]]);
         self::assertFalse($wrong['ok']);
         self::assertSame('nadia', self::arr($wrong, 'reaction')['who'] ?? null);
@@ -169,19 +169,20 @@ class BlackoutPlayTest extends FunctionalTestCase
         $start = $this->call('POST', 'tickets', ['ticket' => $id]);
         $session = self::int($start, 'session');
         foreach (\array_slice($ticket->steps, self::int($start, 'step')) as $step) {
-            $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => $step->id, 'input' => $this->rightInput($step)]);
+            $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => $step->id, 'input' => $this->rightInput($step, $start)]);
         }
 
         return $this->call('POST', 'ticket-sessions/'.$session.'/end');
     }
 
-    private function rightInput(ScenarioStep $step): mixed
+    /** @param array<array-key, mixed> $start the answer to `POST tickets` */
+    private function rightInput(ScenarioStep $step, array $start): mixed
     {
         return match ($step->kind) {
             ScenarioStepKind::Fix => ['passed' => true, 'failed' => []],
             ScenarioStepKind::Line => $step->answers[0],
             ScenarioStepKind::Order => $step->order,
-            default => array_search(true, array_column($step->options, 'ok'), true),
+            default => $this->shown($this->game, $start, $step->id, (int) array_search(true, array_column($step->options, 'ok'), true)),
         };
     }
 

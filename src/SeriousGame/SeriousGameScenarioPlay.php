@@ -155,12 +155,12 @@ final readonly class SeriousGameScenarioPlay
                 'duplicates' => $ticket->duplicates,
                 'kind' => $ticket->kind,
                 'category' => $ticket->category,
-                'steps' => array_map(static fn (ScenarioStep $s): array => $s->publicView(), $ticket->steps),
+                'steps' => array_map(static fn (ScenarioStep $s): array => $s->publicView(self::optionOrder($session, $s)), $ticket->steps),
                 'bascule' => $ticket->bascule,
                 'final' => $ticket->final,
             ],
             'step' => $ticket->stepIndex($state->getStepId()),
-            'guide' => array_map(static fn (ScenarioStep $s): array => $s->publicView(), $ticket->guide),
+            'guide' => array_map(static fn (ScenarioStep $s): array => $s->publicView(self::optionOrder($session, $s)), $ticket->guide),
             'guideStep' => $state->getGuideStep(),
             'hints' => $state->getHints(),
         ];
@@ -415,6 +415,17 @@ final readonly class SeriousGameScenarioPlay
         ];
     }
 
+    /**
+     * The order this session shows a step's options in (ScenarioRules::optionOrder()): a new one each
+     * time the ticket is opened, the same for as long as it stays open.
+     *
+     * @return list<int> position => the option's written rank
+     */
+    private static function optionOrder(SeriousGameSession $session, ScenarioStep $step): array
+    {
+        return ScenarioRules::optionOrder(\count($step->options), $session->getId().':'.$session->getUnitCode().':'.$step->id);
+    }
+
     /** The chapter code of an act - the manifest's `chapters`, built by the sync, use the same. */
     public static function chapterCode(int $act): string
     {
@@ -460,6 +471,11 @@ final readonly class SeriousGameScenarioPlay
      */
     private function grade(Scenario $scenario, SeriousGameSession $session, SeriousGameUnitState $state, ScenarioStep $step, mixed $input, bool $help): array
     {
+        if ($step->kind->hasOptions()) {
+            // The game answers a rank in the order it was shown: back to the rank written.
+            $shown = \is_int($input) ? $input : (\is_string($input) && ctype_digit($input) ? (int) $input : -1);
+            $input = self::optionOrder($session, $step)[$shown] ?? -1;
+        }
         try {
             $grade = ScenarioRules::grade($step, $input, $scenario->password(), $scenario->helper());
         } catch (ScenarioInputRefused $e) {

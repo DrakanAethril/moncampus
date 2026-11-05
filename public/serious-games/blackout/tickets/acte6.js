@@ -13,7 +13,7 @@
     checks: [
       { label: 'Les joueurs ne joignent plus la régie', test: function (h) { var r = h.ping('pc-a01', 'regie'); return { ok: !r.ok, detail: 'pc-a01 joint la régie' }; } },
       { label: 'Ils joignent toujours srv-jeu', test: function (h) { return h.ping('pc-a01', 'srv-jeu'); } },
-      { label: 'La régie joint toujours Internet', test: function (h) { return h.ping('regie', '203.0.113.80'); } }
+      { label: 'La régie joint toujours Internet (depuis regie : ping 8.8.8.8)', test: function (h) { return h.ping('regie', '8.8.8.8'); } }
     ],
     hints: [
       { title: 'La première règle qui correspond', body: FIRST_MATCH },
@@ -31,8 +31,8 @@
     edit: ['r1:/etc/nftables.conf'],
     bug: [{ file: 'r1:/etc/nftables.conf', find: '        ct state established,related accept\n', replace: '' + '        # (règle supprimée « pour faire le ménage »)\n' }],
     checks: [
-      { label: 'Les joueurs joignent Internet', test: function (h) { return h.ping('pc-a01', '203.0.113.80'); } },
-      { label: 'Le stream joint Internet', test: function (h) { return h.ping('encodeur', '203.0.113.80'); } },
+      { label: 'Les joueurs joignent Internet (depuis pc-a01 : ping 8.8.8.8)', test: function (h) { return h.ping('pc-a01', '8.8.8.8'); } },
+      { label: 'Le stream joint Internet (depuis encodeur : ping 8.8.8.8)', test: function (h) { return h.ping('encodeur', '8.8.8.8'); } },
       { label: 'Les joueurs ne joignent toujours pas la régie', test: function (h) { var r = h.ping('pc-a01', 'regie'); return { ok: !r.ok, detail: 'pc-a01 joint la régie' }; } }
     ],
     hints: [
