@@ -13,6 +13,7 @@ use App\Enum\SeriousGameMechanic;
 use App\Repository\ProgramRepository;
 use App\SeriousGame\Scenario\ScenarioManifest;
 use App\SeriousGame\SeriousGamePlay;
+use App\SeriousGame\SeriousGameScenarioPlay;
 use App\SeriousGame\Template\TemplateDefinition;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Yaml\Yaml;
@@ -118,5 +119,37 @@ trait SeriousGameTestTrait
         $existing = static::getContainer()->get(EntityManagerInterface::class)->getRepository(User::class)->findOneBy(['username' => 'fixture.author']);
 
         return $existing ?? $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'fixture.author');
+    }
+
+    /**
+     * The position the game sends for the option written at $written: a ticket's session shows a
+     * step's options in an order of its own (ScenarioRules::optionOrder()), read here off the
+     * session's opening, as the game reads it.
+     *
+     * @param array<array-key, mixed> $start the answer to `POST tickets`
+     */
+    private function shown(SeriousGame $game, array $start, string $stepId, int $written): int
+    {
+        $ticket = $start['ticket'] ?? null;
+        self::assertIsArray($ticket);
+        $id = $ticket['id'] ?? null;
+        self::assertIsString($id);
+        $definition = SeriousGameScenarioPlay::scenario($game)->ticket($id);
+        $step = $definition?->step($stepId) ?? $definition?->guideStep($stepId);
+        self::assertNotNull($step, $id.' › '.$stepId);
+        $text = $step->options[$written]['text'] ?? self::fail('no option '.$written.' in '.$stepId);
+
+        $steps = \is_array($ticket['steps'] ?? null) ? $ticket['steps'] : [];
+        $guide = \is_array($start['guide'] ?? null) ? $start['guide'] : [];
+        foreach ([...$steps, ...$guide] as $view) {
+            if (\is_array($view) && $stepId === ($view['id'] ?? null) && \is_array($view['options'] ?? null)) {
+                $position = array_search($text, $view['options'], true);
+                self::assertIsInt($position);
+
+                return $position;
+            }
+        }
+
+        return self::fail($stepId.' is not shown');
     }
 }

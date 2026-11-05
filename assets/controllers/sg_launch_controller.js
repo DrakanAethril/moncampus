@@ -11,9 +11,23 @@ import { Controller } from '@hotwired/stimulus';
  *
  *   <div data-controller="sg-launch"> … <a href="/serious-games/play/…" data-action="sg-launch#enter">Jouer</a>
  */
+const SMALLEST_SCREEN = 1100;
+
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
+    // A game played on a computer only needs 1 100 px (.cm-sg-card--desktop). What decides is the
+    // screen the game will fill, not this window: an installed app (beaup-app) often opens narrower
+    // than its screen, and the game goes full screen anyway.
+    connect() {
+        const largest = Math.max(window.screen?.width ?? 0, window.screen?.height ?? 0);
+        this.element.classList.toggle('cm-sg-small-screen', largest > 0 && largest < SMALLEST_SCREEN);
+    }
+
     enter(event) {
+        if (this.element.classList.contains('cm-sg-small-screen') && event.currentTarget.closest('.cm-sg-card--desktop')) {
+            event.preventDefault();
+            return;
+        }
         // A click that opens elsewhere (a new tab, a download) is not a launch.
         if (event.defaultPrevented || 0 !== event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
             return;

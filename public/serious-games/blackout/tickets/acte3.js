@@ -56,7 +56,7 @@
     edit: ['r1:/etc/network/interfaces'],
     bug: [{ file: 'r1:/etc/network/interfaces', find: '    address 192.168.100.2/24\n    gateway 192.168.100.1\n', replace: '    address 192.168.100.2/24\n' }],
     checks: [
-      { label: 'Les joueurs joignent Internet (203.0.113.80)', test: function (h) { return h.ping('pc-a01', '203.0.113.80'); } },
+      { label: 'Les joueurs joignent Internet (depuis pc-a01 : ping 8.8.8.8)', test: function (h) { return h.ping('pc-a01', '8.8.8.8'); } },
       { label: 'Ils trouvent les sites par leur nom (site.example)', test: function (h) { return h.resolve('pc-a01', 'site.example'); } },
       { label: 'Le rang A joint toujours srv-jeu', test: function (h) { return h.ping('pc-a01', 'srv-jeu'); } }
     ],

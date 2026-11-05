@@ -16,6 +16,10 @@ namespace App\SeriousGame\Scenario;
  *   not count (asking already costs), nor does a mistyped password;
  * - **the correction** of what the server corrects - explanations, choices, lines, orders, the
  *   password; a repair is judged by the browser, which sends its failed criteria;
+ * - **the order of a step's options**, shuffled by a seed (the session and the step): the right
+ *   option is written first or second in the tickets, and a fixed order taught the letter rather
+ *   than the answer. The game receives them in that order and answers a rank in it; the server
+ *   maps it back to the written rank, which is what it corrects and stores;
  * - the pieces of the password and the clues of the notebook come from closed tickets; the game
  *   ends when every ticket is closed.
  *
@@ -101,6 +105,22 @@ final class ScenarioRules
         }
 
         return $errors + $hints <= 2 ? 2 : 1;
+    }
+
+    /**
+     * The order a step's options are shown in, from a seed: position => the option's written rank.
+     * The same seed always gives the same order, so a reload of the step changes nothing.
+     *
+     * @return list<int>
+     */
+    public static function optionOrder(int $count, string $seed): array
+    {
+        if ($count <= 0) {
+            return [];
+        }
+        $randomizer = new \Random\Randomizer(new \Random\Engine\Xoshiro256StarStar(hash('sha256', $seed, true)));
+
+        return $randomizer->shuffleArray(range(0, $count - 1));
     }
 
     /**

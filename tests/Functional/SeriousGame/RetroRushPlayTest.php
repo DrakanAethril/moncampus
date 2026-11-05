@@ -108,7 +108,7 @@ class RetroRushPlayTest extends FunctionalTestCase
         self::assertArrayNotHasKey('answer', $order);
 
         $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'livrer', 'input' => ['passed' => true, 'failed' => []]]);
-        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'revue', 'input' => 0]);
+        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'revue', 'input' => $this->shown($this->game, $start, 'revue', 0)]);
         $wrong = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'migration', 'input' => [2, 1, 4, 3, 5, 0]]);
         self::assertFalse($wrong['ok']);
         self::assertSame('jade', self::arr($wrong, 'reaction')['who'] ?? null);
@@ -134,19 +134,20 @@ class RetroRushPlayTest extends FunctionalTestCase
         $start = $this->call('POST', 'tickets', ['ticket' => $id]);
         $session = self::int($start, 'session');
         foreach (\array_slice($ticket->steps, self::int($start, 'step')) as $step) {
-            $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => $step->id, 'input' => $this->rightInput($step)]);
+            $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => $step->id, 'input' => $this->rightInput($step, $start)]);
         }
 
         return $this->call('POST', 'ticket-sessions/'.$session.'/end');
     }
 
-    private function rightInput(ScenarioStep $step): mixed
+    /** @param array<array-key, mixed> $start the answer to `POST tickets` */
+    private function rightInput(ScenarioStep $step, array $start): mixed
     {
         return match ($step->kind) {
             ScenarioStepKind::Fix => ['passed' => true, 'failed' => []],
             ScenarioStepKind::Line => $step->answers[0],
             ScenarioStepKind::Order => $step->order,
-            default => array_search(true, array_column($step->options, 'ok'), true),
+            default => $this->shown($this->game, $start, $step->id, (int) array_search(true, array_column($step->options, 'ok'), true)),
         };
     }
 

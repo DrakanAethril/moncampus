@@ -13986,14 +13986,14 @@ dialog.cm-wall-panel::backdrop { background: rgba(18, 52, 77, .2); }
 .cm-sg-bar__fill { display: block; height: 100%; }
 .cm-sg-card__value { font-size: 12.5px; color: var(--cm-muted); }
 .cm-sg-card__cta { font: 600 13.5px var(--cm-font-ui); color: var(--cm-brand); }
-/* A game played on a computer only (Panique à la Neko-Con, 1 100 px): on a narrower screen the
-   card says so instead of opening it. */
+/* A game played on a computer only (the scenario games, 1 100 px): on a screen too small for it
+   the card says so instead of opening it. The *screen*, not the window - the game opens full
+   screen, and an installed app's window is often narrower than its screen: sg_launch_controller.js
+   sets .cm-sg-small-screen from screen.width/height. */
 .cm-sg-card__desktop { display: none; margin: 0; font: 600 13px var(--cm-font-ui); color: var(--cm-muted); }
-@media (max-width: 1099.98px) {
-    .cm-sg-card--desktop .cm-sg-card__desktop { display: block; }
-    .cm-sg-card--desktop .cm-sg-card__cta { display: none; }
-    .cm-sg-card--desktop a[href] { pointer-events: none; cursor: default; }
-}
+.cm-sg-small-screen .cm-sg-card--desktop .cm-sg-card__desktop { display: block; }
+.cm-sg-small-screen .cm-sg-card--desktop .cm-sg-card__cta { display: none; }
+.cm-sg-small-screen .cm-sg-card--desktop a[href] { pointer-events: none; cursor: default; }
 @media (max-width: 760px) { .cm-sg-catalog { grid-template-columns: 1fr; } }
 
 /* --- « Jouer », the student's page of games (design/validated/quiz-tournament.md §15) --- */

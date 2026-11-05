@@ -484,7 +484,10 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     browser alone measures a repair and sends `{passed, failed}` - **the code delivered is never
     kept**, only the failed criteria (`ScenarioRules::grade()`). Stars: 3 with neither error nor
     help, an error made during Inès' help not counted. The sync checks a scenario whole
-    (`ScenarioValidator`); the rendering of each ticket is checked by « Banc des tickets »
+    (`ScenarioValidator`). **A step's options reach the game shuffled** (`ScenarioRules::optionOrder()`,
+    seeded by the session and the step): the game answers a position, the server maps it back to
+    the written rank, which is what it corrects and stores - tests answer through
+    `SeriousGameTestTrait::shown()`. The rendering of each ticket is checked by « Banc des tickets »
     (Paramètres › Serious games, the game's own `bench.html` in a sandboxed frame, fed the scenario
     by `sg_ticket_bench_controller.js`). The teachers read it through `SeriousGameScenarioReading`
     (class map with « Bloqués » / « Beaucoup d'aide », « Notions à reprendre », the student's sheet).
