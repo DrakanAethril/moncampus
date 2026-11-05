@@ -48,6 +48,7 @@ use App\Service\QuizQuestionCompleteness;
 use App\Service\QuizTemplateDuplicator;
 use App\Service\UploadIntake;
 use App\Util\NumericAnswerParser;
+use App\Util\NumericRange;
 use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -1323,6 +1324,11 @@ class QuizLibraryController extends AbstractController
             $config['variables'] = $variables;
         } else {
             $config['answer'] = $numberOf($submitted['answer'] ?? null);
+            // The live concours' slider - three empty fields are no slider, and so is a half-filled one.
+            $range = NumericRange::normalize($submitted['rangeMin'] ?? null, $submitted['rangeMax'] ?? null, $submitted['rangeStep'] ?? null);
+            if (null !== $range) {
+                $config['range'] = $range;
+            }
         }
 
         $question->setNumericConfig($config);
@@ -1509,7 +1515,8 @@ class QuizLibraryController extends AbstractController
 
             $answer = new QuizAnswer($question);
             $answer->setLabel($label);
-            $answer->setIsCorrect('1' === ($row['correct'] ?? null));
+            // A vote has no right proposition, whatever a switch from another type left ticked.
+            $answer->setIsCorrect($question->getType()->hasRightAnswer() && '1' === ($row['correct'] ?? null));
             $answer->setOrderIndex($orderIndex++);
             $question->addAnswer($answer);
         }

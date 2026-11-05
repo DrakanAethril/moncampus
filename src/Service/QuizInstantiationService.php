@@ -158,6 +158,11 @@ class QuizInstantiationService
                 if (null !== $questionFilter && !$questionFilter($question)) {
                     continue;
                 }
+                // A vote has no right answer and lives in the room only - every launch but the live
+                // one leaves it out, whoever calls this (QuestionType::isAvailableOutsideLive()).
+                if (QuizMode::Live !== $mode && !$question->getType()->isAvailableOutsideLive()) {
+                    continue;
+                }
                 $instance->addQuestion($this->copyQuestion($question, $instance, $orderIndex++)->setPoolIndex($poolIndex));
             }
         }

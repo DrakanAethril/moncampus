@@ -148,7 +148,8 @@ class QuizShortAnswerGradingTest extends TestCase
         self::assertTrue(QuestionType::TexteATrous->usesBlankAnswers());
         self::assertFalse(QuestionType::Qcm->usesBlankAnswers());
 
-        self::assertFalse(QuestionType::ReponseCourte->isAvailableInLiveContest());
+        // Kahoot's « Type answer »: typed on the phone in a live contest (2026-11-05).
+        self::assertTrue(QuestionType::ReponseCourte->isAvailableInLiveContest());
         self::assertFalse(QuestionType::ReponseCourte->usesAnswerRows());
     }
 

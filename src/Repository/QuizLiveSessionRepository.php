@@ -30,12 +30,7 @@ class QuizLiveSessionRepository extends ServiceEntityRepository
             ->where('i.program = :program')
             ->andWhere('s.status IN (:activeStatuses)')
             ->setParameter('program', $program)
-            ->setParameter('activeStatuses', [
-                LiveSessionStatus::Lobby,
-                LiveSessionStatus::Countdown,
-                LiveSessionStatus::Question,
-                LiveSessionStatus::Reveal,
-            ])
+            ->setParameter('activeStatuses', LiveSessionStatus::running())
             ->orderBy('s.createdAt', 'DESC')
             ->setMaxResults(1)
             ->getQuery()

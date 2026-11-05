@@ -6,6 +6,7 @@ namespace App\Tests\Service;
 
 use App\Entity\QuizTemplate;
 use App\Entity\User;
+use App\Enum\QuestionTimeMode;
 use App\Enum\QuestionType;
 use App\Service\FileUploadService;
 use App\Service\MatchingImageStore;
@@ -114,6 +115,39 @@ class MixedJsonImporterTest extends TestCase
         self::assertSame(['Q1', 'Q2', 'Q3'], array_map(static fn ($q) => $q->getLabel(), $questions));
         self::assertSame([QuestionType::Qcm, QuestionType::ReponseCourte, QuestionType::Qcm], array_map(static fn ($q) => $q->getType(), $questions));
         self::assertSame([1, 2, 3], array_map(static fn ($q) => $q->getOrderIndex(), $questions));
+    }
+
+    /**
+     * What a quiz for the live concours carries on top (the Kahoot import writes all three): a
+     * question's own time, a numérique's slider, a vote with no right proposition.
+     */
+    public function testItCarriesTheLiveFields(): void
+    {
+        $payload = $this->importer->parse($this->document([
+            ['type' => 'qcm', 'label' => 'Q1', 'answers' => ['A', 'B'], 'correct' => [1], 'seconds' => 30],
+            ['type' => 'numerique', 'label' => 'Q2', 'answer' => 2733, 'tolerance' => 400, 'toleranceMode' => 'absolute', 'range' => ['min' => 0, 'max' => 4000, 'step' => 10], 'seconds' => 20],
+            ['type' => 'vote', 'label' => 'Q3', 'answers' => ['Projet A', 'Projet B'], 'seconds' => 'unlimited'],
+            ['type' => 'reponse_courte', 'label' => 'Q4', 'answers' => ['PESTEL'], 'seconds' => 2],
+        ]));
+
+        self::assertSame([], $payload['errors']);
+
+        $template = new QuizTemplate(new User('teacher'));
+        $this->importer->appendQuestions($template, $payload['questions']);
+        [$choice, $number, $vote, $typed] = $template->getQuestions()->toArray();
+
+        self::assertSame([QuestionTimeMode::Fixed, 30], [$choice->getTimeMode(), $choice->getTimeSeconds()]);
+        self::assertSame([QuestionTimeMode::Fixed, 20], [$number->getTimeMode(), $number->getTimeSeconds()], 'every family, not only the QCM one');
+        self::assertSame(['min' => 0.0, 'max' => 4000.0, 'step' => 10.0], $number->getNumericRange());
+        self::assertSame(QuestionTimeMode::Unlimited, $vote->getTimeMode());
+        self::assertSame(QuestionType::Vote, $vote->getType());
+        self::assertSame([false, false], array_map(static fn ($answer) => $answer->isCorrect(), $vote->getAnswers()->toArray()), 'no proposition of a vote is right');
+        self::assertSame(QuestionTimeMode::Quiz, $typed->getTimeMode(), 'two seconds is no time to answer: the quiz decides');
+
+        $exported = $this->importer->exportQuestion($choice);
+        self::assertSame(30, $exported['seconds'] ?? null, 'and it goes back out');
+        self::assertSame('unlimited', $this->importer->exportQuestion($vote)['seconds'] ?? null);
+        self::assertArrayNotHasKey('seconds', $this->importer->exportQuestion($typed) ?? []);
     }
 
     /** Appending to a quiz that already holds questions continues its numbering, never restarts it. */

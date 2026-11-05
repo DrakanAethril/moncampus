@@ -11,6 +11,7 @@ use App\Entity\QuizLiveSession;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\Feature;
+use App\Enum\LiveSessionStatus;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizFolderRepository;
 use App\Repository\QuizLiveParticipantRepository;
@@ -133,12 +134,20 @@ class QuizLiveHostController extends AbstractController
 
         try {
             $session = $liveSessionService->createSession($templates, $program, $this->currentUser(), $secondsPerQuestion > 0 ? $secondsPerQuestion : null, '' !== $name ? $name : null);
-        } catch (LiveTemplateNotEligibleException $exception) {
-            $this->addFlash('error', $exception->hasPlayableQuestions()
-                ? $translator->trans('quizLiveNotEligibleFlashMessage', ['%questions%' => implode(', ', $exception->getOffendingQuestionLabels())])
-                : $translator->trans('quizLiveNoPlayableQuestionFlashMessage'));
+        } catch (LiveTemplateNotEligibleException) {
+            $this->addFlash('error', $translator->trans('quizLiveNoPlayableQuestionFlashMessage'));
 
             return $this->redirectToRoute('app_program_quiz_live_new', ['id' => $program->getId()]);
+        }
+
+        // Left out rather than refused: a texte à trous or a zone question has no place in the
+        // room, and the rest of the pool still plays. The host is told which.
+        $skipped = $liveSessionService->skippedQuestions($templates);
+        if ([] !== $skipped) {
+            $this->addFlash('warning', $translator->trans('quizLiveSkippedQuestionsFlashMessage', [
+                '%count%' => \count($skipped),
+                '%questions%' => implode(' · ', \array_slice($skipped, 0, 5)).(\count($skipped) > 5 ? ' …' : ''),
+            ]));
         }
 
         return $this->redirectToRoute('app_program_quiz_live_created', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
@@ -194,13 +203,19 @@ class QuizLiveHostController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
+        // The step the screen was showing when it asked: a click and the screen's own timer arriving
+        // together must move the room once (QuizLiveSessionService::advance()).
+        $payload = JsonRequestPayload::fromRequest($request);
+        $expectedStatus = LiveSessionStatus::tryFrom($payload->string('from'));
+        $expectedIndex = $payload->int('questionIndex');
+
         try {
             // start() and advance() are two service methods but one button (Lancer/Suivant/Question
             // suivante) - the controller picks which to call based on Lobby vs everything else.
-            if ('lobby' === $session->getStatus()->value) {
+            if (LiveSessionStatus::Lobby === $session->getStatus()) {
                 $liveSessionService->start($session, $this->currentUser());
             } else {
-                $liveSessionService->advance($session, $this->currentUser());
+                $liveSessionService->advance($session, $this->currentUser(), $expectedStatus, $expectedIndex);
             }
         } catch (LiveSessionStateException $exception) {
             return $this->json(['error' => $exception->getMessage()], 409);

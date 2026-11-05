@@ -59,7 +59,7 @@ class OnlineCourseTestRunner
 
         $questions = array_values(array_filter(
             $quiz->getQuestions()->toArray(),
-            fn (QuizQuestion $question): bool => null === $this->completeness->gapOf($question),
+            fn (QuizQuestion $question): bool => $question->getType()->isAvailableOutsideLive() && null === $this->completeness->gapOf($question),
         ));
         shuffle($questions);
 

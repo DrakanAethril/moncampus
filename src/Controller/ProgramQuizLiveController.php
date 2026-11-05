@@ -12,8 +12,9 @@ use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
+use App\Service\JsonRequestPayload;
 use App\Service\LiveSessionStateException;
-use App\Service\PostValue;
+use App\Service\QuizLive\LiveResponse;
 use App\Service\QuizLiveSessionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -93,7 +94,7 @@ class ProgramQuizLiveController extends AbstractController
             'participant' => $participant,
             'mercurePublicUrl' => $mercureHub->getPublicUrl(),
             'topic' => $liveSessionService->playersTopic($session),
-            'initialState' => $liveSessionService->buildPlayerSnapshot($session),
+            'initialState' => $liveSessionService->buildPlayerSnapshot($session, $participant),
             'answerUrl' => $this->generateUrl('app_program_quiz_live_answer', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
         ]);
     }
@@ -109,10 +110,8 @@ class ProgramQuizLiveController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $answerId = PostValue::int($request, 'answerId');
-
         try {
-            $liveSessionService->submitAnswer($session, $this->currentUser(), $answerId);
+            $liveSessionService->submitAnswer($session, $this->currentUser(), LiveResponse::fromPayload(JsonRequestPayload::fromRequest($request)));
         } catch (LiveSessionStateException $exception) {
             return $this->json(['error' => $exception->getMessage()], 409);
         }
