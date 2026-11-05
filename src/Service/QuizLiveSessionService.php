@@ -28,6 +28,8 @@ use App\Util\BlankTextParser;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Mercure\Authorization;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Jwt\TokenFactoryInterface;
 use Symfony\Component\Mercure\Update;
@@ -92,6 +94,7 @@ class QuizLiveSessionService
         private readonly TokenFactoryInterface $subscriberTokenFactory,
         private readonly UserAvatars $userAvatars,
         private readonly LoggerInterface $logger,
+        private readonly Authorization $authorization,
     ) {
     }
 
@@ -355,6 +358,24 @@ class QuizLiveSessionService
     public function mintHostSubscriberToken(QuizLiveSession $session): string
     {
         return $this->subscriberTokenFactory->create(subscribe: [$this->hostTopic($session)]);
+    }
+
+    /**
+     * Subscribes this browser to one live topic through the bundle's cookie - or not, without
+     * failing the page: a hub that cannot sign its cookie leaves a screen that still shows its
+     * phase and catches up by asking for it again (the tournaments' rule, QuizTournamentLive).
+     */
+    public function subscribe(Request $request, string $topic): bool
+    {
+        try {
+            $this->authorization->setCookie($request, [$topic], [], [], 'subscriber');
+
+            return true;
+        } catch (\Throwable $exception) {
+            $this->logger->warning('A live contest screen could not be subscribed to its topic.', ['topic' => $topic, 'exception' => $exception]);
+
+            return false;
+        }
     }
 
     public function mintPlayerSubscriberToken(QuizLiveSession $session): string
