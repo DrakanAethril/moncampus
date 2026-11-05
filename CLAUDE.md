@@ -1339,6 +1339,15 @@ the worker keeps the old map in memory and answers « vendor asset is missing »
   counter-reset: page N }` starts the count at N+1, but it has no `target-counter()`: a table of
   contents learns its page numbers from the named destinations of a first print
   (`App\Service\PdfNamedDestinations`) — written only for anchors some link points at.
+- **CI's « vendor asset is missing » on every page means `importmap:install` never ran**, not a
+  network hiccup: it is the last of composer's auto-scripts, run once at the container's first start,
+  after a cold `cache:clear` that OOMs silently when the code outgrows the dev `memory_limit`
+  (`frankenphp/conf.d/20-app.dev.ini`, 1G since 2026-11-05). Reproduce in a clean clone with
+  `composer run-script auto-scripts` in a throwaway `app-php-dev` container - the local checkout,
+  whose `assets/vendor` is long installed, never shows it.
+- CI's Mercure publisher key is shorter than 256 bits, so **every publish throws in CI**: a service
+  that lets `HubInterface::publish()` raise fails there and only there. Publishing is a comfort, never
+  a condition - catch and log, as `QuizTournamentLive` and `QuizLiveSessionService` do.
 - `config/reference.php` produces a non-deterministic docblock-ordering diff from the running dev
   container. It is safe to `git checkout --` without asking; it is not real work.
 
