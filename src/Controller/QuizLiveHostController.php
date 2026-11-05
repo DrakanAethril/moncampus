@@ -187,10 +187,24 @@ class QuizLiveHostController extends AbstractController
             'topic' => $liveSessionService->hostTopic($session),
             'initialState' => $liveSessionService->buildHostSnapshot($session),
             'advanceUrl' => $this->generateUrl('app_program_quiz_live_advance', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
+            'stateUrl' => $this->generateUrl('app_program_quiz_live_projector_state', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
             'cancelUrl' => $this->generateUrl('app_program_quiz_live_cancel', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
             'finishUrl' => $this->generateUrl('app_program_quiz_live_finish', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
             'resultUrl' => $this->generateUrl('app_program_quiz_live_history', ['id' => $program->getId()]),
         ]);
+    }
+
+    /**
+     * The board's phase as it is now - asked again when the projector's stream reconnects after a
+     * network drop, since the hub replays none of the events published meanwhile.
+     */
+    #[Route(path: '/programs/{id}/quiz/live/{sessionId}/projector/state', name: 'app_program_quiz_live_projector_state', requirements: ['sessionId' => '\d+'], methods: ['GET'])]
+    public function projectorState(int $id, int $sessionId, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizLiveSessionRepository $sessionRepository, QuizLiveSessionService $liveSessionService): Response
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $session = $this->findSessionOrNotFound($program, $sessionId, $sessionRepository);
+
+        return $this->json(['state' => $liveSessionService->buildHostSnapshot($session)]);
     }
 
     #[Route(path: '/programs/{id}/quiz/live/{sessionId}/advance', name: 'app_program_quiz_live_advance', requirements: ['sessionId' => '\d+'], methods: ['POST'])]

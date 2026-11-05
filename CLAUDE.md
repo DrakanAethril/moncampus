@@ -265,7 +265,12 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   by shape, numérique on a slider (`numericConfig.range`), réponse courte, vrai/faux and the
   **`vote`** type - propositions with no right one, played live only (`QuestionType::
   isAvailableOutsideLive()` keeps it out of every other launch). Texte à trous, zones, apparier and
-  calculée are left out at launch and named. A live answer is one JSON `response`
+  calculée are left out at launch and named. **Students play from the web page - beaup-app on a
+  phone**: the Flutter app is no longer modified (the user's decision of 2026-11-05), so the player
+  page carries what the app used to - it asks for its phase again (`…/play/state`, the projector's
+  `…/projector/state`) when it comes back from the background, the network or a reconnected stream
+  (the hub replays nothing), keeps the screen awake (Screen Wake Lock) and offers an answer the
+  network lost again. A live answer is one JSON `response`
   (`App\Service\QuizLive\LiveResponse`); right is right whatever the type, no partial points.
   **Kahoot reports (.xlsx)** are imported by the screen and by the connector's `quiz_import_kahoot`
   (a .zip of them too) through `App\Service\Kahoot\KahootReportReader`: both report layouts, every

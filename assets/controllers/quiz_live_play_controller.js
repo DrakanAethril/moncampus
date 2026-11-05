@@ -11,6 +11,12 @@ import { Controller } from '@hotwired/stimulus';
  * How a question is answered depends on its kind (App\Service\QuizLive\LiveAnswerKind): one tap
  * sends a choice or a vote; several shapes are ticked, or tapped in order, then « Valider »; a
  * number is slid or typed; a word is typed. The server checks the shape of every answer anyway.
+ *
+ * Built to be played from a phone, in beaup-app above all (the site installed as an app): the
+ * screen is kept awake while the game runs (Screen Wake Lock), and the phase is asked again from the
+ * server whenever the page comes back - from the background, from a lost network, from a stream
+ * that reconnected - since the hub replays none of the events published meanwhile. An answer the
+ * network lost is offered again rather than silently forgotten.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
@@ -19,7 +25,7 @@ export default class extends Controller {
         'lobbyParticipantCount',
         'countdownNumber',
         'readingIndex', 'readingKind',
-        'questionIndex', 'questionTimer', 'questionHint', 'questionAnswers', 'questionSentNotice',
+        'questionIndex', 'questionTimer', 'questionHint', 'questionAnswers', 'questionSentNotice', 'questionRetryNotice',
         'numberPanel', 'numberValue', 'numberSlider', 'numberInput', 'textPanel', 'textInput',
         'validateBar', 'validateButton', 'clearButton',
         'resultsBadge', 'resultsPoints', 'resultsScore', 'resultsRank',
@@ -31,6 +37,7 @@ export default class extends Controller {
         hubUrl: String,
         topic: String,
         answerUrl: String,
+        stateUrl: String,
         csrfToken: String,
         participantId: Number,
         initialState: Object,
@@ -43,18 +50,62 @@ export default class extends Controller {
     connect() {
         this.labels = this.labelsValue;
         this.answered = false;
+        this.shownQuestion = null;
         this.apply(this.initialStateValue);
 
         const url = new URL(this.hubUrlValue);
         url.searchParams.append('topic', this.topicValue);
         this.eventSource = new EventSource(url, { withCredentials: true });
         this.eventSource.onmessage = (event) => this.apply(JSON.parse(event.data));
+        // The browser reconnects by itself; what was published while it was away is gone.
+        this.eventSource.onerror = () => { this.streamLost = true; };
+        this.eventSource.onopen = () => {
+            if (this.streamLost) {
+                this.streamLost = false;
+                this.resync();
+            }
+        };
+
+        this.onVisibility = () => {
+            if ('visible' === document.visibilityState) {
+                this.resync();
+                this.keepAwake();
+            }
+        };
+        this.onOnline = () => this.resync();
+        document.addEventListener('visibilitychange', this.onVisibility);
+        window.addEventListener('online', this.onOnline);
+        this.keepAwake();
     }
 
     disconnect() {
         this.eventSource?.close();
         clearInterval(this.countdownInterval);
         clearInterval(this.questionTimerInterval);
+        document.removeEventListener('visibilitychange', this.onVisibility);
+        window.removeEventListener('online', this.onOnline);
+        this.releaseAwake();
+    }
+
+    resync() {
+        fetch(this.stateUrlValue, { headers: { Accept: 'application/json' } })
+            .then((response) => (response.ok ? response.json() : null))
+            .then((body) => { if (body && body.state) this.apply(body.state); })
+            .catch(() => {});
+    }
+
+    // A phone that dims in the middle of a question is a student who misses it. Refused or
+    // unsupported, nothing changes: the page works the same, the screen may just sleep.
+    keepAwake() {
+        if (!('wakeLock' in navigator) || this.finished || (this.wakeLock && !this.wakeLock.released)) {
+            return;
+        }
+        navigator.wakeLock.request('screen').then((lock) => { this.wakeLock = lock; }).catch(() => {});
+    }
+
+    releaseAwake() {
+        this.wakeLock?.release().catch(() => {});
+        this.wakeLock = null;
     }
 
     // A shape: sent at once for a choice, ticked for a QCM multiple, numbered for an order.
@@ -131,11 +182,18 @@ export default class extends Controller {
         this.answered = true;
         this.lockQuestion();
 
+        // A 409 is the server's « too late » or « already answered »: the question stays locked.
+        // Anything else - no network, a server that did not answer - leaves the answer unsent, and
+        // the student is offered to send it again.
         fetch(this.answerUrlValue, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfTokenValue },
             body: JSON.stringify(body),
-        });
+        }).then((response) => {
+            if (!response.ok && 409 !== response.status) {
+                this.unlockQuestion();
+            }
+        }).catch(() => this.unlockQuestion());
     }
 
     lockQuestion() {
@@ -143,6 +201,23 @@ export default class extends Controller {
         [this.validateButtonTarget, this.clearButtonTarget, this.numberSliderTarget, this.numberInputTarget, this.textInputTarget]
             .forEach((element) => { element.disabled = true; });
         this.questionSentNoticeTarget.hidden = false;
+        this.questionRetryNoticeTarget.hidden = true;
+    }
+
+    unlockQuestion() {
+        if (this.timeIsUp) {
+            return;
+        }
+        this.answered = false;
+        this.questionAnswersTarget.querySelectorAll('button').forEach((button) => { button.disabled = false; });
+        [this.clearButtonTarget, this.numberSliderTarget, this.numberInputTarget, this.textInputTarget]
+            .forEach((element) => { element.disabled = false; });
+        this.questionAnswersTarget.querySelectorAll('.cm-quiz-live-shape--selected').forEach((button) => {
+            if ('choice' === this.kind) button.classList.remove('cm-quiz-live-shape--selected');
+        });
+        this.validateButtonTarget.disabled = false;
+        this.questionSentNoticeTarget.hidden = true;
+        this.questionRetryNoticeTarget.hidden = false;
     }
 
     paintPicked() {
@@ -158,6 +233,17 @@ export default class extends Controller {
     }
 
     apply(state) {
+        // The question already on screen, asked again (a resync): what the student has ticked,
+        // ordered or typed so far stays - only whether it was sent is taken from the server.
+        if ('question-opened' === state.type && this.shownQuestion === state.questionIndex && !this.questionPhaseTarget.hidden) {
+            if (true === state.answered && !this.answered) {
+                this.answered = true;
+                this.lockQuestion();
+            }
+
+            return;
+        }
+
         this.hidePhases();
         clearInterval(this.countdownInterval);
         clearInterval(this.questionTimerInterval);
@@ -187,6 +273,12 @@ export default class extends Controller {
             case 'session-cancelled':
                 window.location.href = this.element.dataset.quizLivePlayHomeUrl;
                 break;
+        }
+
+        this.shownQuestion = 'question-opened' === state.type ? state.questionIndex : null;
+        if ('session-finished' === state.type) {
+            this.finished = true;
+            this.releaseAwake();
         }
     }
 
@@ -226,9 +318,11 @@ export default class extends Controller {
         this.unit = state.unit || '';
         // A reloaded phone that already answered is told so, and offered nothing again.
         this.answered = true === state.answered;
+        this.timeIsUp = false;
 
         this.questionPhaseTarget.hidden = false;
         this.questionSentNoticeTarget.hidden = true;
+        this.questionRetryNoticeTarget.hidden = true;
         this.questionIndexTarget.textContent = `${state.questionIndex + 1} / ${state.totalQuestions}`;
         this.questionHintTarget.textContent = this.hintFor(state);
 
@@ -294,6 +388,7 @@ export default class extends Controller {
             const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
             this.questionTimerTarget.textContent = remaining;
             if (remaining <= 0) {
+                this.timeIsUp = true;
                 this.answered = true;
                 this.questionAnswersTarget.querySelectorAll('button').forEach((button) => { button.disabled = true; });
                 [this.validateButtonTarget, this.clearButtonTarget, this.numberSliderTarget, this.numberInputTarget, this.textInputTarget]

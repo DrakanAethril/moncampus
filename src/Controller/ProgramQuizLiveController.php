@@ -96,7 +96,25 @@ class ProgramQuizLiveController extends AbstractController
             'topic' => $liveSessionService->playersTopic($session),
             'initialState' => $liveSessionService->buildPlayerSnapshot($session, $participant),
             'answerUrl' => $this->generateUrl('app_program_quiz_live_answer', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
+            'stateUrl' => $this->generateUrl('app_program_quiz_live_play_state', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
         ]);
+    }
+
+    /**
+     * The phase as it is now, for this participant - what the page asks again when it comes back
+     * from the background or its stream reconnects. A phone (beaup-app above all) that slept through
+     * a question misses the events published meanwhile, and the hub replays none of them: without
+     * this the screen would stay on a question the room closed long ago.
+     */
+    #[Route(path: '/programs/{id}/quiz/live/{sessionId}/play/state', name: 'app_program_quiz_live_play_state', requirements: ['sessionId' => '\d+'], methods: ['GET'])]
+    #[IsGranted('ROLE_STUDENT')]
+    public function state(int $id, int $sessionId, ProgramRepository $repository, QuizLiveSessionRepository $sessionRepository, QuizLiveParticipantRepository $participantRepository, QuizLiveSessionService $liveSessionService): Response
+    {
+        $program = $this->findProgramForStudentOrNotFound($id, $repository);
+        $session = $this->findSessionOrNotFound($program, $sessionId, $sessionRepository);
+        $participant = $participantRepository->findOneForStudent($session, $this->currentUser());
+
+        return $this->json(['state' => $liveSessionService->buildPlayerSnapshot($session, $participant)]);
     }
 
     #[Route(path: '/programs/{id}/quiz/live/{sessionId}/answer', name: 'app_program_quiz_live_answer', requirements: ['sessionId' => '\d+'], methods: ['POST'])]

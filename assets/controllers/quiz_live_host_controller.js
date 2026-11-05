@@ -33,6 +33,7 @@ export default class extends Controller {
         hubUrl: String,
         topic: String,
         advanceUrl: String,
+        stateUrl: String,
         csrfToken: String,
         initialState: Object,
         labels: Object,
@@ -60,12 +61,31 @@ export default class extends Controller {
         url.searchParams.append('topic', this.topicValue);
         this.eventSource = new EventSource(url, { withCredentials: true });
         this.eventSource.onmessage = (event) => this.apply(JSON.parse(event.data));
+        // After a network drop the browser reconnects by itself, but what was published meanwhile
+        // is gone: the board asks for its phase again.
+        this.eventSource.onerror = () => { this.streamLost = true; };
+        this.eventSource.onopen = () => {
+            if (this.streamLost) {
+                this.streamLost = false;
+                this.resync();
+            }
+        };
+        this.onVisibility = () => { if ('visible' === document.visibilityState) this.resync(); };
+        document.addEventListener('visibilitychange', this.onVisibility);
     }
 
     disconnect() {
         this.eventSource?.close();
         clearInterval(this.countdownInterval);
         clearInterval(this.questionTimerInterval);
+        document.removeEventListener('visibilitychange', this.onVisibility);
+    }
+
+    resync() {
+        fetch(this.stateUrlValue, { headers: { Accept: 'application/json' } })
+            .then((response) => (response.ok ? response.json() : null))
+            .then((body) => { if (body && body.state) this.apply(body.state); })
+            .catch(() => {});
     }
 
     advance() {

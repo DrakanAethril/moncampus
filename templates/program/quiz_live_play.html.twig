@@ -8,6 +8,7 @@
          data-quiz-live-play-hub-url-value="{{ mercurePublicUrl }}"
          data-quiz-live-play-topic-value="{{ topic }}"
          data-quiz-live-play-answer-url-value="{{ answerUrl }}"
+         data-quiz-live-play-state-url-value="{{ stateUrl }}"
          data-quiz-live-play-csrf-token-value="{{ csrf_token('quiz_live_answer') }}"
          data-quiz-live-play-participant-id-value="{{ participant.id }}"
          data-quiz-live-play-initial-state-value="{{ initialState|json_encode }}"
@@ -66,6 +67,8 @@
                 <span class="cm-quiz-live__timer cm-quiz-live__timer--sm" data-quiz-live-play-target="questionTimer"></span>
             </div>
             <div class="cm-quiz-live__meta text-center" style="font-size: 13px;" data-quiz-live-play-target="questionHint"></div>
+            {# Above the shapes, where the eyes are: the answer the network lost has to be sent again. #}
+            <div data-quiz-live-play-target="questionRetryNotice" hidden role="alert" class="text-center cm-quiz-live-verdict is-wrong" style="font-size: 14px;">{{ 'quizLiveAnswerRetryLabel'|trans }}</div>
             <div class="cm-quiz-live-shapes" data-quiz-live-play-target="questionAnswers"></div>
             {# A number: a slider when the question has a range, else a field. #}
             <div data-quiz-live-play-target="numberPanel" hidden class="flex-fill d-flex flex-column justify-content-center gap-3">
