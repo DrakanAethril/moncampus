@@ -6,10 +6,12 @@ namespace App\Service\QuizTournament;
 
 use App\Entity\QuizTournamentDuel;
 use App\Entity\QuizTournamentDuelAnswer;
+use App\Entity\QuizTournamentDuelDraft;
 use App\Entity\QuizTournamentDuelQuestion;
 use App\Entity\User;
 use App\Enum\QuizTournamentDuelPhase;
 use App\Repository\QuizTournamentDuelAnswerRepository;
+use App\Repository\QuizTournamentDuelDraftRepository;
 use App\Repository\QuizTournamentPlayerRepository;
 use App\Service\FileUploadService;
 use Doctrine\DBAL\LockMode;
@@ -29,11 +31,18 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * and finishes a duel whose last question is over. Under a lock per duel (LOCK_DSN, shared with the
  * worker), so two requests never both serve, both accept one player's answer, or both finish.
  *
+ * **Each player's own time.** A question's time limit is each player's own (QuizTournamentDuel::timeLimits():
+ * the question's, plus the extra time an accommodation grants them), and so is the deadline after
+ * which their answer is refused. What a player ticked or typed without validating is kept as a draft
+ * ({@see draft()}, QuizTournamentDuelDraft) and becomes their answer, dated at their deadline, once
+ * their time is out - whoever's request brings the duel past it.
+ *
  * **What a player learns.** The public state ({@see publicState()}) is the same for both players and
  * is what goes over Mercure (QuizTournamentLive::duelTopic()): the question in play without its
  * correction, who has answered it, right or wrong for each once it closed, the scores. **Never the
- * right answer, never what the other picked**; a player's own answer to the question in play comes
- * back only in the answer to their own request (`mine`).
+ * right answer, never what the other picked**, nor how much time the other has; a player's own
+ * answer to the question in play and their own clock come back only in the answer to their own
+ * request (`mine`, `clock`).
  *
  * **The end** ({@see finish()}), exactly once: one transaction, the duel row FOR UPDATE then both
  * players locked in id order (QuizTournamentPlayerRepository::lockPlayers()); a duel already
@@ -49,6 +58,7 @@ class QuizTournamentDuelEngine
         private readonly EntityManagerInterface $entityManager,
         private readonly LockFactory $lockFactory,
         private readonly QuizTournamentDuelAnswerRepository $answers,
+        private readonly QuizTournamentDuelDraftRepository $drafts,
         private readonly QuizTournamentPlayerRepository $players,
         private readonly QuizTournamentDuelGrader $grader,
         private readonly QuizTournamentLive $live,
@@ -73,14 +83,14 @@ class QuizTournamentDuelEngine
             $this->live->publishDuel($duel, $public);
         }
 
-        return [...$public, 'mine' => $this->mine($timeline, $answers, $viewer, $now)];
+        return [...$public, ...$this->own($timeline, $answers, $viewer, $now)];
     }
 
     /**
      * One player's answer to the question in play. Refused - QuizTournamentRefusal - when the duel is
-     * over, the question is not the one served or its deadline passed, the player already answered
-     * it, or the answer does not fit the question. The answer is graded now and kept; a question both
-     * players answered closes at once.
+     * over, the question is not the one served or the player's deadline passed, the player already
+     * answered it, or the answer does not fit the question. The answer is graded now and kept, and
+     * replaces the player's draft; a question both players answered closes at once.
      *
      * @param list<int> $selected choice ids (QuizTournamentDuelQuestion::$choices)
      *
@@ -94,28 +104,21 @@ class QuizTournamentDuelEngine
         }
 
         [$timeline, $answers] = $this->locked($duel, function () use ($duel, $player, $rank, $selected, $value, $unit, $now): array {
-            [$timeline, $answers] = $this->advance($duel, $now);
-            if ($duel->isFinished()) {
-                throw new QuizTournamentRefusal('quizTournamentDuelRefusalOver');
-            }
-
-            $question = $this->questionsByRank($duel)[$rank] ?? null;
-            if (null === $question || !$timeline->acceptsAnswer($rank, $now)) {
-                throw new QuizTournamentRefusal('quizTournamentDuelRefusalTooLate');
-            }
-            $playerId = (int) $player->getId();
-            if (isset($answers[$rank][$playerId])) {
-                throw new QuizTournamentRefusal('quizTournamentDuelRefusalAlreadyAnswered');
-            }
-            $choiceIds = array_map(static fn (array $choice): int => $choice['id'], $question->getChoices());
-            if (!QuizTournamentDuelGrader::isWellFormed($question->getType(), $choiceIds, $selected, $value)) {
+            // The player's own draft is left alone: what they validate now, within their time, wins.
+            [$timeline, $answers] = $this->advance($duel, $now, $player);
+            $question = $this->openQuestion($duel, $timeline, $answers, $player, $rank, $now);
+            if (!QuizTournamentDuelGrader::isWellFormed($question->getType(), $this->choiceIds($question), $selected, $value)) {
                 throw new QuizTournamentRefusal('quizTournamentDuelRefusalMalformed');
             }
 
             $answer = new QuizTournamentDuelAnswer($question, $player, $selected, $value, $unit, $this->grader->points($question, $selected, $value, $unit), $now);
             $this->entityManager->persist($answer);
+            $draft = $this->drafts->findOneBy(['question' => $question, 'player' => $player]);
+            if (null !== $draft) {
+                $this->entityManager->remove($draft);
+            }
             $this->entityManager->flush();
-            $answers[$rank][$playerId] = $answer;
+            $answers[$rank][(int) $player->getId()] = $answer;
 
             return [$this->timelineOf($duel, $answers), $answers];
         });
@@ -123,7 +126,62 @@ class QuizTournamentDuelEngine
         $public = $this->publicState($duel, $timeline, $answers, $now);
         $this->live->publishDuel($duel, $public);
 
-        return [...$public, 'mine' => $this->mine($timeline, $answers, $player, $now)];
+        return [...$public, ...$this->own($timeline, $answers, $player, $now)];
+    }
+
+    /**
+     * What the player has ticked or typed so far on the question in play, without validating it: it
+     * becomes their answer when their time runs out (QuizTournamentDuelDraft). An empty selection
+     * clears the draft. Refused like an answer - over, too late, already answered, not fitting the
+     * question. Nobody else is told: a draft is not an answer.
+     *
+     * @param list<int> $selected choice ids (QuizTournamentDuelQuestion::$choices)
+     *
+     * @return array<string, mixed> the state, as state() answers it
+     */
+    public function draft(QuizTournamentDuel $duel, User $player, int $rank, array $selected, ?float $value, ?string $unit, \DateTimeImmutable $now): array
+    {
+        $now = QuizTournamentDuelClock::second($now);
+        if (!$duel->involves($player)) {
+            throw new QuizTournamentRefusal('quizTournamentDuelRefusalNotYours');
+        }
+
+        [$timeline, $answers, $moved] = $this->locked($duel, function () use ($duel, $player, $rank, $selected, $value, $unit, $now): array {
+            [$timeline, $answers, $moved] = $this->advance($duel, $now, $player);
+            $question = $this->openQuestion($duel, $timeline, $answers, $player, $rank, $now);
+
+            $draft = $this->drafts->findOneBy(['question' => $question, 'player' => $player]);
+            if ([] === $selected && null === $value) {
+                if (null !== $draft) {
+                    $this->entityManager->remove($draft);
+                    $this->entityManager->flush();
+                }
+
+                return [$timeline, $answers, $moved];
+            }
+            if (!QuizTournamentDuelGrader::isWellFormed($question->getType(), $this->choiceIds($question), $selected, $value)) {
+                throw new QuizTournamentRefusal('quizTournamentDuelRefusalMalformed');
+            }
+
+            if (null === $draft) {
+                $draft = new QuizTournamentDuelDraft($question, $player);
+                $this->entityManager->persist($draft);
+            }
+            $draft->record($selected, $value, $unit, $now);
+            $this->entityManager->flush();
+
+            // Saved on the very second the player's time ran out: it is their answer already.
+            $moved = $this->settleDrafts($duel, $timeline, $answers, $now) || $moved;
+
+            return [$timeline, $answers, $moved];
+        });
+
+        $public = $this->publicState($duel, $timeline, $answers, $now);
+        if ($moved) {
+            $this->live->publishDuel($duel, $public);
+        }
+
+        return [...$public, ...$this->own($timeline, $answers, $player, $now)];
     }
 
     /**
@@ -152,9 +210,9 @@ class QuizTournamentDuelEngine
         $questions = [];
         foreach ($this->questionsByRank($duel) as $rank => $question) {
             $questions[] = [
-                'seconds' => $question->getTimeLimitSeconds(),
+                'seconds' => $duel->timeLimits($question),
                 'servedAt' => $question->getServedAt(),
-                'answeredAt' => array_values(array_map(static fn (QuizTournamentDuelAnswer $answer): \DateTimeImmutable => $answer->getAnsweredAt(), $answers[$rank] ?? [])),
+                'answeredAt' => array_map(static fn (QuizTournamentDuelAnswer $answer): \DateTimeImmutable => $answer->getAnsweredAt(), $answers[$rank] ?? []),
             ];
         }
 
@@ -177,11 +235,13 @@ class QuizTournamentDuelEngine
     }
 
     /**
-     * Stamps the serves due by now and finishes a duel that is over. Runs under the duel's lock.
+     * Stamps the serves due by now, turns into answers the drafts of the players whose time ran out,
+     * and finishes a duel that is over. Runs under the duel's lock. $requester's drafts are left to
+     * the request they are making - an answer or a draft of their own, which decides.
      *
      * @return array{0: QuizTournamentDuelTimeline, 1: array<int, array<int, QuizTournamentDuelAnswer>>, 2: bool} the timeline, the answers, and whether anything moved
      */
-    private function advance(QuizTournamentDuel $duel, \DateTimeImmutable $now): array
+    private function advance(QuizTournamentDuel $duel, \DateTimeImmutable $now, ?User $requester = null): array
     {
         $answers = $this->answersByRank($duel);
         $timeline = $this->timelineOf($duel, $answers);
@@ -192,12 +252,17 @@ class QuizTournamentDuelEngine
         $moved = false;
         $questions = $this->questionsByRank($duel);
         foreach ($timeline->dueToServe($now) as $rank => $servedAt) {
-            $questions[$rank]->serve($servedAt);
+            $questions[$rank]->serve($servedAt, $timeline->moments[$rank]->deadlineAt);
             $moved = true;
         }
         if ($moved) {
             $this->entityManager->flush();
             $timeline = $this->timelineOf($duel, $answers);
+        }
+        // A draft becomes an answer dated at its player's deadline, which closes the question no
+        // sooner than running out of time did: the timeline is unchanged.
+        if ($this->settleDrafts($duel, $timeline, $answers, $now, $requester)) {
+            $moved = true;
         }
 
         if ($timeline->isOver($now) && $this->finish($duel, $timeline, $answers)) {
@@ -205,6 +270,79 @@ class QuizTournamentDuelEngine
         }
 
         return [$timeline, $answers, $moved];
+    }
+
+    /**
+     * The drafts whose player's time is out by now become their answers, graded, dated at that
+     * player's deadline; a draft its player answered over is dropped. True when an answer was made.
+     *
+     * @param array<int, array<int, QuizTournamentDuelAnswer>> $answers completed in place
+     */
+    private function settleDrafts(QuizTournamentDuel $duel, QuizTournamentDuelTimeline $timeline, array &$answers, \DateTimeImmutable $now, ?User $except = null): bool
+    {
+        $made = false;
+        $changed = false;
+        foreach ($this->drafts->findForDuel($duel) as $draft) {
+            $player = $draft->getPlayer();
+            if (null !== $except && $player->getId() === $except->getId()) {
+                continue;
+            }
+            $question = $draft->getQuestion();
+            $rank = $question->getRank();
+            $playerId = (int) $player->getId();
+            $deadline = ($timeline->moments[$rank] ?? null)?->deadlineFor($playerId);
+            if (isset($answers[$rank][$playerId])) {
+                $this->entityManager->remove($draft);
+                $changed = true;
+                continue;
+            }
+            if (null === $deadline || !$timeline->isOutOfTime($rank, $playerId, $now)) {
+                continue;
+            }
+
+            $selected = $draft->getSelectedChoiceIds();
+            $value = $draft->getNumericValue();
+            $unit = $draft->getNumericUnit();
+            $answer = new QuizTournamentDuelAnswer($question, $player, $selected, $value, $unit, $this->grader->points($question, $selected, $value, $unit), $deadline);
+            $this->entityManager->persist($answer);
+            $this->entityManager->remove($draft);
+            $answers[$rank][$playerId] = $answer;
+            $made = true;
+            $changed = true;
+        }
+        if ($changed) {
+            $this->entityManager->flush();
+        }
+
+        return $made;
+    }
+
+    /**
+     * The question a player's answer or draft names, if it still takes theirs - else the refusal.
+     *
+     * @param array<int, array<int, QuizTournamentDuelAnswer>> $answers
+     */
+    private function openQuestion(QuizTournamentDuel $duel, QuizTournamentDuelTimeline $timeline, array $answers, User $player, int $rank, \DateTimeImmutable $now): QuizTournamentDuelQuestion
+    {
+        if ($duel->isFinished()) {
+            throw new QuizTournamentRefusal('quizTournamentDuelRefusalOver');
+        }
+        $playerId = (int) $player->getId();
+        $question = $this->questionsByRank($duel)[$rank] ?? null;
+        if (null === $question || !$timeline->acceptsAnswer($rank, $playerId, $now)) {
+            throw new QuizTournamentRefusal('quizTournamentDuelRefusalTooLate');
+        }
+        if (isset($answers[$rank][$playerId])) {
+            throw new QuizTournamentRefusal('quizTournamentDuelRefusalAlreadyAnswered');
+        }
+
+        return $question;
+    }
+
+    /** @return list<int> */
+    private function choiceIds(QuizTournamentDuelQuestion $question): array
+    {
+        return array_map(static fn (array $choice): int => $choice['id'], $question->getChoices());
     }
 
     /**
@@ -304,7 +442,8 @@ class QuizTournamentDuelEngine
     }
 
     /**
-     * A question as the duel screen draws it: never its correction.
+     * A question as the duel screen draws it: never its correction, nor anybody's deadline - each
+     * player's comes in their own `clock`.
      *
      * @return array<string, mixed>
      */
@@ -320,28 +459,34 @@ class QuizTournamentDuelEngine
             'choices' => array_map(static fn (array $choice): array => ['id' => $choice['id'], 'label' => $choice['label']], $question->getChoices()),
             'unit' => $question->getNumericUnit(),
             'unitRequired' => $question->isNumericUnitRequired(),
-            'seconds' => $question->getTimeLimitSeconds(),
             'servedAt' => $moment->servedAt->format(\DATE_ATOM),
-            'deadlineAt' => $moment->deadlineAt->format(\DATE_ATOM),
         ];
     }
 
     /**
-     * The viewer's own answer to the question in play - only ever in the answer to their request.
+     * What only the viewer reads, only ever in the answer to their own request: their answer to the
+     * question in play (`mine`) and their own time on it (`clock`: their limit and deadline, extra
+     * time included).
      *
      * @param array<int, array<int, QuizTournamentDuelAnswer>> $answers
      *
-     * @return array{choices: list<int>, value: float|null, unit: string|null}|null
+     * @return array{mine: array{choices: list<int>, value: float|null, unit: string|null}|null, clock: array{seconds: int, deadlineAt: string}|null}
      */
-    private function mine(QuizTournamentDuelTimeline $timeline, array $answers, User $viewer, \DateTimeImmutable $now): ?array
+    private function own(QuizTournamentDuelTimeline $timeline, array $answers, User $viewer, \DateTimeImmutable $now): array
     {
         $rank = $timeline->rankAt($now);
-        $answer = null === $rank ? null : ($answers[$rank][(int) $viewer->getId()] ?? null);
-        if (null === $answer) {
-            return null;
-        }
+        $viewerId = (int) $viewer->getId();
+        $moment = null === $rank ? null : ($timeline->moments[$rank] ?? null);
+        $deadline = $moment?->deadlineFor($viewerId);
+        $answer = null === $rank ? null : ($answers[$rank][$viewerId] ?? null);
 
-        return ['choices' => $answer->getSelectedChoiceIds(), 'value' => $answer->getNumericValue(), 'unit' => $answer->getNumericUnit()];
+        return [
+            'mine' => null === $answer ? null : ['choices' => $answer->getSelectedChoiceIds(), 'value' => $answer->getNumericValue(), 'unit' => $answer->getNumericUnit()],
+            'clock' => null === $moment || null === $deadline ? null : [
+                'seconds' => $deadline->getTimestamp() - $moment->servedAt->getTimestamp(),
+                'deadlineAt' => $deadline->format(\DATE_ATOM),
+            ],
+        ];
     }
 
     /** @return array<int, QuizTournamentDuelQuestion> */

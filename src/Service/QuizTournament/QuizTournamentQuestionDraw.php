@@ -11,7 +11,7 @@ use Random\Randomizer;
 /**
  * The questions of a duel (design/validated/quiz-tournament.md §5.1), as pure, seeded functions.
  *
- * - Only the formats that play well on a phone in 20 to 30 seconds are admitted - QCM, QCM à
+ * - Only the formats that play well on a phone in 30 to 40 seconds are admitted - QCM, QCM à
  *   réponses multiples, vrai/faux, numérique (QuestionType::isPlayableInTournament()), the same idea
  *   as the live contest's QuestionType::isAvailableInLiveContest(). Nobody picks the types.
  * - The duel is shared between the source quizzes in proportion to their admitted size (largest

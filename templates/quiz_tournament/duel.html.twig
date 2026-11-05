@@ -1,16 +1,18 @@
 {# The duel (design/validated/quiz-tournament.md §5.2, mockup H-question): both scores and the
    progress over the questions on top, the timer driven by the server's deadline, the question, its
-   answers, the other player's « a répondu » - never their answer -, then two seconds of « JUSTE ! »
+   answers, the other player's « a répondu » - never their answer, nor their time -, then two seconds of « JUSTE ! »
    / « RATÉ » for each and the score, never the right answer. quiz_tournament_duel_controller.js
    draws every question from the state QuizTournamentDuelEngine answers, asks again at the moment the
-   state says something changes, and follows the duel's topic over Mercure. No tab bar: a duel is
-   played to its end, leaving pauses nothing. #}
+   state says something changes, and follows the duel's topic over Mercure. The timer is the player's
+   own (extra time included); what is ticked or typed is sent as a draft, which counts as the answer
+   once that time runs out. No tab bar: a duel is played to its end, leaving pauses nothing. #}
 {% extends 'quiz_tournament/_layout.html.twig' %}
 
 {% block tournament_attributes -%}
     data-controller="quiz-tournament-duel"
     data-quiz-tournament-duel-state-url-value="{{ path('app_quiz_tournament_duel_state', {id: tournament.id, duel: duel.id}) }}"
     data-quiz-tournament-duel-answer-url-value="{{ path('app_quiz_tournament_duel_answer', {id: tournament.id, duel: duel.id}) }}"
+    data-quiz-tournament-duel-draft-url-value="{{ path('app_quiz_tournament_duel_draft', {id: tournament.id, duel: duel.id}) }}"
     data-quiz-tournament-duel-token-value="{{ csrf_token('quiz_tournament_duel' ~ duel.id) }}"
     data-quiz-tournament-duel-hub-url-value="{{ tournamentLive.url }}"
     data-quiz-tournament-duel-topic-value="{{ duelTopic }}"
@@ -33,6 +35,7 @@
         right: 'quizTournamentDuelRightSticker'|trans,
         wrong: 'quizTournamentDuelWrongSticker'|trans,
         sent: 'quizTournamentDuelAnswerSent'|trans({'%name%': opponentName}),
+        timeUp: 'quizTournamentDuelTimeUp'|trans({'%name%': opponentName}),
         footRight: 'quizTournamentDuelFootNext'|trans,
         footWrong: 'quizTournamentDuelFootCorrectionLater'|trans,
         footNone: 'quizTournamentDuelFootNoAnswer'|trans,
@@ -90,9 +93,9 @@
 
         <div class="qt-duel-numeric" data-quiz-tournament-duel-target="numeric" hidden>
             <label class="visually-hidden" for="qt-duel-value">{{ 'quizTournamentDuelValueLabel'|trans }}</label>
-            <input class="qt-input" id="qt-duel-value" type="text" inputmode="decimal" autocomplete="off" data-quiz-tournament-duel-target="value" data-action="keydown.enter->quiz-tournament-duel#submit">
+            <input class="qt-input" id="qt-duel-value" type="text" inputmode="decimal" autocomplete="off" data-quiz-tournament-duel-target="value" data-action="keydown.enter->quiz-tournament-duel#submit input->quiz-tournament-duel#typed">
             <label class="visually-hidden" for="qt-duel-unit">{{ 'quizTournamentDuelUnitLabel'|trans }}</label>
-            <input class="qt-input qt-input--unit" id="qt-duel-unit" type="text" autocomplete="off" data-quiz-tournament-duel-target="unit" data-action="keydown.enter->quiz-tournament-duel#submit" hidden>
+            <input class="qt-input qt-input--unit" id="qt-duel-unit" type="text" autocomplete="off" data-quiz-tournament-duel-target="unit" data-action="keydown.enter->quiz-tournament-duel#submit input->quiz-tournament-duel#typed" hidden>
             <span class="qt-duel-numeric__suffix" data-quiz-tournament-duel-target="suffix" hidden></span>
         </div>
 

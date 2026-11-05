@@ -23,7 +23,9 @@ use Doctrine\ORM\Mapping as ORM;
  * case the quiz goes); $sourceQuestion is what « already seen in the last three duels » compares.
  *
  * $servedAt is stamped once, when the question is served to both - reloading never restarts the
- * clock; $deadlineAt is when an answer stops being accepted.
+ * clock; $deadlineAt is when an answer stops being accepted from anybody: the later of the two
+ * players' deadlines, the one with extra time (QuizTournamentDuel::timeLimits()). $timeLimitSeconds
+ * is the question's own limit, before any extra time.
  */
 #[ORM\Entity(repositoryClass: QuizTournamentDuelQuestionRepository::class)]
 #[ORM\Table(name: 'quiz_tournament_duel_question')]
@@ -200,18 +202,13 @@ class QuizTournamentDuelQuestion implements QuizQuestionDefinition
     }
 
     /** Stamped once: serving the question again (a reload) never restarts its clock. */
-    public function serve(\DateTimeImmutable $at): static
+    public function serve(\DateTimeImmutable $at, \DateTimeImmutable $deadlineAt): static
     {
         if (null === $this->servedAt) {
             $this->servedAt = $at;
-            $this->deadlineAt = $at->modify(\sprintf('+%d seconds', $this->timeLimitSeconds));
+            $this->deadlineAt = $deadlineAt;
         }
 
         return $this;
-    }
-
-    public function acceptsAnswerAt(\DateTimeImmutable $at): bool
-    {
-        return null !== $this->deadlineAt && $at <= $this->deadlineAt;
     }
 }

@@ -37,8 +37,8 @@ class QuizTournament implements StructureTargetable
 
     public const int DEFAULT_QUESTIONS_PER_DUEL = 20;
     public const int DEFAULT_MAX_TRUE_FALSE = 5;
-    public const int DEFAULT_SECONDS_PER_QUESTION = 20;
-    public const int DEFAULT_SECONDS_PER_MULTI_QUESTION = 30;
+    public const int DEFAULT_SECONDS_PER_QUESTION = 30;
+    public const int DEFAULT_SECONDS_PER_MULTI_QUESTION = 40;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]

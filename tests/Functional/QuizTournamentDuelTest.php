@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\Accommodation;
 use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\QuizTournament;
 use App\Entity\QuizTournamentChallenge;
 use App\Entity\QuizTournamentDuel;
 use App\Entity\QuizTournamentDuelAnswer;
+use App\Entity\QuizTournamentDuelDraft;
 use App\Entity\QuizTournamentDuelQuestion;
 use App\Entity\QuizTournamentPlayer;
 use App\Entity\User;
@@ -19,6 +21,7 @@ use App\Enum\QuizTournamentDuelOrigin;
 use App\Enum\QuizTournamentPalette;
 use App\Service\QuizTournament\QuizTournamentDuelClock;
 use App\Service\QuizTournament\QuizTournamentDuelEngine;
+use App\Service\QuizTournament\QuizTournamentDuelFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -114,6 +117,92 @@ class QuizTournamentDuelTest extends FunctionalTestCase
 
         $answered = $this->answer($this->alice, $duel, ['rank' => 1, 'choices' => [1]]);
         self::assertTrue($this->answered($answered, $this->alice));
+    }
+
+    public function testWhatIsTickedBecomesTheAnswerWhenTheTimeRunsOut(): void
+    {
+        $duel = $this->duel(QuizTournamentDuelClock::LEAD_SECONDS + 1, 3);
+
+        $state = $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => [1]], 200, 'draft');
+        self::assertNull($state['mine'], 'a draft is not an answer');
+        self::assertFalse($this->answered($state, $this->alice));
+        $state = $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => [2]], 200, 'draft');
+        self::assertFalse($this->answered($this->state($this->bruno, $duel), $this->alice), 'nobody is told of a draft');
+        self::assertCount(1, $this->em()->getRepository(QuizTournamentDuelDraft::class)->findAll(), 'one draft, rewritten');
+
+        // Alice never pressed « Valider »; her 20 s run out.
+        $servedAt = $this->runOut($duel, 0, 25);
+        $state = $this->state($this->bruno, $duel);
+        self::assertSame(1, $state['rank']);
+        self::assertSame(0.0, $this->resultOf($state, 0, $this->alice), 'what she last ticked is her answer');
+        self::assertNull($this->resultOf($state, 0, $this->bruno));
+
+        $answers = $this->em()->getRepository(QuizTournamentDuelAnswer::class)->findAll();
+        self::assertCount(1, $answers);
+        self::assertSame([2], $answers[0]->getSelectedChoiceIds());
+        self::assertEquals($servedAt->modify('+20 seconds'), $answers[0]->getAnsweredAt(), 'dated at her deadline');
+        self::assertCount(0, $this->em()->getRepository(QuizTournamentDuelDraft::class)->findAll());
+
+        $refused = $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => [1]], 409, 'draft');
+        self::assertSame('Trop tard : cette question est close.', $refused['refusal']);
+    }
+
+    public function testValidatingReplacesTheDraftAndAnEmptySelectionClearsIt(): void
+    {
+        $duel = $this->duel(QuizTournamentDuelClock::LEAD_SECONDS + 1, 3);
+
+        $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => [2]], 200, 'draft');
+        $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => []], 200, 'draft');
+        self::assertCount(0, $this->em()->getRepository(QuizTournamentDuelDraft::class)->findAll());
+
+        $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => [2]], 200, 'draft');
+        $state = $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => [1]]);
+        self::assertSame(['choices' => [1], 'value' => null, 'unit' => null], $state['mine']);
+        self::assertCount(0, $this->em()->getRepository(QuizTournamentDuelDraft::class)->findAll());
+        $refused = $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => [2]], 409, 'draft');
+        self::assertSame('Tu as déjà répondu à cette question.', $refused['refusal']);
+    }
+
+    public function testExtraTimeIsThePlayersOwnAndNobodyElsesBusiness(): void
+    {
+        $duel = $this->duel(QuizTournamentDuelClock::LEAD_SECONDS + 1, 3);
+        $duel->setExtraTimePercents(null, '33.33');
+        $this->em()->flush();
+
+        $alice = $this->state($this->alice, $duel);
+        $bruno = $this->state($this->bruno, $duel);
+        self::assertSame(20, $this->at($alice, 'clock', 'seconds'));
+        self::assertSame(27, $this->at($bruno, 'clock', 'seconds'), 'a third more, rounded up');
+        $question = $this->at($alice, 'question');
+        self::assertIsArray($question);
+        self::assertArrayNotHasKey('deadlineAt', $question, 'the published state carries nobody\'s time');
+        self::assertArrayNotHasKey('seconds', $question);
+
+        // 22 s in: Alice's time is out, Bruno still has his.
+        $this->runOut($duel, 0, 22);
+        $refused = $this->answer($this->alice, $duel, ['rank' => 0, 'choices' => [1]], 409);
+        self::assertSame('Trop tard : cette question est close.', $refused['refusal']);
+        self::assertSame('question', $refused['phase'], 'the question stays open for Bruno');
+        $state = $this->answer($this->bruno, $duel, ['rank' => 0, 'choices' => [1]]);
+        self::assertSame('reveal', $state['phase'], 'Bruno answered, Alice ran out: the question closes');
+        self::assertSame(1.0, $this->resultOf($state, 0, $this->bruno));
+    }
+
+    public function testADuelFreezesEachPlayersExtraTimeWhenItIsMade(): void
+    {
+        $accommodation = new Accommodation('Tiers temps');
+        $accommodation->setQuizExtraTimePercent('33.33');
+        $accommodation->setCreatedBy($this->fresh($this->admin));
+        $this->em()->persist($accommodation);
+        $bruno = $this->fresh($this->bruno);
+        $bruno->addAccommodation($accommodation);
+        $this->em()->flush();
+
+        $factory = static::getContainer()->get(QuizTournamentDuelFactory::class);
+        $duel = $factory->create($this->fresh($this->tournament), $this->fresh($this->alice), $bruno, QuizTournamentDuelOrigin::Challenge, new \DateTimeImmutable(), []);
+
+        self::assertNull($duel->getExtraTimePercentA());
+        self::assertSame('33.33', $duel->getExtraTimePercentB());
     }
 
     public function testReloadingRestartsNoClock(): void
@@ -292,6 +381,22 @@ class QuizTournamentDuelTest extends FunctionalTestCase
         return $question;
     }
 
+    /**
+     * Serves question $rank $seconds ago (served now if it was not yet): time passes without
+     * waiting for it. Returns the serve, as stored.
+     */
+    private function runOut(QuizTournamentDuel $duel, int $rank, int $seconds): \DateTimeImmutable
+    {
+        $this->state($this->alice, $duel);
+        $servedAt = QuizTournamentDuelClock::second(new \DateTimeImmutable(\sprintf('-%d seconds', $seconds)));
+        $this->em()->createQuery('UPDATE '.QuizTournamentDuelQuestion::class.' q SET q.servedAt = :at WHERE q.duel = :duel AND q.rank = :rank')
+            ->setParameters(['at' => $servedAt, 'duel' => $duel->getId(), 'rank' => $rank])
+            ->execute();
+        $this->em()->clear();
+
+        return $servedAt;
+    }
+
     /** @param list<int> $choices */
     private function answerRow(QuizTournamentDuel $duel, int $rank, User $player, array $choices, float $points): void
     {
@@ -318,11 +423,11 @@ class QuizTournamentDuelTest extends FunctionalTestCase
      *
      * @return array<string, mixed>
      */
-    private function answer(User $player, QuizTournamentDuel $duel, array $body, int $expected = 200): array
+    private function answer(User $player, QuizTournamentDuel $duel, array $body, int $expected = 200, string $gesture = 'answer'): array
     {
         $this->client->loginUser($player);
         $this->client->request('GET', $this->page());
-        $this->client->request('POST', $this->url($duel).'/answer', [], [], [
+        $this->client->request('POST', $this->url($duel).'/'.$gesture, [], [], [
             'CONTENT_TYPE' => 'application/json',
             'HTTP_X-CSRF-Token' => $this->csrfToken('quiz_tournament_duel'.$duel->getId()),
         ], json_encode($body, \JSON_THROW_ON_ERROR));
