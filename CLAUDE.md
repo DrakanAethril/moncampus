@@ -332,10 +332,15 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     `shouldStart()` on fresh facts, the draw, the frozen questions (choices with local ids,
     `QuizTournamentDuelSnapshot`; images referenced, not copied), ladder flags and ratings before.
   - **The duel is server-timed and lazy** (`QuizTournamentDuelEngine`, the one door: the screen's
-    state, an answer, `app:quiz-tournament:close-duels`). `QuizTournamentDuelClock` is the pure
+    state, an answer, a draft, `app:quiz-tournament:close-duels`). `QuizTournamentDuelClock` is the pure
     timeline: the first question served `LEAD_SECONDS` after the duel's creation (the room's
-    countdown), each one closing at its deadline or as soon as **both** answered, the next served
-    `TRANSITION_SECONDS` later, the duel over two seconds after its last. Every request first stamps
+    countdown), **each player with their own deadline** - the question's limit (30 s, 40 s for a QCM
+    multiple by default) plus their « ajout de temps », frozen on the duel at its creation
+    (`QuizTournamentDuel::timeLimits()`: the tournament is a quiz) - the question closing once each
+    player answered or ran out, the next served `TRANSITION_SECONDS` later, the duel over two seconds
+    after its last. A player's deadline reaches only their own requests (`clock`), never the published
+    state. What is ticked or typed without « Valider » is a `QuizTournamentDuelDraft`, which becomes
+    the answer, dated at that player's deadline, once their time is out. Every request first stamps
     the serves whose time has come - **at the computed moment, never the request's**, and only once
     (`serve()`), so a reload restarts nothing and nobody's absence pauses anything - and finishes a
     duel that is over: one transaction, the duel row FOR UPDATE, both players locked in id order,

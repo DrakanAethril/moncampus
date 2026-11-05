@@ -8,12 +8,19 @@ import { Controller } from '@hotwired/stimulus';
 // This page draws that state and asks again at that moment (and every few seconds, in case a timer
 // was throttled); the other player's answers, a question both answered, the end, arrive at once over
 // Mercure (the duel's private topic). The timer reads the server's deadline, corrected by the gap
-// between the server's clock and this one (`serverTime`): a reload never restarts it.
+// between the server's clock and this one (`serverTime`): a reload never restarts it. That deadline
+// is the player's own (`clock`, extra time included), sent only in the answers to their own requests:
+// the published state carries nobody's.
+//
+// What is ticked (a QCM à réponses multiples) or typed (a numérique) without « Valider » is sent as a
+// draft at each change; the server makes it the answer when the player's time runs out.
 //
 // A question's correction never reaches the page: the published state has none, and the player's
 // own pick comes back only in the answers to their own requests (`mine`).
 const SAFETY_POLL_MS = 5000;
 const TICK_MS = 250;
+const DRAFT_DELAY_MS = 300;
+const DRAFT_FLUSH_MS = 1500;
 const PHASE_ORDER = { waiting: 0, question: 1, reveal: 2 };
 
 export default class extends Controller {
@@ -26,6 +33,7 @@ export default class extends Controller {
     static values = {
         stateUrl: String,
         answerUrl: String,
+        draftUrl: String,
         token: String,
         hubUrl: String,
         topic: String,
@@ -40,7 +48,10 @@ export default class extends Controller {
         this.offset = 0;
         this.state = null;
         this.mine = null;
+        this.clock = null;
         this.renderedRank = null;
+        this.drafts = Promise.resolve();
+        this.draftTimer = null;
         this.selected = new Set();
         this.sending = false;
         this.leaving = false;
@@ -62,6 +73,8 @@ export default class extends Controller {
         window.clearInterval(this.poller);
         window.clearTimeout(this.changeTimer);
         window.clearTimeout(this.leaveTimer);
+        window.clearTimeout(this.ownTimer);
+        window.clearTimeout(this.draftTimer);
         this.source?.close();
     }
 
@@ -76,6 +89,7 @@ export default class extends Controller {
             else this.selected.add(id);
             this.#renderSelection();
             this.submitTarget.disabled = this.selected.size === 0;
+            this.#queueDraft(0);
             return;
         }
 
@@ -84,11 +98,19 @@ export default class extends Controller {
         this.#send({ rank: question.rank, choices: [id] });
     }
 
+    // A number being typed: kept as a draft once the typing pauses.
+    typed() {
+        if (!this.state?.question || this.#locked()) return;
+        this.#queueDraft(DRAFT_DELAY_MS);
+    }
+
     // « Valider » - a multiple-answer QCM, or a number (Entrée in its field too).
     submit(event) {
         event?.preventDefault();
         const question = this.state?.question;
         if (!question || this.#locked()) return;
+        window.clearTimeout(this.draftTimer);
+        this.draftTimer = null;
 
         if (question.type === 'numerique') {
             const value = this.valueTarget.value.trim();
@@ -104,6 +126,8 @@ export default class extends Controller {
         this.sending = true;
         this.#renderInputs();
         try {
+            // A draft still on its way must not be answered after the answer.
+            await this.drafts;
             const response = await fetch(this.answerUrlValue, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.tokenValue, Accept: 'application/json' },
@@ -117,6 +141,46 @@ export default class extends Controller {
         } finally {
             this.sending = false;
             this.#renderInputs();
+        }
+    }
+
+    // What is ticked or typed now, as the body of an answer: nothing when nothing is.
+    #pending() {
+        const question = this.state?.question;
+        if (!question) return null;
+        if (question.type === 'numerique') {
+            return { rank: question.rank, value: this.valueTarget.value.trim(), unit: question.unitRequired ? this.unitTarget.value.trim() : '' };
+        }
+        return { rank: question.rank, choices: [...this.selected] };
+    }
+
+    #queueDraft(delay) {
+        window.clearTimeout(this.draftTimer);
+        this.draftTimer = window.setTimeout(() => this.#flushDraft(), delay);
+    }
+
+    // Drafts go one after the other, so the last one saved is the last one made.
+    #flushDraft() {
+        window.clearTimeout(this.draftTimer);
+        this.draftTimer = null;
+        const body = this.#pending();
+        // Not #locked(): a last change made as the time ran out still goes - the server judges.
+        if (!body || this.mine !== null || this.state?.phase !== 'question') return;
+        this.drafts = this.drafts.then(() => this.#sendDraft(body));
+    }
+
+    async #sendDraft(body) {
+        if (this.mine !== null || this.state?.question?.rank !== body.rank) return;
+        try {
+            const response = await fetch(this.draftUrlValue, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.tokenValue, Accept: 'application/json' },
+                body: JSON.stringify(body),
+            });
+            // A refused draft (too late, already answered) says nothing: the state tells the rest.
+            this.#apply(await response.json(), true);
+        } catch {
+            // The next change sends it again.
         }
     }
 
@@ -149,8 +213,12 @@ export default class extends Controller {
         if (own) {
             this.offset = Date.parse(state.serverTime) - Date.now();
             this.mine = state.mine ?? null;
+            this.clock = state.clock ?? null;
         } else if (this.state && state.rank !== this.state.rank) {
+            // A new question reached by the hub: this player's own time on it comes from the server.
             this.mine = null;
+            this.clock = null;
+            this.#fetchState();
         }
         if (state.rank !== this.state?.rank) this.selected = new Set();
 
@@ -167,10 +235,29 @@ export default class extends Controller {
 
     #scheduleChange() {
         window.clearTimeout(this.changeTimer);
+        window.clearTimeout(this.ownTimer);
         const next = this.state?.nextChangeAt;
         if (!next) return;
         const delay = Math.max(0, Date.parse(next) - this.#now()) + 150;
         this.changeTimer = window.setTimeout(() => this.#fetchState(), delay);
+
+        // This player's time may run out before the question closes (the other has extra time):
+        // asked again then, the server answers with what was ticked made into the answer.
+        const deadline = this.#deadline();
+        if (deadline !== null && this.state.phase === 'question' && deadline < Date.parse(next)) {
+            this.ownTimer = window.setTimeout(() => this.#fetchState(), Math.max(0, deadline - this.#now()) + 1150);
+        }
+    }
+
+    // This player's deadline on the question in play, or null while it is not known.
+    #deadline() {
+        const { clock } = this;
+        return clock && this.state?.question ? Date.parse(clock.deadlineAt) : null;
+    }
+
+    #outOfTime() {
+        const deadline = this.#deadline();
+        return deadline !== null && this.#now() >= deadline;
     }
 
     #now() {
@@ -178,7 +265,7 @@ export default class extends Controller {
     }
 
     #locked() {
-        return this.sending || this.state?.phase !== 'question' || this.mine !== null;
+        return this.sending || this.state?.phase !== 'question' || this.mine !== null || this.#outOfTime();
     }
 
     #render() {
@@ -327,7 +414,8 @@ export default class extends Controller {
         this.playTarget.classList.remove('is-right', 'is-wrong');
         if (this.state.phase !== 'reveal') {
             sticker.hidden = true;
-            this.footTarget.textContent = this.mine !== null ? this.texts.sent : '';
+            if (this.mine !== null) this.footTarget.textContent = this.texts.sent;
+            else this.footTarget.textContent = this.#outOfTime() ? this.texts.timeUp : '';
             return;
         }
         const result = this.state.results?.[this.state.rank];
@@ -353,9 +441,19 @@ export default class extends Controller {
         const question = state.question;
         if (!question) return;
 
-        const total = question.seconds * 1000;
-        const left = state.phase === 'question' ? Math.max(0, Date.parse(question.deadlineAt) - this.#now()) : 0;
+        const deadline = this.#deadline();
+        const total = (this.clock?.seconds ?? 0) * 1000;
+        const left = state.phase === 'question' && deadline !== null ? Math.max(0, deadline - this.#now()) : 0;
         const seconds = Math.ceil(left / 1000);
+        // A number still being typed goes before the time runs out, not after the pause.
+        if (this.draftTimer !== null && state.phase === 'question' && left <= DRAFT_FLUSH_MS) this.#flushDraft();
+        // The time just ran out: inputs close, the foot says so.
+        const out = this.#outOfTime();
+        if (out !== this.wasOut) {
+            this.wasOut = out;
+            this.#renderInputs();
+            this.#renderReveal();
+        }
         this.timerValueTarget.textContent = String(seconds);
         this.timerTarget.style.setProperty('--qt-timer-left', String(total > 0 ? left / total : 0));
         this.timerTarget.setAttribute('aria-label', this.texts.timer.replace('%seconds%', String(seconds)));

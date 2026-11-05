@@ -85,7 +85,7 @@ enum QuestionType: string
 
     /**
      * Whether a quiz tournament's duel plays this question (design/validated/quiz-tournament.md §1,
-     * decision 12): the formats answered on a phone in 20 to 30 seconds - QCM, QCM à réponses
+     * decision 12): the formats answered on a phone in 30 to 40 seconds - QCM, QCM à réponses
      * multiples, vrai/faux, numérique. The tournament draws from ordinary quizzes and leaves the other
      * types out, like the live contest does above; nobody picks them when creating a tournament.
      */

@@ -13,6 +13,7 @@ use App\Enum\QuestionType;
 use App\Enum\QuizTournamentDuelOrigin;
 use App\Repository\QuizTournamentDuelRepository;
 use App\Repository\QuizTournamentPlayerRepository;
+use App\Service\Accommodation\AccommodationResolver;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -21,7 +22,8 @@ use Doctrine\ORM\EntityManagerInterface;
  * (QuizTournamentRounds). The caller holds the locks and the transaction, and flushes.
  *
  * Both players' lines are created if missing; the ratings before; the ladder flags of both on the
- * standings of this moment (§6.2); a seed; the questions drawn by QuizTournamentQuestionDraw over
+ * standings of this moment (§6.2); each player's extra time, frozen as a quiz attempt freezes it
+ * (AccommodationResolver - a tournament is a quiz, §5.2); a seed; the questions drawn by QuizTournamentQuestionDraw over
  * the tournament's sources, leaving out what either player saw in their last three duels; each
  * question **frozen** into a QuizTournamentDuelQuestion (QuizQuestionDefinitionTrait, its source
  * quiz and question, its choices in the order both see - QuizTournamentDuelSnapshot).
@@ -36,6 +38,7 @@ class QuizTournamentDuelFactory
         private readonly QuizTournamentPlayerRepository $players,
         private readonly QuizTournamentDuelRepository $duels,
         private readonly EntityManagerInterface $entityManager,
+        private readonly AccommodationResolver $accommodations,
     ) {
     }
 
@@ -69,6 +72,10 @@ class QuizTournamentDuelFactory
             $playerB->getRating(),
             QuizTournamentStanding::isLadderOpponent((int) $a->getId(), $playerA->getRating(), (int) $b->getId(), $rankedRatings),
             QuizTournamentStanding::isLadderOpponent((int) $b->getId(), $playerB->getRating(), (int) $a->getId(), $rankedRatings),
+        );
+        $duel->setExtraTimePercents(
+            $this->accommodations->forUser($a)->quizExtraTimeForStorage(),
+            $this->accommodations->forUser($b)->quizExtraTimeForStorage(),
         );
         $this->entityManager->persist($duel);
 

@@ -7,6 +7,7 @@ namespace App\Controller\QuizTournament;
 use App\Attribute\RequiresFeature;
 use App\Entity\QuizTournament;
 use App\Entity\QuizTournamentDuel;
+use App\Entity\User;
 use App\Enum\Feature;
 use App\Service\JsonRequestPayload;
 use App\Service\QueryValue;
@@ -93,34 +94,19 @@ class DuelController extends AbstractController
     #[Route(path: '/tournaments/{id}/duels/{duel}/answer', name: 'app_quiz_tournament_duel_answer', requirements: ['id' => '\d+', 'duel' => '\d+'], methods: ['POST'])]
     public function answer(int $id, int $duel, Request $request): JsonResponse
     {
-        if (!$this->isCsrfTokenValid('quiz_tournament_duel'.$duel, $request->headers->get('X-CSRF-Token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-        $row = $this->ownDuel($id, $duel);
-        $player = $this->player();
-        $payload = JsonRequestPayload::fromRequest($request);
-
-        $value = null;
-        $unit = null;
-        $raw = $payload->string('value');
-        if ('' !== $raw) {
-            $parsed = NumericAnswerParser::parse($raw);
-            $value = $parsed['value'];
-            $typedUnit = trim($payload->string('unit'));
-            $unit = '' !== $typedUnit ? $typedUnit : $parsed['unit'];
-        }
-
-        try {
-            return $this->json($this->engine->answer($row, $player, $payload->int('rank') ?? -1, $payload->ids('choices'), $value, $unit, $this->clock->now()));
-        } catch (QuizTournamentRefusal $refusal) {
-            return $this->json([
-                ...$this->engine->state($row, $player, $this->clock->now()),
-                'refusal' => $this->translator->trans($refusal->messageKey, $refusal->parameters),
-            ], Response::HTTP_CONFLICT);
-        }
+        return $this->play($id, $duel, $request, $this->engine->answer(...));
     }
 
-    /** H-resultat, or H-defaite for the one who lost. */
+    /**
+     * What is ticked or typed so far, not validated - the same body as an answer; it becomes the
+     * answer when the player's time runs out (QuizTournamentDuelDraft).
+     */
+    #[Route(path: '/tournaments/{id}/duels/{duel}/draft', name: 'app_quiz_tournament_duel_draft', requirements: ['id' => '\d+', 'duel' => '\d+'], methods: ['POST'])]
+    public function draft(int $id, int $duel, Request $request): JsonResponse
+    {
+        return $this->play($id, $duel, $request, $this->engine->draft(...));
+    }
+
     #[Route(path: '/tournaments/{id}/duels/{duel}/result', name: 'app_quiz_tournament_duel_result', requirements: ['id' => '\d+', 'duel' => '\d+'], methods: ['GET'])]
     public function result(int $id, int $duel, Request $request): Response
     {
@@ -208,6 +194,41 @@ class DuelController extends AbstractController
     }
 
     /** A duel of this tournament the current person is one of the two players of - else a 404. */
+    /**
+     * An answer or a draft: the body read, the engine's gesture run, a refusal answered 409 with the
+     * state and its sentence.
+     *
+     * @param callable(QuizTournamentDuel, User, int, list<int>, float|null, string|null, \DateTimeImmutable): array<string, mixed> $gesture
+     */
+    private function play(int $id, int $duel, Request $request, callable $gesture): JsonResponse
+    {
+        if (!$this->isCsrfTokenValid('quiz_tournament_duel'.$duel, $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+        $row = $this->ownDuel($id, $duel);
+        $player = $this->player();
+        $payload = JsonRequestPayload::fromRequest($request);
+
+        $value = null;
+        $unit = null;
+        $raw = $payload->string('value');
+        if ('' !== $raw) {
+            $parsed = NumericAnswerParser::parse($raw);
+            $value = $parsed['value'];
+            $typedUnit = trim($payload->string('unit'));
+            $unit = '' !== $typedUnit ? $typedUnit : $parsed['unit'];
+        }
+
+        try {
+            return $this->json($gesture($row, $player, $payload->int('rank') ?? -1, $payload->ids('choices'), $value, $unit, $this->clock->now()));
+        } catch (QuizTournamentRefusal $refusal) {
+            return $this->json([
+                ...$this->engine->state($row, $player, $this->clock->now()),
+                'refusal' => $this->translator->trans($refusal->messageKey, $refusal->parameters),
+            ], Response::HTTP_CONFLICT);
+        }
+    }
+
     private function ownDuel(int $id, int $duelId): QuizTournamentDuel
     {
         $tournament = $this->entityManager->getRepository(QuizTournament::class)->find($id);

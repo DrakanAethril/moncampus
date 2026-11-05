@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\QuizTournamentDuelOrigin;
 use App\Repository\QuizTournamentDuelRepository;
+use App\Service\Accommodation\ExtraTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -22,6 +23,11 @@ use Doctrine\ORM\Mapping as ORM;
  *
  * $ladderA / $ladderB are stamped at the start: was the opponent one of the five ranked players
  * nearest that player's rating at that moment? (§6.2, the ladder rule.)
+ *
+ * $extraTimePercentA / $extraTimePercentB are each player's « ajout de temps » (an accommodation,
+ * App\Service\Accommodation\AccommodationResolver), frozen at the start like
+ * QuizAttempt::$extraTimePercent: null when none was in play. Each question's time limit is then
+ * that player's own (timeLimits()) - the opponent's never moves.
  */
 #[ORM\Entity(repositoryClass: QuizTournamentDuelRepository::class)]
 #[ORM\Table(name: 'quiz_tournament_duel')]
@@ -84,6 +90,12 @@ class QuizTournamentDuel
 
     #[ORM\Column]
     private bool $ladderB;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, nullable: true)]
+    private ?string $extraTimePercentA = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, nullable: true)]
+    private ?string $extraTimePercentB = null;
 
     /** @var Collection<int, QuizTournamentDuelQuestion> */
     #[ORM\OneToMany(mappedBy: 'duel', targetEntity: QuizTournamentDuelQuestion::class, cascade: ['persist'], orphanRemoval: true)]
@@ -252,6 +264,41 @@ class QuizTournamentDuel
     public function isLadderB(): bool
     {
         return $this->ladderB;
+    }
+
+    public function getExtraTimePercentA(): ?string
+    {
+        return $this->extraTimePercentA;
+    }
+
+    public function getExtraTimePercentB(): ?string
+    {
+        return $this->extraTimePercentB;
+    }
+
+    /** Both players' extra time, as AccommodationProfile::quizExtraTimeForStorage() gives it - set when the duel is made. */
+    public function setExtraTimePercents(?string $playerA, ?string $playerB): static
+    {
+        $this->extraTimePercentA = $playerA;
+        $this->extraTimePercentB = $playerB;
+
+        return $this;
+    }
+
+    /**
+     * Each player's time limit on this question, keyed by player id: the question's own, plus the
+     * extra time that player was granted.
+     *
+     * @return array<int, int>
+     */
+    public function timeLimits(QuizTournamentDuelQuestion $question): array
+    {
+        $seconds = $question->getTimeLimitSeconds();
+
+        return [
+            (int) $this->playerA->getId() => ExtraTime::apply($seconds, (float) ($this->extraTimePercentA ?? '0')) ?? $seconds,
+            (int) $this->playerB->getId() => ExtraTime::apply($seconds, (float) ($this->extraTimePercentB ?? '0')) ?? $seconds,
+        ];
     }
 
     /** @return Collection<int, QuizTournamentDuelQuestion> */
