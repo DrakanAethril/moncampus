@@ -45,6 +45,18 @@
                 </div>
             {% endif %}
 
+            {% if payload.notes is defined and payload.notes is not empty %}
+                {# What an import guessed rather than read - a Kahoot slider's margin, chiefly. The
+                   questions are imported; the teacher is told what to check. #}
+                <div class="alert alert-info" role="status">
+                    <ul class="mb-0 ps-3">
+                        {% for note in payload.notes %}
+                            <li>{{ note }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
             {% if incompleteCount > 0 %}
                 {# A warning, never a refusal: an incomplete question must be importable, or
                    generating questions by AI loses its point as soon as one carries an image. The

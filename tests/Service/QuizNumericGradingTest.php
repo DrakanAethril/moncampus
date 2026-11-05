@@ -216,13 +216,16 @@ class QuizNumericGradingTest extends TestCase
 
     // --- enum plumbing ---
 
-    public function testTheNumericTypesAreExcludedFromLiveAndFromAnswerRows(): void
+    public function testTheNumericTypesKeepNoAnswerRowsAndOnlyTheCalculatedOneStaysOutOfLive(): void
     {
         foreach ([QuestionType::Numerique, QuestionType::Calculee] as $type) {
-            self::assertFalse($type->isAvailableInLiveContest());
             self::assertFalse($type->usesAnswerRows());
             self::assertTrue($type->usesNumericConfig());
         }
+        // Kahoot's slider is a numérique; a calculée asks each student a different thing, which a
+        // projected board cannot show.
+        self::assertTrue(QuestionType::Numerique->isAvailableInLiveContest());
+        self::assertFalse(QuestionType::Calculee->isAvailableInLiveContest());
 
         self::assertTrue(QuestionType::Calculee->usesFormula());
         self::assertFalse(QuestionType::Numerique->usesFormula(), 'a numérique has one written value');

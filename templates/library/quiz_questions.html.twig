@@ -44,6 +44,7 @@
                                 <option value="numerique" {{ typeFilter and typeFilter.value == 'numerique' ? 'selected' }}>{{ 'questionTypeNumeriqueLabel'|trans }}</option>
                                 <option value="calculee" {{ typeFilter and typeFilter.value == 'calculee' ? 'selected' }}>{{ 'questionTypeCalculeeLabel'|trans }}</option>
                                 <option value="reponse_courte" {{ typeFilter and typeFilter.value == 'reponse_courte' ? 'selected' }}>{{ 'questionTypeReponseCourteLabel'|trans }}</option>
+                                <option value="vote" {{ typeFilter and typeFilter.value == 'vote' ? 'selected' }}>{{ 'questionTypeVoteLabel'|trans }}</option>
                             </select>
                         </form>
                     </div>
@@ -116,6 +117,7 @@
                              data-quiz-question-editor-false-label-value="{{ 'answerFalseLabel'|trans }}"
                              data-quiz-question-editor-hint-default-value="{{ 'quizQuestionAnswersFieldHint'|trans }}"
                              data-quiz-question-editor-hint-ordre-value="{{ 'quizQuestionAnswersFieldHintOrdre'|trans }}"
+                             data-quiz-question-editor-hint-vote-value="{{ 'quizQuestionAnswersFieldHintVote'|trans }}"
                              data-quiz-question-editor-label-enonce-value="{{ 'quizQuestionLabelFieldLabel'|trans }}"
                              data-quiz-question-editor-label-blanks-value="{{ 'quizBlankTextFieldLabel'|trans }}"
                              data-quiz-question-editor-label-calculee-value="{{ 'quizNumericStatementFieldLabel'|trans }}"
@@ -251,7 +253,7 @@
                                 <div data-quiz-question-editor-target="classicSection">
                                     <div class="d-flex flex-column gap-3">
                                         <div class="d-flex flex-column gap-2">
-                                            <label class="form-label mb-0">{{ 'quizQuestionAnswersFieldLabel'|trans }} <span class="text-secondary fw-normal">— <span data-quiz-question-editor-target="hintText">{{ (selectedQuestion.type.value == 'ordre' ? 'quizQuestionAnswersFieldHintOrdre' : 'quizQuestionAnswersFieldHint')|trans }}</span></span></label>
+                                            <label class="form-label mb-0">{{ 'quizQuestionAnswersFieldLabel'|trans }} <span class="text-secondary fw-normal">— <span data-quiz-question-editor-target="hintText">{{ (selectedQuestion.type.value == 'ordre' ? 'quizQuestionAnswersFieldHintOrdre' : (selectedQuestion.type.value == 'vote' ? 'quizQuestionAnswersFieldHintVote' : 'quizQuestionAnswersFieldHint'))|trans }}</span></span></label>
                                             <div class="cm-answers" data-quiz-question-editor-target="answerList">
                                                 {% for answer in selectedQuestion.answers %}
                                                     <div class="cm-answer-row" data-quiz-question-editor-target="answerRow">

@@ -79,26 +79,28 @@ class NekoConPlayTest extends FunctionalTestCase
     public function testARepairedTicketIsExplainedThenClosedWithItsStars(): void
     {
         $this->call('GET', 'scenario');
-        $session = self::int($this->call('POST', 'tickets', ['ticket' => 'T01']), 'session');
+        $start = $this->call('POST', 'tickets', ['ticket' => 'T01']);
+        $session = self::int($start, 'session');
 
-        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'expliquer', 'input' => 1], 409);
+        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'expliquer', 'input' => $this->shown($this->game, $start, 'expliquer', 1)], 409);
         $refused = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'corriger', 'input' => ['passed' => false, 'failed' => ['Le slogan s’affiche avec ses accents'], 'files' => ['index.html' => '<html>secret</html>']]]);
         self::assertFalse($refused['ok']);
         self::assertSame(0, $refused['next']);
 
         // From another computer: a new opening, the same step.
-        $session = self::int($this->call('POST', 'tickets', ['ticket' => 'T01']), 'session');
+        $start = $this->call('POST', 'tickets', ['ticket' => 'T01']);
+        $session = self::int($start, 'session');
         $accepted = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'corriger', 'input' => ['passed' => true, 'failed' => []]]);
         self::assertTrue($accepted['ok']);
         self::assertSame(1, $accepted['next']);
         self::assertFalse($accepted['done']);
         self::assertSame(1, $this->call('POST', 'tickets', ['ticket' => 'T01'])['step'], 'the game resumes where it was left');
 
-        $wrong = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'expliquer', 'input' => 0]);
+        $wrong = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'expliquer', 'input' => $this->shown($this->game, $start, 'expliquer', 0)]);
         self::assertFalse($wrong['ok']);
         self::assertSame('police-accents', $wrong['misconception']);
         self::assertSame('ines', self::arr($wrong, 'reaction')['who'] ?? null);
-        $right = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'expliquer', 'input' => 1]);
+        $right = $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'expliquer', 'input' => $this->shown($this->game, $start, 'expliquer', 1)]);
         self::assertTrue($right['ok']);
         self::assertTrue($right['done']);
 
@@ -117,7 +119,8 @@ class NekoConPlayTest extends FunctionalTestCase
     public function testInesHelpOpensOnlyOnceAskedAndCostsStarsNotItsErrors(): void
     {
         $this->call('GET', 'scenario');
-        $session = self::int($this->call('POST', 'tickets', ['ticket' => 'T02']), 'session');
+        $start = $this->call('POST', 'tickets', ['ticket' => 'T02']);
+        $session = self::int($start, 'session');
 
         $this->call('POST', 'ticket-sessions/'.$session.'/guide', ['step' => 'localiser', 'input' => '<p>'], 409);
         self::assertSame(['hints' => 1, 'guideStep' => 0], $this->call('POST', 'ticket-sessions/'.$session.'/hint'));
@@ -129,7 +132,7 @@ class NekoConPlayTest extends FunctionalTestCase
         self::assertSame(1, $line['next']);
 
         $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'corriger', 'input' => ['passed' => true, 'failed' => []]]);
-        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'expliquer', 'input' => 2]);
+        $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => 'expliquer', 'input' => $this->shown($this->game, $start, 'expliquer', 2)]);
         $end = $this->call('POST', 'ticket-sessions/'.$session.'/end');
         self::assertSame(2, $end['quality'], 'one rung of help, and the error made during it does not count');
     }
@@ -202,19 +205,20 @@ class NekoConPlayTest extends FunctionalTestCase
         $start = $this->call('POST', 'tickets', ['ticket' => $id]);
         $session = self::int($start, 'session');
         foreach (\array_slice($ticket->steps, self::int($start, 'step')) as $step) {
-            $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => $step->id, 'input' => $this->rightInput($step)]);
+            $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => $step->id, 'input' => $this->rightInput($step, $start)]);
         }
 
         return $this->call('POST', 'ticket-sessions/'.$session.'/end');
     }
 
-    private function rightInput(ScenarioStep $step): mixed
+    /** @param array<array-key, mixed> $start the answer to `POST tickets` */
+    private function rightInput(ScenarioStep $step, array $start): mixed
     {
         return match ($step->kind) {
             ScenarioStepKind::Fix => ['passed' => true, 'failed' => []],
             ScenarioStepKind::Password => 'NekoSenpaiRamen2026!',
             ScenarioStepKind::Line => $step->answers[0],
-            default => array_search(true, array_column($step->options, 'ok'), true),
+            default => $this->shown($this->game, $start, $step->id, (int) array_search(true, array_column($step->options, 'ok'), true)),
         };
     }
 

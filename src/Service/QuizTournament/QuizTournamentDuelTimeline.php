@@ -90,12 +90,24 @@ final readonly class QuizTournamentDuelTimeline
         return $due;
     }
 
-    /** Is an answer to this question still taken: served, and its deadline not passed. */
-    public function acceptsAnswer(int $rank, \DateTimeImmutable $now): bool
+    /** Is this player's answer to this question still taken: served, and their own deadline not passed. */
+    public function acceptsAnswer(int $rank, int $player, \DateTimeImmutable $now): bool
     {
-        $moment = $this->moments[$rank] ?? null;
+        $deadline = ($this->moments[$rank] ?? null)?->deadlineFor($player);
 
-        return null !== $moment && $moment->servedAt <= $now && $now <= $moment->deadlineAt;
+        return null !== $deadline && $this->moments[$rank]->servedAt <= $now && $now <= $deadline;
+    }
+
+    /**
+     * Has this player's time on this question run out by now - what turns the answer they were
+     * preparing into their answer (QuizTournamentDuelEngine). The second of the deadline counts as
+     * over, so that nothing is told of a question closing on that very second before it is done.
+     */
+    public function isOutOfTime(int $rank, int $player, \DateTimeImmutable $now): bool
+    {
+        $deadline = ($this->moments[$rank] ?? null)?->deadlineFor($player);
+
+        return null !== $deadline && $now >= $deadline;
     }
 
     /** Has this question closed by now - its right/wrong may be told. */

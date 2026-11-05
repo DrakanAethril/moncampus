@@ -11,6 +11,7 @@ use App\Entity\QuizLiveSession;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\Feature;
+use App\Enum\LiveSessionStatus;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizFolderRepository;
 use App\Repository\QuizLiveParticipantRepository;
@@ -27,7 +28,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mercure\Authorization;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -133,12 +133,20 @@ class QuizLiveHostController extends AbstractController
 
         try {
             $session = $liveSessionService->createSession($templates, $program, $this->currentUser(), $secondsPerQuestion > 0 ? $secondsPerQuestion : null, '' !== $name ? $name : null);
-        } catch (LiveTemplateNotEligibleException $exception) {
-            $this->addFlash('error', $exception->hasPlayableQuestions()
-                ? $translator->trans('quizLiveNotEligibleFlashMessage', ['%questions%' => implode(', ', $exception->getOffendingQuestionLabels())])
-                : $translator->trans('quizLiveNoPlayableQuestionFlashMessage'));
+        } catch (LiveTemplateNotEligibleException) {
+            $this->addFlash('error', $translator->trans('quizLiveNoPlayableQuestionFlashMessage'));
 
             return $this->redirectToRoute('app_program_quiz_live_new', ['id' => $program->getId()]);
+        }
+
+        // Left out rather than refused: a texte à trous or a zone question has no place in the
+        // room, and the rest of the pool still plays. The host is told which.
+        $skipped = $liveSessionService->skippedQuestions($templates);
+        if ([] !== $skipped) {
+            $this->addFlash('warning', $translator->trans('quizLiveSkippedQuestionsFlashMessage', [
+                '%count%' => \count($skipped),
+                '%questions%' => implode(' · ', \array_slice($skipped, 0, 5)).(\count($skipped) > 5 ? ' …' : ''),
+            ]));
         }
 
         return $this->redirectToRoute('app_program_quiz_live_created', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
@@ -164,12 +172,12 @@ class QuizLiveHostController extends AbstractController
     // the response. The template then just opens `new EventSource(url, {withCredentials: true})` -
     // no token ever touches page JS.
     #[Route(path: '/programs/{id}/quiz/live/{sessionId}/projector', name: 'app_program_quiz_live_projector', requirements: ['sessionId' => '\d+'])]
-    public function projector(int $id, int $sessionId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizLiveSessionRepository $sessionRepository, QuizLiveSessionService $liveSessionService, HubInterface $mercureHub, Authorization $mercureAuthorization): Response
+    public function projector(int $id, int $sessionId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizLiveSessionRepository $sessionRepository, QuizLiveSessionService $liveSessionService, HubInterface $mercureHub): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $session = $this->findSessionOrNotFound($program, $sessionId, $sessionRepository);
 
-        $mercureAuthorization->setCookie($request, [$liveSessionService->hostTopic($session)], [], [], 'subscriber');
+        $liveSessionService->subscribe($request, $liveSessionService->hostTopic($session));
 
         return $this->render('program/quiz_live_projector.html.twig', [
             'program' => $program,
@@ -178,10 +186,24 @@ class QuizLiveHostController extends AbstractController
             'topic' => $liveSessionService->hostTopic($session),
             'initialState' => $liveSessionService->buildHostSnapshot($session),
             'advanceUrl' => $this->generateUrl('app_program_quiz_live_advance', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
+            'stateUrl' => $this->generateUrl('app_program_quiz_live_projector_state', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
             'cancelUrl' => $this->generateUrl('app_program_quiz_live_cancel', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
             'finishUrl' => $this->generateUrl('app_program_quiz_live_finish', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
             'resultUrl' => $this->generateUrl('app_program_quiz_live_history', ['id' => $program->getId()]),
         ]);
+    }
+
+    /**
+     * The board's phase as it is now - asked again when the projector's stream reconnects after a
+     * network drop, since the hub replays none of the events published meanwhile.
+     */
+    #[Route(path: '/programs/{id}/quiz/live/{sessionId}/projector/state', name: 'app_program_quiz_live_projector_state', requirements: ['sessionId' => '\d+'], methods: ['GET'])]
+    public function projectorState(int $id, int $sessionId, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizLiveSessionRepository $sessionRepository, QuizLiveSessionService $liveSessionService): Response
+    {
+        $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $session = $this->findSessionOrNotFound($program, $sessionId, $sessionRepository);
+
+        return $this->json(['state' => $liveSessionService->buildHostSnapshot($session)]);
     }
 
     #[Route(path: '/programs/{id}/quiz/live/{sessionId}/advance', name: 'app_program_quiz_live_advance', requirements: ['sessionId' => '\d+'], methods: ['POST'])]
@@ -194,13 +216,19 @@ class QuizLiveHostController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
+        // The step the screen was showing when it asked: a click and the screen's own timer arriving
+        // together must move the room once (QuizLiveSessionService::advance()).
+        $payload = JsonRequestPayload::fromRequest($request);
+        $expectedStatus = LiveSessionStatus::tryFrom($payload->string('from'));
+        $expectedIndex = $payload->int('questionIndex');
+
         try {
             // start() and advance() are two service methods but one button (Lancer/Suivant/Question
             // suivante) - the controller picks which to call based on Lobby vs everything else.
-            if ('lobby' === $session->getStatus()->value) {
+            if (LiveSessionStatus::Lobby === $session->getStatus()) {
                 $liveSessionService->start($session, $this->currentUser());
             } else {
-                $liveSessionService->advance($session, $this->currentUser());
+                $liveSessionService->advance($session, $this->currentUser(), $expectedStatus, $expectedIndex);
             }
         } catch (LiveSessionStateException $exception) {
             return $this->json(['error' => $exception->getMessage()], 409);

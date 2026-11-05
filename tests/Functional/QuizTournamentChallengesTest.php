@@ -276,7 +276,7 @@ class QuizTournamentChallengesTest extends FunctionalTestCase
                 self::assertSame(42.0, $question->getNumericAnswer());
             } else {
                 self::assertCount(4, $question->getChoices());
-                self::assertSame(20, $question->getTimeLimitSeconds());
+                self::assertSame(30, $question->getTimeLimitSeconds());
             }
         }
         self::assertLessThanOrEqual(5, $trueFalse);

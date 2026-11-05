@@ -784,7 +784,7 @@
         var ro = remoteOwner(M, pkt.dst);
         if (ro) { cur = ro; inIf = 'wan'; hops.push({ dev: ro, iface: 'wan' }); first = false; continue; }
         if (isPrivate(pkt.dst)) return die('internet', 'une adresse privée (' + ips(pkt.dst) + ') ne circule pas sur Internet');
-        if (!W.internet.hosts[ips(pkt.dst)] && pkt.ct !== 'est') return die('internet', 'personne ne répond à ' + ips(pkt.dst));
+        if (!W.internet.hosts[ips(pkt.dst)] && pkt.ct !== 'est') return die('internet', 'le paquet est bien sorti sur Internet, mais personne ne répond à ' + ips(pkt.dst) + ' (pour tester Internet : ping 8.8.8.8)');
         return { ok: true, hops: hops, delivered: { dev: 'internet', iface: 'wan' }, pkt: pkt, ctx: ctx };
       }
       // DNAT on the way in, before deciding whether the packet is for this device
@@ -1118,7 +1118,11 @@
       return { ip: r.ip };
     }
     if (cmd === 'help' || cmd === 'aide') {
-      return ['Commandes : ping <hôte>, traceroute <hôte>, ip a, ip r, dhclient -v ens18, dig <nom>, nc -zv <hôte> <port>, curl -I https://<nom>, ssh <utilisateur>@<hôte>, wg, clear'];
+      return [
+        'Commandes : ping <hôte>, traceroute <hôte>, ip a, ip r, dhclient -v ens18, dig <nom>, nc -zv <hôte> <port>, curl -I https://<nom>, ssh <utilisateur>@<hôte>, wg, clear',
+        'Tester Internet depuis cette machine : ping 8.8.8.8 (ou 1.1.1.1). Avec le DNS en plus : ping site.example. Si ça échoue, traceroute 8.8.8.8 montre où le paquet s\'arrête.',
+        'Changer de machine : la liste à côté de « CONSOLE », ou un clic sur la carte.'
+      ];
     }
     if (cmd === 'ip' && /^(a|addr|address)$/.test(w[1] || '')) {
       out.push('1: lo: <LOOPBACK,UP> mtu 65536', '    inet 127.0.0.1/8 scope host lo');

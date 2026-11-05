@@ -75,17 +75,20 @@ final readonly class ScenarioStep
     }
 
     /**
-     * What the game is told of the step: its question, its options' texts, the items to order in
-     * the order written - never which is right, never a misconception, never the line's text, never
-     * the right order.
+     * What the game is told of the step: its question, its options' texts - in $optionOrder
+     * (ScenarioRules::optionOrder()), else as written -, the items to order in the order written -
+     * never which is right, never a misconception, never the line's text, never the right order.
+     *
+     * @param list<int>|null $optionOrder position => the option's written rank
      *
      * @return array<string, mixed>
      */
-    public function publicView(): array
+    public function publicView(?array $optionOrder = null): array
     {
         $view = ['id' => $this->id, 'kind' => $this->kind->value, 'prompt' => $this->prompt];
         if ($this->kind->hasOptions()) {
-            $view['options'] = array_map(static fn (array $o): string => $o['text'], $this->options);
+            $texts = array_map(static fn (array $o): string => $o['text'], $this->options);
+            $view['options'] = null === $optionOrder ? $texts : array_map(static fn (int $rank): string => $texts[$rank], $optionOrder);
         }
         if (null !== $this->file) {
             $view['file'] = $this->file;

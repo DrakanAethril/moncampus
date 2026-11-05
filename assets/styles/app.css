@@ -2440,6 +2440,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-answers--ordre .cm-answer-row::before { content: counter(cm-answer) '.'; flex: none; font: 600 12.5px var(--cm-font-ui); color: var(--cm-faint); width: 14px; }
 .cm-answers--ordre .cm-answer-move { display: none; }
 .cm-answers--vraifaux .cm-answer-input { color: var(--cm-faint); }
+.cm-answers--vote .cm-answer-toggle { visibility: hidden; }
 .cm-answer-position { display: none; flex: none; width: auto; }
 .cm-answers--ordre .cm-answer-position { display: inline-block; }
 
@@ -2891,6 +2892,33 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-quiz-live-answer--gold .cm-quiz-live-answer__shape { color: rgba(18,52,77,.75); }
 .cm-quiz-live-answer--green { background: var(--cm-positive-tx); }
 .cm-quiz-live-answer--red { background: var(--cm-red-tx); }
+/* Kahoot's fifth and sixth shapes. The board is always dark, whatever the theme, so the two colours
+   are fixed rather than tokens. */
+.cm-quiz-live-answer--purple { background: #7a4fb5; }
+.cm-quiz-live-answer--teal { background: #1d8584; }
+.cm-quiz-live-answers--wide { grid-template-columns: repeat(3, 1fr); }
+.cm-quiz-live-answer__rank { font: 700 22px var(--cm-font-ui); min-width: 28px; }
+.cm-quiz-live-question__label--reading { font-size: 54px; }
+.cm-quiz-live-question__label--small { font-size: 26px; flex: none; }
+.cm-quiz-live-question__hint { font: 600 17px var(--cm-font-ui); color: var(--cm-gold); text-align: center; margin-top: 14px; }
+
+/* Results: one bar per proposition (or per typed answer, per band of numbers), the right ones
+   ticked and the others greyed - quiz_live_host_controller.js showResults(). */
+.cm-quiz-live-results__expected { font: 600 24px var(--cm-font-ui); color: var(--cm-gold); text-align: center; }
+.cm-quiz-live-result { display: flex; align-items: center; gap: 16px; }
+.cm-quiz-live-result__label { display: flex; align-items: center; gap: 10px; width: 360px; flex: none; font: 600 20px var(--cm-font-ui); color: #fff; }
+.cm-quiz-live-result__shape { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; flex: none; font-size: 18px; color: #fff; }
+.cm-quiz-live-result__bar { height: 100%; border-radius: 8px; background: var(--cm-brand); }
+.cm-quiz-live-result__shape--blue, .cm-quiz-live-result__bar--blue { background: var(--cm-brand); }
+.cm-quiz-live-result__shape--gold, .cm-quiz-live-result__bar--gold { background: var(--cm-gold); color: var(--cm-navy); }
+.cm-quiz-live-result__shape--green, .cm-quiz-live-result__bar--green { background: var(--cm-positive-tx); }
+.cm-quiz-live-result__shape--red, .cm-quiz-live-result__bar--red { background: var(--cm-red-tx); }
+.cm-quiz-live-result__shape--purple, .cm-quiz-live-result__bar--purple { background: #7a4fb5; }
+.cm-quiz-live-result__shape--teal, .cm-quiz-live-result__bar--teal { background: #1d8584; }
+.cm-quiz-live-result__bar-wrap { flex: 1; height: 34px; display: flex; align-items: center; }
+.cm-quiz-live-result__count { width: 48px; text-align: right; font: 700 20px var(--cm-font-ui); color: #fff; }
+.cm-quiz-live-result__mark { width: 28px; font: 700 24px var(--cm-font-ui); color: #7fd99a; }
+.cm-quiz-live-result.is-wrong { opacity: .45; }
 
 .cm-quiz-live-shapes { flex: 1; display: grid; grid-template-rows: 1fr 1fr 1fr 1fr; gap: 12px; }
 .cm-quiz-live-shape {
@@ -2903,6 +2931,21 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-quiz-live-shape--gold { background: var(--cm-gold); color: var(--cm-navy); }
 .cm-quiz-live-shape--green { background: var(--cm-positive-tx); }
 .cm-quiz-live-shape--red { background: var(--cm-red-tx); }
+.cm-quiz-live-shape--purple { background: #7a4fb5; }
+.cm-quiz-live-shape--teal { background: #1d8584; }
+.cm-quiz-live-shape { position: relative; }
+/* The place a shape was tapped at, for a remise en ordre. */
+.cm-quiz-live-shape__rank { position: absolute; top: 8px; right: 12px; font: 700 22px var(--cm-font-ui); color: #fff; }
+.cm-quiz-live-value { font: 700 48px var(--cm-font-title); color: #fff; text-align: center; }
+.cm-quiz-live-slider { width: 100%; accent-color: var(--cm-gold); height: 36px; }
+.cm-quiz-live-input {
+    width: 100%; border-radius: 12px; border: 2px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08);
+    color: #fff; font: 600 26px var(--cm-font-ui); padding: 14px 16px; text-align: center;
+}
+.cm-quiz-live-input:focus { outline: none; border-color: var(--cm-gold); }
+.cm-quiz-live-verdict { font: 700 30px var(--cm-font-title); color: #fff; }
+.cm-quiz-live-verdict.is-correct { color: #7fd99a; }
+.cm-quiz-live-verdict.is-wrong { color: #ff9b8f; }
 
 .cm-quiz-live-rank { display: flex; align-items: center; gap: 16px; }
 .cm-quiz-live-rank__position { width: 34px; font: 700 18px var(--cm-font-ui); color: #9db4c6; text-align: right; }
@@ -13986,14 +14029,14 @@ dialog.cm-wall-panel::backdrop { background: rgba(18, 52, 77, .2); }
 .cm-sg-bar__fill { display: block; height: 100%; }
 .cm-sg-card__value { font-size: 12.5px; color: var(--cm-muted); }
 .cm-sg-card__cta { font: 600 13.5px var(--cm-font-ui); color: var(--cm-brand); }
-/* A game played on a computer only (Panique à la Neko-Con, 1 100 px): on a narrower screen the
-   card says so instead of opening it. */
+/* A game played on a computer only (the scenario games, 1 100 px): on a screen too small for it
+   the card says so instead of opening it. The *screen*, not the window - the game opens full
+   screen, and an installed app's window is often narrower than its screen: sg_launch_controller.js
+   sets .cm-sg-small-screen from screen.width/height. */
 .cm-sg-card__desktop { display: none; margin: 0; font: 600 13px var(--cm-font-ui); color: var(--cm-muted); }
-@media (max-width: 1099.98px) {
-    .cm-sg-card--desktop .cm-sg-card__desktop { display: block; }
-    .cm-sg-card--desktop .cm-sg-card__cta { display: none; }
-    .cm-sg-card--desktop a[href] { pointer-events: none; cursor: default; }
-}
+.cm-sg-small-screen .cm-sg-card--desktop .cm-sg-card__desktop { display: block; }
+.cm-sg-small-screen .cm-sg-card--desktop .cm-sg-card__cta { display: none; }
+.cm-sg-small-screen .cm-sg-card--desktop a[href] { pointer-events: none; cursor: default; }
 @media (max-width: 760px) { .cm-sg-catalog { grid-template-columns: 1fr; } }
 
 /* --- « Jouer », the student's page of games (design/validated/quiz-tournament.md §15) --- */

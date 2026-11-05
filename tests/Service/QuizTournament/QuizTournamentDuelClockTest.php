@@ -17,6 +17,8 @@ use PHPUnit\Framework\TestCase;
 class QuizTournamentDuelClockTest extends TestCase
 {
     private const string START = '2026-11-10 10:00:00';
+    private const int A = 11;
+    private const int B = 12;
 
     public function testTheFirstQuestionIsServedAfterTheLead(): void
     {
@@ -54,7 +56,7 @@ class QuizTournamentDuelClockTest extends TestCase
     {
         $lead = QuizTournamentDuelClock::LEAD_SECONDS;
         $timeline = QuizTournamentDuelClock::timeline($this->at(0), [
-            $this->question(20, null, [$this->at($lead + 3), $this->at($lead + 7)]),
+            $this->question(20, null, [self::A => $this->at($lead + 3), self::B => $this->at($lead + 7)]),
             $this->question(20),
         ]);
 
@@ -66,7 +68,7 @@ class QuizTournamentDuelClockTest extends TestCase
     public function testOneAnswerDoesNotCloseTheQuestion(): void
     {
         $lead = QuizTournamentDuelClock::LEAD_SECONDS;
-        $timeline = QuizTournamentDuelClock::timeline($this->at(0), [$this->question(20, null, [$this->at($lead + 3)]), $this->question(20)]);
+        $timeline = QuizTournamentDuelClock::timeline($this->at(0), [$this->question(20, null, [self::A => $this->at($lead + 3)]), $this->question(20)]);
 
         self::assertEquals($this->at($lead + 20), $timeline->moments[0]->closesAt);
         self::assertSame(QuizTournamentDuelPhase::Question, $timeline->phaseAt($this->at($lead + 10)));
@@ -139,12 +141,51 @@ class QuizTournamentDuelClockTest extends TestCase
         $lead = QuizTournamentDuelClock::LEAD_SECONDS;
         $timeline = QuizTournamentDuelClock::timeline($this->at(0), [$this->question(20), $this->question(20)]);
 
-        self::assertFalse($timeline->acceptsAnswer(0, $this->at($lead - 1)));
-        self::assertTrue($timeline->acceptsAnswer(0, $this->at($lead)));
-        self::assertTrue($timeline->acceptsAnswer(0, $this->at($lead + 20)));
-        self::assertFalse($timeline->acceptsAnswer(0, $this->at($lead + 21)));
-        self::assertFalse($timeline->acceptsAnswer(1, $this->at($lead + 10)), 'never the next question before it is served');
-        self::assertFalse($timeline->acceptsAnswer(7, $this->at($lead + 10)));
+        self::assertFalse($timeline->acceptsAnswer(0, self::A, $this->at($lead - 1)));
+        self::assertTrue($timeline->acceptsAnswer(0, self::A, $this->at($lead)));
+        self::assertTrue($timeline->acceptsAnswer(0, self::A, $this->at($lead + 20)));
+        self::assertFalse($timeline->acceptsAnswer(0, self::A, $this->at($lead + 21)));
+        self::assertFalse($timeline->acceptsAnswer(1, self::A, $this->at($lead + 10)), 'never the next question before it is served');
+        self::assertFalse($timeline->acceptsAnswer(7, self::A, $this->at($lead + 10)));
+        self::assertFalse($timeline->acceptsAnswer(0, 99, $this->at($lead + 10)), 'never somebody who is not in the duel');
+    }
+
+    public function testExtraTimeGivesThatPlayerTheirOwnDeadline(): void
+    {
+        // B has a third more (« tiers temps »): 30 s become 40 s for B alone.
+        $lead = QuizTournamentDuelClock::LEAD_SECONDS;
+        $timeline = QuizTournamentDuelClock::timeline($this->at(0), [$this->question(30, null, [], 40), $this->question(30)]);
+        $moment = $timeline->moments[0];
+
+        self::assertEquals($this->at($lead + 30), $moment->deadlineFor(self::A));
+        self::assertEquals($this->at($lead + 40), $moment->deadlineFor(self::B));
+        self::assertEquals($this->at($lead + 40), $moment->deadlineAt, 'the question takes answers until the last deadline');
+        self::assertFalse($timeline->acceptsAnswer(0, self::A, $this->at($lead + 31)));
+        self::assertTrue($timeline->acceptsAnswer(0, self::B, $this->at($lead + 31)));
+        self::assertTrue($timeline->acceptsAnswer(0, self::B, $this->at($lead + 40)));
+        self::assertFalse($timeline->acceptsAnswer(0, self::B, $this->at($lead + 41)));
+
+        // Nobody answered: the question stays open until B's deadline, A's having passed.
+        self::assertEquals($this->at($lead + 40), $moment->closesAt);
+        self::assertSame(QuizTournamentDuelPhase::Question, $timeline->phaseAt($this->at($lead + 35)));
+        self::assertEquals($this->at($lead + 40 + QuizTournamentDuelClock::TRANSITION_SECONDS), $timeline->moments[1]->servedAt);
+    }
+
+    public function testAQuestionClosesOnceEachPlayerHasAnsweredOrRunOutOfTime(): void
+    {
+        $lead = QuizTournamentDuelClock::LEAD_SECONDS;
+
+        // A ran out at 30 s, B (40 s) answered at 33 s: closed then, not at 40.
+        $timeline = QuizTournamentDuelClock::timeline($this->at(0), [$this->question(30, null, [self::B => $this->at($lead + 33)], 40)]);
+        self::assertEquals($this->at($lead + 33), $timeline->moments[0]->closesAt);
+
+        // B answered at 12 s: A, who answered nothing, keeps their 30 s.
+        $timeline = QuizTournamentDuelClock::timeline($this->at(0), [$this->question(30, null, [self::B => $this->at($lead + 12)], 40)]);
+        self::assertEquals($this->at($lead + 30), $timeline->moments[0]->closesAt);
+
+        // Both answered early: closed at the second answer, whatever the deadlines.
+        $timeline = QuizTournamentDuelClock::timeline($this->at(0), [$this->question(30, null, [self::A => $this->at($lead + 4), self::B => $this->at($lead + 9)], 40)]);
+        self::assertEquals($this->at($lead + 9), $timeline->moments[0]->closesAt);
     }
 
     public function testTheClockReadsWholeSeconds(): void
@@ -161,12 +202,14 @@ class QuizTournamentDuelClockTest extends TestCase
     }
 
     /**
-     * @param list<\DateTimeImmutable> $answeredAt
+     * A question between A and B; $secondsB when B has extra time.
      *
-     * @return array{seconds: int, servedAt: \DateTimeImmutable|null, answeredAt: list<\DateTimeImmutable>}
+     * @param array<int, \DateTimeImmutable> $answeredAt player => when they answered
+     *
+     * @return array{seconds: array<int, int>, servedAt: \DateTimeImmutable|null, answeredAt: array<int, \DateTimeImmutable>}
      */
-    private function question(int $seconds, ?\DateTimeImmutable $servedAt = null, array $answeredAt = []): array
+    private function question(int $seconds, ?\DateTimeImmutable $servedAt = null, array $answeredAt = [], ?int $secondsB = null): array
     {
-        return ['seconds' => $seconds, 'servedAt' => $servedAt, 'answeredAt' => $answeredAt];
+        return ['seconds' => [self::A => $seconds, self::B => $secondsB ?? $seconds], 'servedAt' => $servedAt, 'answeredAt' => $answeredAt];
     }
 }

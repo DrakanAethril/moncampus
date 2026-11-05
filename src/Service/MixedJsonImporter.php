@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
+use App\Enum\QuestionTimeMode;
 use App\Enum\QuestionType;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -140,8 +141,11 @@ final class MixedJsonImporter implements InteractiveQuizImporter
             foreach ($sub['errors'] as $error) {
                 $errors[] = $error;
             }
+            // The question's own time is read here, once, for every family: a reader of its own
+            // format knows nothing of it (QuestionTimeMode::fromDocument()).
+            [$timeMode, $timeSeconds] = QuestionTimeMode::fromDocument($raw['seconds'] ?? null);
             foreach ($sub['questions'] as $question) {
-                $questions[] = $question;
+                $questions[] = ['timeMode' => $timeMode->value, 'timeSeconds' => $timeSeconds] + $question;
             }
         }
 
@@ -168,7 +172,18 @@ final class MixedJsonImporter implements InteractiveQuizImporter
 
             // Again one at a time: every reader appends at the end of whatever bank it finds, so
             // this is what interleaves the families back into the document's order.
-            $this->readerFor($this->typeOf($raw))?->appendQuestions($template, [$raw], $copyImages);
+            $reader = $this->readerFor($this->typeOf($raw));
+            if (null === $reader) {
+                continue;
+            }
+            $before = $template->getQuestions()->count();
+            $reader->appendQuestions($template, [$raw], $copyImages);
+
+            $question = $template->getQuestions()->last();
+            if ($template->getQuestions()->count() > $before && $question instanceof QuizQuestion) {
+                $question->setTimeMode(QuestionTimeMode::tryFrom(\is_string($raw['timeMode'] ?? null) ? $raw['timeMode'] : '') ?? QuestionTimeMode::Quiz);
+                $question->setTimeSeconds(is_numeric($raw['timeSeconds'] ?? null) ? (int) $raw['timeSeconds'] : null);
+            }
         }
     }
 
@@ -177,7 +192,13 @@ final class MixedJsonImporter implements InteractiveQuizImporter
      */
     public function exportQuestion(QuizQuestion $question): ?array
     {
-        return $this->readerFor($question->getType())?->exportQuestion($question);
+        $item = $this->readerFor($question->getType())?->exportQuestion($question);
+        $seconds = $question->getTimeMode()->toDocument($question->getTimeSeconds());
+        if (null !== $item && null !== $seconds) {
+            $item['seconds'] = $seconds;
+        }
+
+        return $item;
     }
 
     /**

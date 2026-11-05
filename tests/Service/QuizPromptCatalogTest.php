@@ -30,8 +30,10 @@ class QuizPromptCatalogTest extends TestCase
     {
         $fragments = QuizPromptCatalog::fragments();
 
+        // Every type with a right answer: a vote is a show of hands in the live concours, which the
+        // assistant never writes and never offers to tick (QuizImportAssistantController).
         self::assertSame(
-            array_map(static fn (QuestionType $case): string => $case->value, QuestionType::cases()),
+            array_values(array_map(static fn (QuestionType $case): string => $case->value, array_filter(QuestionType::cases(), static fn (QuestionType $case): bool => $case->hasRightAnswer()))),
             array_keys($fragments),
             'the fragments must cover QuestionType exactly, in the enum\'s own order',
         );

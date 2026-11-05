@@ -13,6 +13,7 @@ use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
 use App\Service\JsonRequestPayload;
 use App\Service\LiveSessionStateException;
+use App\Service\QuizLive\LiveResponse;
 use App\Service\QuizLiveSessionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -88,7 +89,7 @@ class QuizLiveController extends AbstractController
             'mercurePublicUrl' => $mercureHub->getPublicUrl(),
             'mercureToken' => $liveSessionService->mintPlayerSubscriberToken($session),
             'playersTopic' => $liveSessionService->playersTopic($session),
-            'state' => $liveSessionService->buildPlayerSnapshot($session),
+            'state' => $liveSessionService->buildPlayerSnapshot($session, $participant),
         ]);
     }
 
@@ -108,7 +109,7 @@ class QuizLiveController extends AbstractController
             'mercurePublicUrl' => $mercureHub->getPublicUrl(),
             'mercureToken' => $liveSessionService->mintPlayerSubscriberToken($session),
             'playersTopic' => $liveSessionService->playersTopic($session),
-            'state' => $liveSessionService->buildPlayerSnapshot($session),
+            'state' => $liveSessionService->buildPlayerSnapshot($session, $participant),
         ]);
     }
 
@@ -119,10 +120,8 @@ class QuizLiveController extends AbstractController
         $student = $this->currentUser();
         $session = $this->findSessionOrNotFound($sessionId, $sessionRepository, $student);
 
-        $answerId = JsonRequestPayload::fromRequest($request)->int('answerId', 0) ?? 0;
-
         try {
-            $liveSessionService->submitAnswer($session, $student, $answerId);
+            $liveSessionService->submitAnswer($session, $student, LiveResponse::fromPayload(JsonRequestPayload::fromRequest($request)));
         } catch (LiveSessionStateException $exception) {
             return $this->json(['error' => $exception->getMessage()], 409);
         }

@@ -150,19 +150,20 @@ class ServiceDeNuitPlayTest extends FunctionalTestCase
         $start = $this->call('POST', 'tickets', ['ticket' => $id]);
         $session = self::int($start, 'session');
         foreach (\array_slice($ticket->steps, self::int($start, 'step')) as $step) {
-            $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => $step->id, 'input' => $this->rightInput($step)]);
+            $this->call('POST', 'ticket-sessions/'.$session.'/step', ['step' => $step->id, 'input' => $this->rightInput($step, $start)]);
         }
 
         return $this->call('POST', 'ticket-sessions/'.$session.'/end');
     }
 
-    private function rightInput(ScenarioStep $step): mixed
+    /** @param array<array-key, mixed> $start the answer to `POST tickets` */
+    private function rightInput(ScenarioStep $step, array $start): mixed
     {
         return match ($step->kind) {
             ScenarioStepKind::Fix => ['passed' => true, 'failed' => []],
             ScenarioStepKind::Line => $step->answers[0],
             ScenarioStepKind::Order => $step->order,
-            default => array_search(true, array_column($step->options, 'ok'), true),
+            default => $this->shown($this->game, $start, $step->id, (int) array_search(true, array_column($step->options, 'ok'), true)),
         };
     }
 

@@ -2,23 +2,29 @@ import { Controller } from '@hotwired/stimulus';
 import { loadAvatarModule } from '../serious_game/avatar_module.js';
 
 /**
- * Drives the teacher's projector screen (Turns 1q lobby / 1u countdown / 1h question / 1i
- * reveal+classement / 1j podium) - one page, phases swapped via plain DOM show/hide, all state
- * pushed by App\Service\QuizLiveSessionService over Mercure (private "host" topic - see
- * App\Controller\QuizLiveHostController::projector()'s docblock for the cookie-based auth).
+ * Drives the teacher's projector screen - Kahoot's run of a question since 2026-11-05: lobby,
+ * countdown, then for each question the statement alone, the propositions and the clock, what the
+ * room answered, the scoreboard; the podium at the end (App\Enum\LiveSessionStatus). One page,
+ * phases swapped via plain DOM show/hide, all state pushed by App\Service\QuizLiveSessionService
+ * over Mercure (private "host" topic - see App\Controller\QuizLiveHostController::projector()'s
+ * docblock for the cookie-based auth).
  *
- * The advance/"Suivant" button is a fire-and-forget POST: it never touches the DOM itself, the
- * resulting state change always arrives back through this controller's own SSE subscription
- * (same "server is the single source of truth" split as quiz_passation_controller.js's timer).
+ * Every button is a fire-and-forget POST naming the step it was pressed on: it never touches the
+ * DOM itself, the resulting state change always arrives back through this controller's own SSE
+ * subscription (same "server is the single source of truth" split as quiz_passation_controller.js's
+ * timer). This screen also closes a question when its clock runs out - the server closes it itself
+ * as soon as everybody has answered.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = [
-        'lobbyPhase', 'countdownPhase', 'questionPhase', 'revealPhase', 'finishedPhase',
+        'lobbyPhase', 'countdownPhase', 'readingPhase', 'questionPhase', 'resultsPhase', 'scoreboardPhase', 'finishedPhase',
         'participantCount', 'participantChips',
         'countdownNumber',
-        'questionIndex', 'questionLabel', 'questionImage', 'questionImageWrap', 'questionAnswers', 'questionTimer', 'questionAnsweredCount', 'questionParticipantCount',
-        'revealCorrectLabel', 'revealLeaderboard', 'revealNextLabel',
+        'readingIndex', 'readingKind', 'readingLabel', 'readingImage', 'readingImageWrap',
+        'questionIndex', 'questionLabel', 'questionImage', 'questionImageWrap', 'questionHint', 'questionAnswers', 'questionTimer', 'questionAnsweredCount', 'questionParticipantCount',
+        'resultsIndex', 'resultsSummary', 'resultsLabel', 'resultsExpected', 'resultsRows', 'resultsNextLabel',
+        'scoreboardProgress', 'scoreboardRows',
         'podiumFirst', 'podiumSecond', 'podiumThird', 'podiumAvatar', 'finishedLeaderboard',
         'advanceButton',
     ];
@@ -27,32 +33,75 @@ export default class extends Controller {
         hubUrl: String,
         topic: String,
         advanceUrl: String,
+        stateUrl: String,
         csrfToken: String,
         initialState: Object,
+        labels: Object,
     };
 
+    // Payload type => the status the server calls that step (App\Enum\LiveSessionStatus).
+    static STEPS = {
+        'countdown-started': 'countdown',
+        'question-reading': 'reading',
+        'question-opened': 'question',
+        results: 'results',
+        scoreboard: 'scoreboard',
+    };
+
+    // Matches App\Service\QuizLiveSessionService::SHAPES.
+    static GLYPHS = { triangle: '▲', square: '■', circle: '●', diamond: '◆', pentagon: '⬟', 'triangle-down': '▼' };
+
     connect() {
+        this.labels = this.labelsValue;
+        this.step = null;
+        this.questionIndex = null;
         this.apply(this.initialStateValue);
 
         const url = new URL(this.hubUrlValue);
         url.searchParams.append('topic', this.topicValue);
         this.eventSource = new EventSource(url, { withCredentials: true });
         this.eventSource.onmessage = (event) => this.apply(JSON.parse(event.data));
+        // After a network drop the browser reconnects by itself, but what was published meanwhile
+        // is gone: the board asks for its phase again.
+        this.eventSource.onerror = () => { this.streamLost = true; };
+        this.eventSource.onopen = () => {
+            if (this.streamLost) {
+                this.streamLost = false;
+                this.resync();
+            }
+        };
+        this.onVisibility = () => { if ('visible' === document.visibilityState) this.resync(); };
+        document.addEventListener('visibilitychange', this.onVisibility);
     }
 
     disconnect() {
         this.eventSource?.close();
         clearInterval(this.countdownInterval);
         clearInterval(this.questionTimerInterval);
+        document.removeEventListener('visibilitychange', this.onVisibility);
+    }
+
+    resync() {
+        fetch(this.stateUrlValue, { headers: { Accept: 'application/json' } })
+            .then((response) => (response.ok ? response.json() : null))
+            .then((body) => { if (body && body.state) this.apply(body.state); })
+            .catch(() => {});
     }
 
     advance() {
-        this.advanceButtonTarget.disabled = true;
-        fetch(this.advanceUrlValue, {
+        this.advanceButtonTargets.forEach((button) => { button.disabled = true; });
+        this.post().finally(() => {
+            this.advanceButtonTargets.forEach((button) => { button.disabled = false; });
+        });
+    }
+
+    // The step this screen shows rides along: a click and the clock arriving together move the
+    // room once, and a request about a step already past is ignored by the server.
+    post() {
+        return fetch(this.advanceUrlValue, {
             method: 'POST',
-            headers: { 'X-CSRF-Token': this.csrfTokenValue },
-        }).finally(() => {
-            this.advanceButtonTarget.disabled = false;
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfTokenValue },
+            body: JSON.stringify({ from: this.step, questionIndex: this.questionIndex }),
         });
     }
 
@@ -68,6 +117,8 @@ export default class extends Controller {
         this.hidePhases();
         clearInterval(this.countdownInterval);
         clearInterval(this.questionTimerInterval);
+        this.step = this.constructor.STEPS[state.type] ?? null;
+        this.questionIndex = undefined !== state.questionIndex ? state.questionIndex : null;
 
         switch (state.type) {
             case 'participant-joined':
@@ -76,11 +127,17 @@ export default class extends Controller {
             case 'countdown-started':
                 this.showCountdown(state);
                 break;
+            case 'question-reading':
+                this.showReading(state);
+                break;
             case 'question-opened':
                 this.showQuestion(state);
                 break;
-            case 'reveal':
-                this.showReveal(state);
+            case 'results':
+                this.showResults(state);
+                break;
+            case 'scoreboard':
+                this.showScoreboard(state);
                 break;
             case 'session-finished':
                 this.showFinished(state);
@@ -92,7 +149,7 @@ export default class extends Controller {
     }
 
     hidePhases() {
-        [this.lobbyPhaseTarget, this.countdownPhaseTarget, this.questionPhaseTarget, this.revealPhaseTarget, this.finishedPhaseTarget]
+        [this.lobbyPhaseTarget, this.countdownPhaseTarget, this.readingPhaseTarget, this.questionPhaseTarget, this.resultsPhaseTarget, this.scoreboardPhaseTarget, this.finishedPhaseTarget]
             .forEach((el) => { el.hidden = true; });
     }
 
@@ -108,10 +165,9 @@ export default class extends Controller {
         });
     }
 
-    // Once the 5s countdown elapses, the host's own client is what triggers the Countdown->Question
-    // transition (a plain authenticated POST to advanceUrl, same endpoint the "Suivant" button
-    // uses) - no cron/scheduled task involved, matching the "client ticks, server anchors, a POST
-    // is what actually moves the state machine" convention used throughout this feature.
+    // Once the 5s countdown elapses, the host's own client is what moves the room on to the first
+    // question - no cron/scheduled task involved, matching the "client ticks, server anchors, a
+    // POST is what actually moves the state machine" convention used throughout this feature.
     showCountdown(state) {
         this.countdownPhaseTarget.hidden = false;
         const deadline = new Date(state.serverTime).getTime() + state.countdownSeconds * 1000;
@@ -122,77 +178,124 @@ export default class extends Controller {
             if (remaining <= 0 && !advanced) {
                 advanced = true;
                 clearInterval(this.countdownInterval);
-                fetch(this.advanceUrlValue, { method: 'POST', headers: { 'X-CSRF-Token': this.csrfTokenValue } });
+                this.post();
             }
         };
         tick();
         this.countdownInterval = setInterval(tick, 250);
     }
 
+    showReading(state) {
+        this.readingPhaseTarget.hidden = false;
+        this.readingIndexTarget.textContent = `${state.questionIndex + 1} / ${state.totalQuestions}`;
+        this.readingKindTarget.textContent = this.kindHint(state);
+        this.readingLabelTarget.textContent = state.label || '';
+        this.showImage(this.readingImageWrapTarget, this.readingImageTarget, state.imageUrl);
+    }
+
     showQuestion(state) {
         this.questionPhaseTarget.hidden = false;
         this.questionIndexTarget.textContent = `${state.questionIndex + 1} / ${state.totalQuestions}`;
-        this.questionLabelTarget.textContent = state.label;
-        this.questionAnsweredCountTarget.textContent = '0';
+        this.questionLabelTarget.textContent = state.label || '';
+        this.questionAnsweredCountTarget.textContent = state.answeredCount ?? 0;
         this.questionParticipantCountTarget.textContent = state.participantCount;
-
-        if (state.imageUrl) {
-            this.questionImageTarget.src = state.imageUrl;
-            this.questionImageWrapTarget.hidden = false;
-        } else {
-            this.questionImageWrapTarget.hidden = true;
-        }
+        this.questionHintTarget.textContent = this.kindHint(state);
+        this.showImage(this.questionImageWrapTarget, this.questionImageTarget, state.imageUrl);
 
         this.questionAnswersTarget.innerHTML = '';
+        this.questionAnswersTarget.classList.toggle('cm-quiz-live-answers--wide', state.answers.length > 4);
         state.answers.forEach((answer) => {
             const row = document.createElement('div');
             row.className = `cm-quiz-live-answer cm-quiz-live-answer--${answer.color}`;
             row.append(
-                this.span('cm-quiz-live-answer__shape', this.shapeGlyph(answer.shape)),
+                this.span('cm-quiz-live-answer__shape', this.glyph(answer.shape)),
                 this.span('cm-quiz-live-answer__label', answer.label),
             );
             this.questionAnswersTarget.appendChild(row);
         });
 
-        // Untimed question - see the same guard in quiz_live_play_controller.js. On the projector
-        // it only mattered cosmetically (a countdown frozen on 0), but the two screens must agree.
-        if (null === state.secondsPerQuestion) {
+        // Untimed question - see the same guard in quiz_live_play_controller.js. Only everybody
+        // answering, or « Passer », closes it.
+        if (null === state.secondsPerQuestion || undefined === state.secondsPerQuestion) {
             this.questionTimerTarget.textContent = '∞';
 
             return;
         }
 
         const deadline = new Date(state.phaseStartedAt).getTime() + state.secondsPerQuestion * 1000;
+        let closed = false;
         const tick = () => {
             const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
             this.questionTimerTarget.textContent = remaining;
+            if (remaining <= 0 && !closed) {
+                closed = true;
+                clearInterval(this.questionTimerInterval);
+                this.post();
+            }
         };
         tick();
         this.questionTimerInterval = setInterval(tick, 250);
     }
 
-    showReveal(state) {
-        this.revealPhaseTarget.hidden = false;
-        this.revealNextLabelTarget.textContent = state.isLastQuestion
-            ? this.element.dataset.quizLiveHostFinishLabel
-            : this.element.dataset.quizLiveHostNextLabel;
+    showResults(state) {
+        this.resultsPhaseTarget.hidden = false;
+        this.resultsIndexTarget.textContent = `${state.questionIndex + 1} / ${state.totalQuestions}`;
+        this.resultsLabelTarget.textContent = state.label || '';
+        this.resultsSummaryTarget.textContent = state.isVote
+            ? this.fill(this.labels.voteCount, { '%answered%': state.answeredCount })
+            : this.fill(this.labels.correctCount, { '%correct%': state.correctCount, '%answered%': state.participantCount });
+        this.resultsNextLabelTarget.textContent = state.isLastQuestion
+            ? this.labels.podium
+            : (state.isVote ? this.labels.next : this.labels.scoreboard);
 
-        const correctCount = null !== state.correctShapeIndex ? (state.answerCounts[state.correctShapeIndex] || 0) : 0;
-        const totalAnswers = state.answerCounts.reduce((sum, count) => sum + count, 0);
-        this.revealCorrectLabelTarget.textContent = '';
-        if (null !== state.correctShapeIndex) {
-            const shape = document.createElement('b');
-            shape.textContent = this.shapeGlyph(this.shapeForIndex(state.correctShapeIndex));
-            this.revealCorrectLabelTarget.append(
-                `${this.element.dataset.quizLiveHostCorrectAnswerLabel} `,
-                shape,
-                ` · ${correctCount} / ${totalAnswers}`,
-            );
+        this.resultsExpectedTarget.hidden = !state.expected;
+        this.resultsExpectedTarget.textContent = state.expected ? `${this.labels.expected} ${state.expected}` : '';
+
+        this.resultsRowsTarget.innerHTML = '';
+        if ('order' === state.kind) {
+            state.rows.forEach((row) => {
+                const line = document.createElement('div');
+                line.className = `cm-quiz-live-answer cm-quiz-live-answer--${row.color}`;
+                line.append(
+                    this.span('cm-quiz-live-answer__rank', `${row.rank}.`),
+                    this.span('cm-quiz-live-answer__shape', this.glyph(row.shape)),
+                    this.span('cm-quiz-live-answer__label', row.label),
+                );
+                this.resultsRowsTarget.appendChild(line);
+            });
+
+            return;
         }
 
-        this.revealLeaderboardTarget.innerHTML = '';
-        state.leaderboard.slice(0, 8).forEach((row) => {
-            const maxScore = state.leaderboard[0]?.score || 1;
+        const max = Math.max(1, ...state.rows.map((row) => row.count));
+        state.rows.forEach((row) => {
+            const line = document.createElement('div');
+            line.className = 'cm-quiz-live-result';
+            // A vote has no right answer: nothing is greyed, nothing is ticked.
+            if (!state.isVote) {
+                line.classList.add(row.correct ? 'is-correct' : 'is-wrong');
+            }
+            const label = document.createElement('span');
+            label.className = 'cm-quiz-live-result__label';
+            if (row.shape) {
+                label.append(this.span(`cm-quiz-live-result__shape cm-quiz-live-result__shape--${row.color}`, this.glyph(row.shape)));
+            }
+            label.append(this.span('', row.label));
+            const bar = this.span(`cm-quiz-live-result__bar${row.color ? ` cm-quiz-live-result__bar--${row.color}` : ''}`, '');
+            bar.style.width = `${Math.max(2, Math.round((row.count / max) * 100))}%`;
+            const barWrap = this.span('cm-quiz-live-result__bar-wrap', '');
+            barWrap.appendChild(bar);
+            line.append(label, barWrap, this.span('cm-quiz-live-result__count', row.count), this.span('cm-quiz-live-result__mark', !state.isVote && row.correct ? '✓' : ''));
+            this.resultsRowsTarget.appendChild(line);
+        });
+    }
+
+    showScoreboard(state) {
+        this.scoreboardPhaseTarget.hidden = false;
+        this.scoreboardProgressTarget.textContent = `${state.questionIndex + 1} / ${state.totalQuestions}`;
+        this.scoreboardRowsTarget.innerHTML = '';
+        const maxScore = state.top[0]?.score || 1;
+        state.top.forEach((row) => {
             const width = Math.max(6, Math.round((row.score / maxScore) * 100));
             const bar = this.span('cm-quiz-live-rank__bar', row.score.toLocaleString('fr-FR'));
             bar.style.width = `${width}%`;
@@ -207,7 +310,7 @@ export default class extends Controller {
                 this.span('cm-quiz-live-rank__name', row.displayName),
                 barWrap,
             );
-            this.revealLeaderboardTarget.appendChild(item);
+            this.scoreboardRowsTarget.appendChild(item);
         });
     }
 
@@ -230,6 +333,36 @@ export default class extends Controller {
             );
             this.finishedLeaderboardTarget.appendChild(item);
         });
+    }
+
+    // What the phones are asked to do, said on the board: tick several, put in order, slide…
+    kindHint(state) {
+        const kinds = this.labels.kinds || {};
+        if (state.isVote) {
+            return kinds.vote || '';
+        }
+        if ('number' === state.kind && state.range) {
+            return this.fill(kinds.slider || '', { '%min%': this.number(state.range.min), '%max%': this.number(state.range.max) });
+        }
+
+        return kinds[state.kind] || '';
+    }
+
+    showImage(wrap, image, url) {
+        if (url) {
+            image.src = url;
+            wrap.hidden = false;
+        } else {
+            wrap.hidden = true;
+        }
+    }
+
+    fill(template, values) {
+        return Object.entries(values).reduce((text, [key, value]) => text.replaceAll(key, String(value)), template || '');
+    }
+
+    number(value) {
+        return Number(value).toLocaleString('fr-FR');
     }
 
     /**
@@ -293,14 +426,7 @@ export default class extends Controller {
         }
     }
 
-    shapeGlyph(shape) {
-        return { triangle: '▲', square: '■', circle: '●', diamond: '◆' }[shape] || '';
-    }
-
-    // Matches App\Service\QuizLiveSessionService::SHAPES's fixed index order - the reveal payload
-    // only carries the winning shapeIndex (0-3), not the shape name itself (that only travels in
-    // question-opened, already gone by the time reveal arrives).
-    shapeForIndex(index) {
-        return ['triangle', 'square', 'circle', 'diamond'][index] || '';
+    glyph(shape) {
+        return this.constructor.GLYPHS[shape] || '';
     }
 }

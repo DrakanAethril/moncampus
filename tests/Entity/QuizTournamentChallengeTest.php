@@ -107,12 +107,11 @@ class QuizTournamentChallengeTest extends TestCase
     {
         $duel = new QuizTournamentDuel($this->tournament(), $this->alice, $this->bruno, QuizTournamentDuelOrigin::Challenge, 7, new \DateTimeImmutable('2026-11-20 15:11'), 1000, 1000, false, false);
         $question = new QuizTournamentDuelQuestion($duel, 0, QuestionType::QcmMulti, 30);
-        $question->serve(new \DateTimeImmutable('2026-11-20 15:11:00'));
-        $question->serve(new \DateTimeImmutable('2026-11-20 15:11:20'));
+        $question->serve(new \DateTimeImmutable('2026-11-20 15:11:00'), new \DateTimeImmutable('2026-11-20 15:11:30'));
+        $question->serve(new \DateTimeImmutable('2026-11-20 15:11:20'), new \DateTimeImmutable('2026-11-20 15:11:50'));
 
+        self::assertEquals(new \DateTimeImmutable('2026-11-20 15:11:00'), $question->getServedAt());
         self::assertEquals(new \DateTimeImmutable('2026-11-20 15:11:30'), $question->getDeadlineAt());
-        self::assertTrue($question->acceptsAnswerAt(new \DateTimeImmutable('2026-11-20 15:11:30')));
-        self::assertFalse($question->acceptsAnswerAt(new \DateTimeImmutable('2026-11-20 15:11:31')));
         self::assertSame([$question], $duel->getQuestions()->toArray());
     }
 
@@ -120,8 +119,20 @@ class QuizTournamentChallengeTest extends TestCase
     {
         $tournament = $this->tournament();
 
-        self::assertSame(30, $tournament->secondsFor(QuestionType::QcmMulti));
-        self::assertSame(20, $tournament->secondsFor(QuestionType::VraiFaux));
+        self::assertSame(40, $tournament->secondsFor(QuestionType::QcmMulti));
+        self::assertSame(30, $tournament->secondsFor(QuestionType::VraiFaux));
+    }
+
+    public function testExtraTimeIsEachPlayersOwn(): void
+    {
+        (new \ReflectionProperty(User::class, 'id'))->setValue($this->alice, 1);
+        (new \ReflectionProperty(User::class, 'id'))->setValue($this->bruno, 2);
+        $duel = new QuizTournamentDuel($this->tournament(), $this->alice, $this->bruno, QuizTournamentDuelOrigin::Challenge, 7, new \DateTimeImmutable('2026-11-20 15:11'), 1000, 1000, false, false);
+        $question = new QuizTournamentDuelQuestion($duel, 0, QuestionType::Qcm, 30);
+        self::assertSame([1 => 30, 2 => 30], $duel->timeLimits($question));
+
+        $duel->setExtraTimePercents(null, '33.33');
+        self::assertSame([1 => 30, 2 => 40], $duel->timeLimits($question), 'a third more for Bruno alone, rounded up');
     }
 
     public function testARoundIsRestrictedToAnOptionOrAGroupNeverBoth(): void

@@ -255,7 +255,27 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     a two-click button (the label becomes « Confirmer la suppression »), never a `confirm()`.
 - **Quiz** — `QuizTemplate`/`QuizQuestion` (library, filed in `QuizFolder`s) → `QuizInstance`
   (launched snapshot) → `QuizAttempt` (passation). Live multiplayer (`QuizLiveSession`) runs over
-  Mercure/SSE. The « mode contrôle » times each question **server-side**
+  Mercure/SSE and **follows Kahoot's run of a question** (2026-11-05, `App\Enum\LiveSessionStatus`):
+  the statement alone, then the answers and the clock - closed by the last answer, the clock (the
+  host's screen posts it) or « Passer » -, the results, the scoreboard (skipped after a vote and after
+  the last question), the podium. Every transition names the step it was asked on and runs under a
+  lock on the session row (`QuizLiveSessionService::locked()`, not `wrapInTransaction()`, which closes
+  the entity manager on a refused answer). The room plays **every type a Kahoot carries**
+  (`App\Service\QuizLive\LiveAnswerKind`): QCM and QCM multiple up to six shapes, ordre tapped shape
+  by shape, numérique on a slider (`numericConfig.range`), réponse courte, vrai/faux and the
+  **`vote`** type - propositions with no right one, played live only (`QuestionType::
+  isAvailableOutsideLive()` keeps it out of every other launch). Texte à trous, zones, apparier and
+  calculée are left out at launch and named. **Students play from the web page - beaup-app on a
+  phone**: the Flutter app is no longer modified (the user's decision of 2026-11-05), so the player
+  page carries what the app used to - it asks for its phase again (`…/play/state`, the projector's
+  `…/projector/state`) when it comes back from the background, the network or a reconnected stream
+  (the hub replays nothing), keeps the screen awake (Screen Wake Lock) and offers an answer the
+  network lost again. A live answer is one JSON `response`
+  (`App\Service\QuizLive\LiveResponse`); right is right whatever the type, no partial points.
+  **Kahoot reports (.xlsx)** are imported by the screen and by the connector's `quiz_import_kahoot`
+  (a .zip of them too) through `App\Service\Kahoot\KahootReportReader`: both report layouts, every
+  type, each question's own time (`seconds` in « moncampus-quiz/1 »), a slider's margin guessed from
+  who scored (`KahootSliderTolerance`); nothing of the players is kept, and a report has no images. The « mode contrôle » times each question **server-side**
   (`QuizAttemptAnswer::$servedAt`, stamped only if null, so F5 cannot reset the clock) — the point of
   that timing is to *exonerate*: three seconds on a question is proof nobody had time to look it up.
 - **Tournois de quiz** — `QuizTournament*` entities, `src/Service/QuizTournament/`, spec
@@ -332,10 +352,15 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     `shouldStart()` on fresh facts, the draw, the frozen questions (choices with local ids,
     `QuizTournamentDuelSnapshot`; images referenced, not copied), ladder flags and ratings before.
   - **The duel is server-timed and lazy** (`QuizTournamentDuelEngine`, the one door: the screen's
-    state, an answer, `app:quiz-tournament:close-duels`). `QuizTournamentDuelClock` is the pure
+    state, an answer, a draft, `app:quiz-tournament:close-duels`). `QuizTournamentDuelClock` is the pure
     timeline: the first question served `LEAD_SECONDS` after the duel's creation (the room's
-    countdown), each one closing at its deadline or as soon as **both** answered, the next served
-    `TRANSITION_SECONDS` later, the duel over two seconds after its last. Every request first stamps
+    countdown), **each player with their own deadline** - the question's limit (30 s, 40 s for a QCM
+    multiple by default) plus their « ajout de temps », frozen on the duel at its creation
+    (`QuizTournamentDuel::timeLimits()`: the tournament is a quiz) - the question closing once each
+    player answered or ran out, the next served `TRANSITION_SECONDS` later, the duel over two seconds
+    after its last. A player's deadline reaches only their own requests (`clock`), never the published
+    state. What is ticked or typed without « Valider » is a `QuizTournamentDuelDraft`, which becomes
+    the answer, dated at that player's deadline, once their time is out. Every request first stamps
     the serves whose time has come - **at the computed moment, never the request's**, and only once
     (`serve()`), so a reload restarts nothing and nobody's absence pauses anything - and finishes a
     duel that is over: one transaction, the duel row FOR UPDATE, both players locked in id order,
@@ -479,7 +504,10 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     browser alone measures a repair and sends `{passed, failed}` - **the code delivered is never
     kept**, only the failed criteria (`ScenarioRules::grade()`). Stars: 3 with neither error nor
     help, an error made during Inès' help not counted. The sync checks a scenario whole
-    (`ScenarioValidator`); the rendering of each ticket is checked by « Banc des tickets »
+    (`ScenarioValidator`). **A step's options reach the game shuffled** (`ScenarioRules::optionOrder()`,
+    seeded by the session and the step): the game answers a position, the server maps it back to
+    the written rank, which is what it corrects and stores - tests answer through
+    `SeriousGameTestTrait::shown()`. The rendering of each ticket is checked by « Banc des tickets »
     (Paramètres › Serious games, the game's own `bench.html` in a sandboxed frame, fed the scenario
     by `sg_ticket_bench_controller.js`). The teachers read it through `SeriousGameScenarioReading`
     (class map with « Bloqués » / « Beaucoup d'aide », « Notions à reprendre », the student's sheet).
@@ -646,6 +674,9 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `calendar` shape), and the body - streamed to disk, never a string - goes through
   `FileLibraryWriter::writeFile()`: type, quota, antivirus like any upload. Every answer is JSON,
   refusals included: curl's output is all the model reads.
+  `quiz_import_kahoot` turns Kahoot game reports deposited in the library (an .xlsx, or a .zip of
+  them) into quizzes, one per report: the whole batch is read first, `dryRun` says what would be
+  created, a game exported twice or a quiz of the same name already in the folder is skipped.
   `library_move` files quizzes, files and whole folders elsewhere in the quiz or file library -
   a move through each library's own manager, never a copy, so ids and links survive; the call is
   checked whole before anything moves, then each move is flushed in turn inside one transaction
@@ -1308,6 +1339,15 @@ the worker keeps the old map in memory and answers « vendor asset is missing »
   counter-reset: page N }` starts the count at N+1, but it has no `target-counter()`: a table of
   contents learns its page numbers from the named destinations of a first print
   (`App\Service\PdfNamedDestinations`) — written only for anchors some link points at.
+- **CI's « vendor asset is missing » on every page means `importmap:install` never ran**, not a
+  network hiccup: it is the last of composer's auto-scripts, run once at the container's first start,
+  after a cold `cache:clear` that OOMs silently when the code outgrows the dev `memory_limit`
+  (`frankenphp/conf.d/20-app.dev.ini`, 1G since 2026-11-05). Reproduce in a clean clone with
+  `composer run-script auto-scripts` in a throwaway `app-php-dev` container - the local checkout,
+  whose `assets/vendor` is long installed, never shows it.
+- CI's Mercure publisher key is shorter than 256 bits, so **every publish throws in CI**: a service
+  that lets `HubInterface::publish()` raise fails there and only there. Publishing is a comfort, never
+  a condition - catch and log, as `QuizTournamentLive` and `QuizLiveSessionService` do.
 - `config/reference.php` produces a non-deterministic docblock-ordering diff from the running dev
   container. It is safe to `git checkout --` without asking; it is not real work.
 

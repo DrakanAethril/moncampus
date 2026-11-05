@@ -11,7 +11,8 @@ namespace App\Enum;
  * two columns), and the numeric pair added on 2026-08-11: Numerique (a number, within a tolerance,
  * optionally with its unit) and Calculee (the same, over variables drawn per student and an answer
  * given by a formula), and ReponseCourte (type a word or a phrase, matched against the accepted
- * variants) added on 2026-08-11.
+ * variants) added on 2026-08-11. Vote (propositions with no right answer, Kahoot's « Poll ») came with
+ * the Kahoot import of 2026-11-05: it is played in a live contest only.
  */
 enum QuestionType: string
 {
@@ -27,6 +28,7 @@ enum QuestionType: string
     case Numerique = 'numerique';
     case Calculee = 'calculee';
     case ReponseCourte = 'reponse_courte';
+    case Vote = 'vote';
 
     public function labelKey(): string
     {
@@ -43,6 +45,7 @@ enum QuestionType: string
             self::Numerique => 'questionTypeNumeriqueLabel',
             self::Calculee => 'questionTypeCalculeeLabel',
             self::ReponseCourte => 'questionTypeReponseCourteLabel',
+            self::Vote => 'questionTypeVoteLabel',
         };
     }
 
@@ -62,30 +65,47 @@ enum QuestionType: string
             self::Numerique => 'questionTypeNumeriqueShortLabel',
             self::Calculee => 'questionTypeCalculeeShortLabel',
             self::ReponseCourte => 'questionTypeReponseCourteShortLabel',
+            self::Vote => 'questionTypeVoteShortLabel',
         };
     }
 
     /**
-     * Whether a live concours can project this question and collect answers with its tap-one-answer
-     * device UI. Texte à trous can't: it has no answer options to project and its response is typed
-     * (or word-bank placed) per blank, so it is filtered out of the live draw
-     * (App\Service\QuizLiveSessionService) and the editor warns about it - see the handoff README's
-     * "Exclu du tirage en mode concours live". It stays fully in play for évaluation/entraînement,
-     * web and mobile.
+     * Whether a live concours plays this question. Since the Kahoot import (2026-11-05) the room
+     * plays every type a Kahoot carries - one or several right propositions (up to six), a remise en
+     * ordre tapped shape by shape, a number on a slider, a word typed, a vote - so what stays out is
+     * what a projected board cannot run:
+     * - texte à trous, zone, légende and apparier answer *into a support* (blanks, zones, two
+     *   columns) the phone does not have, and the board cannot show who placed what;
+     * - a calculée asks each student a *different* thing, which a projected board cannot show at all.
+     * A launch leaves them out and says so (App\Service\QuizLiveSessionService::createSession()).
      */
     public function isAvailableInLiveContest(): bool
     {
-        // Zone/Legende share the texte à trous problem exactly: nothing to project as four
-        // tappable options, the answer is a click into (or labels placed onto) a support. Apparier
-        // is the same problem again: the answer is N associations, not one tap. The numeric pair
-        // adds a third reason on top - a calculée question asks each student a *different* thing,
-        // which a projected board cannot show at all.
-        return !\in_array($this, self::CONFIG_DRIVEN, true);
+        return !\in_array($this, [self::TexteATrous, self::Zone, self::Legende, self::Apparier, self::Calculee], true);
+    }
+
+    /**
+     * Whether anything but a live concours plays this question - évaluation, entraînement, a path's
+     * quiz, a course's test, a video marker. A vote has no right answer: it is a show of hands in the
+     * room, and an attempt would have nothing to mark. Every launch outside the room leaves it out
+     * (App\Service\QuizInstantiationService::instantiateQuiz()).
+     */
+    public function isAvailableOutsideLive(): bool
+    {
+        return self::Vote !== $this;
+    }
+
+    /**
+     * Whether the question has a right answer at all - every type but the vote.
+     */
+    public function hasRightAnswer(): bool
+    {
+        return self::Vote !== $this;
     }
 
     /**
      * Whether a quiz tournament's duel plays this question (design/validated/quiz-tournament.md §1,
-     * decision 12): the formats answered on a phone in 20 to 30 seconds - QCM, QCM à réponses
+     * decision 12): the formats answered on a phone in 30 to 40 seconds - QCM, QCM à réponses
      * multiples, vrai/faux, numérique. The tournament draws from ordinary quizzes and leaves the other
      * types out, like the live contest does above; nobody picks them when creating a tournament.
      */
@@ -144,12 +164,9 @@ enum QuestionType: string
         return self::Calculee === $this;
     }
 
-    /**
-     * The types that keep no QuizAnswer rows and cannot be projected in a live contest - every one
-     * of them carries its whole definition in one of the trait's JSON columns. Listed once because
-     * the two questions above always had the same answer, and drifted apart twice while they were
-     * written out separately.
-     */
+    // The types that keep no QuizAnswer rows - every one of them carries its whole definition in
+    // one of the trait's JSON columns. It used to double as « not playable live »; the two drifted
+    // apart with the Kahoot import, when the room learnt to play a numérique and a réponse courte.
     private const array CONFIG_DRIVEN = [
         self::TexteATrous,
         self::Zone,

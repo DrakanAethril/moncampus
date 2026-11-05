@@ -189,11 +189,13 @@ class QuizImportAssistantController extends AbstractController
             'promptDemandPlaceholders' => QuizPromptCatalog::demandPlaceholders(),
             'promptDemandExtraHeading' => QuizPromptCatalog::EXTRA_HEADING,
             'promptFragments' => QuizPromptCatalog::fragments(),
+            // The assistant writes questions to be marked: a vote (a show of hands, live only) is
+            // nothing a course hands it, and the prompt has no format to ask for one.
             'promptTypes' => array_map(static fn (QuestionType $case): array => [
                 'value' => $case->value,
                 'label' => $translator->trans($case->labelKey()),
                 'live' => $case->isAvailableInLiveContest(),
-            ], QuestionType::cases()),
+            ], array_values(array_filter(QuestionType::cases(), static fn (QuestionType $case): bool => $case->hasRightAnswer()))),
             'liveOnly' => $state->liveOnly,
             'sourceContext' => null === $context ? null : [
                 'title' => $context->title,

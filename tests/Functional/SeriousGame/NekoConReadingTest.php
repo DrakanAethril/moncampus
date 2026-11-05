@@ -103,11 +103,11 @@ class NekoConReadingTest extends FunctionalTestCase
         $started = $play->startTicket($player, $game, 'T01');
         $session = $play->ownedTicketSession($player, $game, \is_int($started['session']) ? $started['session'] : 0);
         $play->useHint($player, $session);
-        $play->submitGuide($player, $session, 'couche', 1);
-        $play->submitGuide($player, $session, 'couche', 0);
+        $play->submitGuide($player, $session, 'couche', $this->shown($game, $started, 'couche', 1));
+        $play->submitGuide($player, $session, 'couche', $this->shown($game, $started, 'couche', 0));
         $play->submitStep($player, $session, 'corriger', ['passed' => true, 'failed' => []]);
-        $play->submitStep($player, $session, 'expliquer', 2);
-        $play->submitStep($player, $session, 'expliquer', 1);
+        $play->submitStep($player, $session, 'expliquer', $this->shown($game, $started, 'expliquer', 2));
+        $play->submitStep($player, $session, 'expliquer', $this->shown($game, $started, 'expliquer', 1));
         $play->endTicket($player, $session);
 
         $started = $play->startTicket($player, $game, 'T02');

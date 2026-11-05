@@ -12,13 +12,13 @@ use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
+use App\Service\JsonRequestPayload;
 use App\Service\LiveSessionStateException;
-use App\Service\PostValue;
+use App\Service\QuizLive\LiveResponse;
 use App\Service\QuizLiveSessionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mercure\Authorization;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -72,7 +72,7 @@ class ProgramQuizLiveController extends AbstractController
     // Same cookie-based auth as QuizLiveHostController::projector() - see its docblock.
     #[Route(path: '/programs/{id}/quiz/live/{sessionId}/play', name: 'app_program_quiz_live_play', requirements: ['sessionId' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function play(int $id, int $sessionId, Request $request, ProgramRepository $repository, QuizLiveSessionRepository $sessionRepository, QuizLiveParticipantRepository $participantRepository, QuizLiveSessionService $liveSessionService, HubInterface $mercureHub, Authorization $mercureAuthorization): Response
+    public function play(int $id, int $sessionId, Request $request, ProgramRepository $repository, QuizLiveSessionRepository $sessionRepository, QuizLiveParticipantRepository $participantRepository, QuizLiveSessionService $liveSessionService, HubInterface $mercureHub): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $session = $this->findSessionOrNotFound($program, $sessionId, $sessionRepository);
@@ -85,7 +85,7 @@ class ProgramQuizLiveController extends AbstractController
             return $this->redirectToRoute('app_program_quiz_live_join', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
         }
 
-        $mercureAuthorization->setCookie($request, [$liveSessionService->playersTopic($session)], [], [], 'subscriber');
+        $liveSessionService->subscribe($request, $liveSessionService->playersTopic($session));
 
         return $this->render('program/quiz_live_play.html.twig', [
             'program' => $program,
@@ -93,9 +93,27 @@ class ProgramQuizLiveController extends AbstractController
             'participant' => $participant,
             'mercurePublicUrl' => $mercureHub->getPublicUrl(),
             'topic' => $liveSessionService->playersTopic($session),
-            'initialState' => $liveSessionService->buildPlayerSnapshot($session),
+            'initialState' => $liveSessionService->buildPlayerSnapshot($session, $participant),
             'answerUrl' => $this->generateUrl('app_program_quiz_live_answer', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
+            'stateUrl' => $this->generateUrl('app_program_quiz_live_play_state', ['id' => $program->getId(), 'sessionId' => $session->getId()]),
         ]);
+    }
+
+    /**
+     * The phase as it is now, for this participant - what the page asks again when it comes back
+     * from the background or its stream reconnects. A phone (beaup-app above all) that slept through
+     * a question misses the events published meanwhile, and the hub replays none of them: without
+     * this the screen would stay on a question the room closed long ago.
+     */
+    #[Route(path: '/programs/{id}/quiz/live/{sessionId}/play/state', name: 'app_program_quiz_live_play_state', requirements: ['sessionId' => '\d+'], methods: ['GET'])]
+    #[IsGranted('ROLE_STUDENT')]
+    public function state(int $id, int $sessionId, ProgramRepository $repository, QuizLiveSessionRepository $sessionRepository, QuizLiveParticipantRepository $participantRepository, QuizLiveSessionService $liveSessionService): Response
+    {
+        $program = $this->findProgramForStudentOrNotFound($id, $repository);
+        $session = $this->findSessionOrNotFound($program, $sessionId, $sessionRepository);
+        $participant = $participantRepository->findOneForStudent($session, $this->currentUser());
+
+        return $this->json(['state' => $liveSessionService->buildPlayerSnapshot($session, $participant)]);
     }
 
     #[Route(path: '/programs/{id}/quiz/live/{sessionId}/answer', name: 'app_program_quiz_live_answer', requirements: ['sessionId' => '\d+'], methods: ['POST'])]
@@ -109,10 +127,8 @@ class ProgramQuizLiveController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $answerId = PostValue::int($request, 'answerId');
-
         try {
-            $liveSessionService->submitAnswer($session, $this->currentUser(), $answerId);
+            $liveSessionService->submitAnswer($session, $this->currentUser(), LiveResponse::fromPayload(JsonRequestPayload::fromRequest($request)));
         } catch (LiveSessionStateException $exception) {
             return $this->json(['error' => $exception->getMessage()], 409);
         }
