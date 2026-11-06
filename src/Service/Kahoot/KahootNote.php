@@ -16,6 +16,13 @@ final readonly class KahootNote
     public const string SKIPPED_TYPE = 'skipped_type';
     public const string NO_CORRECT_ANSWER = 'no_correct_answer';
     public const string NO_SLIDER_VALUE = 'no_slider_value';
+    // A « Quiz » with several right answers where picking any one of them scored: it becomes a QCM
+    // multiple, which asks for all of them.
+    public const string ANY_RIGHT_ANSWER = 'any_right_answer';
+    // A block of the game the report has nothing of - no tab, no row: a slide, most likely, since
+    // Kahoot exports nothing of those, or a question the game did not reach.
+    public const string MISSING_BLOCK = 'missing_block';
+    public const string NOT_PLAYED = 'not_played';
 
     /** @param array<string, string> $parameters */
     public function __construct(
@@ -29,5 +36,11 @@ final readonly class KahootNote
     public function dropsQuestion(): bool
     {
         return \in_array($this->kind, [self::SKIPPED_TYPE, self::NO_CORRECT_ANSWER, self::NO_SLIDER_VALUE], true);
+    }
+
+    /** Whether the report has nothing of this block of the game - nothing the import could have kept. */
+    public function absentFromReport(): bool
+    {
+        return \in_array($this->kind, [self::MISSING_BLOCK, self::NOT_PLAYED], true);
     }
 }

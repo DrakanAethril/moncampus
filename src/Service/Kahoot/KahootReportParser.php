@@ -115,7 +115,7 @@ final class KahootReportParser
         }
         ksort($entries);
 
-        [$title, $playedOn] = self::overview($sheets);
+        [$title, $playedOn, $played, $total] = self::overview($sheets);
 
         $questions = [];
         $notes = [];
@@ -129,7 +129,7 @@ final class KahootReportParser
             }
 
             $question = match ($kahootType) {
-                'quiz', 'multiple-select quiz', 'true or false', '' => self::choice($base, $options, $entry['correct'], $questionNumber, $notes),
+                'quiz', 'multiple-select quiz', 'true or false', '' => self::choice($base, $options, $entry['correct'], $questionNumber, $notes, 'multiple-select quiz' === $kahootType ? [] : $entry['rows'], $columns),
                 'puzzle' => [] === $options ? null : $base + ['type' => QuestionType::Ordre->value, 'answers' => $options, 'correct' => range(1, \count($options))],
                 'slider' => self::slider($base, $sheets, $questionNumber, $entry['rows'], $columns, $notes),
                 'type answer' => self::shortAnswer($base, $options, $entry['correct']),
@@ -148,6 +148,17 @@ final class KahootReportParser
             $type = \is_string($question['type'] ?? null) ? $question['type'] : '';
             $typeCounts[$type] = ($typeCounts[$type] ?? 0) + 1;
         }
+
+        // « Played 10 of 14 »: the blocks the report has nothing of. Past the count played, the game
+        // stopped before them; within it, they were played and left no trace - slides, most likely.
+        for ($number = 1; $number <= $total; ++$number) {
+            if (!isset($entries[$number])) {
+                $notes[] = $played < $total && $number > $played
+                    ? new KahootNote(KahootNote::NOT_PLAYED, $number, ['played' => (string) $played, 'total' => (string) $total])
+                    : new KahootNote(KahootNote::MISSING_BLOCK, $number);
+            }
+        }
+        usort($notes, static fn (KahootNote $a, KahootNote $b): int => $a->questionNumber <=> $b->questionNumber);
 
         $title ??= trim(pathinfo($fallbackName, \PATHINFO_FILENAME));
 
@@ -215,10 +226,13 @@ final class KahootReportParser
      * @param array<string, mixed> $base
      * @param list<string>         $options
      * @param list<KahootNote>     $notes
+     * @param list<list<string>>   $rows    the grid's rows of this question, one per player; none for
+     *                                      a multiple-select question, played as a QCM multiple
+     * @param array<string, int>   $columns
      *
      * @return array<string, mixed>|null
      */
-    private static function choice(array $base, array $options, string $correct, int $number, array &$notes): ?array
+    private static function choice(array $base, array $options, string $correct, int $number, array &$notes, array $rows = [], array $columns = []): ?array
     {
         $positions = self::correctPositions($correct, $options);
         if (null === $positions || \count($options) < 2) {
@@ -237,7 +251,48 @@ final class KahootReportParser
             default => QuestionType::QcmMulti,
         };
 
+        if (QuestionType::QcmMulti === $type && self::anyRightAnswerScored($positions, $options, $rows, $columns)) {
+            $notes[] = new KahootNote(KahootNote::ANY_RIGHT_ANSWER, $number);
+        }
+
         return $base + ['type' => $type->value, 'answers' => $options, 'correct' => $positions];
+    }
+
+    /**
+     * Whether a « Quiz » with several right answers was played as « pick one, any right one counts »,
+     * where a QCM multiple asks for them all: nobody picked more than one proposition, and one right
+     * pick scored. One right pick scoring is not enough on its own - the older layout's « Quiz » with
+     * several right answers was a multiple choice, which gives part of the points to a pick holding
+     * some of the right answers and none of the wrong ones.
+     *
+     * @param list<int>          $positions the right answers, 1-based
+     * @param list<string>       $options
+     * @param list<list<string>> $rows
+     * @param array<string, int> $columns
+     */
+    private static function anyRightAnswerScored(array $positions, array $options, array $rows, array $columns): bool
+    {
+        $answerColumn = $columns['answer'] ?? null;
+        $scoreColumn = $columns['score (points)'] ?? null;
+        if (null === $answerColumn || null === $scoreColumn) {
+            return false;
+        }
+
+        $scored = false;
+        foreach ($rows as $row) {
+            $picked = self::correctPositions($row[$answerColumn] ?? '', $options);
+            if (null === $picked) {
+                continue;
+            }
+            if (\count($picked) > 1) {
+                return false;
+            }
+            if (\in_array($picked[0], $positions, true) && (float) str_replace(',', '.', trim($row[$scoreColumn] ?? '')) > 0) {
+                $scored = true;
+            }
+        }
+
+        return $scored;
     }
 
     /**
@@ -412,11 +467,12 @@ final class KahootReportParser
     }
 
     /**
-     * The game's name (the first cell of « Overview ») and the day it was played.
+     * The game's name (the first cell of « Overview »), the day it was played, and how many of its
+     * blocks were played out of how many (« Played 10 of 14 », 0 and 0 when the report does not say).
      *
      * @param array<string, list<list<string>>> $sheets
      *
-     * @return array{0: string|null, 1: string|null}
+     * @return array{0: string|null, 1: string|null, 2: int, 3: int}
      */
     private static function overview(array $sheets): array
     {
@@ -427,16 +483,21 @@ final class KahootReportParser
 
             $title = self::clean($rows[0][0] ?? '');
             $playedOn = null;
+            $played = $total = 0;
             foreach ($rows as $row) {
-                if ('played on' === mb_strtolower(trim($row[0] ?? '')) && '' !== trim($row[1] ?? '')) {
+                $label = mb_strtolower(trim($row[0] ?? ''));
+                if ('played on' === $label && '' !== trim($row[1] ?? '')) {
                     $playedOn = trim($row[1]);
+                }
+                if ('played' === $label && preg_match('/^(\d+)\s+of\s+(\d+)$/i', trim($row[1] ?? ''), $matches)) {
+                    [$played, $total] = [(int) $matches[1], (int) $matches[2]];
                 }
             }
 
-            return ['' !== $title ? $title : null, $playedOn];
+            return ['' !== $title ? $title : null, $playedOn, $played, $total];
         }
 
-        return [null, null];
+        return [null, null, 0, 0];
     }
 
     /**

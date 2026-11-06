@@ -70,7 +70,7 @@ final readonly class QuizImportKahootTool implements McpTool
 
     public function description(): string
     {
-        return 'Importe des rapports de partie Kahoot (.xlsx exporté depuis Kahoot, « Télécharger le rapport ») dans la bibliothèque de quiz : un quiz par rapport. Le fichier doit d\'abord être déposé dans la bibliothèque de fichiers (file_upload, ou file_upload_url pour un .zip de plusieurs rapports) ; passer son fileId. Commencer par dryRun: true et montrer le résultat à l\'enseignant : nombre de questions par type, questions laissées de côté, tolérances de curseur déduites de la partie, doublons. Tous les types Kahoot joués en concours live sont repris (quiz, choix multiples, vrai/faux, puzzle, curseur, réponse tapée, sondage). Les rapports ne contiennent pas les images. Un quiz du même nom déjà présent dans le dossier n\'est pas réimporté. Rien n\'est lancé auprès d\'une classe.';
+        return 'Importe des rapports de partie Kahoot (.xlsx exporté depuis Kahoot, « Télécharger le rapport ») dans la bibliothèque de quiz : un quiz par rapport. Le fichier doit d\'abord être déposé dans la bibliothèque de fichiers (file_upload, ou file_upload_url pour un .zip de plusieurs rapports) ; passer son fileId. Commencer par dryRun: true et montrer le résultat à l\'enseignant : nombre de questions par type, questions laissées de côté, éléments du Kahoot absents du rapport (diapositives, questions non jouées), questions où une seule bonne réponse suffisait, tolérances de curseur déduites de la partie, doublons. Tous les types Kahoot joués en concours live sont repris (quiz, choix multiples, vrai/faux, puzzle, curseur, réponse tapée, sondage). Les rapports ne contiennent pas les images. Un quiz du même nom déjà présent dans le dossier n\'est pas réimporté. Rien n\'est lancé auprès d\'une classe.';
     }
 
     public function inputSchema(): array
@@ -207,9 +207,10 @@ final readonly class QuizImportKahootTool implements McpTool
             }
         }
 
-        $dropped = 0;
+        $dropped = $absent = 0;
         foreach ($reports as $entry) {
             $dropped += \count(array_filter($entry['report']->notes, static fn (KahootNote $note): bool => $note->dropsQuestion()));
+            $absent += \count(array_filter($entry['report']->notes, static fn (KahootNote $note): bool => $note->absentFromReport()));
         }
 
         $summary = $dryRun
@@ -217,6 +218,9 @@ final readonly class QuizImportKahootTool implements McpTool
             : \sprintf('%d quiz créé(s) sur %d rapport(s).', \count($created), \count($reports));
         if ($dropped > 0) {
             $summary .= \sprintf(' %d question(s) laissée(s) de côté, détail dans « notes ».', $dropped);
+        }
+        if ($absent > 0) {
+            $summary .= \sprintf(' %d élément(s) du Kahoot absent(s) des rapports (diapositives ou questions non jouées), détail dans « notes ».', $absent);
         }
 
         return McpToolResult::data(
