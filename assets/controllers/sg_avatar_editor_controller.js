@@ -83,19 +83,31 @@ export default class extends Controller {
             title.textContent = group.t;
             const options = document.createElement('div');
             options.className = 'cm-sg-ed__opts';
+            // A group may show its options in a view of its own (the ears, outside the face's zoom).
+            const viewBox = 'vb' in group ? group.vb : cat.vb;
 
             if (group.colors) {
+                if (group.none) {
+                    options.append(this.swatch(null, this.config[group.key] === -1, `${group.t} : aucune`, () => this.set({ [group.key]: -1 })));
+                }
                 group.colors.forEach((color, index) => options.append(this.swatch(color, this.config[group.key] === index, `${group.t} ${index + 1}`, () => this.set({ [group.key]: index }))));
             } else if (group.toggle) {
-                group.opts.forEach(([key, label, added]) => options.append(this.tile(Object.assign({}, this.config, { [key]: true }), this.config[key], label, added, cat.vb, () => this.set({ [key]: !this.config[key] }))));
+                group.opts.forEach(([key, label, added]) => options.append(this.tile(Object.assign({}, this.config, { [key]: true }), this.config[key], label, added, viewBox, () => this.set({ [key]: !this.config[key] }))));
             } else {
                 group.opts.forEach(([value, label, added]) => {
                     const change = group.preset ? Object.assign({ [group.key]: value }, this.A.PRESET[value]) : { [group.key]: value };
-                    options.append(this.tile(Object.assign({}, this.config, change), this.config[group.key] === value, label, added, cat.vb, () => this.set(change)));
+                    options.append(this.tile(Object.assign({}, this.config, change), this.config[group.key] === value, label, added, viewBox, () => this.set(change)));
                 });
             }
 
-            box.append(title, options);
+            box.append(title);
+            if (group.note) {
+                const note = document.createElement('p');
+                note.className = 'cm-sg-ed__gn';
+                note.textContent = group.note;
+                box.append(note);
+            }
+            box.append(options);
 
             return box;
         }));
@@ -159,8 +171,10 @@ export default class extends Controller {
     swatch(color, pressed, label, apply) {
         const button = document.createElement('button');
         button.type = 'button';
-        button.className = 'cm-sg-ed__sw';
-        button.style.background = color;
+        button.className = null === color ? 'cm-sg-ed__sw cm-sg-ed__sw--none' : 'cm-sg-ed__sw';
+        if (null !== color) {
+            button.style.background = color;
+        }
         button.setAttribute('aria-pressed', pressed ? 'true' : 'false');
         button.setAttribute('aria-label', label);
         button.addEventListener('click', apply);
