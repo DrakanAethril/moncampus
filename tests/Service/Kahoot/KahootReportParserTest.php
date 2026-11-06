@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service\Kahoot;
 
 use App\Service\Kahoot\KahootNote;
+use App\Service\Kahoot\KahootReport;
 use App\Service\Kahoot\KahootReportParser;
 use App\Service\QuizCsvImportException;
 use PHPUnit\Framework\TestCase;
@@ -119,6 +120,87 @@ class KahootReportParserTest extends TestCase
         self::assertFalse($report->notes[0]->dropsQuestion());
     }
 
+    public function testWhatTheGameHadAndTheReportDoesNotIsNamed(): void
+    {
+        $row = static fn (string $number): array => [$number, 'Le SI est', 'un ensemble', 'un logiciel', '-', '-', '-', '-', 'un ensemble', '20', 'Pseudo A', 'un ensemble', 'Correct', '1', '0', '900'];
+
+        // Every block played, yet 2 and 4 left no tab and no row: slides, most likely.
+        $slides = KahootReportParser::parse([
+            'Overview' => [['Révisions Thème 3'], ['Played', '4 of 4']],
+            '1 Quiz' => [],
+            '3 Quiz' => [],
+            'Raw Report Data' => [self::NEW_HEADER, $row('1'), $row('3')],
+        ], 'export.xlsx');
+
+        self::assertSame([[KahootNote::MISSING_BLOCK, 2], [KahootNote::MISSING_BLOCK, 4]], $this->notes($slides));
+        self::assertFalse($slides->notes[0]->dropsQuestion(), 'nothing of the report was left out');
+
+        // A game stopped after 2 blocks of 4: the last two were never played.
+        $stopped = KahootReportParser::parse([
+            'Overview' => [['Révisions Thème 3'], ['Played', '2 of 4']],
+            '1 Quiz' => [],
+            '2 Quiz' => [],
+            'Raw Report Data' => [self::NEW_HEADER, $row('1'), $row('2')],
+        ], 'export.xlsx');
+
+        self::assertSame([[KahootNote::NOT_PLAYED, 3], [KahootNote::NOT_PLAYED, 4]], $this->notes($stopped));
+        self::assertSame(['played' => '2', 'total' => '4'], $stopped->notes[0]->parameters);
+
+        // A report that says nothing of what was played claims nothing.
+        $silent = KahootReportParser::parse([
+            'Overview' => [['Révisions Thème 3']],
+            '1 Quiz' => [],
+            'Raw Report Data' => [self::NEW_HEADER, $row('1')],
+        ], 'export.xlsx');
+
+        self::assertSame([], $silent->notes);
+    }
+
+    public function testAQuizWhereAnyRightAnswerScoredIsNamed(): void
+    {
+        $question = static fn (string $player, string $answer, string $score): array => ['1', "L'agilité en entreprise, c'est", 'des intérimaires', 'moins de hiérarchie, plus de souplesse', 'se mouvoir avec légèreté', "s'adapter au macro-environnement", '-', '-', "moins de hiérarchie, plus de souplesse,s'adapter au macro-environnement", '20', $player, $answer, '' !== $score && '0' !== $score ? 'Correct' : 'Incorrect', '1', '0', $score];
+
+        // One proposition picked, and points scored for it: the two right answers each counted.
+        $report = KahootReportParser::parse([
+            'Overview' => [['CEJM - Q 4.3 - Besoin de réactivité']],
+            '1 Quiz' => [],
+            'Raw Report Data' => [
+                self::NEW_HEADER,
+                $question('Pseudo A', 'moins de hiérarchie, plus de souplesse', '745'),
+                $question('Pseudo B', "s'adapter au macro-environnement", '869'),
+                $question('Pseudo C', 'des intérimaires', '0'),
+            ],
+        ], 'export.xlsx');
+
+        $questions = $this->questions($report->document);
+        self::assertSame(['qcm_multi', [2, 4]], [$questions[0]['type'], $questions[0]['correct']]);
+        self::assertSame([[KahootNote::ANY_RIGHT_ANSWER, 1]], $this->notes($report));
+        self::assertFalse($report->notes[0]->dropsQuestion());
+
+        // A multiple-select question is played as one: nothing to say.
+        $multiple = KahootReportParser::parse([
+            'Overview' => [['CEJM - Q 4.3 - Besoin de réactivité']],
+            '1 Multiple-select Quiz' => [],
+            'Raw Report Data' => [self::NEW_HEADER, $question('Pseudo A', 'moins de hiérarchie, plus de souplesse', '745')],
+        ], 'export.xlsx');
+
+        self::assertSame([], $multiple->notes);
+
+        // The older layout's « Quiz » with several right answers was a multiple choice: somebody picked
+        // two, and one right pick alone scored only part of the points.
+        $olderMultiple = KahootReportParser::parse([
+            'Overview' => [['CEJM - Q 5.1 - Politiques de l\'emploi']],
+            '1 Quiz' => [],
+            'RawReportData Data' => [
+                self::OLD_HEADER,
+                $question('Pseudo A', "moins de hiérarchie, plus de souplesse, s'adapter au macro-environnement", '933'),
+                $question('Pseudo B', "s'adapter au macro-environnement", '378'),
+            ],
+        ], 'export.xlsx');
+
+        self::assertSame([], $olderMultiple->notes);
+    }
+
     public function testTheRightAnswersAreFoundAmongPropositionsHoldingCommas(): void
     {
         $options = ['Oui, avec leur accord', 'Non', 'Oui, sans rien demander'];
@@ -149,6 +231,12 @@ class KahootReportParserTest extends TestCase
             KahootReportParser::parse($sheets, 'CEJM - Révision Thème 4.xlsx')->fingerprint(),
             KahootReportParser::parse($sheets, 'CEJM - Révision Thème 4 (1).xlsx')->fingerprint(),
         );
+    }
+
+    /** @return list<array{0: string, 1: int}> */
+    private function notes(KahootReport $report): array
+    {
+        return array_map(static fn (KahootNote $note): array => [$note->kind, $note->questionNumber], $report->notes);
     }
 
     /**
