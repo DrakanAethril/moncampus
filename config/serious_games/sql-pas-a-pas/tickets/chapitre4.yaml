@@ -1,0 +1,141 @@
+# SQL pas à pas — chapter 4, « Compter et regrouper ».
+tickets:
+  - id: N13
+    act: 4
+    after: [N12]
+    requester: guide
+    title: "Compter"
+    request: "COUNT(*) · COUNT(colonne) · COUNT(DISTINCT)"
+    course: "COUNT"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "SELECT COUNT(*) donne 30 et SELECT COUNT(poids_kg) donne 27. Pourquoi ?"
+        options:
+          - { text: "COUNT(colonne) ne compte pas les NULL : trois spécimens n'ont pas de poids.", ok: true }
+          - text: "COUNT(poids_kg) additionne les poids au lieu de compter."
+            misconception: count-somme
+            reaction: { who: guide, expr: neutre, text: "COUNT compte toujours ; additionner, c'est SUM. Ce qui manque, ce sont les lignes où le poids est inconnu." }
+          - text: "Parce que trois spécimens pèsent 0 kg."
+            misconception: null-zero
+            reaction: { who: guide, expr: neutre, text: "Un poids de 0 serait une valeur connue, comptée par COUNT(poids_kg). Ces trois-là ont un poids NULL." }
+          - text: "Parce que COUNT(*) compte aussi les colonnes."
+            misconception: count-colonnes
+            reaction: { who: guide, expr: neutre, text: "COUNT(*) compte des lignes, jamais des colonnes : l'étoile veut dire « la ligne entière »." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N14
+    act: 4
+    after: [N13]
+    requester: guide
+    title: "Additionner, moyenner"
+    request: "SUM · AVG · MIN · MAX"
+    course: "Agrégats"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi MySQL refuse-t-il SELECT nom, MAX(valeur) FROM specimen ?"
+        options:
+          - { text: "MAX ramène toutes les lignes à une seule : MySQL ne sait pas quel nom afficher à côté.", ok: true }
+          - text: "Il ne le refuse pas : il affiche le nom du spécimen le plus cher."
+            misconception: agregat-ligne
+            reaction: { who: guide, expr: neutre, text: "C'est ce qu'on aimerait, mais MAX ne désigne pas une ligne : il calcule un nombre. Pour le nom du plus cher, on trie et on garde une ligne, ou on passe par une sous-requête." }
+          - text: "Parce que MAX ne s'applique qu'aux dates."
+            misconception: max-dates
+            reaction: { who: guide, expr: neutre, text: "MAX s'applique aux nombres, aux dates et aux textes. Le problème est la colonne nom, seule à côté de l'agrégat." }
+          - text: "Parce qu'il faut un ORDER BY avant MAX."
+            misconception: max-tri
+            reaction: { who: guide, expr: neutre, text: "MAX n'a pas besoin de tri. C'est le mélange d'une colonne et d'un agrégat qui pose problème." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: C05
+    act: 4
+    after: [N14]
+    requester: guide
+    title: "Défi chrono · Compter et calculer"
+    request: "5 requêtes en 4 minutes, sans indice"
+    course: "COUNT, SUM, AVG, MIN, MAX"
+    steps:
+      - { id: chrono, kind: fix, prompt: "Défi chrono" }
+
+  - id: N15
+    act: 4
+    after: [N14]
+    requester: guide
+    title: "Par groupe"
+    request: "GROUP BY"
+    course: "GROUP BY"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi MySQL refuse-t-il SELECT classe, nom, COUNT(*) FROM specimen GROUP BY classe ?"
+        options:
+          - { text: "Il y a plusieurs noms par classe : MySQL ne sait pas lequel afficher sur la ligne du groupe.", ok: true }
+          - text: "Parce que COUNT(*) doit être écrit en premier dans le SELECT."
+            misconception: agregat-ordre
+            reaction: { who: guide, expr: neutre, text: "L'ordre des colonnes du SELECT est libre. C'est la colonne nom, ni groupée ni agrégée, qui gêne." }
+          - text: "Parce qu'un GROUP BY demande toujours un WHERE."
+            misconception: groupby-where
+            reaction: { who: guide, expr: neutre, text: "WHERE est facultatif. La règle du GROUP BY porte sur ce qu'on affiche." }
+          - text: "Parce qu'on ne peut grouper que sur des nombres."
+            misconception: groupby-nombres
+            reaction: { who: guide, expr: neutre, text: "On groupe très bien sur un texte comme la classe. Le refus vient de nom." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N16
+    act: 4
+    after: [N15]
+    requester: guide
+    title: "Filtrer les groupes"
+    request: "HAVING · WHERE ou HAVING ?"
+    course: "HAVING"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Quelle est la différence entre WHERE et HAVING ?"
+        options:
+          - { text: "WHERE filtre les lignes avant le regroupement, HAVING filtre les groupes après le calcul des agrégats.", ok: true }
+          - text: "Aucune : ce sont deux façons d'écrire la même chose."
+            misconception: where-having
+            reaction: { who: guide, expr: neutre, text: "Ils n'agissent pas au même moment : WHERE ne connaît pas encore les COUNT et les SUM, HAVING si." }
+          - text: "HAVING s'écrit avant WHERE."
+            misconception: having-avant
+            reaction: { who: guide, expr: neutre, text: "L'ordre est WHERE, GROUP BY, puis HAVING : on filtre les lignes, on groupe, on filtre les groupes." }
+          - text: "HAVING ne s'utilise qu'avec ORDER BY."
+            misconception: having-tri
+            reaction: { who: guide, expr: neutre, text: "HAVING va avec GROUP BY. ORDER BY est indépendant des deux." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: C06
+    act: 4
+    after: [N16]
+    requester: guide
+    title: "Défi chrono · Grouper"
+    request: "5 requêtes en 4 minutes, sans indice"
+    course: "GROUP BY et HAVING"
+    steps:
+      - { id: chrono, kind: fix, prompt: "Défi chrono" }

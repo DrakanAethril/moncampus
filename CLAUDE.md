@@ -420,13 +420,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
 - **Serious games** (`/serious-games`) — `SeriousGame*` entities, `src/SeriousGame/`,
-  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; ten games built,
+  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; eleven games built,
   **L'Observatoire** (automatismes de 1re), **Les Tablettes de Pompéi** (déclinaisons latines,
   4e-2nde, `design/validated/serious-games-pompei.md`), **Station Abysse** (SVT, 2nde-1re,
   `serious-games-abysse.md`), **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`), **Panique
   à la Neko-Con** (HTML et CSS, BTS SIO 1, `serious-games-neko-con.md`) and **Black-out** (réseau et
   cybersécurité, BTS SIO 2 SISR, `serious-games-blackout.md`) and **Rétro Rush** (bases de données
-  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`) and **Fusion** (le plan de bascule, BTS SIO 2 SISR, `serious-games-fusion.md`) and **Service de nuit** (PHP pour débutants, BTS SIO 1, `serious-games-service-de-nuit.md`), the six of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
+  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`) and **Fusion** (le plan de bascule, BTS SIO 2 SISR, `serious-games-fusion.md`) and **Service de nuit** (PHP pour débutants, BTS SIO 1, `serious-games-service-de-nuit.md`) and **SQL pas à pas** (bases de données et SQL pour débutants, BTS SIO 1 et NSI, `serious-games-sql-pas-a-pas.md`), the seven of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
   mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus,
   per game, **for adults** one line in the « Serious games » block of Paramètres › Fonctionnalités
@@ -553,6 +553,24 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     MySQL triggers - what it cannot translate is refused, never guessed), each deliverable replayed
     on a fresh visible base **and a hidden one** (`base.js`, generated) against its reference
     answer; the game half and the bench share `benchcore.js`.
+    **SQL pas à pas** is the seventh, and the first **without a story**: the student climbs 30 levels in
+    seven chapters and a bonus, one notion each - a lesson shown just before the step that needs it,
+    then predict, « Comprendre » (an explanation corrected here, each wrong one a misconception), complete,
+    repair and **three** queries to write - and every notion ends on a **timed challenge** (« défi
+    chrono »: five queries drawn from a pool, a few minutes, no hint), then the final test. Its levels'
+    steps come in the order written, which the manifest's `scenario.free_order: true` allows
+    (`ScenarioValidator` otherwise opens a ticket on its repair, followed by its explanation). A
+    challenge is one measured step timed **by the game**, the extra time read from `getUser()`'s
+    `extraTimePercent`; it never blocks the next level (no ticket's `after` names it, `capacity: 60`),
+    and a lost run is an error on the ticket, retried at will with other questions. The queries run in
+    the frame on sql.js behind a copy of Rétro Rush's MySQL layer (`sqlcompat.js`, its global renamed
+    `PapSQL`) and the game's own engine (`engine.js`: `/` divides like MySQL, UPPER knows the accents,
+    an alias in a WHERE and a column outside the GROUP BY are refused like MySQL 8, UPDATE and DELETE
+    without WHERE are stopped, errors carry MySQL's code before their French explanation), each checked
+    on the visible base and a hidden one with traps (`base.js`). « Tester » costs nothing and a query
+    that does not run is not delivered. It is the first game **made for the phone** (no `desktop_only`):
+    a bar of SQL words to tap above the actions, the words of the notions met only. A chapter's card
+    asks for every level and challenge of it.
   - **`/serious-games/stats`** (`StatsController`, `App\SeriousGame\Stats\`): usage, progression,
     analysis of the units, a class's list and the years, for every game - read by **every teacher**
     and the administrators with the names (`SeriousGameVoter::READ_STATS`, the user's decision of

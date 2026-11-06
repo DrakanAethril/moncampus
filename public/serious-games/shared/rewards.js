@@ -7,7 +7,7 @@
    Formatool's screens (the player page, the showcase), like shared/avatar.js:
 
      SGRewards.art(kind, code, {size, finish, locked}) → SVG markup
-       kind: 'trophy' ('astrolabe', 'groma', 'nautile', 'loupe') | 'card' ('card-<game>-<chapter>')
+       kind: 'trophy' ('astrolabe', 'groma', 'nautile', 'loupe', … 'globe-celeste') | 'card' ('card-<game>-<chapter>')
              | 'pin' ('pin-etoile', 'pin-cave-canem', 'pin-vague', 'pin-loupe')
        finish (trophy only): 'brass' | 'silver' | 'gold' - gold carries its glints
        locked: a silhouette in currentColor, readable on both themes.
@@ -36,7 +36,8 @@
     'retro-rush': { bg: '#1E1433', paper: '#EDE7F7', ink: '#EDE7F7', accent: '#FF8A3D', font: "'Manrope', 'Trebuchet MS', sans-serif", italic: false },
     'radio-comete': { bg: '#14181C', paper: '#232A30', ink: '#E9E1CF', accent: '#E8A33D', font: "'Barlow Condensed', 'Trebuchet MS', sans-serif", italic: false },
     fusion: { bg: '#E4E3DD', paper: '#F1F1EE', ink: '#2E3236', accent: '#E07A3F', font: "'Bricolage Grotesque', 'Trebuchet MS', sans-serif", italic: false },
-    'service-de-nuit': { bg: '#14111F', paper: '#1B1729', ink: '#F6F1E7', accent: '#FF4F7B', font: "'Bungee', 'Trebuchet MS', sans-serif", italic: false }
+    'service-de-nuit': { bg: '#14111F', paper: '#1B1729', ink: '#F6F1E7', accent: '#FF4F7B', font: "'Bungee', 'Trebuchet MS', sans-serif", italic: false },
+    'sql-pas-a-pas': { bg: '#0B1030', paper: '#151B45', ink: '#EEF0FF', accent: '#FFE27A', font: "'Sora', 'Trebuchet MS', sans-serif", italic: false }
   };
   var GAMES = {
     observatoire: { title: "L'Observatoire", chapters: [
@@ -128,6 +129,18 @@
       { id: 'acte3', name: 'Les couloirs', topic: 'for, while, lire du code' },
       { id: 'acte4', name: 'Les étages', topic: 'Tableaux et foreach' },
       { id: 'acte5', name: 'La chambre 12', topic: 'Fonctions, formulaires, sécurité' }],
+      finale: { id: 'none', name: '', topic: '' } },
+    // SQL pas à pas: a card per chapter mastered - every level and every timed challenge of it
+    // (design/validated/serious-games-sql-pas-a-pas.md §4).
+    'sql-pas-a-pas': { title: 'SQL pas à pas', chapters: [
+      { id: 'acte1', name: 'Lire une table', topic: 'SELECT, WHERE, ORDER BY, LIMIT' },
+      { id: 'acte2', name: 'Combiner les conditions', topic: 'AND, OR, NOT, IN, LIKE' },
+      { id: 'acte3', name: 'Valeurs manquantes et calculs', topic: 'NULL, DISTINCT, AS, fonctions' },
+      { id: 'acte4', name: 'Compter et regrouper', topic: 'COUNT, SUM, GROUP BY, HAVING' },
+      { id: 'acte5', name: 'Relier les tables', topic: 'Clés, JOIN, LEFT JOIN, sous-requêtes' },
+      { id: 'acte6', name: 'Modifier les données', topic: 'INSERT, UPDATE, DELETE' },
+      { id: 'acte7', name: 'Créer sa base', topic: 'CREATE TABLE, clés, contraintes' },
+      { id: 'acte8', name: 'Bonus : sécurité', topic: 'Transactions, droits, injection' }],
       finale: { id: 'none', name: '', topic: '' } }
   };
   var PINS = [
@@ -140,7 +153,8 @@
     { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', ink: '#FF8A3D', ring: '#BFE6FF' },
     { id: 'pin-comete', name: 'Épinglette Comète', color: '#14181C', ink: '#E8A33D', ring: '#5FB37C' },
     { id: 'pin-passerelle', name: 'Épinglette Passerelle', color: '#D8C29D', ink: '#2E3236', ring: '#E07A3F' },
-    { id: 'pin-neon', name: 'Épinglette Néon', color: '#14111F', ink: '#FF4F7B', ring: '#3FE0D0' }
+    { id: 'pin-neon', name: 'Épinglette Néon', color: '#14111F', ink: '#FF4F7B', ring: '#3FE0D0' },
+    { id: 'pin-polaire', name: 'Épinglette Polaire', color: '#0B1030', ink: '#FFE27A', ring: '#9DB4FF' }
   ];
 
   function cardOf(code) {
@@ -244,6 +258,20 @@
         '<path d="M64 20 L104 34 Q110 36 108 42 L96 92 Q94 98 88 96 L60 86 Q54 84 56 78 L62 24 Q63 18 64 20 Z" fill="' + (locked ? 'currentColor' : '#FF4F7B') + '" stroke="' + M.deep + '" stroke-width="1.6"/>' +
         '<circle cx="68" cy="30" r="3.2" fill="' + (locked ? 'currentColor' : '#14111F') + '"/>' +
         '<text x="82" y="70" text-anchor="middle" font-size="26" font-family="\'Bungee\', \'Trebuchet MS\', sans-serif" fill="' + (locked ? 'currentColor' : '#FFE3EA') + '" transform="rotate(16 82 62)">12</text>';
+    },
+    // SQL pas à pas: a celestial globe on its stand, its meridian ring and a constellation of the course.
+    'globe-celeste': function (M, g, locked) {
+      var sky = locked ? 'currentColor' : '#151B45', star = locked ? 'currentColor' : '#FFE27A', line = locked ? 'currentColor' : '#9DB4FF';
+      var pts = [[44, 40], [56, 32], [70, 44], [64, 58], [78, 66], [50, 62]], cons = '';
+      for (var i = 1; i < pts.length; i++) cons += '<line x1="' + pts[i - 1][0] + '" y1="' + pts[i - 1][1] + '" x2="' + pts[i][0] + '" y2="' + pts[i][1] + '" stroke="' + line + '" stroke-width="1" opacity=".8"/>';
+      pts.forEach(function (p, k) { cons += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (k % 2 ? 1.8 : 2.6) + '" fill="' + star + '"/>'; });
+      return '<path d="M44 108 L76 108 L70 98 L50 98 Z" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.4"/>' +
+        '<rect x="57" y="84" width="6" height="15" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1"/>' +
+        '<circle cx="60" cy="52" r="32" fill="' + sky + '" stroke="' + M.deep + '" stroke-width="1.6"/>' +
+        '<ellipse cx="60" cy="52" rx="32" ry="10" fill="none" stroke="' + line + '" stroke-width=".8" opacity=".5"/>' + cons +
+        '<path d="M60 14 A38 38 0 0 1 60 90" fill="none" stroke="url(#' + g + ')" stroke-width="5" stroke-linecap="round"/>' +
+        '<path d="M60 14 A38 38 0 0 1 60 90" fill="none" stroke="' + M.deep + '" stroke-width="5.8" stroke-linecap="round" opacity=".25"/>' +
+        '<circle cx="60" cy="14" r="3" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1"/>';
     },
     'fader-or': function (M, g, locked) {
       var tick = '';
@@ -357,6 +385,7 @@
     if (gameId === 'radio-comete') s = radioEmblem(idx, P);
     if (gameId === 'fusion') s = fusionEmblem(idx, P);
     if (gameId === 'service-de-nuit') s = nuitEmblem(idx, P);
+    if (gameId === 'sql-pas-a-pas') s = sqlEmblem(idx, P);
     return s;
   }
   /* The fresco of a room of the villa, inside the card's red panel (x 9-111, y 22-118): one
@@ -613,6 +642,27 @@
         return '<circle cx="40" cy="44" r="10" fill="none" stroke="' + ambre + '" stroke-width="4"/><rect x="37" y="53" width="6" height="40" fill="' + ambre + '"/><path d="M43 82 H52 V88 H43 Z" fill="' + ambre + '"/><path d="M58 40 L92 52 L84 92 L56 82 Z" fill="' + rose + '"/><text x="74" y="74" text-anchor="middle" font-size="18" font-family="\'Bungee\', sans-serif" fill="#FFE3EA" transform="rotate(16 74 68)">12</text>';
     }
   }
+  /* A card of SQL pas à pas: the chapter's constellation, one star per level and a brighter one per
+     timed challenge, with the keyword the chapter opens on. */
+  var SQL_SKY = [
+    { word: 'SELECT', stars: [[30, 44], [48, 36], [66, 48], [84, 40], [58, 70, 1], [80, 82, 1]] },
+    { word: 'AND · OR', stars: [[28, 52], [44, 36], [60, 50], [76, 34], [92, 52, 1]] },
+    { word: 'NULL', stars: [[34, 36], [34, 76], [58, 44], [82, 36], [82, 76, 1]] },
+    { word: 'GROUP BY', stars: [[30, 70], [46, 46], [62, 64, 1], [78, 40], [92, 62], [60, 86, 1]] },
+    { word: 'JOIN', stars: [[26, 48], [42, 62], [58, 42], [74, 62], [90, 44], [52, 84, 1], [76, 86, 1]] },
+    { word: 'UPDATE', stars: [[32, 62], [50, 42], [70, 42], [88, 62, 1]] },
+    { word: 'CREATE', stars: [[30, 40], [60, 32], [90, 40], [60, 62], [60, 88, 1]] },
+    { word: 'COMMIT', stars: [[34, 54], [60, 38], [86, 54]] }
+  ];
+  function sqlEmblem(idx, P) {
+    var sky = SQL_SKY[idx] || SQL_SKY[0], s = '', st = sky.stars;
+    for (var i = 1; i < st.length; i++) if (!st[i][2]) s += '<line x1="' + st[i - 1][0] + '" y1="' + st[i - 1][1] + '" x2="' + st[i][0] + '" y2="' + st[i][1] + '" stroke="#9DB4FF" stroke-width="1" opacity=".75"/>';
+    st.forEach(function (p) {
+      var big = !!p[2];
+      s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (big ? 9 : 6) + '" fill="' + P.accent + '" opacity=".16"/><circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (big ? 3.4 : 2.4) + '" fill="' + (big ? '#FFB86B' : P.accent) + '"/>';
+    });
+    return s + '<text x="60" y="108" text-anchor="middle" font-size="9" letter-spacing="1" font-family="\'JetBrains Mono\', monospace" fill="#9DB4FF">' + sky.word + '</text>';
+  }
   var ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
   /* A card of Les Tablettes de Pompéi: a cream tablet, its fresco on a red panel, the room's name in
      capitals and its Roman numeral. */
@@ -682,6 +732,11 @@
       return '<path d="M13 31.5 L17.5 28.6 L27 28 L34.5 27.4 L39.6 22.6 L43.4 21.2 L46.8 23.4 L45.8 26 L42.6 26.8 L41.2 30.8 L44.2 36.4 L42.2 37.4 L38.4 32.6 L30.6 33.6 L26.4 38.2 L24.2 37.6 L26.2 33.2 L20.4 34 L16.4 38.6 L14.4 37.6 L17.6 33.2 Z" fill="' + c + '"/>' +
         '<path d="M13.5 31.4 L9 27" stroke="' + c + '" stroke-width="2" stroke-linecap="round"/>' +
         (accent ? '<path d="M38.8 24.4 L41.6 29.4" stroke="' + accent + '" stroke-width="2.2" stroke-linecap="round"/>' : '');
+    },
+    // SQL pas à pas: the pole star, four-pointed, and two small stars of its constellation.
+    'pin-polaire': function (c, accent) {
+      return '<path d="M30 17 Q31.6 28.4 43 30 Q31.6 31.6 30 43 Q28.4 31.6 17 30 Q28.4 28.4 30 17 Z" fill="' + c + '"/>' +
+        '<circle cx="21" cy="21" r="1.6" fill="' + (accent || c) + '"/><circle cx="39.5" cy="39" r="1.3" fill="' + (accent || c) + '"/>';
     }
   };
   function pin(id, o) {

@@ -1,0 +1,131 @@
+# SQL pas à pas — chapter 2, « Combiner les conditions ».
+tickets:
+  - id: N05
+    act: 2
+    after: [N04]
+    requester: guide
+    title: "Et, ou"
+    request: "AND · OR · parenthèses"
+    course: "AND et OR"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "On veut les oiseaux et les reptiles. Pourquoi WHERE classe = 'Oiseaux' AND classe = 'Reptiles' ne renvoie-t-il rien ?"
+        options:
+          - { text: "Une ligne n'a qu'une classe : elle ne peut pas être Oiseaux et Reptiles à la fois. Il faut OR.", ok: true }
+          - text: "Parce que AND doit s'écrire en minuscules."
+            misconception: casse-mots-cles
+            reaction: { who: guide, expr: neutre, text: "MySQL accepte les mots du SQL en majuscules comme en minuscules : ce n'est pas la casse, c'est le sens de AND." }
+          - text: "Parce qu'il manque des parenthèses."
+            misconception: parentheses-partout
+            reaction: { who: guide, expr: neutre, text: "Les parenthèses n'y changeraient rien : les deux conditions ne peuvent pas être vraies sur la même ligne." }
+          - text: "Parce que MySQL ne sait pas tester deux fois la même colonne."
+            misconception: meme-colonne
+            reaction: { who: guide, expr: neutre, text: "Il le sait très bien : classe = 'Oiseaux' OR classe = 'Reptiles' fonctionne. Le problème est le ET." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N06
+    act: 2
+    after: [N05]
+    requester: guide
+    title: "Le contraire"
+    request: "NOT · <> · ni l'un ni l'autre"
+    course: "NOT"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "WHERE salle <> 'R2' : les spécimens qui n'ont pas de salle (NULL) sont-ils dans le résultat ?"
+        options:
+          - { text: "Non : comparer NULL à une valeur ne donne ni vrai ni faux, et WHERE ne garde que ce qui est vrai.", ok: true }
+          - text: "Oui, puisqu'ils ne sont pas en R2."
+            misconception: null-different
+            reaction: { who: guide, expr: neutre, text: "C'est l'intuition, mais NULL veut dire « inconnu » : MySQL ne sait pas si un spécimen sans salle est en R2 ou non, donc il ne le garde pas." }
+          - text: "Oui, car NULL vaut une chaîne vide, différente de 'R2'."
+            misconception: null-vide
+            reaction: { who: guide, expr: neutre, text: "NULL n'est pas une chaîne vide : c'est l'absence de valeur. Une chaîne vide '' serait une valeur connue." }
+          - text: "Non, parce que NULL vaut 0."
+            misconception: null-zero
+            reaction: { who: guide, expr: neutre, text: "NULL ne vaut pas 0 : il ne vaut rien du tout. C'est pour ça qu'aucune comparaison avec lui n'est vraie." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N07
+    act: 2
+    after: [N06]
+    requester: guide
+    title: "Listes et intervalles"
+    request: "IN · NOT IN · BETWEEN"
+    course: "IN et BETWEEN"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "annee_entree BETWEEN 1950 AND 1960 garde-t-il un spécimen entré en 1960 ?"
+        options:
+          - { text: "Oui : les deux bornes de BETWEEN sont comprises.", ok: true }
+          - text: "Non : la borne de fin est exclue."
+            misconception: between-bornes
+            reaction: { who: guide, expr: neutre, text: "BETWEEN a AND b, c'est >= a AND <= b : les deux bornes sont dedans." }
+          - text: "Non : les deux bornes sont exclues."
+            misconception: between-bornes
+            reaction: { who: guide, expr: neutre, text: "Les deux bornes sont comprises. Pour les exclure, on écrirait > et <." }
+          - text: "Seulement si on écrit BETWEEN 1950 OR 1960."
+            misconception: between-or
+            reaction: { who: guide, expr: neutre, text: "BETWEEN s'écrit toujours avec AND entre ses deux bornes. OR n'a pas sa place ici." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N08
+    act: 2
+    after: [N07]
+    requester: guide
+    title: "Chercher dans un texte"
+    request: "LIKE · % · _"
+    course: "LIKE"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi WHERE nom LIKE 'pic' ne trouve-t-il pas « Pic noir » ?"
+        options:
+          - { text: "Sans %, LIKE compare le texte entier : « pic » n'est pas « Pic noir ».", ok: true }
+          - text: "À cause de la majuscule de « Pic »."
+            misconception: like-casse
+            reaction: { who: guide, expr: neutre, text: "Avec la collation de MySQL, la casse ne compte pas : 'pic' et 'Pic' sont égaux. C'est le reste du nom, « noir », qui manque." }
+          - text: "Parce que LIKE ne fonctionne que sur les nombres."
+            misconception: like-nombres
+            reaction: { who: guide, expr: neutre, text: "LIKE est fait pour les textes. Il lui faut seulement un joker pour accepter « Pic » suivi d'autre chose." }
+          - text: "Parce qu'il faut des guillemets doubles autour du motif."
+            misconception: like-guillemets
+            reaction: { who: guide, expr: neutre, text: "Les apostrophes conviennent. Ce qui manque, c'est le % : 'pic%'." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: C03
+    act: 2
+    after: [N08]
+    requester: guide
+    title: "Défi chrono · Conditions"
+    request: "5 requêtes en 4 minutes, sans indice"
+    course: "AND, OR, NOT, IN, BETWEEN, LIKE"
+    steps:
+      - { id: chrono, kind: fix, prompt: "Défi chrono" }

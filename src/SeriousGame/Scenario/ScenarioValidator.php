@@ -13,7 +13,8 @@ namespace App\SeriousGame\Scenario;
  * - every explanation or choice has exactly one right answer, an explanation at least three;
  * - a « line » names the text of the right line, and outside the help, the view it is clicked in;
  * - an « order » has items, and its answer places each of them once;
- * - a ticket to repair starts with the repair, followed by the explanation to the requester;
+ * - a ticket to repair starts with the repair, followed by the explanation to the requester - unless
+ *   the scenario says `free_order: true`, whose steps come in the order written;
  * - a scenario that asks for the password has its pieces, and each piece given by a ticket has a
  *   slot (Black-out asks for none).
  *
@@ -68,7 +69,7 @@ final class ScenarioValidator
 
             $kinds = array_map(static fn (ScenarioStep $s): ScenarioStepKind => $s->kind, $ticket->steps);
             $fixAt = array_search(ScenarioStepKind::Fix, $kinds, true);
-            if (false !== $fixAt && (0 !== $fixAt || ScenarioStepKind::Explain !== ($kinds[1] ?? null))) {
+            if (!$scenario->freeOrder() && false !== $fixAt && (0 !== $fixAt || ScenarioStepKind::Explain !== ($kinds[1] ?? null))) {
                 $problems[] = $ticket->id.' : la réparation doit venir en premier, suivie de l’explication';
             }
             if (false === $fixAt && [] !== $ticket->guide) {

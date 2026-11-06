@@ -1,0 +1,186 @@
+# SQL pas à pas: discovering relational databases and MySQL's SQL, for beginners - BTS SIO 1 and NSI
+# (design/validated/serious-games-sql-pas-a-pas.md). A game of the « scénario » mechanic with neither story
+# nor character: the student climbs levels, one notion each.
+#
+# Read by `app:serious-games:sync`, which adds the tickets of `tickets/*.yaml` under `scenario.tickets` and
+# builds `chapters` from the acts. A ticket is a level, a timed challenge (« défi chrono ») or the final
+# test. **The right answers to the « Comprendre » questions live in those files and nowhere in the game's
+# package** (public/serious-games/sql-pas-a-pas/), which holds the lessons, the MySQL engine (sql.js), the
+# visible base and the hidden one, the queries to predict, complete, repair and write with their reference,
+# the written hints and the pools of the timed challenges. Only {passed, failed} leaves the frame for a
+# measured step; the query itself never does.
+#
+# What this game adds to the mechanic: a level's steps come in the order written (`free_order`) - predict,
+# understand, complete, repair, then write three queries - and a timed challenge closes each notion. The
+# challenge is timed by the game (accommodations' extra time from getUser()), never blocks the next level,
+# and is retried as often as wanted, with other questions each time.
+slug: sql-pas-a-pas
+title: "SQL pas à pas"
+pitch: "Découvrir les bases de données et le SQL de MySQL, niveau après niveau : un cours court, des défis de plus en plus autonomes, et un défi chrono pour chaque notion. Se joue sur téléphone."
+subjects: [Informatique]
+levels: [BTS SIO 1, NSI]
+unit_label: niveaux
+mechanic: scenario
+# The kinds of step: a query measured by the game on its two bases, an explanation or a choice corrected here.
+answer_kinds: [fix, explain, choice]
+version: 1.0.0
+published: false
+
+words:
+  unit: [niveau, niveaux]
+  chapter: [chapitre, chapitres]
+  lit: [réussi, réussis]
+  unlit: [ouvert, ouverts]
+  level: étoiles
+  skill: notion
+  dim_filter: Beaucoup d'aide
+
+scenario:
+  # A level keeps the version it was started with; raise it when a step changes.
+  version: 1
+  # Every ticket whose predecessors are closed is open: the next level, and every timed challenge not yet
+  # won - a challenge never blocks the way.
+  capacity: 60
+  # Who answers a wrong step: nobody in particular, the game's own voice.
+  helper: guide
+  password: []
+  # A level practises, asks, then writes: its repairs are not first (ScenarioValidator).
+  free_order: true
+  restart_anytime: true
+  acts:
+    - { n: 1, title: "Lire une table", tools: [console] }
+    - { n: 2, title: "Combiner les conditions", tools: [console] }
+    - { n: 3, title: "Valeurs manquantes et calculs", tools: [console] }
+    - { n: 4, title: "Compter et regrouper", tools: [console] }
+    - { n: 5, title: "Relier les tables", tools: [console] }
+    - { n: 6, title: "Modifier les données", tools: [console] }
+    - { n: 7, title: "Créer sa base", tools: [console] }
+    - { n: 8, title: "Bonus : sécurité", tools: [console] }
+  # How a teacher reads a misconception (« Notions à reprendre »).
+  misconceptions:
+    agregat-ligne: "Croit qu'un agrégat désigne une ligne (le nom du plus cher)"
+    agregat-ordre: "Croit que l'ordre des colonnes compte avec un agrégat"
+    agregat-where: "Met un agrégat dans un WHERE"
+    alias-apostrophes: "Écrit un alias entre apostrophes"
+    alias-colonne: "Prend un alias pour une colonne de la table"
+    alias-interdits: "Croit les alias de tables interdits"
+    alias-nom: "Croit qu'un alias ne peut pas contenir de tiret bas"
+    avg-sousreq: "Croit qu'AVG ne marche que dans une sous-requête"
+    between-bornes: "Exclut les bornes de BETWEEN"
+    between-or: "Écrit BETWEEN avec OR"
+    casse-mots-cles: "Croit que la casse des mots-clés compte"
+    count-colonnes: "Croit que COUNT(*) compte les colonnes"
+    count-somme: "Confond COUNT et SUM"
+    date-decimal: "Range une date dans un DECIMAL"
+    date-int: "Range une date dans un INT"
+    date-texte: "Range une date dans un VARCHAR"
+    datediff-annees: "Croit que DATEDIFF compte des années"
+    datediff-date: "Croit que DATEDIFF rend une date"
+    dates-calcul: "Croit qu'on ne calcule pas avec des dates"
+    delete-etoile: "Écrit DELETE * FROM"
+    delete-jamais: "Croit qu'on ne supprime jamais un spécimen"
+    distinct-bug: "Croit à une erreur quand DISTINCT garde des combinaisons"
+    distinct-colonne: "Croit que DISTINCT porte sur une seule colonne"
+    distinct-tri: "Croit que DISTINCT demande ORDER BY"
+    droits-admin: "Connecte une application avec le compte administrateur"
+    droits-mauvais-compte: "Se trompe de compte en retirant des droits"
+    droits-oublies: "Laisse les droits d'un compte qui ne sert plus"
+    droits-pas-assez: "Donne trop peu de droits"
+    droits-tables: "Supprime des données au lieu de retirer des droits"
+    droits-tout: "Donne tous les droits par confort"
+    droits-trop: "Donne plus de droits que nécessaire"
+    etoile-interdite: "Croit SELECT * interdit"
+    etoile-premiere: "Croit que * n'affiche qu'une colonne"
+    fk-copie: "Croit qu'une clé étrangère copie la ligne référencée"
+    fk-cree: "Croit qu'une clé étrangère crée la ligne manquante"
+    fk-existe: "Ne voit pas la clé étrangère derrière un refus"
+    fk-numero: "Confond clé étrangère et numéro de ligne"
+    fk-tri: "Croit qu'une clé étrangère trie"
+    grant-cree: "Croit que GRANT crée le compte"
+    grant-select: "Lit GRANT SELECT comme une requête"
+    grant-tout: "Croit que GRANT SELECT donne tous les droits"
+    groupby-nombres: "Croit qu'on ne groupe que sur des nombres"
+    groupby-where: "Croit qu'un GROUP BY demande un WHERE"
+    having-avant: "Place HAVING avant WHERE"
+    having-tri: "Lie HAVING à ORDER BY"
+    injection-casse: "Croit que la casse protège de l'injection"
+    injection-erreur: "Croit que '1'='1' est une erreur"
+    injection-erreurs: "Croit que cacher les erreurs protège de l'injection"
+    injection-filtre: "Compte sur une liste noire contre l'injection"
+    injection-innocent: "Voit une injection dans une saisie ordinaire"
+    injection-nom: "Ne voit pas que la condition est toujours vraie"
+    injection-plantage: "Croit que l'injection fait planter MySQL"
+    insert-cree: "Croit qu'INSERT crée des colonnes"
+    insert-tri: "Croit qu'INSERT range la ligne à une place"
+    insert-vide: "Croit qu'un INSERT sans colonnes ajoute une ligne vide"
+    join-coupe: "Croit qu'une jointure coupe le résultat"
+    join-groupby: "Croit qu'une jointure demande GROUP BY"
+    join-limite: "Croit qu'on ne joint que deux tables"
+    join-tri: "Croit qu'ORDER BY fait apparaître des lignes"
+    left-que-sans: "Croit que LEFT JOIN ne garde que les lignes sans correspondance"
+    like-casse: "Croit que LIKE tient compte de la casse"
+    like-guillemets: "Croit que LIKE demande des guillemets doubles"
+    like-nombres: "Croit que LIKE ne marche que sur les nombres"
+    limit-derniers: "Croit que LIMIT garde les dernières lignes ajoutées"
+    limit-sans-tri: "Croit que LIMIT trie"
+    max-dates: "Croit que MAX ne marche que sur les dates"
+    max-tri: "Croit que MAX demande ORDER BY"
+    meme-colonne: "Croit qu'on ne teste pas deux fois une colonne"
+    null-aucun: "Croit qu'aucune case n'est NULL quand = NULL ne trouve rien"
+    null-different: "Croit que NULL est différent de toute valeur"
+    null-double-egal: "Cherche un opérateur == pour NULL"
+    null-texte: "Écrit NULL entre apostrophes"
+    null-vide: "Confond NULL et chaîne vide"
+    null-zero: "Confond NULL et 0"
+    ordre-alpha: "Croit les lignes triées par ordre alphabétique sans ORDER BY"
+    ordre-colonnes: "Confond ordre des colonnes et ordre des lignes"
+    ordre-id: "Croit les lignes triées par id sans ORDER BY"
+    parentheses-partout: "Met des parenthèses au lieu de changer AND en OR"
+    pk-calcul: "Croit que la clé primaire sert aux calculs"
+    pk-null: "Croit que la clé primaire interdit les NULL partout"
+    pk-repetee: "Choisit une clé primaire qui se répète"
+    pk-texte-long: "Prend le libellé pour la clé"
+    pk-tri: "Croit que la clé primaire trie la table"
+    pret-null: "Croit qu'un prêt terminé vaut NULL"
+    select-supprime: "Croit qu'un SELECT modifie la table"
+    select-trie: "Croit que nommer les colonnes trie les lignes"
+    sousreq-vitesse: "Croit la sous-requête utile pour la vitesse"
+    tx-lendemain: "Croit qu'on annule une transaction validée"
+    tx-une-ligne: "Croit qu'une requête ne modifie qu'une ligne"
+    tx-vitesse: "Croit qu'une transaction sert la vitesse"
+    update-premiere: "Croit qu'UPDATE sans WHERE ne touche que la première ligne"
+    update-rien: "Croit qu'UPDATE sans WHERE ne fait rien"
+    update-supprime: "Croit qu'UPDATE supprime une colonne"
+    where-autre-colonne: "Croit qu'une autre colonne influence la condition"
+    where-having: "Confond WHERE et HAVING"
+    where-premieres: "Croit que WHERE garde les premières lignes"
+
+# On the levels and challenges done (the bonus and the final test included): 41 in all.
+grades:
+  - [0, "Première étoile"]
+  - [6, "Guetteur·se d'étoiles"]
+  - [14, "Lecteur·rice de tables"]
+  - [22, "Cartographe des données"]
+  - [30, "Astronome du SQL"]
+  - [38, "Maître·sse des constellations"]
+
+rewards:
+  # Brass once the final test is passed; silver at 20 levels or challenges with three stars, gold at 32.
+  trophy:
+    code: globe-celeste
+    label: Le globe céleste
+    lore: "Le globe de qui sait lire le ciel des données : sept constellations, une étoile par niveau, et l'épreuve finale pour fixer le nord."
+    silver_at: 20
+    gold_at: 32
+  pin:
+    code: pin-polaire
+    label: Épinglette Polaire
+  # One card per chapter mastered: every level and every timed challenge of it.
+  cards: true
+
+thumbnail:
+  background: "radial-gradient(1.2px 1.2px at 22% 28%, rgba(255,255,255,.8) 50%, transparent 52%), radial-gradient(1px 1px at 72% 42%, rgba(255,255,255,.6) 50%, transparent 52%), radial-gradient(1.5px 1.5px at 44% 76%, rgba(255,240,200,.7) 50%, transparent 52%), radial-gradient(1px 1px at 86% 18%, rgba(255,255,255,.7) 50%, transparent 52%), radial-gradient(ellipse at 50% 0%, rgba(255,226,122,.18), transparent 60%), linear-gradient(180deg, #0B1030 0%, #1A1446 100%)"
+  font: "'Sora', 'Trebuchet MS', sans-serif"
+  style: normal
+  weight: 700
+  color: "#FFE27A"

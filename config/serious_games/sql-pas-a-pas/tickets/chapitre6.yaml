@@ -1,0 +1,101 @@
+# SQL pas à pas — chapter 6, « Modifier les données ».
+tickets:
+  - id: N22
+    act: 6
+    after: [N21]
+    requester: guide
+    title: "Ajouter"
+    request: "INSERT INTO … VALUES"
+    course: "INSERT"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi nommer les colonnes dans INSERT INTO salle (code, libelle, etage, surface_m2) VALUES (…) ?"
+        options:
+          - { text: "Pour que chaque valeur aille dans la bonne colonne, quel que soit l'ordre des colonnes dans la table.", ok: true }
+          - text: "Pour créer ces colonnes si elles n'existent pas encore."
+            misconception: insert-cree
+            reaction: { who: guide, expr: neutre, text: "INSERT ne crée jamais de colonne : il remplit celles qui existent. Créer une colonne, c'est ALTER TABLE." }
+          - text: "Pour trier la nouvelle ligne au bon endroit."
+            misconception: insert-tri
+            reaction: { who: guide, expr: neutre, text: "Une table n'a pas d'ordre : la ligne n'est rangée nulle part en particulier. L'ordre se demande au SELECT." }
+          - text: "Parce que sans la liste des colonnes, la ligne est ajoutée vide."
+            misconception: insert-vide
+            reaction: { who: guide, expr: neutre, text: "Sans la liste, MySQL suppose toutes les colonnes, dans l'ordre de la table : c'est permis, mais fragile si la table change." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N23
+    act: 6
+    after: [N22]
+    requester: guide
+    title: "Modifier"
+    request: "UPDATE … SET … WHERE"
+    course: "UPDATE"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Que fait UPDATE specimen SET valeur = 0; ?"
+        options:
+          - { text: "Il met la valeur de toutes les lignes à 0 : sans WHERE, toutes les lignes sont modifiées.", ok: true }
+          - text: "Rien, puisqu'il manque la condition."
+            misconception: update-rien
+            reaction: { who: guide, expr: neutre, text: "MySQL l'exécute sans broncher, sur toute la table. C'est pour ça que le jeu l'arrête avant." }
+          - text: "Il ne modifie que la première ligne."
+            misconception: update-premiere
+            reaction: { who: guide, expr: neutre, text: "Il n'y a pas de « première ligne » : sans WHERE, toutes y passent." }
+          - text: "Il supprime la colonne valeur."
+            misconception: update-supprime
+            reaction: { who: guide, expr: neutre, text: "UPDATE change des valeurs, jamais la structure de la table." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N24
+    act: 6
+    after: [N23]
+    requester: guide
+    title: "Supprimer"
+    request: "DELETE … WHERE · clés étrangères"
+    course: "DELETE"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi DELETE FROM specimen WHERE id = 10; est-il refusé ?"
+        options:
+          - { text: "Des prêts font référence au spécimen 10 : la clé étrangère protège cette ligne.", ok: true }
+          - text: "Parce que le spécimen 10 n'existe pas."
+            misconception: fk-existe
+            reaction: { who: guide, expr: neutre, text: "Il existe : c'est le Coelacanthe. Supprimer une ligne qui n'existe pas ne serait d'ailleurs pas une erreur, juste « 0 ligne supprimée »." }
+          - text: "Parce qu'on ne peut jamais supprimer un spécimen."
+            misconception: delete-jamais
+            reaction: { who: guide, expr: neutre, text: "On peut supprimer un spécimen que rien ne référence. Le 10 a des prêts." }
+          - text: "Parce qu'il faut écrire DELETE * FROM."
+            misconception: delete-etoile
+            reaction: { who: guide, expr: neutre, text: "DELETE * n'existe pas en MySQL : DELETE supprime des lignes entières, on ne nomme pas de colonnes." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: C09
+    act: 6
+    after: [N24]
+    requester: guide
+    title: "Défi chrono · Modifier"
+    request: "5 requêtes en 4 min 30, sans indice"
+    course: "INSERT, UPDATE, DELETE"
+    steps:
+      - { id: chrono, kind: fix, prompt: "Défi chrono" }

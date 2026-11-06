@@ -41,6 +41,15 @@ class ScenarioValidatorTest extends TestCase
         self::assertContains('T1 : la réparation doit venir en premier, suivie de l’explication', ScenarioValidator::problems($data));
     }
 
+    public function testAFreeOrderScenarioPlacesItsRepairsWhereItWants(): void
+    {
+        $steps = [ScenarioFixture::explanation(), ['id' => 'corriger', 'kind' => 'fix', 'prompt' => 'Répare.'], ['id' => 'ecrire', 'kind' => 'fix', 'prompt' => 'Écris.']];
+        $data = ScenarioFixture::data(['T1' => ['steps' => $steps]]);
+
+        self::assertNotSame([], ScenarioValidator::problems($data), 'the Neko-Con rule still holds by default');
+        self::assertSame([], ScenarioValidator::problems(['free_order' => true] + $data), 'SQL pas à pas practises, asks, then writes');
+    }
+
     public function testALineNamesTheTextOfTheRightLine(): void
     {
         $data = ScenarioFixture::data(['T1' => ['guide' => [
