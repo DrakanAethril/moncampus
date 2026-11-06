@@ -1,0 +1,131 @@
+# SQL pas à pas — chapter 3, « Valeurs manquantes et calculs ».
+tickets:
+  - id: N09
+    act: 3
+    after: [N08]
+    requester: guide
+    title: "Les cases vides"
+    request: "NULL · IS NULL · IS NOT NULL · IFNULL"
+    course: "NULL"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi WHERE salle = NULL ne renvoie-t-il aucune ligne, alors que trois spécimens n'ont pas de salle ?"
+        options:
+          - { text: "Comparer à NULL donne « inconnu », jamais vrai : il faut écrire IS NULL.", ok: true }
+          - text: "Parce qu'aucun spécimen n'est vraiment sans salle."
+            misconception: null-aucun
+            reaction: { who: guide, expr: neutre, text: "Il y en a trois : WHERE salle IS NULL les montre. C'est l'opérateur = qui ne sait pas tester NULL." }
+          - text: "Parce qu'il faut écrire 'NULL' entre apostrophes."
+            misconception: null-texte
+            reaction: { who: guide, expr: neutre, text: "'NULL' entre apostrophes, c'est le texte de quatre lettres N-U-L-L, pas l'absence de valeur." }
+          - text: "Parce que NULL se compare avec ==."
+            misconception: null-double-egal
+            reaction: { who: guide, expr: neutre, text: "SQL n'a pas d'opérateur == : pour NULL, c'est IS NULL et IS NOT NULL." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N10
+    act: 3
+    after: [N09]
+    requester: guide
+    title: "Sans doublons"
+    request: "DISTINCT · combinaisons"
+    course: "DISTINCT"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "SELECT DISTINCT classe, salle FROM specimen affiche plusieurs lignes « Oiseaux ». Pourquoi ?"
+        options:
+          - { text: "DISTINCT porte sur la ligne entière : « Oiseaux / R1 » et « Oiseaux / NULL » sont deux combinaisons différentes.", ok: true }
+          - text: "Parce que DISTINCT ne s'applique qu'à la dernière colonne."
+            misconception: distinct-colonne
+            reaction: { who: guide, expr: neutre, text: "DISTINCT s'applique à toutes les colonnes du SELECT ensemble : il compare des lignes, pas des colonnes." }
+          - text: "Parce que la base contient une erreur."
+            misconception: distinct-bug
+            reaction: { who: guide, expr: neutre, text: "Pas d'erreur : chaque ligne affichée est une combinaison classe / salle différente des autres." }
+          - text: "Parce que DISTINCT ne marche qu'avec ORDER BY."
+            misconception: distinct-tri
+            reaction: { who: guide, expr: neutre, text: "DISTINCT fonctionne seul. ORDER BY ne ferait que ranger les mêmes lignes." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N11
+    act: 3
+    after: [N10]
+    requester: guide
+    title: "Renommer et calculer"
+    request: "AS · + − * / · CONCAT"
+    course: "Calculs et alias"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "SELECT nom, valeur * 1.2 AS prix_ttc FROM specimen WHERE prix_ttc > 1000 : pourquoi MySQL refuse-t-il cette requête ?"
+        options:
+          - { text: "WHERE est évalué avant le SELECT : l'alias prix_ttc n'existe pas encore. On répète le calcul dans le WHERE.", ok: true }
+          - text: "Parce qu'un alias ne peut pas contenir de tiret bas."
+            misconception: alias-nom
+            reaction: { who: guide, expr: neutre, text: "prix_ttc est un nom tout à fait valable. Le problème est l'ordre dans lequel MySQL lit la requête." }
+          - text: "Parce qu'il faut écrire l'alias entre apostrophes dans le WHERE."
+            misconception: alias-apostrophes
+            reaction: { who: guide, expr: neutre, text: "Entre apostrophes, 'prix_ttc' serait un texte, comparé à 1000 : ce n'est pas ce qu'on veut." }
+          - text: "Parce qu'un alias est une vraie colonne de la table, déjà prise."
+            misconception: alias-colonne
+            reaction: { who: guide, expr: neutre, text: "Un alias n'existe que dans le résultat : la table n'a pas de colonne prix_ttc." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N12
+    act: 3
+    after: [N11]
+    requester: guide
+    title: "Fonctions utiles"
+    request: "UPPER · ROUND · CHAR_LENGTH · YEAR · DATEDIFF"
+    course: "Fonctions"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Que calcule DATEDIFF(CURDATE(), derniere_revue) ?"
+        options:
+          - { text: "Le nombre de jours écoulés depuis la dernière revue.", ok: true }
+          - text: "Le nombre d'années écoulées depuis la dernière revue."
+            misconception: datediff-annees
+            reaction: { who: guide, expr: neutre, text: "DATEDIFF compte des jours. Pour des années, on diviserait par 365, ou on comparerait les YEAR()." }
+          - text: "La date de la prochaine revue."
+            misconception: datediff-date
+            reaction: { who: guide, expr: neutre, text: "DATEDIFF rend un nombre, pas une date : l'écart entre deux dates." }
+          - text: "Rien : on ne peut pas soustraire des dates."
+            misconception: dates-calcul
+            reaction: { who: guide, expr: neutre, text: "On peut calculer avec des dates : c'est justement le travail de DATEDIFF." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: C04
+    act: 3
+    after: [N12]
+    requester: guide
+    title: "Défi chrono · Valeurs et calculs"
+    request: "5 requêtes en 4 minutes, sans indice"
+    course: "NULL, DISTINCT, calculs, fonctions"
+    steps:
+      - { id: chrono, kind: fix, prompt: "Défi chrono" }

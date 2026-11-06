@@ -1,0 +1,150 @@
+# SQL pas à pas — the bonus chapter, « Sécurité », open once the final test is passed. Optional: its card
+# is the only reward it gives.
+tickets:
+  - id: N28
+    act: 8
+    after: [FIN]
+    requester: guide
+    title: "Tout ou rien"
+    request: "START TRANSACTION · COMMIT · ROLLBACK"
+    course: "Transactions"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi enregistrer le retour d'un prêt et remettre le spécimen dans sa salle dans une même transaction ?"
+        options:
+          - { text: "Pour que les deux changements soient faits ensemble ou pas du tout : la base ne reste jamais à moitié modifiée.", ok: true }
+          - text: "Pour que les requêtes s'exécutent plus vite."
+            misconception: tx-vitesse
+            reaction: { who: guide, expr: neutre, text: "Une transaction garantit la cohérence, pas la vitesse." }
+          - text: "Parce qu'une requête ne peut modifier qu'une ligne à la fois."
+            misconception: tx-une-ligne
+            reaction: { who: guide, expr: neutre, text: "Un UPDATE modifie autant de lignes que son WHERE en désigne. Ici, ce sont deux tables différentes qu'il faut changer ensemble." }
+          - text: "Pour pouvoir tout annuler le lendemain."
+            misconception: tx-lendemain
+            reaction: { who: guide, expr: neutre, text: "Une fois COMMIT exécuté, c'est enregistré : ROLLBACK n'annule que la transaction en cours." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N29
+    act: 8
+    after: [N28]
+    requester: guide
+    title: "Qui a le droit"
+    request: "comptes · GRANT · REVOKE · moindre privilège"
+    course: "Droits"
+    steps:
+      - id: comprendre
+        kind: explain
+        prompt: "Que fait GRANT SELECT ON collection.* TO 'stagiaire'@'localhost' ?"
+        options:
+          - { text: "Il permet au compte stagiaire de lire toutes les tables de la base collection, et rien d'autre.", ok: true }
+          - text: "Il crée le compte stagiaire."
+            misconception: grant-cree
+            reaction: { who: guide, expr: neutre, text: "Le compte se crée avec CREATE USER. GRANT donne des droits à un compte qui existe." }
+          - text: "Il permet au stagiaire de tout faire dans la base."
+            misconception: grant-tout
+            reaction: { who: guide, expr: neutre, text: "SELECT, c'est seulement lire. Pour tout faire, il faudrait ALL PRIVILEGES… qu'on évite de donner." }
+          - text: "Il affiche les tables que le stagiaire a créées."
+            misconception: grant-select
+            reaction: { who: guide, expr: neutre, text: "Ici, SELECT est le nom d'un droit, pas une requête : GRANT n'affiche rien." }
+      - id: site
+        kind: choice
+        prompt: "Le site public n'affiche que les spécimens. Quels droits donner à son compte ?"
+        options:
+          - { text: "SELECT sur la table specimen seulement.", ok: true }
+          - text: "ALL PRIVILEGES sur toute la base, pour être tranquille."
+            misconception: droits-tout
+            reaction: { who: guide, expr: neutre, text: "Si le site est piraté, le pirate aurait tout : supprimer des tables, lire les prêts… Le moindre privilège limite les dégâts." }
+          - text: "SELECT, INSERT, UPDATE et DELETE sur specimen."
+            misconception: droits-trop
+            reaction: { who: guide, expr: neutre, text: "Le site ne fait qu'afficher : il n'a besoin ni d'ajouter, ni de modifier, ni de supprimer." }
+          - text: "Le compte de l'administrateur, qui a déjà tous les droits."
+            misconception: droits-admin
+            reaction: { who: guide, expr: neutre, text: "Jamais : chaque application a son propre compte, avec ses seuls droits." }
+      - id: revoke
+        kind: choice
+        prompt: "Le stagiaire a fini son stage. Que faire de ses droits ?"
+        options:
+          - { text: "Les retirer avec REVOKE, ou supprimer son compte avec DROP USER.", ok: true }
+          - text: "Rien : il ne s'en servira plus."
+            misconception: droits-oublies
+            reaction: { who: guide, expr: neutre, text: "Un compte oublié est une porte ouverte : son mot de passe peut fuiter. On retire ce qui ne sert plus." }
+          - text: "Changer le mot de passe de l'administrateur."
+            misconception: droits-mauvais-compte
+            reaction: { who: guide, expr: neutre, text: "C'est le compte du stagiaire qu'il faut fermer, pas celui de l'administrateur." }
+          - text: "Supprimer les tables qu'il a lues."
+            misconception: droits-tables
+            reaction: { who: guide, expr: neutre, text: "Les données n'y sont pour rien : ce sont les droits du compte qu'on retire." }
+      - id: stagiaire
+        kind: choice
+        prompt: "Un compte doit saisir les nouveaux prêts, sans jamais en effacer. Quels droits sur la table pret ?"
+        options:
+          - { text: "SELECT et INSERT.", ok: true }
+          - text: "INSERT et DELETE."
+            misconception: droits-trop
+            reaction: { who: guide, expr: neutre, text: "« Sans jamais en effacer » : DELETE est justement ce qu'il ne doit pas avoir." }
+          - text: "Seulement SELECT."
+            misconception: droits-pas-assez
+            reaction: { who: guide, expr: neutre, text: "Lire ne suffit pas : il doit ajouter des prêts, c'est INSERT." }
+          - text: "ALL PRIVILEGES sur pret."
+            misconception: droits-tout
+            reaction: { who: guide, expr: neutre, text: "Tous les droits comprennent DELETE, et même DROP : bien plus que nécessaire." }
+
+  - id: N30
+    act: 8
+    after: [N29]
+    requester: guide
+    title: "L'injection SQL"
+    request: "lire une requête piégée · requêtes préparées"
+    course: "Injection SQL"
+    hints: 1
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi la saisie x' OR '1'='1 fait-elle afficher tous les spécimens ?"
+        options:
+          - { text: "L'apostrophe de la saisie ferme le texte ; OR '1'='1' est lu comme du SQL et rend la condition vraie pour chaque ligne.", ok: true }
+          - text: "Parce que MySQL a planté et affiche tout par défaut."
+            misconception: injection-plantage
+            reaction: { who: guide, expr: neutre, text: "MySQL n'a pas planté : il a exécuté exactement la requête qu'on lui a envoyée. C'est la requête qui a changé de sens." }
+          - text: "Parce qu'aucun spécimen ne s'appelle x."
+            misconception: injection-nom
+            reaction: { who: guide, expr: neutre, text: "Sans injection, « aucun spécimen ne s'appelle x » donnerait 0 ligne, pas 30." }
+          - text: "Parce que '1'='1' est une erreur que MySQL ignore."
+            misconception: injection-erreur
+            reaction: { who: guide, expr: neutre, text: "Ce n'est pas une erreur : '1'='1' est une comparaison toujours vraie." }
+      - id: parade
+        kind: choice
+        prompt: "Quelle est la bonne parade contre l'injection SQL ?"
+        options:
+          - { text: "Les requêtes préparées : la saisie est envoyée à part, toujours comme une valeur.", ok: true }
+          - text: "Interdire la lettre x dans les recherches."
+            misconception: injection-filtre
+            reaction: { who: guide, expr: neutre, text: "Le danger vient des apostrophes et du SQL, pas d'une lettre. Et une liste noire oublie toujours un cas." }
+          - text: "Cacher les messages d'erreur de MySQL."
+            misconception: injection-erreurs
+            reaction: { who: guide, expr: neutre, text: "Ça complique la vie du pirate, mais la requête reste injectable." }
+          - text: "Mettre la requête en majuscules."
+            misconception: injection-casse
+            reaction: { who: guide, expr: neutre, text: "La casse ne change rien au sens de la requête." }
+      - id: danger
+        kind: choice
+        prompt: "Parmi ces saisies dans le champ de recherche, laquelle est une tentative d'injection ?"
+        options:
+          - { text: "'; DELETE FROM pret; --", ok: true }
+          - text: "Grand pingouin"
+            misconception: injection-innocent
+            reaction: { who: guide, expr: neutre, text: "Un nom ordinaire, sans apostrophe ni mot du SQL : rien à craindre." }
+          - text: "Martin-pêcheur"
+            misconception: injection-innocent
+            reaction: { who: guide, expr: neutre, text: "Un tiret seul ne fait rien. Ce sont « -- » (un commentaire) et l'apostrophe qui doivent alerter." }
+          - text: "Salamandre tachetée"
+            misconception: injection-innocent
+            reaction: { who: guide, expr: neutre, text: "Un nom ordinaire : la saisie dangereuse ferme le texte avec une apostrophe et ajoute du SQL." }

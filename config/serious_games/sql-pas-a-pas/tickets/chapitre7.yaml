@@ -1,0 +1,114 @@
+# SQL pas à pas — chapter 7, « Créer sa base », then the final test.
+tickets:
+  - id: N25
+    act: 7
+    after: [N24]
+    requester: guide
+    title: "Créer une table"
+    request: "CREATE TABLE · INT · VARCHAR · DATE · DECIMAL · NOT NULL · DEFAULT"
+    course: "CREATE TABLE"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Quel type donner à une colonne qui garde une date de naissance ?"
+        options:
+          - { text: "DATE : MySQL sait alors comparer, trier et calculer avec ces dates.", ok: true }
+          - text: "VARCHAR(10), puisqu'une date s'écrit '2007-05-12'."
+            misconception: date-texte
+            reaction: { who: guide, expr: neutre, text: "Un texte accepterait '12/05/2007' comme 'demain', et ne se calcule pas : DATEDIFF ou YEAR ne fonctionneraient pas bien." }
+          - text: "INT, en écrivant 20070512."
+            misconception: date-int
+            reaction: { who: guide, expr: neutre, text: "Un entier accepterait 20071399, qui n'est pas une date, et l'écart entre deux nombres n'est pas un nombre de jours." }
+          - text: "DECIMAL(8,2)."
+            misconception: date-decimal
+            reaction: { who: guide, expr: neutre, text: "DECIMAL est fait pour les montants. Pour une date, MySQL a son propre type : DATE." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N26
+    act: 7
+    after: [N25]
+    requester: guide
+    title: "Identifier les lignes"
+    request: "PRIMARY KEY · AUTO_INCREMENT · UNIQUE"
+    course: "Clés primaires"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "À quoi sert la clé primaire d'une table ?"
+        options:
+          - { text: "À désigner chaque ligne sans ambiguïté : deux lignes ne peuvent pas avoir la même, ni l'avoir vide.", ok: true }
+          - text: "À trier la table automatiquement."
+            misconception: pk-tri
+            reaction: { who: guide, expr: neutre, text: "Une table n'est jamais triée : l'ordre se demande au SELECT, avec ORDER BY." }
+          - text: "À accélérer les calculs de moyenne."
+            misconception: pk-calcul
+            reaction: { who: guide, expr: neutre, text: "La clé primaire sert à identifier une ligne, et à y faire référence depuis d'autres tables." }
+          - text: "À interdire les NULL dans toute la table."
+            misconception: pk-null
+            reaction: { who: guide, expr: neutre, text: "Seule la colonne clé primaire est obligatoire ; les autres le sont si on écrit NOT NULL." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N27
+    act: 7
+    after: [N26]
+    requester: guide
+    title: "Relier deux tables"
+    request: "FOREIGN KEY · REFERENCES · ALTER TABLE"
+    course: "Clés étrangères"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Que fait la clé étrangère pret.specimen_id → specimen.id ?"
+        options:
+          - { text: "Elle refuse un prêt dont le specimen_id n'existe pas dans la table specimen.", ok: true }
+          - text: "Elle copie le spécimen dans la table pret."
+            misconception: fk-copie
+            reaction: { who: guide, expr: neutre, text: "Rien n'est copié : pret ne garde que l'id. La clé étrangère vérifie que cet id existe." }
+          - text: "Elle crée le spécimen s'il n'existe pas."
+            misconception: fk-cree
+            reaction: { who: guide, expr: neutre, text: "Elle ne crée rien : elle refuse l'insertion (ERROR 1452)." }
+          - text: "Elle trie les prêts par spécimen."
+            misconception: fk-tri
+            reaction: { who: guide, expr: neutre, text: "Une clé étrangère garde la base cohérente ; elle n'ordonne rien." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: C10
+    act: 7
+    after: [N27]
+    requester: guide
+    title: "Défi chrono · Structure"
+    request: "5 structures en 6 minutes, sans indice"
+    course: "CREATE TABLE et clés"
+    steps:
+      - { id: chrono, kind: fix, prompt: "Défi chrono" }
+
+  # The final test: twelve queries from every chapter in 30 minutes, open once the 27 levels are done.
+  # Its closing is the end of the game: the trophy and the pin.
+  - id: FIN
+    act: 7
+    after: [N27]
+    requester: guide
+    title: "L'épreuve finale"
+    request: "12 requêtes en 30 minutes, de tous les chapitres"
+    course: "Tout le SQL du jeu"
+    final: true
+    steps:
+      - { id: epreuve, kind: fix, prompt: "Épreuve finale" }

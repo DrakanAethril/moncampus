@@ -1,0 +1,145 @@
+# SQL pas à pas — chapter 1, « Lire une table ». A ticket is a level (or a timed challenge, « défi
+# chrono »); the steps run in the order written (scenario.free_order). A `fix` step is measured by the
+# game on its two bases and sends {passed, failed}; an `explain` step - « Comprendre » - is corrected
+# here, each wrong option naming its misconception. `hints` is the number of written hints the game
+# holds for the level's measured steps: the bench checks it against the package.
+tickets:
+  - id: N01
+    act: 1
+    after: []
+    requester: guide
+    title: "Lire une table"
+    request: "SELECT · FROM · * · colonnes"
+    course: "SELECT et FROM"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi écrire SELECT nom, classe plutôt que SELECT * quand on ne veut que le nom et la classe ?"
+        options:
+          - { text: "Pour n'afficher que ce qui sert : le résultat est plus lisible, et la base envoie moins de données.", ok: true }
+          - text: "Parce que SELECT * est interdit par MySQL."
+            misconception: etoile-interdite
+            reaction: { who: guide, expr: neutre, text: "SELECT * est tout à fait permis : c'est la bonne requête pour découvrir une table. Pour répondre à une question, on nomme les colonnes utiles." }
+          - text: "Parce que nommer les colonnes trie les lignes par nom."
+            misconception: select-trie
+            reaction: { who: guide, expr: neutre, text: "Nommer les colonnes choisit ce qu'on voit, pas l'ordre des lignes. Trier, c'est le travail d'ORDER BY." }
+          - text: "Parce que SELECT * n'affiche que la première colonne."
+            misconception: etoile-premiere
+            reaction: { who: guide, expr: neutre, text: "C'est l'inverse : * veut dire « toutes les colonnes »." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N02
+    act: 1
+    after: [N01]
+    requester: guide
+    title: "Garder certaines lignes"
+    request: "WHERE · = <> < > <= >= · 'texte'"
+    course: "WHERE"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "SELECT nom FROM specimen WHERE annee_entree < 1910 ne renvoie pas le Trilobite, entré en 1911. Pourquoi ?"
+        options:
+          - { text: "WHERE ne garde que les lignes où la condition est vraie, et « 1911 < 1910 » est faux.", ok: true }
+          - text: "Parce que WHERE ne garde que les cinq premières lignes de la table."
+            misconception: where-premieres
+            reaction: { who: guide, expr: neutre, text: "WHERE examine chaque ligne, toutes les lignes : il garde celles pour qui la condition est vraie, où qu'elles soient." }
+          - text: "Parce que le Trilobite n'a pas de date de revue."
+            misconception: where-autre-colonne
+            reaction: { who: guide, expr: neutre, text: "La condition ne parle que d'annee_entree : les autres colonnes n'y jouent aucun rôle." }
+          - text: "Parce que la requête a supprimé le Trilobite de la table."
+            misconception: select-supprime
+            reaction: { who: guide, expr: neutre, text: "Un SELECT ne modifie jamais la table : il la lit. Le Trilobite est toujours là, il n'est simplement pas affiché." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: C01
+    act: 1
+    after: [N02]
+    requester: guide
+    title: "Défi chrono · Lire et filtrer"
+    request: "5 requêtes en 4 minutes, sans indice"
+    course: "SELECT et WHERE"
+    steps:
+      - { id: chrono, kind: fix, prompt: "Défi chrono" }
+
+  - id: N03
+    act: 1
+    after: [N02]
+    requester: guide
+    title: "Trier"
+    request: "ORDER BY · ASC · DESC · plusieurs critères"
+    course: "ORDER BY"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Sans ORDER BY, dans quel ordre MySQL renvoie-t-il les lignes ?"
+        options:
+          - { text: "Dans un ordre qu'il ne garantit pas : seul ORDER BY garantit un ordre.", ok: true }
+          - text: "Toujours par ordre alphabétique."
+            misconception: ordre-alpha
+            reaction: { who: guide, expr: neutre, text: "Rien ne trie par défaut. Si le résultat semble en ordre, c'est un hasard de rangement, qui peut changer demain." }
+          - text: "Toujours dans l'ordre des id."
+            misconception: ordre-id
+            reaction: { who: guide, expr: neutre, text: "Souvent, mais pas toujours : MySQL ne le promet pas. Pour un ordre, on l'écrit avec ORDER BY." }
+          - text: "Dans l'ordre où on a écrit les colonnes après SELECT."
+            misconception: ordre-colonnes
+            reaction: { who: guide, expr: neutre, text: "L'ordre des colonnes décide de ce qu'on voit à l'écran, de gauche à droite, pas de l'ordre des lignes." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N04
+    act: 1
+    after: [N03]
+    requester: guide
+    title: "Les premières lignes"
+    request: "LIMIT · OFFSET · « le top 3 »"
+    course: "LIMIT"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "SELECT nom FROM specimen LIMIT 3 : quels spécimens obtient-on ?"
+        options:
+          - { text: "Trois lignes, sans garantie desquelles : sans ORDER BY, « les trois premières » ne veut rien dire.", ok: true }
+          - text: "Les trois spécimens les plus anciens."
+            misconception: limit-sans-tri
+            reaction: { who: guide, expr: neutre, text: "LIMIT ne trie pas : il coupe le résultat tel qu'il arrive. Pour les plus anciens, il faut ORDER BY annee_entree avant LIMIT." }
+          - text: "Les trois premiers par ordre alphabétique."
+            misconception: ordre-alpha
+            reaction: { who: guide, expr: neutre, text: "Aucun tri n'est demandé : MySQL n'ordonne rien de lui-même." }
+          - text: "Les trois derniers spécimens ajoutés."
+            misconception: limit-derniers
+            reaction: { who: guide, expr: neutre, text: "LIMIT ne connaît pas l'ordre d'ajout. Sans ORDER BY, rien ne dit quelles lignes viennent en premier." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: C02
+    act: 1
+    after: [N04]
+    requester: guide
+    title: "Défi chrono · Trier et limiter"
+    request: "5 requêtes en 4 minutes, sans indice"
+    course: "ORDER BY et LIMIT"
+    steps:
+      - { id: chrono, kind: fix, prompt: "Défi chrono" }

@@ -33,7 +33,8 @@
     { id: 'pin-joystick', name: 'Épinglette Joystick', color: '#6A3EA0', glyph: '✚' },
     { id: 'pin-comete', name: 'Épinglette Comète', color: '#14181C', glyph: '☄' },
     { id: 'pin-passerelle', name: 'Épinglette Passerelle', color: '#D8C29D', glyph: '⊓' },
-    { id: 'pin-neon', name: 'Épinglette Néon', color: '#14111F', glyph: '☾' }
+    { id: 'pin-neon', name: 'Épinglette Néon', color: '#14111F', glyph: '☾' },
+    { id: 'pin-polaire', name: 'Épinglette Polaire', color: '#0B1030', glyph: '✦' }
   ];
   A.PINS = PINS;
 
@@ -500,6 +501,14 @@
       return el('path', { d: 'M112 194 L112 216 L138 216 Z', fill: '#F1F1EE', stroke: '#2E3236', strokeWidth: 1.6 }) +
         el('path', { d: 'M117 204 L117 211 L125 211 Z', fill: '#E07A3F' }) +
         el('path', sx({ d: 'M112 216 H138', stroke: '#E07A3F', strokeWidth: 2.4 }));
+    } },
+    // SQL pas à pas: a brooch of three stars joined like a constellation, pinned on the chest
+    // (design/validated/serious-games-sql-pas-a-pas.md §4) - on the body, nothing on the head.
+    'sql-pas-a-pas': { label: 'Broche constellation', svg: function () {
+      return el('path', sx({ d: 'M110 206 L122 198 L134 208', stroke: '#9DB4FF', strokeWidth: 1.4 })) +
+        el('circle', { cx: 110, cy: 206, r: 3.2, fill: '#FFE27A', stroke: '#0B1030', strokeWidth: 1 }) +
+        el('circle', { cx: 122, cy: 198, r: 2.4, fill: '#FFE27A', stroke: '#0B1030', strokeWidth: 1 }) +
+        el('circle', { cx: 134, cy: 208, r: 3.6, fill: '#FFB86B', stroke: '#0B1030', strokeWidth: 1 });
     } },
     // Service de nuit: the night porter's badge, a pink neon crescent on a dark plate
     // (design/validated/serious-games-service-de-nuit.md §4) - on the body, nothing on the head.
