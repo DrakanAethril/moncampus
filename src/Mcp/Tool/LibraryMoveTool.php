@@ -7,6 +7,8 @@ namespace App\Mcp\Tool;
 use App\Entity\FileLibraryNode;
 use App\Entity\QuizFolder;
 use App\Entity\QuizTemplate;
+use App\Entity\SequenceFolder;
+use App\Entity\SequenceTemplate;
 use App\Enum\Feature;
 use App\Mcp\McpLibraryAccess;
 use App\Mcp\McpLinks;
@@ -20,12 +22,15 @@ use App\Service\FileLibraryNodeManager;
 use App\Service\FileLibraryTree;
 use App\Service\QuizFolderManager;
 use App\Service\QuizFolderTree;
+use App\Service\SequenceFolderManager;
+use App\Service\SequenceFolderTree;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * The drag of the quiz and file library screens - a row or a folder dropped onto a folder of the
- * rail - for several elements at once. A move, never a copy: the ids stay the same, so every link
- * to a quiz or a file keeps pointing at it.
+ * The drag of the quiz, séquence and file library screens - a row or a folder dropped onto a folder
+ * of the rail - for several elements at once. A move, never a copy: the ids stay the same, so every
+ * link to a quiz, a séquence or a file keeps pointing at it. The séquence screen files a row through
+ * « Déplacer vers… », its drag reordering the folder - the move itself is the same one.
  *
  * The call is refused whole before anything moves: every element is loaded through the voters and
  * every move checked first (a folder into itself or its own sub-folder, an element of somebody
@@ -41,6 +46,8 @@ final readonly class LibraryMoveTool implements McpTool
         private McpLibraryAccess $library,
         private QuizFolderManager $quizFolders,
         private QuizFolderTree $quizTree,
+        private SequenceFolderManager $sequenceFolders,
+        private SequenceFolderTree $sequenceTree,
         private FileLibraryNodeManager $fileNodes,
         private FileLibraryTree $fileTree,
         private FeatureAccess $featureAccess,
@@ -56,12 +63,12 @@ final readonly class LibraryMoveTool implements McpTool
 
     public function title(): string
     {
-        return 'Déplacer des quiz, des fichiers ou des dossiers';
+        return 'Déplacer des quiz, des séquences, des fichiers ou des dossiers';
     }
 
     public function description(): string
     {
-        return 'Déplace, sans les dupliquer, des éléments de la bibliothèque de quiz (`library: "quiz"`, quizIds et/ou folderIds) ou de fichiers (`library: "file"`, fileIds et/ou folderIds) vers un dossier de la même bibliothèque (targetFolderId), ou à sa racine (`targetFolderId: null`, à écrire explicitement). Un dossier déplacé emporte tout son contenu. Les identifiants ne changent pas : les liens vers ces quiz et fichiers restent valables. Si un nom est déjà pris dans le dossier d\'arrivée, il est complété d\'un numéro. Un dossier ne peut pas aller dans lui-même ni dans un de ses sous-dossiers ; au moindre élément refusé, rien n\'est déplacé.';
+        return 'Déplace, sans les dupliquer, des éléments de la bibliothèque de quiz (`library: "quiz"`, quizIds et/ou folderIds), de séquences (`library: "sequence"`, sequenceIds et/ou folderIds) ou de fichiers (`library: "file"`, fileIds et/ou folderIds) vers un dossier de la même bibliothèque (targetFolderId), ou à sa racine (`targetFolderId: null`, à écrire explicitement). Un dossier déplacé emporte tout son contenu ; une séquence emporte ses séances. Les identifiants ne changent pas : les liens vers ces quiz, séquences et fichiers restent valables. Si un nom est déjà pris dans le dossier d\'arrivée, il est complété d\'un numéro. Un dossier ne peut pas aller dans lui-même ni dans un de ses sous-dossiers ; au moindre élément refusé, rien n\'est déplacé.';
     }
 
     public function inputSchema(): array
@@ -71,8 +78,9 @@ final readonly class LibraryMoveTool implements McpTool
         return [
             'type' => 'object',
             'properties' => [
-                'library' => ['type' => 'string', 'enum' => ['quiz', 'file']],
+                'library' => ['type' => 'string', 'enum' => ['quiz', 'sequence', 'file']],
                 'quizIds' => $ids + ['description' => 'Quiz à déplacer (bibliothèque de quiz).'],
+                'sequenceIds' => $ids + ['description' => 'Séquences à déplacer (bibliothèque de séquences).'],
                 'fileIds' => $ids + ['description' => 'Fichiers à déplacer (bibliothèque de fichiers).'],
                 'folderIds' => $ids + ['description' => 'Dossiers à déplacer, avec tout leur contenu, de la même bibliothèque.'],
                 'targetFolderId' => ['type' => ['integer', 'null'], 'description' => 'Dossier d\'arrivée, de la même bibliothèque ; null pour la racine.'],
@@ -103,8 +111,9 @@ final readonly class LibraryMoveTool implements McpTool
 
         return match ($call->arguments->string('library')) {
             'quiz' => $this->quiz($call, $this->ids($call, 'quizIds'), $folderIds, $targetId),
+            'sequence' => $this->sequence($call, $this->ids($call, 'sequenceIds'), $folderIds, $targetId),
             'file' => $this->file($call, $this->ids($call, 'fileIds'), $folderIds, $targetId),
-            default => throw new McpToolException('L\'argument « library » vaut « quiz » ou « file ».'),
+            default => throw new McpToolException('L\'argument « library » vaut « quiz », « sequence » ou « file ».'),
         };
     }
 
@@ -115,7 +124,7 @@ final readonly class LibraryMoveTool implements McpTool
     private function quiz(McpToolCall $call, array $quizIds, array $folderIds, ?int $targetId): McpToolResult
     {
         $this->require(Feature::QuizLibrary, $call);
-        $this->refuseOtherLibrary($call, 'fileIds', 'quiz');
+        $this->refuseOtherLibrary($call, ['fileIds', 'sequenceIds'], 'quiz');
         $this->refuseNothing($quizIds, $folderIds, 'quizIds');
 
         $target = $this->library->quizFolder($targetId);
@@ -164,13 +173,70 @@ final readonly class LibraryMoveTool implements McpTool
     }
 
     /**
+     * @param list<int> $sequenceIds
+     * @param list<int> $folderIds
+     */
+    private function sequence(McpToolCall $call, array $sequenceIds, array $folderIds, ?int $targetId): McpToolResult
+    {
+        $this->require(Feature::SequenceLibrary, $call);
+        $this->refuseOtherLibrary($call, ['quizIds', 'fileIds'], 'sequence');
+        $this->refuseNothing($sequenceIds, $folderIds, 'sequenceIds');
+
+        $target = $this->library->sequenceFolder($targetId);
+        $ownerId = $target?->getOwner()->getId() ?? $call->user->getId();
+        $sequences = array_map(fn (int $id): SequenceTemplate => $this->library->sequence($id), $sequenceIds);
+        $folders = array_map(fn (int $id): SequenceFolder => $this->library->sequenceFolder($id) ?? throw new \LogicException(), $folderIds);
+        $refusals = [];
+
+        foreach ($sequences as $sequence) {
+            if ($sequence->getTeacher()?->getId() !== $ownerId) {
+                $refusals[] = \sprintf('la séquence « %s » n\'est pas dans la même bibliothèque que le dossier d\'arrivée', $sequence->getTitre());
+            }
+        }
+
+        foreach ($folders as $folder) {
+            if ($folder->getOwner()->getId() !== $ownerId) {
+                $refusals[] = \sprintf('le dossier « %s » n\'est pas dans la même bibliothèque que le dossier d\'arrivée', $folder->getName());
+            } elseif (null !== $target && ($target->getId() === $folder->getId() || $this->sequenceTree->isDescendantOf($target->getPath(), (int) $folder->getId()))) {
+                $refusals[] = \sprintf('le dossier « %s » ne peut pas aller dans lui-même ni dans un de ses sous-dossiers', $folder->getName());
+            }
+        }
+
+        $this->refuse($refusals);
+
+        $moved = $this->entityManager->wrapInTransaction(function () use ($call, $sequences, $folders, $target): array {
+            $moved = [];
+
+            foreach ($folders as $folder) {
+                $this->sequenceFolders->moveFolder($folder, $target, $call->user) || throw new \LogicException('A checked folder move was refused.');
+                $this->entityManager->flush();
+                $moved[] = ['kind' => 'folder', 'id' => (int) $folder->getId(), 'name' => $folder->getName()];
+            }
+
+            // One flush per séquence: each lands last of its new folder, and the next one reads
+            // that folder's highest position from the database.
+            foreach ($sequences as $sequence) {
+                $this->sequenceFolders->moveSequence($sequence, $target, $call->user) || throw new \LogicException('A checked séquence move was refused.');
+                $this->entityManager->flush();
+                $moved[] = ['kind' => 'sequence', 'id' => (int) $sequence->getId(), 'name' => (string) $sequence->getTitre()];
+            }
+
+            return $moved;
+        });
+
+        $url = null === $target ? $this->links->url('app_library_sequences') : $this->links->sequenceFolder($target);
+
+        return $this->answer($moved, $target?->getId(), $target?->getName(), $url);
+    }
+
+    /**
      * @param list<int> $fileIds
      * @param list<int> $folderIds
      */
     private function file(McpToolCall $call, array $fileIds, array $folderIds, ?int $targetId): McpToolResult
     {
         $this->require(Feature::FileLibrary, $call);
-        $this->refuseOtherLibrary($call, 'quizIds', 'file');
+        $this->refuseOtherLibrary($call, ['quizIds', 'sequenceIds'], 'file');
         $this->refuseNothing($fileIds, $folderIds, 'fileIds');
 
         $target = $this->library->fileFolder($targetId);
@@ -235,10 +301,15 @@ final readonly class LibraryMoveTool implements McpTool
         return $ids;
     }
 
-    private function refuseOtherLibrary(McpToolCall $call, string $key, string $library): void
+    /**
+     * @param list<string> $keys
+     */
+    private function refuseOtherLibrary(McpToolCall $call, array $keys, string $library): void
     {
-        if ([] !== $call->arguments->ids($key)) {
-            throw new McpToolException(\sprintf('« %s » ne s\'emploie pas avec `library: "%s"`.', $key, $library));
+        foreach ($keys as $key) {
+            if ([] !== $call->arguments->ids($key)) {
+                throw new McpToolException(\sprintf('« %s » ne s\'emploie pas avec `library: "%s"`.', $key, $library));
+            }
         }
     }
 
