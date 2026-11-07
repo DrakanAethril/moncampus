@@ -228,7 +228,12 @@ export default class extends Controller {
         }
     }
 
+    // « Valider » follows the ticks of a QCM multiple or an order only: a number or a word ticks
+    // nothing, and reading `picked` there left the slider's button greyed for good.
     paintPicked() {
+        if (this.state.isVote || !['multi', 'order'].includes(this.state.kind)) {
+            return;
+        }
         const order = 'order' === this.state.kind;
         this.screenTarget.querySelectorAll('[data-answer-id]').forEach((button) => {
             const at = this.picked.indexOf(Number(button.dataset.answerId));

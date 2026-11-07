@@ -1,6 +1,15 @@
 {# The live contest's dress: its faces, the shapes every theme shares, then the theme(s) asked for.
    One stylesheet per theme (assets/styles/quiz_live/themes/<slug>.css) - the room's screen and the
-   phone load their contest's only, the gallery every one. #}
+   phone load their contest's only, the gallery every one.
+
+   `page` is set by the contest's own whole-window pages (not the gallery, inside the app shell):
+   they declare a dark scheme so that a phone's browser in dark mode - Samsung Internet's, Chrome's
+   « thème sombre pour les sites » - leaves them alone instead of darkening them by algorithm,
+   avatars and propositions' colours included. The contest stays in its theme whatever the scheme
+   (`.ql { color-scheme: light }`). #}
+{% if page|default(false) %}
+    <meta name="color-scheme" content="light dark">
+{% endif %}
 <link rel="stylesheet" href="{{ asset('styles/quiz_live/fonts.css') }}">
 <link rel="stylesheet" href="{{ asset('styles/quiz_live/live.css') }}">
 {% for slug in slugs %}

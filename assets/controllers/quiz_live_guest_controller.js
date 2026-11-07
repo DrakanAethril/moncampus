@@ -70,9 +70,13 @@ export default class extends Controller {
             : '<span class="ql-av ql-av-empty" style="width:58px;height:58px">?</span>';
     }
 
+    // Only pairs that fit the field: a value set by script escapes `maxlength`, and the server cuts
+    // what is longer - « Hérisson Électrique » became « Hérisson Électri » on every screen.
     dice() {
         const { ANIMALS, WORDS } = this.constructor;
-        this.nicknameTarget.value = `${ANIMALS[Math.floor(Math.random() * ANIMALS.length)]} ${WORDS[Math.floor(Math.random() * WORDS.length)]}`;
+        const max = this.nicknameTarget.maxLength > 0 ? this.nicknameTarget.maxLength : Infinity;
+        const pairs = ANIMALS.flatMap((animal) => WORDS.map((word) => `${animal} ${word}`)).filter((name) => name.length <= max);
+        this.nicknameTarget.value = pairs[Math.floor(Math.random() * pairs.length)];
         this.errorTarget.textContent = '';
         this.sync();
     }

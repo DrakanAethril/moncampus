@@ -62,6 +62,7 @@ final class LiveScreenLabels
         'points' => 'quizLiveScreenPoints',
         'guestThanks' => 'quizLiveScreenGuestThanks',
         'accountThanks' => 'quizLiveScreenAccountThanks',
+        'guestDone' => 'quizLiveScreenGuestDone',
         'home' => 'quizLiveScreenHome',
         'cancelledTitle' => 'quizLiveScreenCancelledTitle',
         'cancelledText' => 'quizLiveScreenCancelledText',
