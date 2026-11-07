@@ -1,0 +1,200 @@
+# PHP pas à pas — chapter 6, « Les fonctions ». A ticket is a level or a mastery challenge (« défi de
+# maîtrise »); the steps run in the order written (scenario.free_order). A `fix` step is measured by the
+# game on the visible case and the hidden ones and sends {passed, failed}; an `explain` step - « Comprendre »
+# - is corrected here, each wrong option naming its misconception. `hints` is the number of written hints
+# the game holds for the level's measured steps, the two reminders included: the bench checks it.
+tickets:
+  - id: N45
+    act: 6
+    after: [N44]
+    requester: guide
+    title: "Les fonctions de PHP"
+    request: "strlen · strtoupper · implode · explode · max · round"
+    course: "Les fonctions de PHP"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi strlen(\"Zoé\") vaut-il 4, alors que le prénom n'a que 3 lettres ?"
+        options:
+          - { text: "Parce que strlen compte des octets, pas des lettres : un é en occupe deux. Pour compter les lettres, c'est mb_strlen(\"Zoé\"), qui vaut 3.", ok: true }
+          - text: "Parce qu'un texte se termine par une case invisible, que strlen compte aussi."
+            misconception: c6-strlen-fin
+            reaction: { who: guide, expr: neutre, text: "strlen(\"Tom\") vaut bien 3 : aucune case invisible n'est comptée. C'est le é qui compte pour deux, parce qu'il occupe deux octets." }
+          - text: "Parce que la majuscule Z compte pour deux."
+            misconception: c6-strlen-majuscule
+            reaction: { who: guide, expr: neutre, text: "Une majuscule sans accent compte pour un, comme une minuscule : strlen(\"ZOE\") vaut 3. Ce sont les lettres accentuées qui en comptent deux." }
+          - text: "Parce que les positions commencent à 0, alors strlen ajoute 1."
+            misconception: c6-strlen-zero
+            reaction: { who: guide, expr: neutre, text: "strlen renvoie un nombre de caractères, pas une position : strlen(\"Tom\") vaut 3. Le 4 vient du é, qui occupe deux octets." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N46
+    act: 6
+    after: [N45]
+    requester: guide
+    title: "Écrire sa fonction"
+    request: "function nom($param) { … } · appeler"
+    course: "Écrire une fonction"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Tu as écrit function carte($nom) { echo $nom; } en haut du programme, et rien ne s'affiche. Pourquoi ?"
+        options:
+          - { text: "Parce qu'écrire une fonction ne l'exécute pas : elle attend d'être appelée, par exemple carte(\"Dodo\");, et elle s'exécute à chaque appel.", ok: true }
+          - text: "Parce que PHP exécute une fonction une seule fois, à l'endroit où elle est écrite, et qu'il manque une valeur pour $nom."
+            misconception: c6-fonction-auto
+            reaction: { who: guide, expr: neutre, text: "PHP lit la fonction et la met de côté, sans rien exécuter. Elle ne s'exécute qu'à un appel, autant de fois qu'on l'appelle." }
+          - text: "Parce qu'il faut d'abord écrire $nom = \"Dodo\"; au-dessus de la fonction."
+            misconception: c6-parametre-avant
+            reaction: { who: guide, expr: neutre, text: "Le paramètre $nom reçoit sa valeur au moment de l'appel : carte(\"Dodo\") range « Dodo » dans $nom. Une variable $nom du programme ne servirait à rien." }
+          - text: "Parce que echo n'a pas le droit d'être utilisé dans une fonction."
+            misconception: c6-echo-interdit
+            reaction: { who: guide, expr: neutre, text: "Une fonction peut contenir echo, des if, des boucles… Tout ce qu'on écrit ailleurs. Il manque seulement l'appel." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M19
+    act: 6
+    after: [N46]
+    requester: guide
+    title: "Défi de maîtrise · Fonctions de PHP et fonctions à soi"
+    request: "3 programmes, sans indice"
+    course: "Fonctions de PHP et fonctions à soi"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N47
+    act: 6
+    after: [N46]
+    requester: guide
+    title: "return n'est pas echo"
+    request: "return · réutiliser la valeur · echo renvoie null"
+    course: "return"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "function ttc($ht) { echo $ht * 1.2; } puis $total = ttc(10) + ttc(20); echo $total; : pourquoi le total affiché vaut-il 0 ?"
+        options:
+          - { text: "Parce que la fonction affiche son résultat mais ne le renvoie pas : chaque appel vaut null, et null + null vaut 0. Il faut return dans la fonction, et l'affichage dans le programme.", ok: true }
+          - text: "Parce qu'on ne peut pas additionner deux appels de fonction."
+            misconception: c6-appel-calcul
+            reaction: { who: guide, expr: neutre, text: "Un appel est remplacé par la valeur que la fonction renvoie : on peut l'additionner, le comparer, le ranger. Ici, la fonction ne renvoie rien, donc null." }
+          - text: "Parce que $total est calculé avant que les fonctions s'exécutent."
+            misconception: c6-ordre-appel
+            reaction: { who: guide, expr: neutre, text: "PHP exécute les deux appels d'abord, puis additionne leurs valeurs. Les appels ont bien lieu : on voit même 12 et 24 s'afficher. Mais ils ne renvoient rien." }
+          - text: "Parce qu'un echo écrit dans une fonction n'affiche rien à l'écran."
+            misconception: c6-echo-fonction-muet
+            reaction: { who: guide, expr: neutre, text: "Il affiche bel et bien : 12 puis 24, collés, juste avant le 0. Ce qu'il ne fait pas, c'est renvoyer la valeur au programme." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N48
+    act: 6
+    after: [N47]
+    requester: guide
+    title: "Ce qu'une fonction voit"
+    request: "variables du programme invisibles · paramètres · copie"
+    course: "Ce qu'une fonction voit"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Dans function ttc($ht) { return $ht * $taux; }, PHP signale « Undefined variable $taux », alors que $taux = 1.2; est écrit en haut du programme. Pourquoi ?"
+        options:
+          - { text: "Parce qu'une fonction ne voit que ses paramètres et les variables qu'elle crée : le $taux du programme n'existe pas à l'intérieur. Il faut le lui passer en paramètre, ttc($ht, $taux).", ok: true }
+          - text: "Parce que la fonction est écrite avant $taux : il suffirait de la déplacer plus bas."
+            misconception: c6-portee-ordre
+            reaction: { who: guide, expr: neutre, text: "L'ordre n'y change rien : même écrite tout en bas, la fonction ne voit pas les variables du programme. Elle ne voit que ce qu'on lui passe." }
+          - text: "Parce que dans une fonction, les variables s'écrivent sans $."
+            misconception: c6-portee-dollar
+            reaction: { who: guide, expr: neutre, text: "Dans une fonction aussi, une variable commence par $. Le problème est que la fonction a sa propre boîte de variables, où $taux n'a jamais été rangé." }
+          - text: "Parce qu'une fonction ne peut calculer qu'avec des nombres écrits en dur : il faut écrire 1.2 à la place de $taux."
+            misconception: c6-fonction-en-dur
+            reaction: { who: guide, expr: neutre, text: "Écrire 1.2 fait taire l'avertissement, mais la fonction ne marche plus le jour où le taux change. Un paramètre de plus, et elle marche pour tous les taux." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M20
+    act: 6
+    after: [N48]
+    requester: guide
+    title: "Défi de maîtrise · return et portée"
+    request: "3 programmes, sans indice"
+    course: "return et portée"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N49
+    act: 6
+    after: [N48]
+    requester: guide
+    title: "Une fonction qui prend un tableau"
+    request: "function f(array $t) · compter · filtrer · renvoyer un tableau"
+    course: "Une fonction et un tableau"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "La fonction moyenne(array $notes) commence par if (count($notes) === 0) { return 0; }. À quoi sert ce test ?"
+        options:
+          - { text: "La fonction doit marcher pour n'importe quelle liste qu'on lui passe, même vide. Sans le test, une liste vide ferait diviser par 0 et arrêterait le programme.", ok: true }
+          - text: "À rien : une liste de notes n'est jamais vide."
+            misconception: c6-liste-jamais-vide
+            reaction: { who: guide, expr: neutre, text: "Un élève qui vient d'arriver n'a aucune note : sa liste est vide. Une fonction est appelée sur toutes sortes de listes, il faut penser à ce cas." }
+          - text: "À afficher 0 avant de calculer la moyenne."
+            misconception: c6-return-affiche
+            reaction: { who: guide, expr: neutre, text: "return n'affiche rien : il renvoie 0 au programme et arrête la fonction. La division n'est alors jamais faite." }
+          - text: "À remettre la liste à zéro avant chaque calcul."
+            misconception: c6-test-remet-zero
+            reaction: { who: guide, expr: neutre, text: "=== compare, il ne change rien. Le test regarde si la liste est vide, et dans ce cas renvoie 0 sans diviser." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M21
+    act: 6
+    after: [N49]
+    requester: guide
+    title: "Défi de maîtrise · Fonctions et tableaux"
+    request: "3 programmes, sans indice"
+    course: "Fonctions et tableaux"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }

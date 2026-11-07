@@ -1,0 +1,249 @@
+# PHP pas à pas: learning to program in PHP from the very beginning - BTS SIO 1
+# (design/validated/serious-games-php-pas-a-pas.md). A game of the « scénario » mechanic with neither story
+# nor character, on SQL pas à pas' shape: the student climbs levels, one notion each, and conditions,
+# loops and arrays - one and two dimensions - take 40 of the 52 levels.
+#
+# Read by `app:serious-games:sync`, which adds the tickets of `tickets/*.yaml` under `scenario.tickets` and
+# builds `chapters` from the acts. A ticket is a level, a mastery challenge (« défi de maîtrise ») or the
+# final test. **The right answers to the « Comprendre » questions live in those files and nowhere in the
+# game's package** (public/serious-games/php-pas-a-pas/), which holds the lessons, the PHP interpreter
+# (Service de nuit's php.js), the programs to predict, follow, complete, repair and write with their
+# reference and their hidden cases, the written hints, the mastery pools (which the reminders draw from
+# too) and the « lectures éclair ». Only {passed, failed} leaves the frame for a measured step; the program
+# itself never does.
+#
+# What this game adds to the mechanic, without touching the server: from the sixth level on, every level
+# ends with two reminders the game draws from the mastery pools already passed - the notions the student
+# got wrong first -, steps answered by touch (the table of a loop's turns, the box to aim at in an array),
+# and the step through. A mastery challenge is untimed and never blocks the next level; a « lecture éclair »
+# - eight codes to read in two minutes - is not a ticket at all: the game keeps its best score.
+slug: php-pas-a-pas
+title: "PHP pas à pas"
+pitch: "Apprendre à programmer en PHP depuis zéro, niveau après niveau : un cours court, des exercices de plus en plus libres, et les conditions, les boucles et les tableaux repratiqués sans cesse. Se joue sur téléphone."
+subjects: [Informatique]
+levels: [BTS SIO 1]
+unit_label: niveaux
+mechanic: scenario
+# The kinds of step: a program measured by the game on its cases, an explanation corrected here.
+answer_kinds: [fix, explain, choice]
+version: 1.0.0
+published: false
+
+words:
+  unit: [niveau, niveaux]
+  chapter: [chapitre, chapitres]
+  lit: [réussi, réussis]
+  unlit: [ouvert, ouverts]
+  level: étoiles
+  skill: notion
+  dim_filter: Beaucoup d'aide
+
+scenario:
+  # A level keeps the version it was started with; raise it when a step changes.
+  version: 1
+  # Every ticket whose predecessors are closed is open: the next level, and every mastery challenge not
+  # yet won - a challenge never blocks the way.
+  capacity: 60
+  # Who answers a wrong step: nobody in particular, the game's own voice.
+  helper: guide
+  password: []
+  # A level practises, follows, asks, then writes, then recalls: its repairs are not first (ScenarioValidator).
+  free_order: true
+  restart_anytime: true
+  acts:
+    - { n: 1, title: "Afficher et calculer", tools: [console] }
+    - { n: 2, title: "Décider", tools: [console] }
+    - { n: 3, title: "Répéter", tools: [console] }
+    - { n: 4, title: "Les tableaux", tools: [console] }
+    - { n: 5, title: "Tableaux à deux dimensions", tools: [console] }
+    - { n: 6, title: "Les fonctions", tools: [console] }
+    - { n: 7, title: "Révision", tools: [console] }
+    - { n: 8, title: "PHP dans une page", tools: [console] }
+  # How a teacher reads a misconception (« Notions à reprendre »).
+  misconceptions:
+    lignes-zero: "Croit que PHP numérote les lignes à partir de 0"
+    echo-unique: "Croit qu'un echo ne peut pas en suivre un autre"
+    point-virgule-debut: "Place le point-virgule au début de la ligne suivante"
+    affectation-lien: "Croit qu'une affectation lie deux variables pour toujours"
+    affectation-variable: "Croit qu'une variable ne peut pas en recevoir une autre"
+    variable-nom: "Confond la valeur d'une variable et son nom"
+    calcul-gauche-droite: "Calcule de gauche à droite sans les priorités"
+    division-entiere: "Croit que / fait une division entière"
+    division-variable: "Croit qu'on ne divise pas une variable"
+    concat-parentheses: "Croit que des parenthèses remplacent le point"
+    echo-une-chose: "Croit qu'un echo n'affiche qu'une seule chose"
+    variable-guillemets: "Croit qu'une variable s'écrit entre guillemets dans un calcul"
+    c2-strict-inclusif: "Croit que > inclut la borne (« plus que 10 » comprendrait 10)"
+    c2-nombre-guillemets: "Croit qu'un nombre se compare entre guillemets"
+    c2-ordre-operandes: "Croit que l'ordre des deux côtés d'une comparaison change la réponse"
+    c2-if-faux-arrete: "Croit qu'un if faux arrête le programme"
+    c2-indentation-bloc: "Croit que le décalage, et non les accolades, délimite le bloc d'un if"
+    c2-suite-sinon: "Prend la ligne qui suit le bloc d'un if pour un « sinon »"
+    c2-else-condition: "Croit qu'un else porte une condition"
+    c2-else-toujours: "Croit que le bloc du else s'exécute toujours, en plus du if"
+    c2-else-trou: "Croit qu'un if … else peut n'exécuter aucun des deux blocs"
+    c2-elseif-condition-fausse: "Croit que le elseif est faux au lieu de voir qu'il n'est jamais testé"
+    c2-elseif-cumul: "Croit qu'une chaîne if/elseif exécute chaque bloc dont la condition est vraie"
+    c2-elseif-plus-precis: "Croit que PHP choisit la condition la plus précise plutôt que la première vraie"
+    c2-jusqua-exclu: "Croit que « jusqu'à 12 » exclut 12"
+    c2-borne-sans-importance: "Pense qu'un < ou un <= sur la borne ne compte pas"
+    c2-eviter-inferieur-egal: "Remplace systématiquement <= n par < n+1"
+    c2-ou-exclusif: "Croit que || est faux quand les deux conditions sont vraies"
+    c2-ou-intervalle: "Écrit un intervalle (« entre ») avec || au lieu de &&"
+    c2-ou-bornes-proches: "Croit qu'une condition toujours vraie avec || dépend des bornes choisies"
+    c2-non-distribue: "Retourne chaque morceau d'un ! sans changer && en ||"
+    c2-non-premier: "Croit que ! devant une parenthèse ne porte que sur le premier morceau"
+    c2-non-ignore: "Croit que PHP ignore un ! placé devant une parenthèse"
+    c2-else-imbrique-global: "Rattache un else au mauvais if dans des conditions imbriquées"
+    c2-imbrique-interieur-dabord: "Croit que PHP teste d'abord le if le plus intérieur"
+    c2-imbrique-else-obligatoire: "Croit qu'un if imbriqué doit avoir un else"
+    c2-guillemets-decor: "Croit que les guillemets ne changent pas le type d'une valeur"
+    c2-identique-noms: "Croit que === compare les noms des variables"
+    c2-identique-affecte: "Confond === avec = (croit qu'il range une valeur)"
+    c2-tester-milieu: "Teste un programme à plusieurs cas avec des valeurs au milieu, jamais sur les bornes"
+    c2-tester-une-fois: "Croit qu'un programme qui marche avec une valeur marche avec toutes"
+    c2-tester-extremes: "Ne teste que les valeurs extrêmes, pas les bornes intérieures"
+    c3-while-un-tour: "Croit qu'une boucle while fait toujours au moins un tour"
+    c3-incr-avant: "Croit que la place de $i++ décide si la boucle démarre"
+    c3-depart-impose: "Croit qu'un compteur de boucle doit partir de 0 ou de 1"
+    c3-inferieur-inclus: "Compte la borne avec < comme avec <= (un tour de trop)"
+    c3-zero-perd-tour: "Croit que partir de 0 fait perdre un tour"
+    c3-for-pas-oublie: "Ignore que le pas d'un for ($i++) s'exécute à chaque tour"
+    c3-for-monte: "Croit qu'une boucle for ne peut que monter"
+    c3-descend-infini: "Oublie que la condition est lue avant le premier tour"
+    c3-for-moins-interdit: "Croit que $i-- est interdit dans un for"
+    c3-declarer-type: "Croit qu'il faut déclarer le type d'une variable avant de s'en servir"
+    c3-ordre-indifferent: "Croit qu'une ligne dans ou hors de la boucle donne le même résultat"
+    c3-creation-boucle: "Croit qu'une boucle ne peut pas créer de variable"
+    c3-compteur-tours: "Confond le compteur dans un if avec le nombre total de tours"
+    c3-compteur-valeur: "Croit qu'un compteur garde la dernière valeur trouvée"
+    c3-compteur-somme: "Confond compter (+1) et additionner les valeurs"
+    c3-max-neutre: "Croit que 0 est un bon départ pour un maximum, comme pour une somme"
+    c3-max-grand: "Croit qu'un maximum doit partir d'un très grand nombre"
+    c3-comparer-zero: "Croit que PHP ne sait pas comparer avec 0"
+    c3-continue-arrete: "Croit que continue arrête la boucle comme break"
+    c3-continue-recommence: "Croit que continue fait recommencer la boucle au premier tour"
+    c3-break-continue-inverses: "Inverse break et continue"
+    c3-else-interdit: "Croit qu'un else est interdit dans une boucle"
+    c3-else-une-fois: "Croit que le else d'une boucle ne s'exécute qu'une fois"
+    c3-oubli-apres: "Croit qu'une variable est oubliée après la boucle"
+    c3-imbrique-addition: "Additionne les tours de boucles imbriquées au lieu de les multiplier"
+    c3-imbrique-j-garde: "Croit que le compteur de la boucle intérieure ne repart pas de 1"
+    c3-imbrique-exterieure: "Croit que seule la boucle extérieure compte les tours"
+    c3-zero-tour-absurde: "Croit qu'un cas sans aucun tour n'a pas de sens"
+    c3-cas-particulier: "Croit qu'il faut toujours traiter 0 à part avec un if"
+    c3-depart-zero: "Croit que faire partir la boucle de 0 corrige un cas qui échoue"
+    c4-count-indice: "Confond count (le nombre de cases) avec le numéro de la dernière case"
+    c4-case-absente-zero: "Croit qu'une case qui n'existe pas vaut 0, sans avertissement"
+    c4-case-un: "Croit que les cases d'une liste commencent à 1"
+    c4-tour-de-trop-muet: "Croit que <= count fait juste un tour de plus sans conséquence"
+    c4-borne-premiere: "Croit que la condition de la boucle décide de la première case lue"
+    c4-count-zero: "Croit que count compte à partir de 0, comme les numéros de case"
+    c4-incrementer-different: "Croit que $n++ modifierait la case là où $n = $n + 1 ne le fait pas"
+    c4-tableau-fige: "Croit qu'un tableau ne peut plus être modifié une fois créé"
+    c4-foreach-reference: "Croit que la variable du foreach est la case elle-même, pas une copie"
+    c4-max-zero: "Croit que partir de $max = 0 marche toujours (oublie les valeurs négatives)"
+    c4-premiere-plus-grande: "Croit que la première case est toujours la plus grande"
+    c4-affectation-efface: "Croit que $max = 0 modifie la case 0 du tableau"
+    c4-boucle-une-fois: "Croit qu'une ligne écrite dans la boucle n'est exécutée qu'une fois"
+    c4-variable-par-tour: "Croit qu'une variable de la boucle est une nouvelle variable à chaque tour"
+    c4-crochets-boucle: "Croit qu'on ne peut pas écrire [] dans une boucle"
+    c4-else-sans-effet: "Croit qu'un else qui remet le drapeau à false est sans effet"
+    c4-else-boucle: "Croit que else est interdit dans une boucle"
+    c4-foreach-infini: "Croit qu'un foreach sans break ne s'arrête jamais"
+    c4-cle-valeur: "Confond la clé d'une case avec une deuxième valeur rangée dans la case"
+    c4-cle-variable: "Confond la clé d'un tableau associatif avec un nom de variable"
+    c4-cle-numero: "Croit qu'une case d'un tableau associatif garde aussi son numéro (case 0…)"
+    c4-absente-zero: "Croit qu'une clé absente vaut 0 et que ?? ne fait que l'écrire"
+    c4-coalesce-ajoute: "Croit que ?? ajoute la clé absente au tableau"
+    c4-coalesce-compare: "Croit que ?? compare la valeur à ce qui le suit"
+    c4-double-compte: "Croit que sans ?? chaque occurrence serait comptée deux fois"
+    c4-coalesce-raz: "Croit que ?? 0 remet le compteur à zéro à chaque tour"
+    c4-plus-case: "Croit qu'on ne peut pas calculer avec une case de tableau"
+    c4-un-cas-suffit: "Croit qu'un programme juste sur un exemple est juste sur tous"
+    c4-tester-plus-long: "Croit qu'une liste plus longue est le cas à essayer, plutôt que la liste vide"
+    c4-ordre-teste: "Croit que changer l'ordre des valeurs est le cas à essayer pour une moyenne"
+    c5-colonne-dabord: "Croit que le premier crochet d'une grille choisit la colonne (comme le x d'un point)"
+    c5-index-un: "Croit que les lignes d'une grille commencent à 1"
+    c5-crochets-deux-cases: "Croit que $g[1][3] désigne deux cases au lieu d'une case dans une ligne"
+    c5-imbrique-addition: "Croit que deux boucles imbriquées font la somme de leurs tours, pas le produit"
+    c5-imbrique-une-fois: "Croit que la boucle intérieure ne fait ses tours qu'une fois en tout"
+    c5-imbrique-parallele: "Croit que les compteurs de deux boucles imbriquées avancent ensemble"
+    c5-cle-sans-guillemets: "Croit qu'une clé s'écrit sans guillemets ($e[nom])"
+    c5-cle-sur-liste: "Croit que $eleves['note'] donne les notes de toute la liste"
+    c5-ordre-des-cles: "Croit que l'ordre des clés dans une fiche change la façon de la lire"
+    c5-count-fiches: "Croit que count ne marche pas sur une liste de fiches"
+    c5-moyenne-diviseur-indifferent: "Croit qu'on peut diviser par count($eleves) une somme faite sur une partie des élèves"
+    c5-count-champs: "Confond le nombre de fiches d'une liste avec le nombre de cases d'une fiche"
+    c5-max-note-indice: "Confond une note avec un numéro de case ($eleves[$max])"
+    c5-affectation-modifie-source: "Croit que copier une case dans une variable modifie la fiche"
+    c5-comparer-fiches: "Croit qu'il faut garder la fiche entière pour pouvoir comparer les notes"
+    c5-count-eleves: "Confond le nombre de notes d'un élève avec le nombre d'élèves"
+    c5-count-fiche-entiere: "Confond count($e['notes']) avec count($e), les cases de la fiche"
+    c5-count-somme: "Croit que count additionne les valeurs d'une liste"
+    c5-groupe-creer-main: "Croit qu'il faut créer chaque groupe à la main avant d'y ajouter avec []"
+    c5-groupe-ecrase: "Croit que $t[$cle][] = … remplace tout le tableau"
+    c5-groupe-numero: "Croit que $t[$cle][] range dans la case 0 et ignore la clé"
+    c5-reset-inutile: "Croit que $g[] = $ligne vide $ligne (pas besoin de la remettre à [])"
+    c5-reset-efface-grille: "Croit que $ligne = [] efface la grille déjà construite"
+    c5-reset-syntaxe: "Croit que [] exige une variable créée juste avant"
+    c5-sort-renvoie: "Croit que sort renvoie le tableau trié"
+    c5-sort-vide: "Croit que sort vide un tableau déjà trié"
+    c5-sort-associatif: "Croit que sort ne marche que sur les tableaux associatifs"
+    c5-array-vide: "Croit que « Array » à l'écran veut dire que le tableau est vide"
+    c5-array-nom: "Croit que « Array » est une valeur rangée dans le tableau"
+    c5-array-guillemets: "Croit que mettre un tableau entre guillemets permet de l'afficher"
+    c6-strlen-fin: "Croit qu'un texte finit par une case invisible que strlen compte"
+    c6-strlen-majuscule: "Croit qu'une majuscule compte pour deux caractères"
+    c6-strlen-zero: "Confond le nombre de caractères avec une position qui commence à 0"
+    c6-fonction-auto: "Croit qu'une fonction s'exécute toute seule, là où elle est écrite"
+    c6-parametre-avant: "Croit qu'il faut donner une valeur au paramètre avant la fonction, au lieu de l'appeler avec"
+    c6-echo-interdit: "Croit qu'echo est interdit dans une fonction"
+    c6-appel-calcul: "Croit qu'on ne peut pas calculer avec l'appel d'une fonction"
+    c6-ordre-appel: "Croit que le calcul se fait avant que les fonctions appelées s'exécutent"
+    c6-echo-fonction-muet: "Croit qu'un echo dans une fonction n'affiche rien (confond afficher et renvoyer)"
+    c6-portee-ordre: "Croit qu'une fonction écrite plus bas verrait les variables du programme"
+    c6-portee-dollar: "Croit que les variables s'écrivent sans $ dans une fonction"
+    c6-fonction-en-dur: "Remplace la variable invisible par sa valeur écrite en dur au lieu de la passer en paramètre"
+    c6-liste-jamais-vide: "Oublie qu'une liste passée à une fonction peut être vide"
+    c6-return-affiche: "Croit que return affiche la valeur"
+    c6-test-remet-zero: "Croit qu'un test === modifie la variable testée"
+    c7-classe-cle: "Croit que la liste des élèves a une clé 'notes' qui réunit toutes les notes"
+    c7-foreach-indice: "Croit que la variable du foreach reçoit le numéro de la case, pas l'élément"
+    c7-acces-indifferent: "Croit que $classe['notes'] et $e['notes'] reviennent au même"
+    c8-php-navigateur: "Croit que le navigateur reçoit et exécute le code PHP"
+    c8-balises-envoyees: "Croit que les balises <?php ?> restent dans la page envoyée, vidées"
+    c8-boucle-invisible: "Croit que le HTML écrit par une boucle n'est pas dans la page reçue"
+    c8-echappe-efface: "Croit que htmlspecialchars efface les balises au lieu de les rendre affichables"
+    c8-adresse-fiable: "Croit que le visiteur ne peut pas modifier l'adresse ($_GET)"
+    c8-echappe-isset: "Confond htmlspecialchars (afficher sans danger) et isset/?? (paramètre absent)"
+
+# On the levels and challenges done (the final test included): 77 in all.
+grades:
+  - [0, "Premier pas"]
+  - [10, "Apprenti·e codeur·se"]
+  - [25, "Codeur·se des conditions"]
+  - [40, "Dompteur·se de boucles"]
+  - [55, "Architecte des tableaux"]
+  - [70, "Maître·sse du PHP"]
+
+rewards:
+  # Brass once the final test is passed; silver at 40 levels or challenges with three stars, gold at 65.
+  trophy:
+    code: prisme
+    label: Le prisme
+    lore: "Le prisme de qui sait faire passer un programme par toutes ses branches : la lumière y entre d'un seul trait, elle en ressort décomposée, ligne après ligne."
+    silver_at: 40
+    gold_at: 65
+  pin:
+    code: pin-nebuleuse
+    label: Épinglette Nébuleuse
+  # One card per chapter mastered: every level and every mastery challenge of it.
+  cards: true
+
+thumbnail:
+  background: "radial-gradient(1.2px 1.2px at 22% 28%, rgba(255,255,255,.8) 50%, transparent 52%), radial-gradient(1px 1px at 72% 42%, rgba(255,255,255,.6) 50%, transparent 52%), radial-gradient(1.5px 1.5px at 44% 76%, rgba(200,240,255,.7) 50%, transparent 52%), radial-gradient(1px 1px at 86% 18%, rgba(255,255,255,.7) 50%, transparent 52%), radial-gradient(ellipse at 80% 0%, rgba(160,110,255,.35), transparent 60%), linear-gradient(180deg, #120E2A 0%, #2A1A5E 100%)"
+  font: "'Sora', 'Trebuchet MS', sans-serif"
+  style: normal
+  weight: 700
+  color: "#8FE9FF"

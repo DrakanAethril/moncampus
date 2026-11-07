@@ -1,0 +1,145 @@
+# PHP pas à pas — chapter 1, « Afficher et calculer ». A ticket is a level or a mastery challenge (« défi
+# de maîtrise »); the steps run in the order written (scenario.free_order). A `fix` step is measured by the
+# game on the visible case and the hidden ones and sends {passed, failed}; an `explain` step - « Comprendre »
+# - is corrected here, each wrong option naming its misconception. `hints` is the number of written hints
+# the game holds for the level's measured steps: the bench checks it against the package.
+tickets:
+  - id: N01
+    act: 1
+    after: []
+    requester: guide
+    title: "Afficher du texte"
+    request: "echo · \"texte\" · ;"
+    course: "echo"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi PHP signale-t-il une erreur à la ligne 3, alors qu'il manque un point-virgule à la fin de la ligne 2 ?"
+        options:
+          - { text: "Parce que PHP lit l'instruction de la ligne 2 jusqu'au point-virgule : il ne s'aperçoit qu'elle n'est pas finie qu'en tombant sur le echo de la ligne 3.", ok: true }
+          - text: "Parce que PHP numérote les lignes à partir de 0."
+            misconception: lignes-zero
+            reaction: { who: guide, expr: neutre, text: "Les lignes sont numérotées à partir de 1, comme dans l'éditeur. C'est le point-virgule manquant qui fait que PHP continue à lire la ligne 2 sur la ligne 3." }
+          - text: "Parce que l'erreur est vraiment à la ligne 3 : echo n'a pas le droit de suivre un autre echo."
+            misconception: echo-unique
+            reaction: { who: guide, expr: neutre, text: "On peut écrire autant de echo qu'on veut à la suite. Il suffit que chacun soit terminé par un point-virgule." }
+          - text: "Parce que le point-virgule se met au début de la ligne suivante."
+            misconception: point-virgule-debut
+            reaction: { who: guide, expr: neutre, text: "Le point-virgule termine une instruction : il se place à la fin, juste après elle." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N02
+    act: 1
+    after: [N01]
+    requester: guide
+    title: "Les variables"
+    request: "$nom = valeur · changer · réutiliser"
+    course: "Les variables"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "$auteur = $prenom; puis $prenom = \"Anonyme\"; Que contient $auteur ensuite ?"
+        options:
+          - { text: "L'ancien prénom : $auteur a reçu une copie de la valeur au moment de l'affectation ; changer $prenom ensuite ne la touche pas.", ok: true }
+          - text: "« Anonyme » : $auteur suit $prenom, puisqu'on a écrit $auteur = $prenom."
+            misconception: affectation-lien
+            reaction: { who: guide, expr: neutre, text: "= range une valeur, une fois, au moment où la ligne s'exécute. Les deux boîtes sont ensuite indépendantes. Ouvre « Pas à pas » pour les voir." }
+          - text: "Rien : une variable ne peut pas recevoir une autre variable."
+            misconception: affectation-variable
+            reaction: { who: guide, expr: neutre, text: "À droite de =, on peut mettre une valeur, une variable ou un calcul : PHP en calcule la valeur et la range à gauche." }
+          - text: "« $prenom », le nom de la variable."
+            misconception: variable-nom
+            reaction: { who: guide, expr: neutre, text: "Sans guillemets, $prenom désigne la valeur de la boîte, pas son nom." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: M01
+    act: 1
+    after: [N02]
+    requester: guide
+    title: "Défi de maîtrise · echo et variables"
+    request: "3 programmes, sans indice"
+    course: "echo et variables"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N03
+    act: 1
+    after: [N02]
+    requester: guide
+    title: "Calculer"
+    request: "+ - * / % · priorités · intdiv · round"
+    course: "Les calculs"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi echo $a + $b / 2; n'affiche-t-il pas la moyenne de $a et $b ?"
+        options:
+          - { text: "Parce que la division passe avant l'addition : PHP calcule $b / 2, puis ajoute $a. Il faut des parenthèses : ($a + $b) / 2.", ok: true }
+          - text: "Parce que PHP calcule de gauche à droite sans regarder les signes."
+            misconception: calcul-gauche-droite
+            reaction: { who: guide, expr: neutre, text: "PHP suit les priorités des mathématiques : * et / avant + et -. C'est pour ça que $b / 2 est calculé en premier." }
+          - text: "Parce que / donne une division entière en PHP."
+            misconception: division-entiere
+            reaction: { who: guide, expr: neutre, text: "/ donne le résultat exact, décimales comprises : 7 / 2 vaut 3.5. La division entière, c'est intdiv()." }
+          - text: "Parce qu'on ne peut pas diviser une variable par un nombre."
+            misconception: division-variable
+            reaction: { who: guide, expr: neutre, text: "Une variable qui contient un nombre se calcule comme ce nombre. Le problème vient de l'ordre des opérations." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N04
+    act: 1
+    after: [N03]
+    requester: guide
+    title: "Assembler un texte"
+    request: ". · \"…$variable…\" · '…'"
+    course: "Assembler un texte"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi echo \"Total : \" + $total; s'arrête-t-il sur une erreur ?"
+        options:
+          - { text: "Parce que + calcule : PHP essaie d'additionner le texte « Total : » et un nombre, ce qui est impossible. Pour assembler, c'est le point.", ok: true }
+          - text: "Parce qu'il manque des parenthèses autour de $total."
+            misconception: concat-parentheses
+            reaction: { who: guide, expr: neutre, text: "Les parenthèses ne changent rien ici : c'est le signe + qui demande un calcul. Le point . assemble du texte." }
+          - text: "Parce qu'un echo ne peut afficher qu'une seule chose à la fois."
+            misconception: echo-une-chose
+            reaction: { who: guide, expr: neutre, text: "echo affiche le texte qu'on lui donne, et ce texte peut être assemblé de plusieurs morceaux avec le point." }
+          - text: "Parce que $total devrait être écrit entre guillemets."
+            misconception: variable-guillemets
+            reaction: { who: guide, expr: neutre, text: "Le problème est le signe +. Entre guillemets doubles, \"Total : $total\" marcherait aussi, mais c'est le + qui provoque l'erreur." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: M02
+    act: 1
+    after: [N04]
+    requester: guide
+    title: "Défi de maîtrise · calculer et assembler"
+    request: "3 programmes, sans indice"
+    course: "calculs et texte"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }

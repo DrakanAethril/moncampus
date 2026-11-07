@@ -1,0 +1,376 @@
+# PHP pas à pas — chapter 2, « Décider »: comparisons, if, else, elseif, bounds, && and ||, ! and
+# parentheses, nested conditions, == against === and match. Same shape as chapitre1.yaml: a ticket is a
+# level or a mastery challenge, the steps run in the order written, `fix` steps are measured by the game,
+# `explain` steps (« Comprendre ») are corrected here and each wrong option names its misconception.
+# `hints` counts the written hints of the measured steps, the two reminders (2 each) included.
+tickets:
+  - id: N05
+    act: 2
+    after: [N04]
+    requester: guide
+    title: "Comparer"
+    request: "== != < > <= >= · vrai ou faux"
+    course: "Comparer"
+    hints: 12
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Avec $note = 10, pourquoi le testeur if ($note > 10) répond-il « faux » ?"
+        options:
+          - { text: "Parce que > veut dire « strictement plus grand » : 10 n'est pas plus grand que 10. Pour accepter 10, il faut >=.", ok: true }
+          - text: "Parce que PHP se trompe : « plus grand que 10 » devrait comprendre 10."
+            misconception: c2-strict-inclusif
+            reaction: { who: guide, expr: neutre, text: "En PHP, > exclut toujours la valeur elle-même. Quand la borne doit être dedans (« 10 ou plus »), on écrit >=." }
+          - text: "Parce qu'il faudrait écrire \"10\" entre guillemets pour comparer."
+            misconception: c2-nombre-guillemets
+            reaction: { who: guide, expr: neutre, text: "Un nombre se compare tel quel, sans guillemets. Les guillemets ne changent pas la réponse : c'est le signe > qui exclut 10." }
+          - text: "Parce que le nombre doit être écrit à gauche : 10 < $note."
+            misconception: c2-ordre-operandes
+            reaction: { who: guide, expr: neutre, text: "$note > 10 et 10 < $note posent exactement la même question. L'ordre ne change rien, la borne reste exclue dans les deux cas." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N06
+    act: 2
+    after: [N05]
+    requester: guide
+    title: "if"
+    request: "if (condition) { … } · rien sinon"
+    course: "if"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "if ($valeur > 1000) { echo \"Précieux \"; } puis echo \"Rangé\"; après l'accolade. Pourquoi « Rangé » s'affiche-t-il même quand la condition est fausse ?"
+        options:
+          - { text: "Parce que echo \"Rangé\" est après l'accolade fermante : il ne fait pas partie du bloc, il s'exécute toujours.", ok: true }
+          - text: "Ce n'est pas normal : quand la condition d'un if est fausse, le programme devrait s'arrêter."
+            misconception: c2-if-faux-arrete
+            reaction: { who: guide, expr: neutre, text: "Un if faux ne fait que sauter son bloc. Le programme continue ensuite à la ligne qui suit l'accolade fermante." }
+          - text: "Parce que la ligne n'est pas décalée : décalée de 4 espaces, elle dépendrait du if."
+            misconception: c2-indentation-bloc
+            reaction: { who: guide, expr: neutre, text: "En PHP, ce sont les accolades qui délimitent le bloc. Le décalage aide seulement l'œil à relire." }
+          - text: "Parce que la ligne après le bloc est ce que PHP exécute « à la place » quand la condition est fausse."
+            misconception: c2-suite-sinon
+            reaction: { who: guide, expr: neutre, text: "La ligne après le bloc n'est pas un « sinon » : elle s'exécute aussi quand la condition est vraie. Avec 1500, on voit « Précieux Rangé »." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N07
+    act: 2
+    after: [N06]
+    requester: guide
+    title: "if et else"
+    request: "if … else · l'un ou l'autre, jamais les deux"
+    course: "if et else"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Dans un if … else, combien de blocs s'exécutent ?"
+        options:
+          - { text: "Toujours un seul : celui du if quand la condition est vraie, celui du else sinon. Entre une condition et son contraire, il n'y a pas de trou.", ok: true }
+          - text: "Ça dépend de la condition écrite après le else."
+            misconception: c2-else-condition
+            reaction: { who: guide, expr: neutre, text: "else n'a pas de condition : il prend tout ce que le if n'a pas pris. Écrire else (…) est une erreur." }
+          - text: "Les deux quand la condition est vraie : le else s'exécute toujours, en dernier."
+            misconception: c2-else-toujours
+            reaction: { who: guide, expr: neutre, text: "Le bloc du else ne s'exécute que si la condition est fausse. Ouvre « Pas à pas » : avec une condition vraie, PHP saute le else." }
+          - text: "Parfois aucun, si la valeur ne correspond ni au if ni au else."
+            misconception: c2-else-trou
+            reaction: { who: guide, expr: neutre, text: "C'est le cas de deux if séparés, pas d'un if … else : le else reçoit exactement le contraire de la condition, donc une valeur tombe forcément d'un côté." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M03
+    act: 2
+    after: [N07]
+    requester: guide
+    title: "Défi de maîtrise · Comparer et if"
+    request: "3 programmes, sans indice"
+    course: "comparer, if et else"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N08
+    act: 2
+    after: [N07]
+    requester: guide
+    title: "Plusieurs cas : elseif"
+    request: "if · elseif · else · le premier vrai gagne"
+    course: "elseif"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Avec $valeur = 50000, pourquoi if ($valeur >= 1000) { « Précieux » } elseif ($valeur >= 10000) { « Trésor » } affiche-t-il « Précieux » ?"
+        options:
+          - { text: "Parce que PHP s'arrête à la première condition vraie : 50000 >= 1000 est déjà vrai, le elseif n'est jamais testé. Il faut mettre le cas le plus exigeant en premier.", ok: true }
+          - text: "Parce que 50000 ne vérifie pas $valeur >= 10000 : il faudrait écrire $valeur >= 50000."
+            misconception: c2-elseif-condition-fausse
+            reaction: { who: guide, expr: neutre, text: "50000 >= 10000 est bien vrai. Le problème n'est pas cette condition : elle n'est jamais testée, car PHP s'est arrêté au premier cas vrai et a sauté le reste de la chaîne." }
+          - text: "Il devrait afficher les deux : chaque condition vraie affiche son texte."
+            misconception: c2-elseif-cumul
+            reaction: { who: guide, expr: neutre, text: "Dans une chaîne if … elseif … else, un seul bloc s'exécute. Ce sont des if séparés qui peuvent en exécuter plusieurs." }
+          - text: "C'est un bug : PHP devrait choisir la condition la plus précise, donc « Trésor »."
+            misconception: c2-elseif-plus-precis
+            reaction: { who: guide, expr: neutre, text: "PHP ne cherche pas la condition « la plus précise » : il lit de haut en bas. C'est à toi de ranger les cas du plus exigeant au moins exigeant." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N09
+    act: 2
+    after: [N08]
+    requester: guide
+    title: "Les bornes"
+    request: "< ou <= · « jusqu'à … compris » · tester pile sur la borne"
+    course: "Les bornes"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Une consigne dit « gratuit jusqu'à 12 ans ». Quelle condition faut-il écrire ?"
+        options:
+          - { text: "$age <= 12 : « jusqu'à 12 » met 12 dedans. Un enfant de 12 ans tout juste doit être gratuit.", ok: true }
+          - text: "$age < 12 : « jusqu'à » veut dire qu'on s'arrête juste avant 12."
+            misconception: c2-jusqua-exclu
+            reaction: { who: guide, expr: neutre, text: "« Jusqu'à 12 », comme « 12 compris » ou « 12 au plus », met la borne dedans : c'est <=. « Moins de 12 » ou « avant 12 », eux, l'excluent." }
+          - text: "$age < 12 ou $age <= 12, peu importe : ça ne change qu'une seule valeur."
+            misconception: c2-borne-sans-importance
+            reaction: { who: guide, expr: neutre, text: "Une seule valeur, mais un vrai enfant de 12 ans qui paie à tort. C'est justement sur la borne que les programmes se trompent : c'est elle qu'il faut tester." }
+          - text: "$age < 13, toujours : il vaut mieux éviter <= en PHP."
+            misconception: c2-eviter-inferieur-egal
+            reaction: { who: guide, expr: neutre, text: "<= existe et dit exactement « jusqu'à … compris ». $age < 13 marche pour des âges entiers, mais pas pour une valeur comme 12.5 : écris la vraie borne." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M04
+    act: 2
+    after: [N09]
+    requester: guide
+    title: "Défi de maîtrise · Plusieurs cas"
+    request: "3 programmes, sans indice"
+    course: "elseif et les bornes"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N10
+    act: 2
+    after: [N09]
+    requester: guide
+    title: "Et, ou"
+    request: "&& : les deux · || : au moins une"
+    course: "&& et ||"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi la condition $x > 5 || $x < 10 est-elle toujours vraie ?"
+        options:
+          - { text: "Parce que || demande qu'une seule des deux conditions soit vraie, et tout nombre est soit plus grand que 5, soit plus petit que 10. Pour « entre 5 et 10 », il faut &&.", ok: true }
+          - text: "Elle n'est pas toujours vraie : pour 7, les deux conditions sont vraies, donc || répond faux."
+            misconception: c2-ou-exclusif
+            reaction: { who: guide, expr: neutre, text: "|| n'est pas un « ou bien » exclusif : quand les deux conditions sont vraies, il répond vrai aussi." }
+          - text: "Elle n'est vraie qu'entre 5 et 10 : c'est la bonne façon d'écrire un intervalle."
+            misconception: c2-ou-intervalle
+            reaction: { who: guide, expr: neutre, text: "Essaie 20 : 20 > 5 est vrai, donc tout est vrai. Un intervalle exige les deux conditions à la fois : c'est &&." }
+          - text: "Parce que 5 et 10 sont trop proches ; avec 5 et 100, elle ne le serait plus."
+            misconception: c2-ou-bornes-proches
+            reaction: { who: guide, expr: neutre, text: "Les bornes n'y sont pour rien : avec n'importe quelles bornes a plus petite que b, $x > a || $x < b est toujours vrai. C'est le || qui pose problème." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N11
+    act: 2
+    after: [N10]
+    requester: guide
+    title: "Non et parenthèses"
+    request: "! · && passe avant || · des parenthèses pour être sûr"
+    course: "! et parenthèses"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Que veut dire la condition !($note >= 10 && $absences < 3) ?"
+        options:
+          - { text: "« Pas les deux à la fois » : elle est vraie si la note est sous 10, ou s'il y a au moins 3 absences, ou les deux. Le contraire d'un « et » est un « ou ».", ok: true }
+          - text: "Note sous 10 ET au moins 3 absences : le ! retourne chaque morceau."
+            misconception: c2-non-distribue
+            reaction: { who: guide, expr: neutre, text: "Retourner chaque morceau ne suffit pas : il faut aussi changer && en ||. Un élève à 8 avec 0 absence n'a pas « les deux », donc la condition est vraie pour lui." }
+          - text: "Le ! ne porte que sur $note >= 10, le premier morceau."
+            misconception: c2-non-premier
+            reaction: { who: guide, expr: neutre, text: "Le ! est devant la parenthèse : il porte sur tout ce qu'elle contient. C'est à ça que sert la parenthèse." }
+          - text: "Rien de spécial : PHP ignore un ! placé devant une parenthèse."
+            misconception: c2-non-ignore
+            reaction: { who: guide, expr: neutre, text: "PHP ne l'ignore pas : il calcule la parenthèse, puis retourne la réponse. Enlève le ! dans l'exemple de la leçon : les deux réponses s'échangent." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M05
+    act: 2
+    after: [N11]
+    requester: guide
+    title: "Défi de maîtrise · Et, ou, non"
+    request: "3 programmes, sans indice"
+    course: "&&, || et !"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N12
+    act: 2
+    after: [N11]
+    requester: guide
+    title: "Conditions imbriquées"
+    request: "un if dans un if · aplatir avec &&"
+    course: "if imbriqués"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "if ($salle == \"R1\") { if ($valeur >= 1000) { echo \"Clé\"; } } else { echo \"Ailleurs\"; } — Qu'affiche ce programme pour un spécimen de la salle R1 qui vaut 300 € ?"
+        options:
+          - { text: "Rien : la salle est R1, donc on entre dans le premier bloc ; le if intérieur est faux et n'a pas de else. Le else « Ailleurs » appartient au if de la salle.", ok: true }
+          - text: "« Ailleurs » : le else s'applique dès qu'une des deux conditions est fausse."
+            misconception: c2-else-imbrique-global
+            reaction: { who: guide, expr: neutre, text: "Un else appartient au if dont il suit l'accolade fermante : ici, celui de la salle. Comme la salle est R1, on ne va jamais dans ce else." }
+          - text: "« Clé » : PHP teste d'abord le if le plus intérieur, puis le reste."
+            misconception: c2-imbrique-interieur-dabord
+            reaction: { who: guide, expr: neutre, text: "PHP lit de haut en bas : d'abord la salle, et le if intérieur seulement si elle est R1. Et 300 >= 1000 est faux de toute façon." }
+          - text: "Une erreur : un if placé dans un autre if doit toujours avoir son propre else."
+            misconception: c2-imbrique-else-obligatoire
+            reaction: { who: guide, expr: neutre, text: "Un else n'est jamais obligatoire, même à l'intérieur d'un autre bloc. Sans lui, quand la condition est fausse, rien ne se passe." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N13
+    act: 2
+    after: [N12]
+    requester: guide
+    title: "Égal ou identique"
+    request: "== et === · 17 et \"17\" · match"
+    course: "=== et match"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi 17 === \"17\" est-il faux, alors que 17 == \"17\" est vrai ?"
+        options:
+          - { text: "Parce que === compare aussi le type : 17 est un nombre, \"17\" un texte. == convertit le texte en nombre avant de comparer.", ok: true }
+          - text: "Les guillemets ne changent rien : c'est un défaut de ===, qu'il vaut mieux éviter."
+            misconception: c2-guillemets-decor
+            reaction: { who: guide, expr: neutre, text: "Les guillemets changent le type : \"17\" est un texte. === le voit, et c'est justement pour ça qu'on le préfère : il ne fait pas de conversion surprise." }
+          - text: "Parce que === compare les noms des variables, pas leurs valeurs."
+            misconception: c2-identique-noms
+            reaction: { who: guide, expr: neutre, text: "=== compare des valeurs, comme ==, mais il exige en plus le même type. Les noms des variables n'entrent jamais en jeu." }
+          - text: "Parce que === range la valeur de droite dans la variable de gauche, comme =."
+            misconception: c2-identique-affecte
+            reaction: { who: guide, expr: neutre, text: "Seul = range une valeur. == et === comparent tous les deux ; === est simplement plus strict." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N14
+    act: 2
+    after: [N13]
+    requester: guide
+    title: "Atelier : décider"
+    request: "cinq conditions à réparer · trois programmes complets"
+    course: "Atelier : décider"
+    hints: 22
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Ton programme à plusieurs cas marche avec la valeur que tu as essayée. Quelles valeurs faut-il encore essayer pour en être sûr ?"
+        options:
+          - { text: "Chaque borne et la valeur juste à côté (9.5 et 10, 11.5 et 12…), plus une valeur de chaque cas : c'est sur les bornes et dans l'ordre des cas que se cachent les erreurs.", ok: true }
+          - text: "Une valeur au milieu de chaque cas suffit (5, 11, 13, 15, 18)."
+            misconception: c2-tester-milieu
+            reaction: { who: guide, expr: neutre, text: "Au milieu d'un cas, < et <= donnent la même réponse : seule la borne les départage. C'est elle qu'il faut essayer." }
+          - text: "Aucune : si le programme marche une fois, il marche toujours."
+            misconception: c2-tester-une-fois
+            reaction: { who: guide, expr: neutre, text: "Un programme à conditions prend des chemins différents selon la valeur. Une seule valeur ne parcourt qu'un seul chemin." }
+          - text: "Seulement la plus petite et la plus grande possibles, 0 et 20."
+            misconception: c2-tester-extremes
+            reaction: { who: guide, expr: neutre, text: "Les extrêmes sont utiles, mais les erreurs de < et <= se cachent sur les bornes du milieu : 10, 12, 14, 16." }
+      - { id: reparer1, kind: fix, prompt: "Réparer" }
+      - { id: reparer2, kind: fix, prompt: "Réparer" }
+      - { id: reparer3, kind: fix, prompt: "Réparer" }
+      - { id: reparer4, kind: fix, prompt: "Réparer" }
+      - { id: reparer5, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M06
+    act: 2
+    after: [N14]
+    requester: guide
+    title: "Défi de maîtrise · Conditions composées"
+    request: "3 programmes, sans indice"
+    course: "conditions composées"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }

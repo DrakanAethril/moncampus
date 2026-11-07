@@ -7,7 +7,7 @@
    Formatool's screens (the player page, the showcase), like shared/avatar.js:
 
      SGRewards.art(kind, code, {size, finish, locked}) → SVG markup
-       kind: 'trophy' ('astrolabe', 'groma', 'nautile', 'loupe', … 'globe-celeste') | 'card' ('card-<game>-<chapter>')
+       kind: 'trophy' ('astrolabe', 'groma', 'nautile', 'loupe', … 'globe-celeste', 'prisme') | 'card' ('card-<game>-<chapter>')
              | 'pin' ('pin-etoile', 'pin-cave-canem', 'pin-vague', 'pin-loupe')
        finish (trophy only): 'brass' | 'silver' | 'gold' - gold carries its glints
        locked: a silhouette in currentColor, readable on both themes.
@@ -37,7 +37,8 @@
     'radio-comete': { bg: '#14181C', paper: '#232A30', ink: '#E9E1CF', accent: '#E8A33D', font: "'Barlow Condensed', 'Trebuchet MS', sans-serif", italic: false },
     fusion: { bg: '#E4E3DD', paper: '#F1F1EE', ink: '#2E3236', accent: '#E07A3F', font: "'Bricolage Grotesque', 'Trebuchet MS', sans-serif", italic: false },
     'service-de-nuit': { bg: '#14111F', paper: '#1B1729', ink: '#F6F1E7', accent: '#FF4F7B', font: "'Bungee', 'Trebuchet MS', sans-serif", italic: false },
-    'sql-pas-a-pas': { bg: '#0B1030', paper: '#151B45', ink: '#EEF0FF', accent: '#FFE27A', font: "'Sora', 'Trebuchet MS', sans-serif", italic: false }
+    'sql-pas-a-pas': { bg: '#0B1030', paper: '#151B45', ink: '#EEF0FF', accent: '#FFE27A', font: "'Sora', 'Trebuchet MS', sans-serif", italic: false },
+    'php-pas-a-pas': { bg: '#120E2A', paper: '#1E1846', ink: '#F2EFFF', accent: '#8FE9FF', font: "'Sora', 'Trebuchet MS', sans-serif", italic: false }
   };
   var GAMES = {
     observatoire: { title: "L'Observatoire", chapters: [
@@ -141,6 +142,18 @@
       { id: 'acte6', name: 'Modifier les données', topic: 'INSERT, UPDATE, DELETE' },
       { id: 'acte7', name: 'Créer sa base', topic: 'CREATE TABLE, clés, contraintes' },
       { id: 'acte8', name: 'Bonus : sécurité', topic: 'Transactions, droits, injection' }],
+      finale: { id: 'none', name: '', topic: '' } },
+    // PHP pas à pas: a card per chapter mastered - every level and every mastery challenge of it
+    // (design/validated/serious-games-php-pas-a-pas.md §4).
+    'php-pas-a-pas': { title: 'PHP pas à pas', chapters: [
+      { id: 'acte1', name: 'Afficher et calculer', topic: 'echo, variables, calculs, texte' },
+      { id: 'acte2', name: 'Décider', topic: 'if, else, elseif, bornes, &&, ||' },
+      { id: 'acte3', name: 'Répéter', topic: 'while, for, accumuler, chercher' },
+      { id: 'acte4', name: 'Les tableaux', topic: 'Listes, foreach, clés et valeurs' },
+      { id: 'acte5', name: 'Tableaux à deux dimensions', topic: 'Grilles, enregistrements, regrouper' },
+      { id: 'acte6', name: 'Les fonctions', topic: 'Paramètres, return, portée' },
+      { id: 'acte7', name: 'Révision', topic: 'Tout ensemble' },
+      { id: 'acte8', name: 'PHP dans une page', topic: 'HTML, $_GET, htmlspecialchars' }],
       finale: { id: 'none', name: '', topic: '' } }
   };
   var PINS = [
@@ -154,7 +167,8 @@
     { id: 'pin-comete', name: 'Épinglette Comète', color: '#14181C', ink: '#E8A33D', ring: '#5FB37C' },
     { id: 'pin-passerelle', name: 'Épinglette Passerelle', color: '#D8C29D', ink: '#2E3236', ring: '#E07A3F' },
     { id: 'pin-neon', name: 'Épinglette Néon', color: '#14111F', ink: '#FF4F7B', ring: '#3FE0D0' },
-    { id: 'pin-polaire', name: 'Épinglette Polaire', color: '#0B1030', ink: '#FFE27A', ring: '#9DB4FF' }
+    { id: 'pin-polaire', name: 'Épinglette Polaire', color: '#0B1030', ink: '#FFE27A', ring: '#9DB4FF' },
+    { id: 'pin-nebuleuse', name: 'Épinglette Nébuleuse', color: '#120E2A', ink: '#8FE9FF', ring: '#D6A8FF' }
   ];
 
   function cardOf(code) {
@@ -260,6 +274,18 @@
         '<text x="82" y="70" text-anchor="middle" font-size="26" font-family="\'Bungee\', \'Trebuchet MS\', sans-serif" fill="' + (locked ? 'currentColor' : '#FFE3EA') + '" transform="rotate(16 82 62)">12</text>';
     },
     // SQL pas à pas: a celestial globe on its stand, its meridian ring and a constellation of the course.
+    // PHP pas à pas: a crystal prism on its plinth, one beam of light entering, a spectrum leaving it.
+    'prisme': function (M, g, locked) {
+      var glass = locked ? 'currentColor' : '#1E1846', edge = locked ? 'currentColor' : '#8FE9FF', beam = locked ? 'currentColor' : '#FFFFFF';
+      var colors = ['#FF8FA3', '#FFC46B', '#FFE27A', '#7CF0C5', '#8FE9FF', '#D6A8FF'], rays = '';
+      colors.forEach(function (c, i) { rays += '<line x1="72" y1="' + (60 + i * 1.6) + '" x2="104" y2="' + (48 + i * 8) + '" stroke="' + (locked ? 'currentColor' : c) + '" stroke-width="3" stroke-linecap="round" opacity=".9"/>'; });
+      return '<path d="M38 108 L82 108 L76 98 L44 98 Z" fill="url(#' + g + ')" stroke="' + M.deep + '" stroke-width="1.4"/>' +
+        '<line x1="10" y1="72" x2="52" y2="62" stroke="' + beam + '" stroke-width="3" stroke-linecap="round" opacity=".85"/>' + rays +
+        '<path d="M60 22 L88 94 L32 94 Z" fill="' + glass + '" fill-opacity="' + (locked ? 1 : 0.85) + '" stroke="' + edge + '" stroke-width="2.2" stroke-linejoin="round"/>' +
+        '<path d="M60 22 L66 94" stroke="' + edge + '" stroke-width="1" opacity=".5"/>' +
+        '<path d="M52 44 L44 70" stroke="#fff" stroke-width="2" opacity="' + (locked ? 0 : 0.35) + '" stroke-linecap="round"/>' +
+        '<path d="M32 94 L88 94" stroke="url(#' + g + ')" stroke-width="4" stroke-linecap="round"/>';
+    },
     'globe-celeste': function (M, g, locked) {
       var sky = locked ? 'currentColor' : '#151B45', star = locked ? 'currentColor' : '#FFE27A', line = locked ? 'currentColor' : '#9DB4FF';
       var pts = [[44, 40], [56, 32], [70, 44], [64, 58], [78, 66], [50, 62]], cons = '';
@@ -386,6 +412,7 @@
     if (gameId === 'fusion') s = fusionEmblem(idx, P);
     if (gameId === 'service-de-nuit') s = nuitEmblem(idx, P);
     if (gameId === 'sql-pas-a-pas') s = sqlEmblem(idx, P);
+    if (gameId === 'php-pas-a-pas') s = phpEmblem(idx, P);
     return s;
   }
   /* The fresco of a room of the villa, inside the card's red panel (x 9-111, y 22-118): one
@@ -663,6 +690,20 @@
     });
     return s + '<text x="60" y="108" text-anchor="middle" font-size="9" letter-spacing="1" font-family="\'JetBrains Mono\', monospace" fill="#9DB4FF">' + sky.word + '</text>';
   }
+  /* A card of PHP pas à pas: the chapter's keyword in its colours, under a small nebula of stars, one
+     per level of the chapter. */
+  var PHP_SKY = [
+    { word: 'echo', n: 4 }, { word: 'if', n: 10 }, { word: 'for', n: 10 }, { word: '[ ]', n: 10 },
+    { word: '[ ][ ]', n: 10 }, { word: 'function', n: 5 }, { word: '✓', n: 1 }, { word: '<?=', n: 2 }
+  ];
+  function phpEmblem(idx, P) {
+    var sky = PHP_SKY[idx] || PHP_SKY[0], s = '<ellipse cx="60" cy="54" rx="40" ry="24" fill="#D6A8FF" opacity=".10"/><ellipse cx="66" cy="50" rx="24" ry="14" fill="' + P.accent + '" opacity=".10"/>';
+    for (var i = 0; i < sky.n; i++) {
+      var a = i * 2.39996, r = 6 + 4.2 * Math.sqrt(i + 1), x = 60 + Math.cos(a) * r * 1.5, y = 54 + Math.sin(a) * r * 0.85;
+      s += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (i % 3 ? 1.6 : 2.4) + '" fill="' + (i % 4 === 3 ? '#FFD47A' : P.accent) + '"/>';
+    }
+    return s + '<text x="60" y="106" text-anchor="middle" font-size="' + (sky.word.length > 5 ? 11 : 14) + '" font-weight="700" font-family="\'JetBrains Mono\', monospace" fill="#D6A8FF">' + sky.word.replace(/</g, '&lt;') + '</text>';
+  }
   var ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
   /* A card of Les Tablettes de Pompéi: a cream tablet, its fresco on a red panel, the room's name in
      capitals and its Roman numeral. */
@@ -732,6 +773,11 @@
       return '<path d="M13 31.5 L17.5 28.6 L27 28 L34.5 27.4 L39.6 22.6 L43.4 21.2 L46.8 23.4 L45.8 26 L42.6 26.8 L41.2 30.8 L44.2 36.4 L42.2 37.4 L38.4 32.6 L30.6 33.6 L26.4 38.2 L24.2 37.6 L26.2 33.2 L20.4 34 L16.4 38.6 L14.4 37.6 L17.6 33.2 Z" fill="' + c + '"/>' +
         '<path d="M13.5 31.4 L9 27" stroke="' + c + '" stroke-width="2" stroke-linecap="round"/>' +
         (accent ? '<path d="M38.8 24.4 L41.6 29.4" stroke="' + accent + '" stroke-width="2.2" stroke-linecap="round"/>' : '');
+    },
+    // PHP pas à pas: a spiral nebula, its bright heart and two stars.
+    'pin-nebuleuse': function (c, accent) {
+      return '<path d="M30 30 m-2 0 a2 2 0 1 1 4 0 a5 5 0 1 1 -9 1 a9 9 0 1 1 16 -3 a13 13 0 1 1 -21 9" fill="none" stroke="' + c + '" stroke-width="2.4" stroke-linecap="round"/>' +
+        '<circle cx="30" cy="30" r="2.6" fill="' + c + '"/><circle cx="43" cy="19" r="1.5" fill="' + (accent || c) + '"/><circle cx="17" cy="42" r="1.2" fill="' + (accent || c) + '"/>';
     },
     // SQL pas à pas: the pole star, four-pointed, and two small stars of its constellation.
     'pin-polaire': function (c, accent) {

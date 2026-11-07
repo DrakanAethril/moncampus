@@ -1,0 +1,52 @@
+# PHP pas à pas — chapter 7, « Révision »: one workshop level (a class report that mixes conditions, loops,
+# arrays of arrays and functions) and its mastery challenge. The steps run in the order written
+# (scenario.free_order). A `fix` step is measured by the game on the visible case and the hidden ones and
+# sends {passed, failed}; the `explain` step - « Comprendre » - is corrected here, each wrong option naming
+# its misconception. `hints` is the number of written hints the game holds for the level's measured steps,
+# the two reminders included: the bench checks it.
+tickets:
+  - id: N50
+    act: 7
+    after: [N49]
+    requester: guide
+    title: "Tout ensemble : un bulletin"
+    request: "tableau de tableaux · moyennes · mentions · meilleurs · une fonction"
+    course: "Tout ensemble"
+    hints: 22
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Dans foreach ($classe as $e) { … }, pourquoi écrit-on moyenne($e['notes']) et pas moyenne($classe['notes']) ?"
+        options:
+          - { text: "Parce que $classe est la liste des élèves : elle n'a pas de clé 'notes'. Dans la boucle, $e est un élève, un tableau qui a, lui, une clé 'notes'.", ok: true }
+          - text: "Parce que $classe['notes'] réunit les notes de tous les élèves, alors qu'on veut celles d'un seul."
+            misconception: c7-classe-cle
+            reaction: { who: guide, expr: neutre, text: "$classe n'a que des cases numérotées 0, 1, 2… : $classe['notes'] n'existe pas, PHP signalerait une clé absente. Les notes sont rangées dans chaque élève." }
+          - text: "Parce que $e est le numéro de l'élève : $e['notes'] est un raccourci pour $classe[$e]['notes']."
+            misconception: c7-foreach-indice
+            reaction: { who: guide, expr: neutre, text: "Avec foreach ($classe as $e), $e reçoit l'élève lui-même, pas son numéro. Pour avoir aussi le numéro, on écrit foreach ($classe as $i => $e)." }
+          - text: "Les deux marchent : c'est une question d'habitude."
+            misconception: c7-acces-indifferent
+            reaction: { who: guide, expr: neutre, text: "Seul $e['notes'] marche. Lis le chemin de gauche à droite : $classe, puis une case d'élève, puis sa clé 'notes'." }
+      - { id: reparer1, kind: fix, prompt: "Réparer" }
+      - { id: reparer2, kind: fix, prompt: "Réparer" }
+      - { id: reparer3, kind: fix, prompt: "Réparer" }
+      - { id: reparer4, kind: fix, prompt: "Réparer" }
+      - { id: reparer5, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M22
+    act: 7
+    after: [N50]
+    requester: guide
+    title: "Défi de maîtrise · Tout ensemble"
+    request: "3 programmes, sans indice"
+    course: "Tout ensemble"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
