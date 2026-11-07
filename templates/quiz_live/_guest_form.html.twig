@@ -39,6 +39,6 @@
     <input type="hidden" name="avatar" value="" data-quiz-live-guest-target="avatar">
     <p class="ql-muted ql-m0 ql-note">{{ 'quizLiveGuestNote'|trans }}</p>
     <div class="ql-grow"></div>
-    <button type="submit" class="ql-btn" data-quiz-live-guest-target="submit">{{ 'quizLiveGuestSubmitAction'|trans }}</button>
+    <button type="submit" class="ql-btn ql-join" data-quiz-live-guest-target="submit">{{ 'quizLiveGuestSubmitAction'|trans }}</button>
     {% if not inert|default(false) %}<a class="ql-muted ql-tc ql-note" href="{{ path('app_login') }}" data-turbo="false">{{ 'quizLiveGuestAccountLink'|trans }}</a>{% endif %}
 </form>

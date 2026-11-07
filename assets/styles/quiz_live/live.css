@@ -49,6 +49,12 @@
 }
 
 .ql-scr { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 1; }
+/* A phone's screen scrolls when it holds more than the window: a small phone, a browser's bars, a
+   larger text setting - the guest page's « Entrer dans la salle » was out of reach without it. Its
+   growing parts keep their content's height (the question's answer zone scrolls on its own, under
+   the clock and the statement). */
+.ql-phone .ql-scr { overflow-y: auto; overscroll-behavior: contain; }
+.ql-phone .ql-scr > .ql-grow:not(.ql-scroll) { flex: 1 0 auto; }
 .ql-deco { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 
 /* ---- utilities ---- */
@@ -90,6 +96,9 @@
 .ql-shp { flex: none; fill: var(--shpfill); stroke: var(--shpstroke); stroke-width: var(--shpsw); stroke-linejoin: round; }
 .ql-title-xl { font-size: 38px; line-height: 1; margin: 0; text-wrap: balance; }
 .ql-title-l { font-size: 28px; line-height: 1.05; margin: 0; text-wrap: balance; }
+/* A pseudonym is one word as often as not (« WWWWWWWW », « LoutreCosmique »): broken anywhere rather
+   than cut by the screen's edge. */
+.ql-name { overflow-wrap: anywhere; max-width: 100%; }
 .ql-stmt { font: 800 22px/1.25 var(--fb); margin: 0; text-wrap: balance; overflow-wrap: anywhere; }
 .ql-img { margin: 0; background: #fff; border: var(--bd); border-radius: var(--r); box-shadow: var(--sh); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 6px; }
 .ql-img img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
@@ -172,6 +181,10 @@
 .ql-dice { flex: none; width: 58px; min-height: 58px; padding: 0; }
 .ql-error { color: var(--ko); font: 700 14px var(--fb); min-height: 18px; margin: 0; }
 .ql-guest { padding: 18px 16px; gap: 10px; }
+/* The way in stays in sight while the avatars scroll under it. */
+.ql-guest .ql-join { position: sticky; bottom: 12px; z-index: 2; flex: none; }
+/* Greyed without transparency, or the avatars show through it. */
+.ql-guest .ql-join[disabled] { opacity: 1; background: var(--panel); color: var(--muted); background: color-mix(in srgb, var(--btnbg) 40%, var(--panel)); }
 
 /* ---- the room (1280×720) ---- */
 .ql-sh { display: flex; align-items: center; gap: 16px; padding: 22px 34px 0; position: relative; z-index: 2; }
@@ -209,7 +222,9 @@
 .ql-axis { position: absolute; left: 0; right: 0; bottom: 40px; height: 8px; background: var(--ink); border-radius: 8px; }
 .ql-tick { position: absolute; bottom: 0; transform: translateX(-50%); font: 700 18px var(--fb); }
 .ql-ruler-hint { position: absolute; left: 50%; bottom: 58px; transform: translateX(-50%); font-size: 22px; white-space: nowrap; }
-.ql-bars { display: flex; align-items: flex-end; justify-content: center; gap: 26px; height: 100%; padding-top: 10px; }
+/* The bars take what is left once the expected number below them is placed - at height: 100% they
+   pushed « Réponse attendue » off the bottom of the screen. */
+.ql-bars { display: flex; align-items: flex-end; justify-content: center; gap: 26px; flex: 1; min-height: 0; padding-top: 10px; }
 .ql-bar { width: 96px; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
 .ql-bar i { display: block; width: 100%; background: var(--c); border: var(--bd); border-bottom: 0; border-radius: var(--r) var(--r) 0 0; transform-origin: bottom; animation: ql-grow-y .8s cubic-bezier(.2,1.2,.4,1) both; box-shadow: var(--sh); }
 .ql-bar b { font-size: 30px; }
