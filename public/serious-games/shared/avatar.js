@@ -34,7 +34,8 @@
     { id: 'pin-comete', name: 'Épinglette Comète', color: '#14181C', glyph: '☄' },
     { id: 'pin-passerelle', name: 'Épinglette Passerelle', color: '#D8C29D', glyph: '⊓' },
     { id: 'pin-neon', name: 'Épinglette Néon', color: '#14111F', glyph: '☾' },
-    { id: 'pin-polaire', name: 'Épinglette Polaire', color: '#0B1030', glyph: '✦' }
+    { id: 'pin-polaire', name: 'Épinglette Polaire', color: '#0B1030', glyph: '✦' },
+    { id: 'pin-nebuleuse', name: 'Épinglette Nébuleuse', color: '#120E2A', glyph: '꩜' }
   ];
   A.PINS = PINS;
 
@@ -509,6 +510,13 @@
         el('circle', { cx: 110, cy: 206, r: 3.2, fill: '#FFE27A', stroke: '#0B1030', strokeWidth: 1 }) +
         el('circle', { cx: 122, cy: 198, r: 2.4, fill: '#FFE27A', stroke: '#0B1030', strokeWidth: 1 }) +
         el('circle', { cx: 134, cy: 208, r: 3.6, fill: '#FFB86B', stroke: '#0B1030', strokeWidth: 1 });
+    } },
+    // PHP pas à pas: a small spiral nebula brooch, cyan on violet, pinned on the chest
+    // (design/validated/serious-games-php-pas-a-pas.md §4) - on the body, nothing on the head.
+    'php-pas-a-pas': { label: 'Broche nébuleuse', svg: function () {
+      return el('circle', { cx: 124, cy: 205, r: 9, fill: '#1E1846', stroke: '#D6A8FF', strokeWidth: 1.4 }) +
+        el('path', sx({ d: 'M124 205 m-1 0 a1 1 0 1 1 2 0 a3 3 0 1 1 -5 1 a5.5 5.5 0 1 1 9 -2', stroke: '#8FE9FF', strokeWidth: 1.3 })) +
+        el('circle', { cx: 131, cy: 199, r: 1.2, fill: '#FFD47A' });
     } },
     // Service de nuit: the night porter's badge, a pink neon crescent on a dark plate
     // (design/validated/serious-games-service-de-nuit.md §4) - on the body, nothing on the head.

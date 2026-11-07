@@ -433,13 +433,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
 - **Serious games** (`/serious-games`) — `SeriousGame*` entities, `src/SeriousGame/`,
-  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; eleven games built,
+  `App\Controller\SeriousGame\*`, spec `design/validated/serious-games.md`; twelve games built,
   **L'Observatoire** (automatismes de 1re), **Les Tablettes de Pompéi** (déclinaisons latines,
   4e-2nde, `design/validated/serious-games-pompei.md`), **Station Abysse** (SVT, 2nde-1re,
   `serious-games-abysse.md`), **The Irregulars** (anglais, 4e-3e, `serious-games-irregulars.md`), **Panique
   à la Neko-Con** (HTML et CSS, BTS SIO 1, `serious-games-neko-con.md`) and **Black-out** (réseau et
   cybersécurité, BTS SIO 2 SISR, `serious-games-blackout.md`) and **Rétro Rush** (bases de données
-  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`) and **Fusion** (le plan de bascule, BTS SIO 2 SISR, `serious-games-fusion.md`) and **Service de nuit** (PHP pour débutants, BTS SIO 1, `serious-games-service-de-nuit.md`) and **SQL pas à pas** (bases de données et SQL pour débutants, BTS SIO 1 et NSI, `serious-games-sql-pas-a-pas.md`), the seven of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
+  et SQL, BTS SIO 2 SLAM, `serious-games-retro-rush.md`) and **Radio-Comète** (scripts Bash, BTS SIO SISR, `serious-games-radio-comete.md`) and **Fusion** (le plan de bascule, BTS SIO 2 SISR, `serious-games-fusion.md`) and **Service de nuit** (PHP pour débutants, BTS SIO 1, `serious-games-service-de-nuit.md`) and **SQL pas à pas** (bases de données et SQL pour débutants, BTS SIO 1 et NSI, `serious-games-sql-pas-a-pas.md`) and **PHP pas à pas** (programmer en PHP depuis zéro, BTS SIO 1, `serious-games-php-pas-a-pas.md`), the eight of the « scénario » mechanic. **In the margin of Formatool**: it shares the sign-in
   and « the teachers of my classes read my results », nothing else - no work, no reminder, no
   mark, no link with the Jeu du campus (`Feature::Game`, unrelated). `Feature::SeriousGames` plus,
   per game, **for adults** one line in the « Serious games » block of Paramètres › Fonctionnalités
@@ -591,6 +591,23 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     that does not run is not delivered. It is the first game **made for the phone** (no `desktop_only`):
     a bar of SQL words to tap above the actions, the words of the notions met only. A chapter's card
     asks for every level and challenge of it.
+    **PHP pas à pas** is the eighth, SQL pas à pas' shape for PHP from scratch, and **built around
+    conditions, loops and arrays** (one and two dimensions: 40 of its 52 levels - the user's decision of
+    2026-11-07). Its programs run in the frame on a **copy** of Service de nuit's `php.js` (keep the two in
+    step), the variables the game prepares declared on line 1 after `<?php` so the student's first line is
+    always line 2 (`engine.js`), each program checked on the visible case and hidden ones whose traps the
+    bench proves (`traps`: a beginner's mistake that passes the visible case and fails a hidden one;
+    printing the visible output by hand must fail too). It adds three things to SQL pas à pas, none on the
+    server: steps answered by touch (« Suivre », the table of a loop's turns or of cases, and « Viser », a box
+    to aim at in an array drawn as nested boxes), the step through (« Pas à pas », the interpreter's trace),
+    and **two reminders ending every level from the sixth** - `fix` steps whose program the game draws from
+    the mastery pools already passed, weighted towards the notions the student got wrong (`miss` in the
+    display state). **There is no timed writing** (the user's decision: timing a program measures the thumb
+    and discourages the ones who must repeat most): a notion ends on a **mastery challenge** - three programs
+    drawn from a pool, no hint, untimed, one measured step whose wrong tries are sent as refused deliveries
+    before the win - and an optional **« lecture éclair »** (eight codes to read in two minutes, by touch),
+    **which is not a ticket**: only its best score is kept, in the display state. The final test is timed
+    (60 min) and passed at 10 of 12.
   - **`/serious-games/stats`** (`StatsController`, `App\SeriousGame\Stats\`): usage, progression,
     analysis of the units, a class's list and the years, for every game - read by **every teacher**
     and the administrators with the names (`SeriousGameVoter::READ_STATS`, the user's decision of

@@ -1,0 +1,101 @@
+# PHP pas à pas — chapter 8, « PHP dans une page ». A ticket is a level or a mastery challenge (« défi de
+# maîtrise »); the steps run in the order written (scenario.free_order). A `fix` step is measured by the game
+# on the visible case and the hidden ones and sends {passed, failed}; an `explain` step - « Comprendre » - is
+# corrected here, each wrong option naming its misconception. `hints` is the number of written hints the game
+# holds for the level's measured steps, the two reminders included: the bench checks it against the package.
+tickets:
+  - id: N51
+    act: 8
+    after: [N50]
+    requester: guide
+    title: "Du PHP dans du HTML"
+    request: "<?php ?> · <?= ?> · une boucle écrit les lignes"
+    course: "PHP dans du HTML"
+    hints: 15
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Un visiteur ouvre la page des salles, fabriquée par une boucle foreach, puis regarde son code source dans le navigateur. Qu'y voit-il ?"
+        options:
+          - { text: "Seulement du HTML : le serveur a exécuté le PHP et n'a envoyé que ce qu'il a affiché, dont un <li> par tour de boucle.", ok: true }
+          - text: "Le code PHP de la page : c'est le navigateur qui l'exécute pour afficher la liste."
+            misconception: c8-php-navigateur
+            reaction: { who: guide, expr: neutre, text: "Le PHP est exécuté sur le serveur, avant l'envoi. Le navigateur ne connaît pas PHP : il reçoit une page HTML déjà fabriquée." }
+          - text: "Le HTML, avec les balises <?php … ?> vidées de leur contenu."
+            misconception: c8-balises-envoyees
+            reaction: { who: guide, expr: neutre, text: "Les balises PHP disparaissent entièrement : à leur place, il ne reste que ce que le PHP a affiché, et rien du tout s'il n'a rien affiché." }
+          - text: "Le HTML écrit hors des balises PHP seulement : les <li> écrits par la boucle n'apparaissent pas dans le code source."
+            misconception: c8-boucle-invisible
+            reaction: { who: guide, expr: neutre, text: "Ce que la boucle écrit fait partie de la page comme le reste : le navigateur reçoit les <li> sans savoir qu'une boucle les a fabriqués." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M23
+    act: 8
+    after: [N51]
+    requester: guide
+    title: "Défi de maîtrise · Pages"
+    request: "3 programmes, sans indice"
+    course: "PHP dans du HTML"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N52
+    act: 8
+    after: [N51]
+    requester: guide
+    title: "Lire l'adresse et afficher sans danger"
+    request: "$_GET · ?? · htmlspecialchars · is_numeric"
+    course: "$_GET et htmlspecialchars"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi faut-il passer par htmlspecialchars tout ce qui vient de l'adresse avant de l'afficher ?"
+        options:
+          - { text: "Parce que n'importe qui peut écrire l'adresse : sans htmlspecialchars, un <script> tapé dedans arriverait comme une vraie balise dans la page, et le navigateur l'exécuterait.", ok: true }
+          - text: "Parce que htmlspecialchars efface du texte les balises et les mots dangereux."
+            misconception: c8-echappe-efface
+            reaction: { who: guide, expr: neutre, text: "Rien n'est effacé : < devient &lt; et > devient &gt;. Le navigateur affiche alors <script> à l'écran, comme du texte, au lieu de l'exécuter." }
+          - text: "Ce n'est pas utile : l'adresse vient des liens de mon site, le visiteur ne peut pas la changer."
+            misconception: c8-adresse-fiable
+            reaction: { who: guide, expr: neutre, text: "Une adresse se tape au clavier : chacun peut écrire fiche.php?nom= suivi de ce qu'il veut, ou envoyer ce lien piégé à quelqu'un d'autre." }
+          - text: "Parce que sans lui, $_GET['nom'] provoque un avertissement quand le paramètre manque."
+            misconception: c8-echappe-isset
+            reaction: { who: guide, expr: neutre, text: "L'absence se règle avec isset() ou ??. htmlspecialchars ne vérifie rien : il transforme le texte qu'on lui donne pour qu'il s'affiche sans danger." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M24
+    act: 8
+    after: [N52]
+    requester: guide
+    title: "Défi de maîtrise · Adresse et sécurité"
+    request: "3 programmes, sans indice"
+    course: "$_GET et htmlspecialchars"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: FIN
+    act: 8
+    after: [N52]
+    requester: guide
+    title: "L'épreuve finale"
+    request: "12 programmes en 60 minutes, de tous les chapitres"
+    course: "Tout le PHP du jeu"
+    final: true
+    steps:
+      - { id: epreuve, kind: fix, prompt: "Épreuve finale" }

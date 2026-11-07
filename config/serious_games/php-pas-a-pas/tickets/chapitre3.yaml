@@ -1,0 +1,377 @@
+# PHP pas à pas — chapter 3, « Répéter »: while, for, counting steps, accumulating, counting, extremes,
+# remainder and jumps, searching, nested loops, then a workshop. Same shape as chapter 1: a ticket is a
+# level or a mastery challenge; a `fix` step is measured by the game, an `explain` step (« Comprendre ») is
+# corrected here. `hints` counts the written hints of the measured steps, two per reminder included.
+tickets:
+  - id: N15
+    act: 3
+    after: [N14]
+    requester: guide
+    title: "Tant que"
+    request: "while · la condition · ce qui la fait changer"
+    course: "La boucle while"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "$i = 10; puis while ($i <= 5) { echo $i; $i++; } n'affiche rien du tout. Pourquoi ?"
+        options:
+          - { text: "Parce que la condition est vérifiée avant chaque tour, le premier compris : 10 <= 5 est faux dès le départ, donc la boucle ne fait aucun tour.", ok: true }
+          - text: "Parce qu'il manque un tour : une boucle while fait toujours au moins un tour, ici il a été sauté par erreur."
+            misconception: c3-while-un-tour
+            reaction: { who: guide, expr: neutre, text: "while regarde la condition avant d'entrer. Si elle est fausse tout de suite, il n'y a aucun tour : c'est normal, et c'est souvent ce qu'on veut (rien à faire, rien d'affiché)." }
+          - text: "Parce que $i++ est placé après echo : il aurait fallu l'écrire avant."
+            misconception: c3-incr-avant
+            reaction: { who: guide, expr: neutre, text: "La place de $i++ change les valeurs affichées pendant les tours. Mais ici, aucun tour n'a lieu : la condition est fausse avant même le premier." }
+          - text: "Parce qu'une boucle doit partir de 0 ou de 1 : avec 10, PHP ne sait pas compter."
+            misconception: c3-depart-impose
+            reaction: { who: guide, expr: neutre, text: "$i peut partir de n'importe quelle valeur. Ce qui décide, c'est la condition : avec $i qui vaut 10, la question « 10 <= 5 ? » reçoit la réponse non." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N16
+    act: 3
+    after: [N15]
+    requester: guide
+    title: "Compter avec for"
+    request: "for · départ ; condition ; pas"
+    course: "La boucle for"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Avec $n = 4, combien d'étoiles affiche for ($i = 0; $i < $n; $i++) { echo \"*\"; } ?"
+        options:
+          - { text: "4 : $i prend les valeurs 0, 1, 2 et 3 ; quand $i vaut 4, la condition 4 < 4 est fausse et la boucle s'arrête. Partir de 0 avec < $n fait exactement $n tours.", ok: true }
+          - text: "5 : de 0 à 4, cela fait cinq valeurs."
+            misconception: c3-inferieur-inclus
+            reaction: { who: guide, expr: neutre, text: "Avec <, la borne n'est pas comprise : le tour où $i vaut 4 n'a pas lieu, puisque 4 < 4 est faux. Il y aurait 5 étoiles avec <=." }
+          - text: "3 : en partant de 0, la boucle perd un tour."
+            misconception: c3-zero-perd-tour
+            reaction: { who: guide, expr: neutre, text: "Partir de 0 ne retire pas de tour : cela décale les valeurs (0, 1, 2, 3 au lieu de 1, 2, 3, 4). Le nombre de tours reste 4." }
+          - text: "Une infinité : $i ne change jamais dans la boucle."
+            misconception: c3-for-pas-oublie
+            reaction: { who: guide, expr: neutre, text: "Dans un for, la troisième partie, $i++, s'exécute à la fin de chaque tour : $i augmente tout seul, sans ligne dans les accolades." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M07
+    act: 3
+    after: [N16]
+    requester: guide
+    title: "Défi de maîtrise · while et for"
+    request: "3 programmes, sans indice"
+    course: "while et for"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N17
+    act: 3
+    after: [N16]
+    requester: guide
+    title: "Compter autrement"
+    request: "à rebours · de 2 en 2 · += et -="
+    course: "Le pas d'une boucle"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "for ($i = 10; $i <= 1; $i--) { echo $i; } devait compter de 10 à 1. Il n'affiche rien. Pourquoi ?"
+        options:
+          - { text: "Parce que la condition est vérifiée avant le premier tour : 10 <= 1 est faux, la boucle s'arrête avant de commencer. Une boucle qui descend continue tant que $i >= 1.", ok: true }
+          - text: "Parce qu'une boucle for compte toujours en montant : pour descendre, il faut un while."
+            misconception: c3-for-monte
+            reaction: { who: guide, expr: neutre, text: "for descend très bien : $i-- retire 1 à chaque tour. Il faut seulement que la condition soit vraie au départ, et qu'elle regarde dans le bon sens : $i >= 1." }
+          - text: "Parce qu'elle tourne sans fin : $i diminue et ne dépasse jamais 1."
+            misconception: c3-descend-infini
+            reaction: { who: guide, expr: neutre, text: "Elle aurait tourné sans fin si elle avait commencé. Mais la condition est lue avant le premier tour, et 10 <= 1 est faux : aucun tour." }
+          - text: "Parce que $i-- est interdit dans la troisième partie d'un for."
+            misconception: c3-for-moins-interdit
+            reaction: { who: guide, expr: neutre, text: "La troisième partie accepte tout ce qui change $i : $i++, $i--, $i += 2, $i -= 5… C'est la condition qui est à l'envers." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N18
+    act: 3
+    after: [N17]
+    requester: guide
+    title: "Accumuler"
+    request: "somme · produit · .= · la variable préparée avant"
+    course: "Accumuler dans une boucle"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi $somme = 0; s'écrit-il avant la boucle, et pas dans la boucle ?"
+        options:
+          - { text: "Avant la boucle, il est exécuté une seule fois : la somme part de 0 puis grandit à chaque tour. Dans la boucle, il serait exécuté à chaque tour et effacerait ce qui a été accumulé.", ok: true }
+          - text: "Pour que PHP sache que $somme est un nombre : il faut le déclarer avant de s'en servir."
+            misconception: c3-declarer-type
+            reaction: { who: guide, expr: neutre, text: "PHP ne demande pas de déclarer le genre d'une variable. Ce qui compte ici, c'est combien de fois la ligne s'exécute : une fois avant la boucle, ou à chaque tour dedans." }
+          - text: "C'est pareil : l'ordre des lignes ne change pas le résultat."
+            misconception: c3-ordre-indifferent
+            reaction: { who: guide, expr: neutre, text: "Dans la boucle, $somme = 0; remet la somme à zéro à chaque tour : à la fin, elle ne contient que le dernier ajout. Ouvre « Pas à pas » pour le voir." }
+          - text: "Parce qu'une boucle n'a pas le droit de créer une variable."
+            misconception: c3-creation-boucle
+            reaction: { who: guide, expr: neutre, text: "Une boucle peut créer des variables. Mais une variable qui accumule doit exister avant le premier tour, et ne plus être remise à zéro ensuite." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M08
+    act: 3
+    after: [N18]
+    requester: guide
+    title: "Défi de maîtrise · compter et accumuler"
+    request: "3 programmes, sans indice"
+    course: "Le pas et l'accumulation"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N19
+    act: 3
+    after: [N18]
+    requester: guide
+    title: "Compter ce qui répond à une condition"
+    request: "$nb = 0 · if dans la boucle · $nb++"
+    course: "Compter avec une boucle"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Dans une boucle, $nb++ est placé dans un if. Que contient $nb à la fin de la boucle ?"
+        options:
+          - { text: "Le nombre de tours où la condition du if était vraie : $nb n'augmente que lorsque PHP entre dans le if.", ok: true }
+          - text: "Le nombre total de tours de la boucle."
+            misconception: c3-compteur-tours
+            reaction: { who: guide, expr: neutre, text: "Ce serait vrai si $nb++ était directement dans la boucle. Dans le if, il ne s'exécute que lorsque la condition est vraie." }
+          - text: "La dernière valeur qui respectait la condition."
+            misconception: c3-compteur-valeur
+            reaction: { who: guide, expr: neutre, text: "$nb++ ajoute 1, il ne recopie pas la valeur. Pour garder la valeur elle-même, il faudrait écrire $derniere = $i;" }
+          - text: "La somme des valeurs qui respectaient la condition."
+            misconception: c3-compteur-somme
+            reaction: { who: guide, expr: neutre, text: "$nb++ ajoute 1 à chaque fois, quelle que soit la valeur. Une somme s'écrirait $total += $i;" }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N20
+    act: 3
+    after: [N19]
+    requester: guide
+    title: "Le plus grand, le plus petit"
+    request: "partir de la première valeur · garder le meilleur"
+    course: "Maximum et minimum"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pour chercher la plus grande valeur, pourquoi $max = 0; avant la boucle est-il une erreur ?"
+        options:
+          - { text: "Si toutes les valeurs sont négatives, aucune ne dépasse 0 : le programme affiche 0, une valeur qui n'est même pas dans la suite. Le maximum part de la première valeur.", ok: true }
+          - text: "Ce n'est pas une erreur : 0 est neutre, comme pour une somme."
+            misconception: c3-max-neutre
+            reaction: { who: guide, expr: neutre, text: "0 est neutre pour une somme (ajouter 0 ne change rien). Pour un maximum, 0 est une valeur comme une autre, qui gagne contre tous les nombres négatifs." }
+          - text: "0 est trop petit : il faut partir d'un très grand nombre, comme 1000."
+            misconception: c3-max-grand
+            reaction: { who: guide, expr: neutre, text: "Pour un maximum, partir très haut est pire : rien ne dépasse 1000, et 1000 reste jusqu'au bout. Partir de la première valeur marche toujours." }
+          - text: "Parce que PHP ne sait pas comparer un nombre avec 0."
+            misconception: c3-comparer-zero
+            reaction: { who: guide, expr: neutre, text: "PHP compare très bien avec 0. Le souci est le sens : 0 n'est pas une des valeurs de la suite, et il peut les battre toutes." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M09
+    act: 3
+    after: [N20]
+    requester: guide
+    title: "Défi de maîtrise · compter et comparer"
+    request: "3 programmes, sans indice"
+    course: "Compter, maximum et minimum"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N21
+    act: 3
+    after: [N20]
+    requester: guide
+    title: "Le reste et les sauts"
+    request: "% · pair, impair, multiple · continue · break"
+    course: "Le reste, continue et break"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Dans une boucle, quelle est la différence entre continue et break ?"
+        options:
+          - { text: "continue saute la fin du tour en cours et passe au tour suivant ; break quitte la boucle pour de bon, et le programme continue après l'accolade.", ok: true }
+          - text: "Aucune : les deux arrêtent la boucle."
+            misconception: c3-continue-arrete
+            reaction: { who: guide, expr: neutre, text: "Seul break arrête la boucle. continue abandonne seulement le tour en cours : la boucle reprend au tour suivant." }
+          - text: "continue fait recommencer la boucle depuis son premier tour."
+            misconception: c3-continue-recommence
+            reaction: { who: guide, expr: neutre, text: "continue ne remet rien à zéro : $i garde sa valeur, le pas s'applique, et la boucle passe au tour suivant." }
+          - text: "break saute seulement le tour en cours, continue arrête tout."
+            misconception: c3-break-continue-inverses
+            reaction: { who: guide, expr: neutre, text: "C'est l'inverse : break casse la boucle (on en sort), continue continue avec le tour suivant." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N22
+    act: 3
+    after: [N21]
+    requester: guide
+    title: "Chercher et s'arrêter"
+    request: "$trouve = false · break · conclure après la boucle"
+    course: "Chercher avec une boucle"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pour dire « pas trouvé », pourquoi l'affiche-t-on après la boucle, et pas dans un else à l'intérieur ?"
+        options:
+          - { text: "Parce qu'on ne peut conclure « pas trouvé » qu'après avoir tout regardé : un else dans la boucle le dirait à chaque tour où la valeur ne correspond pas, même si elle arrive plus loin.", ok: true }
+          - text: "Parce qu'un else est interdit à l'intérieur d'une boucle."
+            misconception: c3-else-interdit
+            reaction: { who: guide, expr: neutre, text: "Un else est permis dans une boucle. Mais il s'exécute à chaque tour où la condition est fausse : il ne peut pas savoir si la valeur viendra plus tard." }
+          - text: "C'est pareil : le else d'une boucle ne s'exécute qu'une fois."
+            misconception: c3-else-une-fois
+            reaction: { who: guide, expr: neutre, text: "Tout ce qui est dans la boucle s'exécute à chaque tour, le else compris. Il afficherait « pas trouvé » plusieurs fois." }
+          - text: "Parce qu'après la boucle, PHP a oublié $trouve : il faut décider avant."
+            misconception: c3-oubli-apres
+            reaction: { who: guide, expr: neutre, text: "Les variables gardent leur valeur après la boucle : c'est justement pour ça qu'on prépare $trouve avant, et qu'on le lit après." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N23
+    act: 3
+    after: [N22]
+    requester: guide
+    title: "Boucles imbriquées"
+    request: "une boucle dans une boucle · lignes et colonnes"
+    course: "Les boucles imbriquées"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "for ($i = 1; $i <= 3; $i++) { for ($j = 1; $j <= 4; $j++) { echo \"*\"; } } — combien d'étoiles, et pourquoi ?"
+        options:
+          - { text: "12 : à chaque tour de la boucle extérieure, la boucle intérieure fait ses 4 tours en entier. 3 tours fois 4 tours.", ok: true }
+          - text: "7 : 3 tours, puis 4 tours."
+            misconception: c3-imbrique-addition
+            reaction: { who: guide, expr: neutre, text: "Les deux boucles ne se suivent pas, l'une est dans l'autre : la boucle intérieure recommence en entier à chaque tour de l'extérieure. Les tours se multiplient." }
+          - text: "4 : la boucle intérieure ne tourne qu'au premier tour, ensuite $j vaut déjà 5."
+            misconception: c3-imbrique-j-garde
+            reaction: { who: guide, expr: neutre, text: "Le départ $j = 1 fait partie du for intérieur : il est exécuté de nouveau à chaque fois que PHP arrive sur cette boucle. Ce serait vrai avec $j = 1; écrit avant la première boucle." }
+          - text: "3 : seule la boucle extérieure compte les tours."
+            misconception: c3-imbrique-exterieure
+            reaction: { who: guide, expr: neutre, text: "Le echo est dans la boucle intérieure : il s'exécute à chacun de ses tours, et elle en fait 4 par tour de la boucle extérieure." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N24
+    act: 3
+    after: [N23]
+    requester: guide
+    title: "Atelier : répéter"
+    request: "5 boucles à réparer · 3 programmes"
+    course: "Atelier sur les boucles"
+    hints: 22
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Ton programme réussit le cas visible, mais échoue sur le cas caché « $n = 0 (aucun tour) ». Que faut-il regarder d'abord ?"
+        options:
+          - { text: "Ce qui se passe quand la boucle ne tourne pas du tout : ce qui est préparé avant elle (la somme, le compteur, le drapeau) doit déjà donner la bonne réponse.", ok: true }
+          - text: "Rien : un cas sans aucun tour n'a pas de sens, le jeu se trompe."
+            misconception: c3-zero-tour-absurde
+            reaction: { who: guide, expr: neutre, text: "Zéro tour arrive tout le temps : une classe sans absent, une salle vide, une recherche sur rien. Un programme juste affiche alors la bonne réponse : 0, « aucun », une ligne vide…" }
+          - text: "Il faut toujours ajouter if ($n == 0) au début, avec une réponse à part."
+            misconception: c3-cas-particulier
+            reaction: { who: guide, expr: neutre, text: "Parfois utile, mais le plus souvent une boucle bien préparée gère 0 toute seule : une somme qui part de 0 affiche 0, un produit qui part de 1 affiche 1." }
+          - text: "Il faut faire partir la boucle de 0 au lieu de 1."
+            misconception: c3-depart-zero
+            reaction: { who: guide, expr: neutre, text: "Changer le départ décale les valeurs et ajoute souvent un tour de trop. Regarde plutôt ce que valent tes variables si aucun tour n'a lieu." }
+      - { id: reparer1, kind: fix, prompt: "Réparer" }
+      - { id: reparer2, kind: fix, prompt: "Réparer" }
+      - { id: reparer3, kind: fix, prompt: "Réparer" }
+      - { id: reparer4, kind: fix, prompt: "Réparer" }
+      - { id: reparer5, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M10
+    act: 3
+    after: [N24]
+    requester: guide
+    title: "Défi de maîtrise · boucles et conditions"
+    request: "3 programmes, sans indice"
+    course: "Boucles et conditions"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }

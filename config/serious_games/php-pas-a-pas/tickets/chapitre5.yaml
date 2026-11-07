@@ -1,0 +1,387 @@
+# PHP pas à pas — chapter 5, « Tableaux à deux dimensions ». A ticket is a level or a mastery challenge
+# (« défi de maîtrise »); the steps run in the order written (scenario.free_order). A `fix` step is measured
+# by the game on the visible case and the hidden ones and sends {passed, failed}; an `explain` step -
+# « Comprendre » - is corrected here, each wrong option naming its misconception. `hints` is the number of
+# written hints the game holds for the level's measured steps: the bench checks it against the package.
+tickets:
+  - id: N35
+    act: 5
+    after: [N34]
+    requester: guide
+    title: "Une grille"
+    request: "$g[$ligne][$colonne] · count($g) · count($g[0])"
+    course: "Une grille"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Dans $places[1][3], que désigne le premier crochet, [1] ?"
+        options:
+          - { text: "La ligne : $places[1] est toute la ligne 1 (une liste), et [3] choisit ensuite la case 3 dans cette ligne.", ok: true }
+          - text: "La colonne, comme le x d'un point en mathématiques : on va d'abord vers la droite, puis on descend."
+            misconception: c5-colonne-dabord
+            reaction: { who: guide, expr: neutre, text: "En PHP, le premier crochet choisit une case de la grande liste, et cette case est une ligne entière. Le deuxième crochet choisit la case dans cette ligne : la colonne. Ligne d'abord, colonne ensuite." }
+          - text: "La première ligne de la grille."
+            misconception: c5-index-un
+            reaction: { who: guide, expr: neutre, text: "Les numéros commencent à 0, pour les lignes comme pour les colonnes : [0] est la première ligne, [1] la deuxième." }
+          - text: "Une case à part : $places[1][3] lit deux cases, la case 1 et la case 3."
+            misconception: c5-crochets-deux-cases
+            reaction: { who: guide, expr: neutre, text: "Les deux crochets se lisent l'un après l'autre : [1] donne une ligne, puis [3] choisit une seule case dans cette ligne. Le résultat est une seule valeur." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N36
+    act: 5
+    after: [N35]
+    requester: guide
+    title: "Parcourir une grille"
+    request: "for dans for · foreach dans foreach · total par ligne"
+    course: "Parcourir une grille"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Une grille a 2 lignes et 5 colonnes. On la parcourt avec deux boucles for imbriquées. Combien de fois la ligne qui est dans la boucle intérieure s'exécute-t-elle ?"
+        options:
+          - { text: "10 fois : la boucle intérieure fait ses 5 tours en entier pour chacune des 2 lignes, soit 2 × 5.", ok: true }
+          - text: "7 fois : 2 tours pour les lignes plus 5 tours pour les colonnes."
+            misconception: c5-imbrique-addition
+            reaction: { who: guide, expr: neutre, text: "Les deux boucles ne se suivent pas, elles sont l'une dans l'autre : à chaque tour de la boucle des lignes, la boucle des colonnes recommence et fait ses 5 tours. 5 tours, deux fois : 10." }
+          - text: "5 fois : la boucle intérieure ne fait ses tours qu'une seule fois, au premier passage."
+            misconception: c5-imbrique-une-fois
+            reaction: { who: guide, expr: neutre, text: "À chaque nouveau tour de la boucle extérieure, la boucle intérieure repart de zéro ($c = 0) et refait tous ses tours. Ouvre « Pas à pas » pour voir $c repartir." }
+          - text: "2 fois : les deux compteurs $l et $c avancent ensemble, et on s'arrête à la fin des lignes."
+            misconception: c5-imbrique-parallele
+            reaction: { who: guide, expr: neutre, text: "$l ne bouge pas pendant que $c fait tous ses tours. C'est seulement quand la boucle intérieure est finie que $l passe à la ligne suivante." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M15
+    act: 5
+    after: [N36]
+    requester: guide
+    title: "Défi de maîtrise · Grilles"
+    request: "3 programmes, sans indice"
+    course: "Grilles"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N37
+    act: 5
+    after: [N36]
+    requester: guide
+    title: "Une liste d'enregistrements"
+    request: "$eleves[1]['nom'] · foreach ($eleves as $e) · $e['note']"
+    course: "Une liste d'enregistrements"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "$eleves est une liste de fiches (nom, note). Pourquoi echo $eleves['note']; affiche-t-il un avertissement au lieu des notes ?"
+        options:
+          - { text: "Parce que la liste n'a que des cases numérotées 0, 1, 2… : la clé 'note' est dans chaque fiche. Il faut d'abord choisir un élève : $eleves[0]['note'].", ok: true }
+          - text: "Parce qu'il faudrait écrire $eleves[note], sans guillemets."
+            misconception: c5-cle-sans-guillemets
+            reaction: { who: guide, expr: neutre, text: "Sans guillemets, PHP cherche une constante « note » et s'arrête sur une erreur. Une clé s'écrit toujours entre guillemets ; le vrai problème est qu'on n'a pas choisi d'élève." }
+          - text: "Parce que echo ne sait pas afficher plusieurs notes à la fois : il faudrait les mettre entre parenthèses."
+            misconception: c5-cle-sur-liste
+            reaction: { who: guide, expr: neutre, text: "$eleves['note'] ne désigne pas « toutes les notes » : PHP cherche une case nommée note dans la liste, et elle n'existe pas. Pour toutes les notes, on parcourt la liste avec foreach et on lit $e['note'] à chaque tour." }
+          - text: "Parce que les fiches sont rangées dans l'ordre inverse : la note est avant le nom."
+            misconception: c5-ordre-des-cles
+            reaction: { who: guide, expr: neutre, text: "Dans une fiche, l'ordre des clés ne change rien : $e['note'] trouve la note où qu'elle soit. Ce qui manque, c'est le numéro de l'élève : $eleves[0]['note']." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N38
+    act: 5
+    after: [N37]
+    requester: guide
+    title: "Filtrer et totaliser des enregistrements"
+    request: "if ($s['salle'] == …) · total d'une case · moyenne"
+    course: "Filtrer et totaliser des enregistrements"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pour la moyenne des notes des élèves sans absence, pourquoi divise-t-on le total par le compteur $n, et pas par count($eleves) ?"
+        options:
+          - { text: "Parce que count($eleves) compte toute la classe, y compris les élèves qu'on n'a pas gardés : seuls les $n élèves additionnés doivent compter.", ok: true }
+          - text: "Parce que count ne marche pas sur une liste de fiches."
+            misconception: c5-count-fiches
+            reaction: { who: guide, expr: neutre, text: "count($eleves) marche très bien : il donne le nombre de fiches, donc d'élèves. Mais tous les élèves n'ont pas été additionnés : on divise par ceux qu'on a gardés." }
+          - text: "Ça ne change rien : les deux donnent le même résultat."
+            misconception: c5-moyenne-diviseur-indifferent
+            reaction: { who: guide, expr: neutre, text: "Ce n'est vrai que si tous les élèves sont gardés. Avec 4 élèves dont 2 sans absence, diviser par 4 compte deux fois zéro : la moyenne est deux fois trop basse." }
+          - text: "Parce que count($eleves) compte les cases de chaque fiche (nom, note, absences)."
+            misconception: c5-count-champs
+            reaction: { who: guide, expr: neutre, text: "count($eleves) compte les cases de la liste, c'est-à-dire les fiches. Les cases d'une fiche, ce serait count($eleves[0]). Le problème est ailleurs : on n'a pas additionné tous les élèves." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N39
+    act: 5
+    after: [N38]
+    requester: guide
+    title: "Le meilleur, le pire"
+    request: "garder la fiche entière · ou son indice · ex æquo"
+    course: "Le meilleur, le pire"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pour trouver l'élève qui a la meilleure note, pourquoi garder $meilleur = $e (toute la fiche) plutôt que $max = $e['note'] ?"
+        options:
+          - { text: "Parce qu'on veut savoir qui c'est : la note seule ne dit pas à qui elle appartient, alors que la fiche garde le nom et la note ensemble.", ok: true }
+          - text: "Ce n'est pas utile : avec la note, on retrouve l'élève en écrivant $eleves[$max]."
+            misconception: c5-max-note-indice
+            reaction: { who: guide, expr: neutre, text: "$eleves[16] chercherait la fiche numéro 16 : une note n'est pas un numéro de case. Il faut garder soit la fiche, soit son numéro ($iMax), jamais seulement la note." }
+          - text: "Parce que $max = $e['note'] modifierait la note dans la fiche de l'élève."
+            misconception: c5-affectation-modifie-source
+            reaction: { who: guide, expr: neutre, text: "$max = $e['note'] copie la note dans $max ; la fiche n'est pas touchée. Le problème est qu'après la boucle on a la note, mais plus le nom." }
+          - text: "Parce que PHP refuse de comparer deux notes si on ne garde pas la fiche."
+            misconception: c5-comparer-fiches
+            reaction: { who: guide, expr: neutre, text: "On compare toujours des notes, des nombres : $e['note'] > $meilleur['note']. Garder la fiche sert seulement à ne pas perdre le nom." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M16
+    act: 5
+    after: [N39]
+    requester: guide
+    title: "Défi de maîtrise · Enregistrements"
+    request: "3 programmes, sans indice"
+    course: "Enregistrements"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N40
+    act: 5
+    after: [N39]
+    requester: guide
+    title: "Un tableau dans une clé"
+    request: "$classe[1]['notes'][2] · count($e['notes']) · moyenne de chaque élève"
+    course: "Un tableau dans une clé"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Chaque fiche de $eleves a un nom et une liste de notes. Que compte count($eleves[0]['notes']) ?"
+        options:
+          - { text: "Le nombre de notes du premier élève : $eleves[0] est sa fiche, ['notes'] sa liste de notes, et count compte les cases de cette liste.", ok: true }
+          - text: "Le nombre d'élèves de la classe."
+            misconception: c5-count-eleves
+            reaction: { who: guide, expr: neutre, text: "Le nombre d'élèves, ce serait count($eleves). Ici, on est entré dans la fiche 0, puis dans sa liste de notes : count compte ce qu'on lui donne, la liste des notes." }
+          - text: "2 : les deux cases de la fiche, le nom et les notes."
+            misconception: c5-count-fiche-entiere
+            reaction: { who: guide, expr: neutre, text: "Les cases de la fiche, ce serait count($eleves[0]). Le crochet ['notes'] entre un niveau plus loin, dans la liste des notes." }
+          - text: "La somme des notes du premier élève."
+            misconception: c5-count-somme
+            reaction: { who: guide, expr: neutre, text: "count compte les cases, il n'additionne pas les valeurs. La somme, c'est array_sum($eleves[0]['notes'])." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N41
+    act: 5
+    after: [N40]
+    requester: guide
+    title: "Regrouper"
+    request: "$parSalle[$s['salle']][] = $s['nom'] · compter par groupe"
+    course: "Regrouper"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Que fait $parSalle[$s['salle']][] = $s['nom']; quand la salle du spécimen n'existe pas encore dans $parSalle ?"
+        options:
+          - { text: "PHP crée la case de cette salle, avec une liste vide, puis ajoute le nom au bout de cette liste : c'est ainsi qu'un groupe apparaît.", ok: true }
+          - text: "PHP affiche un avertissement : il faut d'abord créer chaque salle à la main, avec une liste vide."
+            misconception: c5-groupe-creer-main
+            reaction: { who: guide, expr: neutre, text: "Ajouter avec [] crée la liste si elle n'existe pas : aucun avertissement. Et créer les salles à la main oblige à savoir d'avance lesquelles existent, ce qu'on ignore." }
+          - text: "Le nom remplace tout ce que contenait $parSalle."
+            misconception: c5-groupe-ecrase
+            reaction: { who: guide, expr: neutre, text: "On n'écrit que dans la case de cette salle, et [] ajoute au bout de sa liste : les autres salles et les noms déjà rangés restent." }
+          - text: "Le nom est rangé dans la case 0 de $parSalle : la salle ne sert à rien."
+            misconception: c5-groupe-numero
+            reaction: { who: guide, expr: neutre, text: "Le premier crochet, $s['salle'], est la clé : 'R1', 'R2'… C'est le second, [], qui ajoute au bout de la liste de cette salle." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M17
+    act: 5
+    after: [N41]
+    requester: guide
+    title: "Défi de maîtrise · Tableaux dans des tableaux"
+    request: "3 programmes, sans indice"
+    course: "Tableaux dans des tableaux"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N42
+    act: 5
+    after: [N41]
+    requester: guide
+    title: "Construire un tableau à deux dimensions"
+    request: "remplir une grille · $eleves[] = ['nom' => …, 'note' => …]"
+    course: "Construire un tableau à deux dimensions"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pour construire une grille, pourquoi écrire $ligne = []; au début de la boucle des lignes, et pas une seule fois avant les deux boucles ?"
+        options:
+          - { text: "Parce que chaque ligne doit commencer vide : sinon la deuxième ligne garde les cases de la première et grandit à chaque tour.", ok: true }
+          - text: "Ça ne change rien : $g[] = $ligne; vide $ligne après l'avoir rangée dans la grille."
+            misconception: c5-reset-inutile
+            reaction: { who: guide, expr: neutre, text: "$g[] = $ligne range une copie de la ligne dans la grille ; $ligne, elle, garde ses cases. Sans $ligne = [], la ligne suivante part avec les cases de la précédente." }
+          - text: "Pour effacer la grille déjà construite et repartir de zéro à chaque ligne."
+            misconception: c5-reset-efface-grille
+            reaction: { who: guide, expr: neutre, text: "$ligne = [] ne touche que $ligne : les lignes déjà rangées dans $g restent. C'est la ligne en cours qu'on remet à vide." }
+          - text: "Parce que PHP refuse [] sur une variable qui n'a pas été créée juste avant."
+            misconception: c5-reset-syntaxe
+            reaction: { who: guide, expr: neutre, text: "$ligne[] = … crée la liste si elle n'existe pas. Le vrai rôle de $ligne = [] est de repartir d'une ligne vide à chaque tour." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N43
+    act: 5
+    after: [N42]
+    requester: guide
+    title: "Trier"
+    request: "sort · rsort · asort · arsort · ksort · usort et <=>"
+    course: "Trier"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Après la ligne $notes = sort($notes);, pourquoi $notes ne contient-il plus les notes ?"
+        options:
+          - { text: "Parce que sort trie le tableau lui-même et renvoie seulement true : la ligne range true dans $notes, à la place des notes triées.", ok: true }
+          - text: "Parce qu'il fallait ranger le résultat dans une autre variable : $tri = sort($notes);"
+            misconception: c5-sort-renvoie
+            reaction: { who: guide, expr: neutre, text: "$tri vaudrait aussi true : sort ne renvoie jamais le tableau trié. On écrit sort($notes); seul, puis on utilise $notes, qui est trié." }
+          - text: "Parce que sort vide le tableau quand il est déjà dans l'ordre."
+            misconception: c5-sort-vide
+            reaction: { who: guide, expr: neutre, text: "sort ne vide jamais un tableau : il range ses cases. Ce qui efface les notes, c'est $notes = …, qui remplace le tableau par ce que sort renvoie : true." }
+          - text: "Parce que sort ne marche que sur les tableaux associatifs."
+            misconception: c5-sort-associatif
+            reaction: { who: guide, expr: neutre, text: "sort trie une liste de valeurs ; c'est même sur un tableau associatif qu'il pose problème, car il perd les clés (asort et arsort les gardent)." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N44
+    act: 5
+    after: [N43]
+    requester: guide
+    title: "Atelier : données"
+    request: "cinq réparations · trois programmes qui mêlent tout"
+    course: "Atelier : tableaux à deux dimensions"
+    hints: 22
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "echo $eleves[1]; affiche « Array » et un avertissement. Qu'est-ce que cela veut dire ?"
+        options:
+          - { text: "Que $eleves[1] est une fiche entière, donc un tableau, et qu'echo ne sait afficher que du texte : il manque un crochet pour choisir une case, comme $eleves[1]['nom'].", ok: true }
+          - text: "Que la liste $eleves est vide."
+            misconception: c5-array-vide
+            reaction: { who: guide, expr: neutre, text: "Une case vide ou absente donnerait « Undefined array key ». « Array » veut dire au contraire qu'il y a quelque chose, et que c'est un tableau." }
+          - text: "Que l'élève numéro 1 s'appelle Array."
+            misconception: c5-array-nom
+            reaction: { who: guide, expr: neutre, text: "« Array » est ce que PHP écrit quand on lui demande d'afficher un tableau comme du texte. Le nom est dans la fiche, à la case ['nom']." }
+          - text: "Qu'il faut écrire $eleves[1] entre guillemets pour l'afficher."
+            misconception: c5-array-guillemets
+            reaction: { who: guide, expr: neutre, text: "Entre guillemets, PHP afficherait encore « Array ». Ce n'est pas l'écriture qui manque, c'est un crochet : $eleves[1]['nom']." }
+      - { id: reparer1, kind: fix, prompt: "Réparer" }
+      - { id: reparer2, kind: fix, prompt: "Réparer" }
+      - { id: reparer3, kind: fix, prompt: "Réparer" }
+      - { id: reparer4, kind: fix, prompt: "Réparer" }
+      - { id: reparer5, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M18
+    act: 5
+    after: [N44]
+    requester: guide
+    title: "Défi de maîtrise · Construire et trier"
+    request: "3 programmes, sans indice"
+    course: "Construire et trier"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
