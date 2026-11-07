@@ -14,6 +14,7 @@ use App\Entity\User;
 use App\Enum\LiveSessionStatus;
 use App\Enum\QuestionTimeMode;
 use App\Enum\QuestionType;
+use App\Service\QuizLive\LiveResponse;
 use App\Service\QuizLiveSessionService;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -193,6 +194,69 @@ class QuizLivePublicTest extends FunctionalTestCase
         self::assertSelectorTextContains('h1', 'retiré', 'an account taken out is not let back in');
     }
 
+    public function testTheResultsReadEachQuestionsRateAndEachVoteWithoutAName(): void
+    {
+        $vote = new QuizQuestion($this->quiz);
+        $vote->setType(QuestionType::Vote);
+        $vote->setLabel('On refait un concours ?');
+        $vote->setTimeMode(QuestionTimeMode::Quiz);
+        $vote->setOrderIndex(3);
+        foreach (['Oui', 'Non'] as $index => $text) {
+            $answer = new QuizAnswer($vote);
+            $answer->setLabel($text);
+            $answer->setIsCorrect(false);
+            $answer->setOrderIndex($index);
+            $vote->addAnswer($answer);
+        }
+        $this->quiz->addQuestion($vote);
+        $this->em->flush();
+
+        $service = $this->service();
+        $session = $service->createSession([$this->quiz], $this->program, $this->teacher, 20, null, true);
+        $service->joinAccount($session, $this->student);
+        $service->joinAccount($session, $this->outsider);
+        $service->start($session, $this->teacher);
+
+        // 1. The student is right, the outsider says nothing. 2. Both are right. 3. The student votes « Oui », the outsider nothing.
+        $this->play($session, [$this->student->getId() => 'right']);
+        $this->play($session, [$this->student->getId() => 'right', $this->outsider->getId() => 'right']);
+        $this->play($session, [$this->student->getId() => 'first']);
+        self::assertSame(LiveSessionStatus::Finished, $this->live($session)->getStatus());
+
+        $this->client->loginUser($this->teacher);
+        $crawler = $this->client->request('GET', \sprintf('/quiz-live/%d/results?show=questions', $session->getId()));
+        self::assertResponseIsSuccessful();
+        $rows = $crawler->filter('.cm-live-qrate');
+        self::assertCount(2, $rows, 'a vote has no rate');
+        self::assertStringContainsString('Quel protocole', $rows->eq(0)->text(), 'the weakest question first');
+        self::assertSame('50 %', $rows->eq(0)->filter('.cm-live-qrate__value')->text(), 'a silence is a failure');
+        self::assertStringContainsString('1 sans réponse', $rows->eq(0)->text());
+        self::assertSame('100 %', $rows->eq(1)->filter('.cm-live-qrate__value')->text());
+        self::assertSelectorTextNotContains('.cm-live-qrates', 'Public.student', 'no name in the analysis');
+
+        $crawler = $this->client->request('GET', \sprintf('/quiz-live/%d/results?show=questions&sort=number', $session->getId()));
+        self::assertSame('100 %', $crawler->filter('.cm-live-qrate__value')->eq(1)->text());
+
+        $crawler = $this->client->request('GET', \sprintf('/quiz-live/%d/results?show=polls', $session->getId()));
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.cm-tabs', 'Sondages');
+        $columns = $crawler->filter('.cm-live-hist__col');
+        self::assertSame(['Oui', 'Non', 'Sans réponse'], $columns->filter('.cm-live-hist__label')->each(static fn ($label): string => $label->text()));
+        self::assertSame(['Oui : 1 (50 %)', 'Non : 0 (0 %)', 'Sans réponse : 1 (50 %)'], $columns->each(static fn ($column): string => (string) $column->attr('title')), 'out of the players present, silences included');
+    }
+
+    public function testAContestWithoutAVoteHasNoPollsTab(): void
+    {
+        $session = $this->service()->createSession([$this->quiz], null, $this->teacher, 20);
+
+        $this->client->loginUser($this->teacher);
+        $this->client->request('GET', \sprintf('/quiz-live/%d/results?show=polls', $session->getId()));
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.cm-tabs', 'Analyse par question');
+        self::assertSelectorTextNotContains('.cm-tabs', 'Sondages');
+        self::assertSelectorExists('table', 'an unknown tab falls back on everybody');
+    }
+
     public function testSomebodyElsesContestDoesNotExist(): void
     {
         $session = $this->service()->createSession([$this->quiz], null, $this->teacher, 20);
@@ -200,6 +264,30 @@ class QuizLivePublicTest extends FunctionalTestCase
         $this->client->loginUser($this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'public.colleague'));
         $this->client->request('GET', \sprintf('/quiz-live/%d/results', $session->getId()));
         self::assertResponseStatusCodeSame(404);
+    }
+
+    /**
+     * Plays the next question: opens it, sends each named player's answer (« right », or « first »
+     * for the first proposition), then closes it if the room's silence left it open.
+     *
+     * @param array<int, 'right'|'first'> $picks by user id
+     */
+    private function play(QuizLiveSession $session, array $picks): void
+    {
+        $service = $this->service();
+        while (LiveSessionStatus::Question !== $this->live($session)->getStatus()) {
+            $service->advance($this->live($session), $this->teacher);
+        }
+        foreach ($picks as $userId => $pick) {
+            $user = $this->em->find(User::class, $userId);
+            self::assertInstanceOf(User::class, $user);
+            $id = 'right' === $pick ? $this->rightAnswerId($session) : (int) $this->live($session)->getCurrentQuestion()?->getAnswers()->first()?->getId();
+            $service->submitAnswer($this->live($session), $user, new LiveResponse([$id]));
+        }
+        if (LiveSessionStatus::Question === $this->live($session)->getStatus()) {
+            $service->advance($this->live($session), $this->teacher);
+        }
+        $service->advance($this->live($session), $this->teacher, LiveSessionStatus::Results);
     }
 
     private function guest(string $code, string $nickname): void

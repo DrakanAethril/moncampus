@@ -25,6 +25,7 @@ use App\Service\LiveSessionStateException;
 use App\Service\LiveTemplateNotEligibleException;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\QuizLive\LiveQuestionAnalysis;
 use App\Service\QuizLive\LiveResultSheet;
 use App\Service\QuizLive\LiveScreenLabels;
 use App\Service\QuizLive\LiveThemeCatalog;
@@ -350,19 +351,26 @@ class HostController extends AbstractController
 
     /**
      * Every player's answers, account or guest, question by question - what a contest keeps
-     * (LiveResultSheet).
+     * (LiveResultSheet) -, then the questions' success rates and the votes' results
+     * (LiveQuestionAnalysis), the « Sondages » tab only when the contest carried a vote.
      */
     #[Route(path: '/quiz-live/{id}/results', name: 'app_quiz_live_results', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function results(int $id, Request $request, QuizLiveSessionRepository $sessionRepository, LiveResultSheet $sheet, LiveThemeCatalog $themes): Response
+    public function results(int $id, Request $request, QuizLiveSessionRepository $sessionRepository, LiveResultSheet $sheet, LiveQuestionAnalysis $analysis, LiveThemeCatalog $themes): Response
     {
         $session = $this->managed($id, $sessionRepository);
+        $sort = QueryValue::trimmed($request, 'sort');
+        $sort = \in_array($sort, LiveQuestionAnalysis::SORTS, true) ? $sort : 'rate_asc';
+        $analysed = $analysis->of($session, $sort);
+        $tabs = [] === $analysed['polls'] ? ['accounts', 'guests', 'questions'] : ['accounts', 'guests', 'questions', 'polls'];
         $tab = QueryValue::trimmed($request, 'show');
 
         return $this->render('quiz_live/results.html.twig', [
             'session' => $session,
             'theme' => $themes->resolve($session->getTheme()),
             'sheet' => $sheet->of($session),
-            'tab' => \in_array($tab, ['accounts', 'guests'], true) ? $tab : 'all',
+            'analysis' => $analysed,
+            'sort' => $sort,
+            'tab' => \in_array($tab, $tabs, true) ? $tab : 'all',
         ]);
     }
 

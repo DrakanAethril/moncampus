@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\QuizInstanceQuestion;
 use App\Entity\QuizLiveAnswer;
 use App\Entity\QuizLiveParticipant;
+use App\Entity\QuizLiveSession;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -40,6 +41,18 @@ class QuizLiveAnswerRepository extends ServiceEntityRepository
             ->join('a.participant', 'p')
             ->where('a.instanceQuestion = :question')
             ->setParameter('question', $question)
+            ->getQuery()
+            ->getResult();
+    }
+
+    // The whole contest at once, for the analysis of a finished one (LiveQuestionAnalysis).
+    /** @return list<QuizLiveAnswer> */
+    public function findForSession(QuizLiveSession $session): array
+    {
+        return $this->createQueryBuilder('a')
+            ->join('a.participant', 'p')
+            ->where('p.session = :session')
+            ->setParameter('session', $session)
             ->getQuery()
             ->getResult();
     }
