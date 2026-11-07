@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.07.3'
+      date: '2026-11-07'
+      summary: "Service de nuit, le jeu d'initiation au PHP, est refait pour des débutants complets : une notion par nuit, et le carnet ouvert dès le départ. Les résultats d'un concours en direct montrent la réussite question par question et les réponses aux sondages."
+      entries:
+          - type: modification
+            title: "Service de nuit : refait pour des débutants complets, en vingt-huit nuits d'une notion chacune"
+            detail: "Le carnet est ouvert dès le départ et son aide-mémoire reste à côté du code, les valeurs fournies par l'hôtel sont écrites en haut de chaque fichier, et chaque nuit montre ce que la page affiche et ce qu'elle doit afficher ; l'histoire d'Augustin devient un épilogue facultatif."
+          - type: nouveaute
+            title: "Concours en direct : l'analyse par question et les résultats des sondages"
+            detail: "Les résultats d'un concours donnent le taux de réussite de chaque question, sans nom, et un histogramme pour chaque question de vote."
+          - type: fix
+            title: "Concours en direct public : corrections après la première partie avec des invités"
+            detail: "Pseudos trop longs, écrans du téléphone qui ne défilaient pas, curseur qui restait grisé, avatars altérés par le mode sombre forcé de certains téléphones."
     - version: '2026.11.07.2'
       date: '2026-11-07'
       summary: "Un concours en direct peut désormais être ouvert à tous : on le rejoint en flashant un QR code, avec son compte ou comme invité, et il se pare de l'un des dix thèmes proposés. beaup-app prend l'emblème de l'Institution pour icône."
