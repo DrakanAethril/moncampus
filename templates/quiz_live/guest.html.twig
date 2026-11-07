@@ -1,0 +1,17 @@
+{# The guest page of a public live contest: what its QR code opens for a visitor without an account. #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ session.quizInstance.name }} - {{ 'quizLiveGuestTitle'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {{ include('quiz_live/_stylesheets.html.twig', {slugs: [theme.slug]}) }}
+{% endblock %}
+
+{% block body %}
+    <div class="ql ql-phone" data-live-theme="{{ theme.slug }}">
+        <div class="ql-surface">
+            {{ include('quiz_live/_guest_form.html.twig') }}
+        </div>
+    </div>
+{% endblock %}

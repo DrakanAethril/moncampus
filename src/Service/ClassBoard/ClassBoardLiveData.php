@@ -64,8 +64,8 @@ class ClassBoardLiveData
                     'participants' => $session->getParticipants()->count(),
                     'hostedByOwner' => $host === $owner,
                     'hostName' => $host?->getDisplayName() ?? $host?->getUsername(),
-                    'joinUrl' => $this->urlGenerator->generate('app_program_quiz_live_join', ['id' => $program->getId(), 'sessionId' => $session->getId()], UrlGeneratorInterface::ABSOLUTE_URL),
-                    'projectorUrl' => $host === $owner ? $this->urlGenerator->generate('app_program_quiz_live_projector', ['id' => $program->getId(), 'sessionId' => $session->getId()]) : null,
+                    'joinUrl' => $this->urlGenerator->generate('app_quiz_live_entry', ['code' => $session->getRoomCode()], UrlGeneratorInterface::ABSOLUTE_URL),
+                    'projectorUrl' => $host === $owner ? $this->urlGenerator->generate('app_quiz_live_projector', ['id' => $session->getId()]) : null,
                     'topic' => $this->liveSessionService->hostTopic($session),
                     'hubUrl' => $this->mercureHub->getPublicUrl(),
                 ],
@@ -96,7 +96,7 @@ class ClassBoardLiveData
                     $templates,
                 ),
             ),
-            'createUrl' => $this->urlGenerator->generate('app_program_quiz_live_create', ['id' => $program->getId()]),
+            'createUrl' => $this->urlGenerator->generate('app_quiz_live_create', ['program' => $program->getId()]),
         ];
     }
 

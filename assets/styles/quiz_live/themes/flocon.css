@@ -1,0 +1,18 @@
+/* Live contest theme « Flocon » - Noël (config/quiz_live/themes.yaml).
+   Its tokens, its decoration, its hero animation and what its tiles do differently - the shape
+   every theme copies (assets/styles/quiz_live/live.css says which tokens). */
+
+/* The background never falls nor rises (the user's decision of 2026-11-07: a pattern moving up or
+   down all the time tires the eyes) - it only sways a little, like the summer theme's waves. */
+.ql[data-live-theme="flocon"] { --bg:#0E3B30; --bg2:#14503F; --panel:#14503F; --ink:#FFF8EC; --muted:#CFE3D6; --accent:#F2C14E; --accent2:#D62839; --ok:#2E9A5E; --ko:#C8243A; --okink:#fff; --c1:#D62839; --c2:#2D7DD2; --c3:#E0A82E; --c4:#3BB273; --c5:#8E5BD1; --c6:#E8743B; --tink:#3A1F12; --bd:2px solid #F2C14E; --sh:0 6px 16px rgba(0,0,0,.35); --r:12px; --fd:'Lilita One','Arial Black',sans-serif; --fb:'Nunito',system-ui,sans-serif; --shpfill:#FFF8EC; --shpstroke:none; --shpsw:0; --btnbg:#F2C14E; --btnink:#3A1F12; --sel:#FFF8EC; --track:#0A2A22; }
+.ql[data-live-theme="flocon"] .ql-deco { background: radial-gradient(circle, rgba(255,255,255,.85) 1.6px, transparent 2.2px) 0 0 / 46px 46px, radial-gradient(circle, rgba(255,255,255,.55) 1.2px, transparent 1.8px) 23px 17px / 34px 34px; animation: ql-flocon-snowFall 6s ease-in-out infinite alternate; }
+.ql[data-live-theme="flocon"] .ql-deco::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 30px; background: linear-gradient(#0A2A22, #0A2A22) 0 9px / 100% 2px no-repeat, radial-gradient(circle at 15px 17px, #D62839 5px, transparent 6px) 0 0 / 80px 30px, radial-gradient(circle at 35px 20px, #F2C14E 5px, transparent 6px) 0 0 / 80px 30px, radial-gradient(circle at 55px 17px, #2D7DD2 5px, transparent 6px) 0 0 / 80px 30px, radial-gradient(circle at 75px 20px, #3BB273 5px, transparent 6px) 0 0 / 80px 30px; animation: ql-flocon-blink 1.4s steps(2) infinite; }
+.ql[data-live-theme="flocon"] .ql-deco::after { content: ""; position: absolute; left: -5%; right: -5%; bottom: -20px; height: 50px; background: #F4FBF8; border-radius: 50% 50% 0 0 / 40px 40px 0 0; opacity: .9; }
+.ql[data-live-theme="flocon"] .ql-hero { animation: ql-flocon-ornament 1s cubic-bezier(.3,1.2,.4,1) both; transform-origin: 50% 0; }
+.ql[data-live-theme="flocon"] .ql-tile { border: 0; background: linear-gradient(90deg, transparent calc(100% - 44px), rgba(255,248,236,.8) calc(100% - 44px) calc(100% - 34px), transparent calc(100% - 34px)), linear-gradient(transparent calc(50% - 5px), rgba(255,248,236,.8) calc(50% - 5px) calc(50% + 5px), transparent calc(50% + 5px)), var(--c); }
+.ql[data-live-theme="flocon"] .ql-tile .ql-t { background: #FFF8EC; color: #3A1F12; border-radius: 6px; padding: 3px 10px; flex: 0 1 auto; box-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.ql[data-live-theme="flocon"] .ql-glow { color: #F2C14E; text-shadow: 0 0 16px rgba(242,193,78,.5); }
+.ql[data-live-theme="flocon"] .ql-av { box-shadow: 0 0 0 3px #F2C14E; }
+@keyframes ql-flocon-blink { 50% { opacity: .5; } }
+@keyframes ql-flocon-ornament { 0% { transform: translateY(-90px) rotate(-14deg); opacity: 0; } 45% { transform: translateY(6px) rotate(9deg); opacity: 1; } 70% { transform: rotate(-4deg); } 85% { transform: rotate(2deg); } 100% { transform: none; } }
+@keyframes ql-flocon-snowFall { from { transform: translateX(-6px); } to { transform: translateX(6px); } }

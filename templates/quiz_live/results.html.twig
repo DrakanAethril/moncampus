@@ -1,0 +1,83 @@
+{% extends 'layout/app.html.twig' %}
+
+{# What a live contest kept (App\Service\QuizLive\LiveResultSheet): every player, account or guest,
+   in rank order, with their answer to each question. #}
+
+{% block title %}{{ session.quizInstance.name }} - {{ 'quizLiveResultsAction'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'quizLiveNavLabel'|trans, url: path('app_quiz_live_index', session.program ? {class: session.program.id} : {})},
+        {label: session.quizInstance.name, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ session.quizInstance.name }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary mb-3 d-flex align-items-center gap-2 flex-wrap">
+        {{ (session.public ? 'quizLiveResultsSubtitlePublic' : 'quizLiveResultsSubtitleClass')|trans }}
+        {% if session.program %}· {{ session.program.displayShortName }}{% endif %}
+        · {{ (session.finishedAt ?? session.createdAt)|date('d/m/Y \\à H:i') }}
+        · {{ include('quiz_live/_swatch.html.twig', {theme: theme}) }} {{ theme.name }}
+    </p>
+    <div class="cm-statgrid mb-3">
+        <div class="cm-stat"><span class="cm-stat__value">{{ sheet.rows|length }}</span><span class="cm-stat__label">{{ 'quizLiveResultsParticipantsKpi'|trans }}</span></div>
+        <div class="cm-stat"><span class="cm-stat__value">{{ sheet.accounts }}</span><span class="cm-stat__label">{{ 'quizLiveResultsAccountsKpi'|trans }}</span></div>
+        <div class="cm-stat"><span class="cm-stat__value">{{ sheet.guests }}</span><span class="cm-stat__label">{{ 'quizLiveResultsGuestsKpi'|trans }}</span></div>
+        <div class="cm-stat"><span class="cm-stat__value">{{ sheet.rightRate is null ? '—' : sheet.rightRate ~ ' %' }}</span><span class="cm-stat__label">{{ 'quizLiveResultsRightRateKpi'|trans }}</span></div>
+    </div>
+
+    {% set rows = sheet.rows|filter(row => tab == 'all' or (tab == 'guests' and row.status == 'guest') or (tab == 'accounts' and row.status != 'guest')) %}
+    <twig:Cm:Tabs :tabs="[
+        {url: path('app_quiz_live_results', {id: session.id}), label: 'quizLiveResultsAllTab'|trans, active: tab == 'all', count: sheet.rows|length},
+        {url: path('app_quiz_live_results', {id: session.id, show: 'accounts'}), label: 'quizLiveResultsAccountsTab'|trans, active: tab == 'accounts', count: sheet.accounts},
+        {url: path('app_quiz_live_results', {id: session.id, show: 'guests'}), label: 'quizLiveResultsGuestsTab'|trans, active: tab == 'guests', count: sheet.guests},
+    ]"/>
+    <div class="card cm-card--tabbed">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th class="text-end">{{ 'quizLiveResultRankColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLiveResultParticipantColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLiveResultsStatusColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'quizLiveResultsRightColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLiveResultsQuestionsColumnLabel'|trans({'%count%': sheet.questions}) }}</th>
+                        <th class="text-end">{{ 'quizLiveResultScoreColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td class="text-end">{{ row.rank }}</td>
+                            <td><span class="d-inline-flex align-items-center gap-2">{{ include('quiz_live/_face.html.twig', {participant: row.participant}) }}<span class="fw-bold">{{ row.name }}</span></span></td>
+                            <td>
+                                {% if row.status == 'guest' %}
+                                    <twig:Cm:Badge tone="gold">{{ 'quizLiveResultsGuestBadge'|trans }}</twig:Cm:Badge>
+                                {% elseif row.status == 'class' %}
+                                    <twig:Cm:Badge tone="blue">{{ 'quizLiveResultsClassAccountBadge'|trans({'%class%': session.program.displayShortName}) }}</twig:Cm:Badge>
+                                {% elseif session.program %}
+                                    <twig:Cm:Badge tone="teal">{{ 'quizLiveResultsOtherAccountBadge'|trans }}</twig:Cm:Badge>
+                                {% else %}
+                                    <twig:Cm:Badge tone="teal">{{ 'quizLiveResultsAccountBadge'|trans }}</twig:Cm:Badge>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{{ row.right }} / {{ sheet.scored }}</td>
+                            <td class="text-nowrap">
+                                {% for mark in row.marks %}
+                                    {% set text = {right: '✓', wrong: '✗', vote: 'V', none: '–'}[mark] %}
+                                    {% set title = {right: 'quizLiveResultsMarkRight', wrong: 'quizLiveResultsMarkWrong', vote: 'quizLiveResultsMarkVote', none: 'quizLiveResultsMarkNone'}[mark]|trans %}
+                                    <span class="cm-live-mark cm-live-mark--{{ mark }}" title="{{ loop.index }}. {{ title }}" aria-label="{{ loop.index }}. {{ title }}">{{ text }}</span>
+                                {% endfor %}
+                            </td>
+                            <td class="text-end fw-bold">{{ row.score|number_format(0, ',', ' ') }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="text-secondary">{{ 'quizLiveResultsEmptyMessage'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer text-secondary" style="font-size: 12.5px;">{{ 'quizLiveResultsFootnote'|trans }}</div>
+    </div>
+{% endblock %}

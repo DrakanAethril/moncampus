@@ -1,0 +1,26 @@
+{# A player's phone in a live contest (design/validated/quiz-live-public.md), account or guest: the
+   whole screen in the contest's theme, drawn by quiz_live_play_controller.js from the players
+   topic's payloads (assets/quiz_live/render.js). On a wider screen it keeps a phone's width. #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ session.quizInstance.name }} - {{ 'quizLivePlayPageHeading'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {{ include('quiz_live/_stylesheets.html.twig', {slugs: [theme.slug]}) }}
+{% endblock %}
+
+{% block body %}
+    <div class="ql ql-phone" data-live-theme="{{ theme.slug }}"
+         data-controller="quiz-live-play"
+         data-quiz-live-play-hub-url-value="{{ mercurePublicUrl }}"
+         data-quiz-live-play-topic-value="{{ topic }}"
+         data-quiz-live-play-answer-url-value="{{ path('app_quiz_live_answer', {code: session.roomCode}) }}"
+         data-quiz-live-play-state-url-value="{{ path('app_quiz_live_play_state', {code: session.roomCode}) }}"
+         data-quiz-live-play-csrf-token-value="{{ csrf_token('quiz_live_answer') }}"
+         data-quiz-live-play-initial-state-value="{{ initialState|json_encode }}"
+         data-quiz-live-play-context-value="{{ context|json_encode }}"
+         data-quiz-live-play-theme-value="{{ theme.toClient|json_encode }}">
+        <div class="ql-surface" data-quiz-live-play-target="screen"></div>
+    </div>
+{% endblock %}

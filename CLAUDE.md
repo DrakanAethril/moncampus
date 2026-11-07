@@ -270,7 +270,20 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   page carries what the app used to - it asks for its phase again (`…/play/state`, the projector's
   `…/projector/state`) when it comes back from the background, the network or a reconnected stream
   (the hub replays nothing), keeps the screen awake (Screen Wake Lock) and offers an answer the
-  network lost again. A live answer is one JSON `response`
+  network lost again. **Since 2026-11-07 a contest belongs to a class or to none, and may be
+  public** (spec `design/validated/quiz-live-public.md`): Outils › Concours live is
+  `App\Controller\QuizLive\HostController` (`/quiz-live`, filtered by class, `QuizLiveSessionVoter`:
+  the host, and for a class contest its teachers and staff); a contest's public address is
+  `/live/{code}` (`PlayController`, PUBLIC_ACCESS, the waiting room's QR code), where **any known
+  account enters as itself - never as a guest** (« Prénom N. » in a public contest) and a visitor
+  without one enters a public contest as a guest: a pseudonym (`LiveNickname`), one of twenty avatars
+  drawn by the shared generator, a token in a cookie (`LiveGuestToken`, only its hash stored). Anybody
+  joins a contest under way; the host takes a player out of the waiting room only. The phone gets the
+  statement, its picture and the propositions' text. A contest wears a **theme**
+  (`config/quiz_live/themes.yaml` + `assets/styles/quiz_live/themes/<slug>.css`, `LiveThemeCatalog`,
+  Pop by default, seasonal ones offered all year): adding one is those two files, and
+  `/quiz-live/themes` draws its captures from the real screens (`assets/quiz_live/render.js`). A live
+  answer is one JSON `response`
   (`App\Service\QuizLive\LiveResponse`); right is right whatever the type, no partial points.
   **Kahoot reports (.xlsx)** are imported by the screen and by the connector's `quiz_import_kahoot`
   (a .zip of them too) through `App\Service\Kahoot\KahootReportReader`: both report layouts, every

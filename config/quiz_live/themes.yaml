@@ -1,0 +1,91 @@
+# The live contest's themes (design/validated/quiz-live-public.md), read by
+# App\Service\QuizLive\LiveThemeCatalog. A theme is its entry here plus its stylesheet,
+# assets/styles/quiz_live/themes/<slug>.css - tests/Service/QuizLive/LiveThemeCatalogTest.php fails
+# when one comes without the other, so adding a theme is these two files and nothing else.
+#
+# The words are the theme's own, shown on the room's screen and on the phones. Like a serious game's
+# vocabulary, they are the theme's content and never translation keys.
+#
+#   swatches  five colours for the pickers: the ground first, then the accents
+#   season    a seasonal theme's moment ('MM-DD', a period may run over the new year): it is offered
+#             all year, and marked « De saison » while the date is inside
+#   wave      the oscillator of the room's little sounds (Web Audio)
+#   confetti  how the podium's confetti are drawn: rect, circle, star, glow, strip, fish
+default: pop
+
+themes:
+    pop:
+        name: Pop
+        description: "Le cousin des tournois : encre noire, autocollants penchés, ombres décalées. Chaque écran claque comme un sticker."
+        swatches: ['#E9E4FF', '#FFDD3C', '#FF6B6B', '#4D7CFE', '#111111']
+        wave: triangle
+        confetti: rect
+        words: { correct: 'Bien vu !', wrong: 'Raté !', missed: 'Trop tard !', sent: 'Réponse posée', ready: 'Prêts ?', go: 'Go !', lobby: 'On attend les joueurs', voted: 'A voté !' }
+    plateau:
+        name: Plateau
+        description: "Le jeu télé du vendredi soir : nuit violette, projecteurs qui balaient, ampoules et lettres dorées."
+        swatches: ['#150A2E', '#F7C548', '#C2185B', '#1E5BD8', '#FFF4DA']
+        wave: sine
+        confetti: strip
+        words: { correct: 'Bonne réponse !', wrong: 'Dommage…', missed: 'Temps écoulé', sent: 'Réponse verrouillée', ready: 'Silence, on joue', go: 'Top !', lobby: 'Le plateau se remplit', voted: 'Vote enregistré' }
+    neon:
+        name: Néon
+        description: "La salle d’arcade : tubes fluo, sol quadrillé qui défile, scanlines. Une série devient un combo."
+        swatches: ['#0A0520', '#00E5FF', '#FF2E97', '#FFE600', '#39FF14']
+        wave: square
+        confetti: glow
+        words: { correct: 'Parfait', wrong: 'Raté', missed: 'Time out', sent: 'Envoyé', ready: 'Player ready', go: 'Go!', lobby: 'Insert players', voted: 'Vote OK' }
+    manga:
+        name: Manga
+        description: "Une page de manga : cases, trames, lignes de vitesse, onomatopées. Va de pair avec les avatars manga."
+        swatches: ['#FFFDF4', '#0D0D0D', '#FF4D4D', '#2F80ED', '#FFD000']
+        wave: triangle
+        confetti: star
+        words: { correct: 'Juste !', wrong: 'Aïe !', missed: 'Trop tard !', sent: 'Envoyé !', ready: 'Concentration…', go: 'Go !', lobby: 'Les héros arrivent', voted: 'Voté !' }
+    gelee:
+        name: Gelée
+        description: "Bonbons et gélatine : tout est rond, tout rebondit, les boutons s’écrasent sous le doigt. Pour les plus jeunes aussi."
+        swatches: ['#FFF1E8', '#FF7AA2', '#6EC6FF', '#FFD166', '#3B2546']
+        wave: sine
+        confetti: circle
+        words: { correct: 'Youpi !', wrong: 'Oups !', missed: 'Trop tard !', sent: 'C’est envoyé !', ready: 'Attention…', go: 'Go !', lobby: 'On attend les copains', voted: 'Voté !' }
+    citrouille:
+        name: Citrouille
+        description: "Halloween : nuit violette, pleine lune, chauves-souris, orange citrouille et vert potion. Les écrans montent du brouillard."
+        swatches: ['#1A0F26', '#FF7A1A', '#B784F0', '#8BE04E', '#F6EBD9']
+        season: { label: Halloween, from: '10-15', to: '11-02' }
+        wave: sawtooth
+        confetti: circle
+        words: { correct: 'Ensorcelant !', wrong: 'Frissons…', missed: 'Trop tard…', sent: 'Sort lancé', ready: 'Minuit sonne…', go: 'Bouh !', lobby: 'Les fantômes arrivent', voted: 'Voté !' }
+    flocon:
+        name: Flocon
+        description: "Noël : vert sapin, guirlande qui clignote, neige. Chaque réponse est un paquet cadeau avec son étiquette."
+        swatches: ['#0E3B30', '#D62839', '#F2C14E', '#FFF8EC', '#2D7DD2']
+        season: { label: Noël, from: '11-25', to: '01-06' }
+        wave: sine
+        confetti: circle
+        words: { correct: 'Cadeau !', wrong: 'Du charbon…', missed: 'Trop tard !', sent: 'Paquet envoyé', ready: 'Les lutins sont prêts ?', go: 'Hop !', lobby: 'Les lutins arrivent', voted: 'Voté !' }
+    carnaval:
+        name: Carnaval
+        description: "Mardi gras : losanges d’arlequin, serpentins, violet, or et vert. Les écrans entrent en tourbillonnant."
+        swatches: ['#36115F', '#F5B700', '#00C48C', '#FF6FB0', '#FFF6E0']
+        season: { label: Mardi gras, from: '02-01', to: '03-10' }
+        wave: square
+        confetti: rect
+        words: { correct: 'Bravo !', wrong: 'Démasqué !', missed: 'Trop tard !', sent: 'C’est envoyé', ready: 'Masques en place', go: 'En piste !', lobby: 'Entrez dans le bal', voted: 'Voté !' }
+    poisson:
+        name: Poisson d’avril
+        description: "Le 1er avril : papier découpé, poissons scotchés, bulles. Une mauvaise réponse, c’est « Poisson d’avril ! »."
+        swatches: ['#D6EEFA', '#FF6F59', '#5AAEF0', '#FFC145', '#123A5A']
+        season: { label: 1er avril, from: '03-25', to: '04-08' }
+        wave: sine
+        confetti: fish
+        words: { correct: 'Bien pêché !', wrong: 'Poisson d’avril !', missed: 'Trop tard !', sent: 'Envoyé !', ready: 'À l’eau…', go: 'Plouf !', lobby: 'Le banc se forme', voted: 'Voté !' }
+    ete:
+        name: Grandes vacances
+        description: "Juin, fin d’année : sable, soleil qui tourne, vagues, serviettes rayées. Pour le dernier concours avant l’été."
+        swatches: ['#FFF1D2', '#FF8C61', '#2EC4B6', '#FFD23F', '#0B4F5C']
+        season: { label: Fin d’année, from: '06-01', to: '07-14' }
+        wave: triangle
+        confetti: circle
+        words: { correct: 'Au top !', wrong: 'Coup de soleil…', missed: 'Trop tard !', sent: 'Envoyé !', ready: 'Crème solaire ?', go: 'Go !', lobby: 'Tout le monde à la plage', voted: 'Voté !' }

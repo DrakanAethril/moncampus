@@ -9,6 +9,15 @@ framework:
             limit: 5
             interval: '1 hour'
 
+        # Guards the guests' entry into a public live contest (App\Controller\QuizLive\
+        # PlayController::guest()), keyed by client IP. A whole lecture hall may share one address
+        # behind the school's NAT, and a contest has no cap on its players (the user's decision of
+        # 2026-11-07): the ceiling is for a script, far above any room.
+        quiz_live_guest:
+            policy: sliding_window
+            limit: 400
+            interval: '10 minutes'
+
         # Guards the logged-out "send me a magic login link" form (see
         # PublicMagicLoginController) - the same shared factory is consumed twice per request,
         # once keyed "ip:<ip>" and once "email:<contactEmail>" (both must pass), so a single IP

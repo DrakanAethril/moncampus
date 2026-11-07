@@ -441,7 +441,7 @@ export default class extends Controller {
         message.hidden = true;
         try {
             const response = await fetch(form.dataset.createUrl, { method: 'POST', body: new FormData(form) });
-            if (!response.ok || !/\/quiz\/live\/\d+$/.test(new URL(response.url).pathname)) {
+            if (!response.ok || !/\/quiz-live\/\d+$/.test(new URL(response.url).pathname)) {
                 message.hidden = false;
                 return;
             }
