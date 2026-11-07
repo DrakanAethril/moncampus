@@ -1,0 +1,120 @@
+{% extends 'layout/app.html.twig' %}
+
+{# A new live contest (design/validated/quiz-live-public.md): the quiz, a class or none, public or
+   not, and its theme - Pop unless another is chosen. #}
+
+{% block title %}{{ 'quizLiveNewHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'quizLiveNavLabel'|trans, url: path('app_quiz_live_index')},
+        {label: 'quizLiveNewHeading'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'quizLiveNewHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <form method="post" action="{{ path('app_quiz_live_create') }}" data-controller="quiz-live-new">
+        <input type="hidden" name="_token" value="{{ csrf_token('quiz_live_create') }}">
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-body d-flex flex-column gap-3"
+                         data-controller="quiz-pool library-picker"
+                         {# JSON_FORCE_OBJECT: a map of identifiers whose first key were 0 would be
+                            encoded as an array, and the controller reads it by identifier. #}
+                         data-quiz-pool-counts-value="{{ questionCountsByTemplate|json_encode(constant('JSON_FORCE_OBJECT')) }}"
+                         data-quiz-pool-prototype-value="{{ include('quiz_live/_pool_row.html.twig', {templates: templates})|e('html_attr') }}">
+                        <twig:Cm:Subhead :title="'quizLiveIndexContestColumnLabel'|trans"/>
+                        {% if templates is empty %}
+                            <p class="text-secondary mb-0">{{ 'quizLiveNewEmptyTemplatesMessage'|trans }}</p>
+                        {% else %}
+                            <div>
+                                <label class="form-label" for="quiz-live-name">{{ 'quizLaunchNameFieldLabel'|trans }}</label>
+                                <input type="text" class="form-control" id="quiz-live-name" name="name" maxlength="255">
+                                <div class="form-hint">{{ 'quizLiveNewNameFieldHint'|trans }}</div>
+                            </div>
+                            <div>
+                                {# No `required` on the select: it sits behind the picker modal and
+                                   is never displayed - the create action refuses an empty choice. #}
+                                <label class="form-label required" for="quiz-live-template">{{ 'quizLiveNewTemplateFieldLabel'|trans }}</label>
+                                {% embed '_library_picker_field.html.twig' with {
+                                    templates: templates,
+                                    placeholder: 'quizLaunchAdditionalTemplatePlaceholder'|trans,
+                                } only %}
+                                    {% block select %}
+                                        <select class="cm-pickfield__select" id="quiz-live-template" name="templateId"
+                                                data-quiz-pool-target="select" data-action="change->quiz-pool#update">
+                                            <option value=""></option>
+                                            {% for template in templates %}
+                                                <option value="{{ template.id }}">{{ template.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    {% endblock %}
+                                {% endembed %}
+                                <div class="form-hint">{{ 'quizLiveNewTemplateFieldHint'|trans }}</div>
+                            </div>
+                            <div class="cm-quizpool">
+                                <div class="cm-quizpool__rows" data-quiz-pool-target="rows"></div>
+                                <button type="button" class="cm-dashed-add" data-quiz-pool-target="addButton" data-action="quiz-pool#add">{{ 'quizLaunchAddTemplateAction'|trans }}</button>
+                                <div class="form-hint">{{ 'quizLiveNewPoolHintTemplate'|trans({'%count%': '<span data-quiz-pool-target="total"></span>'})|raw }}</div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="quiz-live-seconds">{{ 'quizLiveNewDefaultSecondsFieldLabel'|trans }}</label>
+                                <input type="number" class="form-control" id="quiz-live-seconds" name="secondsPerQuestion" min="5" max="300" style="max-width: 160px;">
+                                <div class="form-hint">{{ 'quizLiveNewDefaultSecondsFieldHint'|trans }}</div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="quiz-live-program">{{ 'quizLiveNewClassFieldLabel'|trans }}</label>
+                                <select class="form-select" id="quiz-live-program" name="programId" style="max-width: 360px;"
+                                        data-quiz-live-new-target="program" data-action="change->quiz-live-new#sync">
+                                    <option value="">{{ 'quizLiveNewNoClassOption'|trans }}</option>
+                                    {% for program in programs %}
+                                        <option value="{{ program.id }}" {{ program.id == preselectedProgramId ? 'selected' }}>{{ program.displayShortName }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-hint">{{ 'quizLiveNewClassFieldHint'|trans }}</div>
+                            </div>
+                            <fieldset>
+                                <legend class="form-label">{{ 'quizLiveNewOpeningLabel'|trans }}</legend>
+                                <label class="cm-choice">
+                                    <input class="form-check-input" type="checkbox" name="public" value="1" data-quiz-live-new-target="public">
+                                    <span>
+                                        <span class="cm-choice__title">{{ 'quizLiveNewPublicLabel'|trans }}</span>
+                                        <span class="cm-choice__detail">{{ 'quizLiveNewPublicHint'|trans }}</span>
+                                    </span>
+                                </label>
+                            </fieldset>
+
+                            {% include '_library_picker.html.twig' with {
+                                tree: pickerTree,
+                                title: 'quizPickerTitle'|trans,
+                                search_placeholder: 'quizPickerSearchPlaceholder'|trans,
+                                count_label: 'quizQuestionsCountLabel'|trans,
+                                empty_message: 'quizPickerEmptyMessage'|trans,
+                            } only %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card">
+                    <div class="card-body d-flex flex-column gap-3">
+                        <twig:Cm:Subhead :title="'quizLiveNewThemeHeading'|trans" :hint="'quizLiveNewThemeHint'|trans">
+                            <twig:block name="action">
+                                <a href="{{ path('app_quiz_live_themes') }}" class="cm-action--neutral">{{ 'quizLiveNewThemesLink'|trans }}</a>
+                            </twig:block>
+                        </twig:Cm:Subhead>
+                        {{ include('quiz_live/_theme_picker.html.twig', {selected: app.request.query.get('theme', themes.default.slug)}) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <twig:Cm:Button :href="path('app_quiz_live_index')">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+            {% if templates is not empty %}
+                <twig:Cm:Button variant="gold" type="submit">{{ 'quizLiveNewSubmitAction'|trans }}</twig:Cm:Button>
+            {% endif %}
+        </div>
+    </form>
+{% endblock %}

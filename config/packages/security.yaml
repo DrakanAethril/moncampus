@@ -197,6 +197,11 @@ security:
         # not one of their routes is readable without being signed in. The trailing slash keeps a
         # future /courses-something from inheriting the opening; /courses alone matches no route.
         - { path: ^/courses/, roles: PUBLIC_ACCESS }
+        # A live contest's public address - what its QR code opens (App\Controller\QuizLive\
+        # PlayController). An account arriving here keeps its session and plays as itself; a visitor
+        # without one plays a public contest as a guest. The trailing slash keeps the opening to
+        # /live/{code}: no other route starts with it.
+        - { path: ^/live/, roles: PUBLIC_ACCESS }
         # The iCalendar feeds. ROLE_USER rather than PUBLIC_ACCESS, and that is the whole difference
         # this design buys: the `calendar` firewall above has already turned the URL's token into
         # the account that owns it, so this line asks for a real user and the controller then asks

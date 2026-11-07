@@ -323,6 +323,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/lesson-log' => 403,
             '/tools/gradebook' => 403,
             '/tools/quiz-live' => 403,
+            // Outils › Concours live is a host's screen: a student plays from a contest's address.
+            '/quiz-live' => 404,
+            '/quiz-live/new' => 404,
+            '/quiz-live/themes' => 404,
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
             // The word cloud is the one « Animer la classe » tool a student writes into, and the
@@ -530,7 +534,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // (toolsNoVisibleClassMessage). A 403 would be the regression - having no class to
             // work on is a setting on the class, not a permission the teacher lacks.
             '/tools/gradebook' => 200,
-            '/tools/quiz-live' => 200,
+            // The old picker's address now hands over to the contests list, which asks for no class.
+            '/tools/quiz-live' => 302,
+            '/quiz-live' => 200,
+            '/quiz-live/new' => 200,
+            '/quiz-live/themes' => 200,
             '/tools/job-search-tracking' => 200,
             '/tools/word-cloud' => 200,
             // Not a picker: the cross-class quiz list renders whatever the viewer teaches, empty
@@ -722,6 +730,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Staff pick a class first, so these hand over to the program-scoped screen.
             '/tools/gradebook' => 302,
             '/tools/quiz-live' => 302,
+            '/quiz-live' => 200,
+            '/quiz-live/new' => 200,
             '/tools/job-search-tracking' => 302,
             '/tools/word-cloud' => 302,
             '/tools/quiz' => 200,
@@ -904,6 +914,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/shares/mine' => 403,
             '/shares/catalog' => 403,
             '/tools/quiz-live' => 403,
+            '/quiz-live' => 404,
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
             // An external tutor is not a teacher of the formation: the frise is closed to them too.

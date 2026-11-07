@@ -1,0 +1,16 @@
+/* Live contest theme « Citrouille » - Halloween (config/quiz_live/themes.yaml).
+   Its tokens, its decoration, its hero animation and what its tiles do differently - the shape
+   every theme copies (assets/styles/quiz_live/live.css says which tokens). */
+
+.ql[data-live-theme="citrouille"] { --bg:#1A0F26; --bg2:#2A1838; --panel:#2A1838; --ink:#F6EBD9; --muted:#CDB9D9; --accent:#FF7A1A; --accent2:#8BE04E; --ok:#5FBF3A; --ko:#E0533A; --okink:#140A1E; --c1:#FF7A1A; --c2:#B784F0; --c3:#8BE04E; --c4:#F6EBD9; --c5:#F0637A; --c6:#F2C14E; --tink:#1A0F26; --bd:3px solid #0B0610; --sh:0 6px 0 #0B0610; --r:18px; --fd:'Creepster',Impact,sans-serif; --fb:'Rubik',system-ui,sans-serif; --shpfill:#1A0F26; --shpstroke:none; --shpsw:0; --btnbg:#FF7A1A; --btnink:#1A0F26; --sel:#8BE04E; --track:#3A2550; }
+.ql[data-live-theme="citrouille"] .fd { letter-spacing: .05em; }
+.ql[data-live-theme="citrouille"] .ql-deco { background: linear-gradient(180deg, transparent 60%, rgba(205,185,217,.16)); }
+.ql[data-live-theme="citrouille"] .ql-deco::before { content: ""; position: absolute; right: 8%; top: 7%; width: 84px; height: 84px; border-radius: 50%; background: #F3E3C4; box-shadow: 0 0 46px rgba(243,227,196,.45), inset -16px -6px 0 rgba(0,0,0,.08); opacity: .32; }
+.ql[data-live-theme="citrouille"] .ql-deco::after { content: ""; position: absolute; left: 0; top: 4%; width: 100%; height: 130px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 12'%3E%3Cpath d='M0 6C3 2 6 2 8 5c1-2 3-2 4 0 1-2 3-2 4 0 2-3 5-3 8 1-3-1-5 1-6 3-2-2-4-1-6 1-2-2-4-3-6-1-1-2-3-4-6-3z' fill='%23735094'/%3E%3C/svg%3E") 8% 20px / 54px 27px no-repeat, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 12'%3E%3Cpath d='M0 6C3 2 6 2 8 5c1-2 3-2 4 0 1-2 3-2 4 0 2-3 5-3 8 1-3-1-5 1-6 3-2-2-4-1-6 1-2-2-4-3-6-1-1-2-3-4-6-3z' fill='%23735094'/%3E%3C/svg%3E") 40% 70px / 36px 18px no-repeat, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 12'%3E%3Cpath d='M0 6C3 2 6 2 8 5c1-2 3-2 4 0 1-2 3-2 4 0 2-3 5-3 8 1-3-1-5 1-6 3-2-2-4-1-6 1-2-2-4-3-6-1-1-2-3-4-6-3z' fill='%23735094'/%3E%3C/svg%3E") 66% 6px / 44px 22px no-repeat; animation: ql-citrouille-batsFly 7s ease-in-out infinite alternate; }
+.ql[data-live-theme="citrouille"] .ql-hero { animation: ql-citrouille-riseFog .9s cubic-bezier(.2,.9,.3,1) both; }
+.ql[data-live-theme="citrouille"] .ql-pop { animation: ql-citrouille-riseFog .6s ease both; }
+.ql[data-live-theme="citrouille"] .ql-tile { box-shadow: 0 6px 0 #0B0610, inset 0 -10px 0 rgba(0,0,0,.12); }
+.ql[data-live-theme="citrouille"] .ql-glow { color: #FF7A1A; text-shadow: 0 0 18px rgba(255,122,26,.55); }
+.ql[data-live-theme="citrouille"] .ql-av { box-shadow: 0 0 0 3px #FF7A1A; }
+@keyframes ql-citrouille-batsFly { from { transform: translate(-20px, 0); } to { transform: translate(30px, 16px); } }
+@keyframes ql-citrouille-riseFog { 0% { transform: translateY(40px) scale(.96); opacity: 0; filter: blur(8px); } 60% { opacity: 1; filter: blur(0); } 80% { transform: translateY(-4px) rotate(-1deg); } 100% { transform: none; } }

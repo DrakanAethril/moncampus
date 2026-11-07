@@ -26,6 +26,22 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.07.2'
+      date: '2026-11-07'
+      summary: "Un concours en direct peut désormais être ouvert à tous : on le rejoint en flashant un QR code, avec son compte ou comme invité, et il se pare de l'un des dix thèmes proposés. beaup-app prend l'emblème de l'Institution pour icône."
+      entries:
+          - type: nouveaute
+            title: "Concours en direct public : on le rejoint par un QR code, avec son compte ou comme invité"
+            detail: "Un visiteur sans compte joue sous un pseudo, avec un avatar tiré au sort ; on peut rejoindre une partie en cours, et un concours n'est plus forcément rattaché à une classe."
+          - type: nouveaute
+            title: "Concours en direct : dix thèmes au choix, dont cinq de saison"
+          - type: modification
+            title: "Concours en direct : le téléphone affiche l'énoncé, son image et le texte des propositions"
+          - type: nouveaute
+            title: "Connecteur Claude, en essai : partager quiz, fichiers, séquences et séances avec des collègues, et dupliquer ce qu'on vous a partagé"
+            detail: "La copie se range directement dans le dossier de son choix ; les séquences et leurs dossiers se déplacent aussi dans la bibliothèque."
+          - type: modification
+            title: "beaup-app a une nouvelle icône : l'emblème de l'Institution dans un anneau doré"
     - version: '2026.11.07'
       date: '2026-11-07'
       summary: "Un septième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration, le premier sans histoire et le premier pensé pour le téléphone : trente niveaux pour découvrir les bases de données et le langage SQL. Les avatars gagnent un vestiaire manga, et l'import Kahoot signale ce que le rapport ne contient pas."

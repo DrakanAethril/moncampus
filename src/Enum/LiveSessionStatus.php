@@ -21,7 +21,7 @@ namespace App\Enum;
  * Every other step waits for the host (App\Service\QuizLiveSessionService::advance()); the
  * Countdown ends on the host's own screen.
  */
-enum LiveSessionStatus: string
+enum LiveSessionStatus: string implements HasBadge
 {
     case Lobby = 'lobby';
     case Countdown = 'countdown';
@@ -62,6 +62,16 @@ enum LiveSessionStatus: string
             self::Scoreboard => 'liveSessionStatusScoreboardLabel',
             self::Finished => 'liveSessionStatusFinishedLabel',
             self::Cancelled => 'liveSessionStatusCancelledLabel',
+        };
+    }
+
+    /** Under way in green, over in grey, cancelled in red - Outils › Concours live's rows. */
+    public function badgeTone(): BadgeTone
+    {
+        return match ($this) {
+            self::Finished => BadgeTone::Gray,
+            self::Cancelled => BadgeTone::Red,
+            default => BadgeTone::Green,
         };
     }
 }

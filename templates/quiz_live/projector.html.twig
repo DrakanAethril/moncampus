@@ -1,0 +1,32 @@
+{# The room's screen of a live contest (design/validated/quiz-live-public.md): the whole window,
+   outside the app shell, a 1280×720 stage in the contest's theme, scaled to the window. Everything
+   on it is drawn by quiz_live_host_controller.js from the host topic's payloads
+   (assets/quiz_live/render.js). #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ session.quizInstance.name }} - {{ 'quizLiveProjectorPageHeading'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {{ include('quiz_live/_stylesheets.html.twig', {slugs: [theme.slug]}) }}
+{% endblock %}
+
+{% block body %}
+    <div class="ql-projector"
+         data-controller="quiz-live-host"
+         data-quiz-live-host-hub-url-value="{{ mercurePublicUrl }}"
+         data-quiz-live-host-topic-value="{{ topic }}"
+         data-quiz-live-host-advance-url-value="{{ path('app_quiz_live_advance', {id: session.id}) }}"
+         data-quiz-live-host-remove-url-value="{{ path('app_quiz_live_remove', {id: session.id}) }}"
+         data-quiz-live-host-state-url-value="{{ path('app_quiz_live_projector_state', {id: session.id}) }}"
+         data-quiz-live-host-csrf-token-value="{{ csrf_token('quiz_live_control') }}"
+         data-quiz-live-host-initial-state-value="{{ initialState|json_encode }}"
+         data-quiz-live-host-context-value="{{ context|json_encode }}"
+         data-quiz-live-host-theme-value="{{ theme.toClient|json_encode }}">
+        <div class="ql ql-room" data-live-theme="{{ theme.slug }}" data-quiz-live-host-target="room"></div>
+        <div class="ql-roomtools">
+            <button type="button" data-quiz-live-host-target="sound" data-action="quiz-live-host#toggleSound" aria-pressed="false">{{ 'quizLiveScreenSound'|trans }}</button>
+            <a href="{{ path('app_quiz_live_created', {id: session.id}) }}" data-turbo="false">{{ 'quizLiveNavLabel'|trans }}</a>
+        </div>
+    </div>
+{% endblock %}

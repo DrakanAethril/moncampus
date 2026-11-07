@@ -56,7 +56,8 @@ class QuizInstantiationService
      */
     public function instantiateQuiz(
         array $templates,
-        Program $program,
+        // Null for a live contest of no class only (QuizLiveSessionService::createSession()).
+        ?Program $program,
         User $createdBy,
         QuizMode $mode,
         int $questionCount,
@@ -125,7 +126,7 @@ class QuizInstantiationService
         $instance->setNegativeScoreAllowed($negativeScoreAllowed);
         // Belongs to the class or to nothing: an option of another program would silently address
         // no one at all, so it is refused here as well as on the form that offers it.
-        $instance->setVisibilityOption(null !== $visibilityOption && $program->getOptions()->contains($visibilityOption) ? $visibilityOption : null);
+        $instance->setVisibilityOption(null !== $visibilityOption && null !== $program && $program->getOptions()->contains($visibilityOption) ? $visibilityOption : null);
         // « Le mode contrôle n'existe qu'en Évaluation » applied where the instance is built, so no
         // caller can launch a supervised entraînement by forgetting the rule.
         $instance->setSupervised($supervised && QuizMode::Evaluation === $mode);

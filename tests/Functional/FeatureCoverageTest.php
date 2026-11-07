@@ -94,6 +94,14 @@ class FeatureCoverageTest extends KernelTestCase
                 // exists to publish. What makes them exist is a published course; writing and
                 // publishing one is guarded (app_online_courses_*).
                 'app_public_courses_',
+                // A live contest's public address, /live/{code} (design/validated/quiz-live-public.md):
+                // what its QR code opens, for a guest with no account as much as for a signed-in one.
+                // App\Controller\QuizLive\PlayController asks the feature itself - for the contest's
+                // host, and for the account entering a class contest - and 404s when it is off.
+                'app_quiz_live_entry',
+                'app_quiz_live_guest',
+                'app_quiz_live_play',
+                'app_quiz_live_answer',
             ],
             // The mobile app's own account plumbing. Same reason as the row above, one step later:
             // an account that cannot read its profile cannot be told what it may see.

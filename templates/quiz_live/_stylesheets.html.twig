@@ -1,0 +1,8 @@
+{# The live contest's dress: its faces, the shapes every theme shares, then the theme(s) asked for.
+   One stylesheet per theme (assets/styles/quiz_live/themes/<slug>.css) - the room's screen and the
+   phone load their contest's only, the gallery every one. #}
+<link rel="stylesheet" href="{{ asset('styles/quiz_live/fonts.css') }}">
+<link rel="stylesheet" href="{{ asset('styles/quiz_live/live.css') }}">
+{% for slug in slugs %}
+    <link rel="stylesheet" href="{{ asset('styles/quiz_live/themes/' ~ slug ~ '.css') }}">
+{% endfor %}

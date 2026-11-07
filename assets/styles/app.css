@@ -2828,155 +2828,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-app-card.is-current { border-color: var(--cm-brand); box-shadow: 0 0 0 1px var(--cm-brand); }
 @media (max-width: 700px) { .cm-app-card.is-current { order: -1; } }
 
-/* ---- Concours live (Kahoot-style projector/player screens) - Turns 1q/1u/1h/1i/1j/1l -----------
-   Deliberately hardcoded dark, independent of the app's light/dark theme toggle: these are meant
-   to read as a projected classroom screen (or a full-bleed mobile game screen), same as the
-   mockup itself. */
-.cm-quiz-live {
-    min-height: 100vh; display: flex; flex-direction: column; color: #e8eef3; padding: 28px 36px; box-sizing: border-box;
-    background: radial-gradient(1200px 800px at 50% -10%, #16436b 0%, #0d2438 62%);
-    font-family: var(--cm-font-ui);
-}
-/* Formatool installed on an iPhone runs this screen edge to edge (viewport-fit=cover in
-   base.html.twig): the answers must stay clear of the home indicator, and of the notch in landscape. */
-.cm-quiz-live--mobile {
-    padding: 20px max(18px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
-    min-height: 100dvh;
-}
-/* Bootstrap's `.d-flex`/`.d-grid` utility classes carry `!important`, which otherwise beats the
-   native `[hidden] { display: none }` UA rule (no !important) on the same element - the
-   quiz_live_host_controller.js/quiz_live_play_controller.js phase-toggling relies on `hidden`
-   actually hiding the phase, so it must win here regardless of what utility classes sit next to it. */
-.cm-quiz-live [hidden] { display: none !important; }
-.cm-quiz-live__topbar { display: flex; align-items: center; gap: 18px; }
-.cm-quiz-live__eyebrow { font: 600 14px var(--cm-font-ui); letter-spacing: 3px; color: var(--cm-gold); text-transform: uppercase; }
-.cm-quiz-live__meta { font: 600 15px var(--cm-font-ui); color: #9db4c6; }
-.cm-quiz-live__spacer { margin-left: auto; }
-.cm-quiz-live__timer {
-    width: 64px; height: 64px; border-radius: 50%; background: var(--cm-navy); border: 3px solid var(--cm-gold);
-    display: grid; place-items: center; font: 700 24px var(--cm-font-ui); color: #fff; flex: none;
-}
-.cm-quiz-live__timer--sm { width: 42px; height: 42px; font-size: 16px; border-width: 2.5px; }
-
-.cm-quiz-live-chip {
-    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 20px;
-    padding: 5px 18px 5px 5px; font: 600 15px var(--cm-font-ui); color: #fff;
-    display: inline-flex; align-items: center; gap: 10px;
-}
-/* A participant's face (quiz_live_host_controller.js face()): photo, serious-games avatar or the
-   pseudonym's initial. */
-.cm-quiz-live-face {
-    width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center;
-    background: var(--cm-gold) center / cover; color: var(--cm-navy); font: 700 13px var(--cm-font-ui);
-}
-.cm-quiz-live-rank .cm-quiz-live-face { width: 40px; height: 40px; font-size: 16px; }
-
-.cm-quiz-live-countdown {
-    width: 230px; height: 230px; border-radius: 50%; border: 6px solid rgba(201,160,78,.25);
-    display: grid; place-items: center; margin: 0 auto;
-}
-.cm-quiz-live-countdown--mobile { width: 170px; height: 170px; border-width: 5px; }
-.cm-quiz-live-countdown__number { font: 700 120px var(--cm-font-title); color: #fff; }
-.cm-quiz-live-countdown--mobile .cm-quiz-live-countdown__number { font-size: 86px; }
-
-.cm-quiz-live-question__label { font: 600 44px var(--cm-font-title); color: #fff; text-align: center; max-width: 1000px; line-height: 1.3; margin: 0 auto; white-space: pre-line; }
-.cm-quiz-live-question__image { max-height: 220px; border-radius: 8px; margin: 16px auto; display: block; }
-.cm-quiz-live-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.cm-quiz-live-answer {
-    display: flex; align-items: center; gap: 16px; border-radius: 14px; padding: 22px 24px; color: #fff;
-    font: 600 24px var(--cm-font-ui);
-}
-.cm-quiz-live-answer__shape { font-size: 26px; opacity: .85; }
-.cm-quiz-live-answer--blue { background: var(--cm-brand); }
-.cm-quiz-live-answer--gold { background: var(--cm-gold); color: var(--cm-navy); }
-.cm-quiz-live-answer--gold .cm-quiz-live-answer__shape { color: rgba(18,52,77,.75); }
-.cm-quiz-live-answer--green { background: var(--cm-positive-tx); }
-.cm-quiz-live-answer--red { background: var(--cm-red-tx); }
-/* Kahoot's fifth and sixth shapes. The board is always dark, whatever the theme, so the two colours
-   are fixed rather than tokens. */
-.cm-quiz-live-answer--purple { background: #7a4fb5; }
-.cm-quiz-live-answer--teal { background: #1d8584; }
-.cm-quiz-live-answers--wide { grid-template-columns: repeat(3, 1fr); }
-.cm-quiz-live-answer__rank { font: 700 22px var(--cm-font-ui); min-width: 28px; }
-.cm-quiz-live-question__label--reading { font-size: 54px; }
-.cm-quiz-live-question__label--small { font-size: 26px; flex: none; }
-.cm-quiz-live-question__hint { font: 600 17px var(--cm-font-ui); color: var(--cm-gold); text-align: center; margin-top: 14px; }
-
-/* Results: one bar per proposition (or per typed answer, per band of numbers), the right ones
-   ticked and the others greyed - quiz_live_host_controller.js showResults(). */
-.cm-quiz-live-results__expected { font: 600 24px var(--cm-font-ui); color: var(--cm-gold); text-align: center; }
-.cm-quiz-live-result { display: flex; align-items: center; gap: 16px; }
-.cm-quiz-live-result__label { display: flex; align-items: center; gap: 10px; width: 360px; flex: none; font: 600 20px var(--cm-font-ui); color: #fff; }
-.cm-quiz-live-result__shape { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; flex: none; font-size: 18px; color: #fff; }
-.cm-quiz-live-result__bar { height: 100%; border-radius: 8px; background: var(--cm-brand); }
-.cm-quiz-live-result__shape--blue, .cm-quiz-live-result__bar--blue { background: var(--cm-brand); }
-.cm-quiz-live-result__shape--gold, .cm-quiz-live-result__bar--gold { background: var(--cm-gold); color: var(--cm-navy); }
-.cm-quiz-live-result__shape--green, .cm-quiz-live-result__bar--green { background: var(--cm-positive-tx); }
-.cm-quiz-live-result__shape--red, .cm-quiz-live-result__bar--red { background: var(--cm-red-tx); }
-.cm-quiz-live-result__shape--purple, .cm-quiz-live-result__bar--purple { background: #7a4fb5; }
-.cm-quiz-live-result__shape--teal, .cm-quiz-live-result__bar--teal { background: #1d8584; }
-.cm-quiz-live-result__bar-wrap { flex: 1; height: 34px; display: flex; align-items: center; }
-.cm-quiz-live-result__count { width: 48px; text-align: right; font: 700 20px var(--cm-font-ui); color: #fff; }
-.cm-quiz-live-result__mark { width: 28px; font: 700 24px var(--cm-font-ui); color: #7fd99a; }
-.cm-quiz-live-result.is-wrong { opacity: .45; }
-
-.cm-quiz-live-shapes { flex: 1; display: grid; grid-template-rows: 1fr 1fr 1fr 1fr; gap: 12px; }
-.cm-quiz-live-shape {
-    border: 0; border-radius: 14px; display: flex; align-items: center; justify-content: center;
-    font-size: 34px; color: #fff; cursor: pointer;
-}
-.cm-quiz-live-shape:disabled { opacity: .55; cursor: default; }
-.cm-quiz-live-shape--selected { outline: 3px solid #fff; outline-offset: -3px; }
-.cm-quiz-live-shape--blue { background: var(--cm-brand); }
-.cm-quiz-live-shape--gold { background: var(--cm-gold); color: var(--cm-navy); }
-.cm-quiz-live-shape--green { background: var(--cm-positive-tx); }
-.cm-quiz-live-shape--red { background: var(--cm-red-tx); }
-.cm-quiz-live-shape--purple { background: #7a4fb5; }
-.cm-quiz-live-shape--teal { background: #1d8584; }
-.cm-quiz-live-shape { position: relative; }
-/* The place a shape was tapped at, for a remise en ordre. */
-.cm-quiz-live-shape__rank { position: absolute; top: 8px; right: 12px; font: 700 22px var(--cm-font-ui); color: #fff; }
-.cm-quiz-live-value { font: 700 48px var(--cm-font-title); color: #fff; text-align: center; }
-.cm-quiz-live-slider { width: 100%; accent-color: var(--cm-gold); height: 36px; }
-.cm-quiz-live-input {
-    width: 100%; border-radius: 12px; border: 2px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08);
-    color: #fff; font: 600 26px var(--cm-font-ui); padding: 14px 16px; text-align: center;
-}
-.cm-quiz-live-input:focus { outline: none; border-color: var(--cm-gold); }
-.cm-quiz-live-verdict { font: 700 30px var(--cm-font-title); color: #fff; }
-.cm-quiz-live-verdict.is-correct { color: #7fd99a; }
-.cm-quiz-live-verdict.is-wrong { color: #ff9b8f; }
-
-.cm-quiz-live-rank { display: flex; align-items: center; gap: 16px; }
-.cm-quiz-live-rank__position { width: 34px; font: 700 18px var(--cm-font-ui); color: #9db4c6; text-align: right; }
-.cm-quiz-live-rank__name { font: 600 20px var(--cm-font-ui); color: #fff; width: 200px; flex: none; }
-.cm-quiz-live-rank__bar-wrap { flex: 1; height: 34px; display: flex; align-items: center; }
-.cm-quiz-live-rank__bar {
-    height: 100%; border-radius: 8px; background: var(--cm-brand); display: flex; align-items: center;
-    justify-content: flex-end; padding: 0 14px; font: 700 16px var(--cm-font-ui); color: #fff; box-sizing: border-box;
-}
-.cm-quiz-live-rank__score { margin-left: auto; font: 700 16px var(--cm-font-ui); color: var(--cm-gold); }
-
-.cm-quiz-live-podium { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 22px; padding-bottom: 8px; }
-.cm-quiz-live-podium__slot { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 230px; }
-.cm-quiz-live-podium__slot--first { width: 250px; }
-.cm-quiz-live-podium__avatar {
-    border-radius: 14px; background: var(--cm-navy) center / cover; display: grid; place-items: center; color: #fff;
-    font: 700 22px var(--cm-font-ui); outline: 3px solid rgba(255,255,255,.25); width: 64px; height: 64px;
-}
-.cm-quiz-live-podium__slot--first .cm-quiz-live-podium__avatar { width: 74px; height: 74px; background-color: var(--cm-gold); color: var(--cm-navy); outline: 4px solid rgba(201,160,78,.4); }
-.cm-quiz-live-podium__bar { width: 100%; border-radius: 14px 14px 0 0; display: grid; place-items: center; font: 700 54px var(--cm-font-title); color: var(--cm-navy); }
-.cm-quiz-live-podium__slot--first .cm-quiz-live-podium__bar { height: 230px; background: linear-gradient(180deg, #d9b268, var(--cm-gold)); font-size: 68px; }
-.cm-quiz-live-podium__slot--second .cm-quiz-live-podium__bar { height: 170px; background: linear-gradient(180deg, #9db4c6, #5b7c96); }
-.cm-quiz-live-podium__slot--third .cm-quiz-live-podium__bar { height: 120px; background: linear-gradient(180deg, #a97a52, #8a5a3b); color: #fff; }
-
-.cm-quiz-live-btn {
-    border: 1px solid rgba(255,255,255,.25); border-radius: 10px; padding: 11px 20px; font: 600 14px var(--cm-font-ui);
-    color: #e8eef3; background: transparent; cursor: pointer;
-}
-.cm-quiz-live-btn:hover { color: #fff; border-color: #fff; }
-.cm-quiz-live-btn--primary { background: var(--cm-gold); color: var(--cm-navy); border: 0; font-weight: 700; }
-.cm-quiz-live-btn--primary:hover { background: var(--cm-gold-strong); color: var(--cm-navy); }
+/* The live contest's own screens live in assets/styles/quiz_live/ since 2026-11-07, one stylesheet
+   per theme (design/validated/quiz-live-public.md). */
 
 /* ==========================================================================
    Carnet de notes - pastel grade-band colors (design's gradeColor(), 4 bands over a
@@ -14289,3 +14142,36 @@ body.cm-sg-immersive { overflow: hidden; }
 /* « Lancer une ronde » (templates/quiz_tournament/round_new.html.twig): one short form, a class then who plays. */
 .cm-qt-round-form { max-width: 640px; }
 .cm-qt-round-form__open { display: flex; flex-direction: column; gap: 14px; margin: 0; }
+
+/* ==========================================================================
+   Concours live: the teacher's pages (design/validated/quiz-live-public.md) - the theme picker of a
+   new contest, the result sheet's marks, and the theme gallery's captures, which frame the real
+   screens of assets/styles/quiz_live/ at a quarter of their size.
+   ========================================================================== */
+.cm-live-swatch { display: inline-flex; gap: 3px; padding: 4px; border-radius: 6px; flex: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); vertical-align: middle; }
+.cm-live-swatch i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+.cm-live-themes { display: flex; flex-direction: column; gap: 6px; }
+.cm-live-themes__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 575.98px) { .cm-live-themes__grid { grid-template-columns: minmax(0, 1fr); } }
+.cm-live-theme { flex-wrap: wrap; }
+.cm-live-theme .cm-radiocard__title { flex: 1; min-width: 0; }
+.cm-choice.is-locked { opacity: .75; cursor: default; }
+.cm-live-face { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--cm-blue-bg) center / cover no-repeat; color: var(--cm-blue-tx); font: 600 12px var(--cm-font-ui); }
+.cm-live-face svg { width: 100%; height: 100%; display: block; }
+.cm-live-mark { display: inline-flex; width: 20px; height: 20px; border-radius: 5px; margin-right: 3px; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700; }
+.cm-live-mark--right { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-live-mark--wrong { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+.cm-live-mark--vote { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-live-mark--none { background: var(--cm-border-soft); color: var(--cm-faint); }
+.cm-live-gallery { display: flex; flex-direction: column; gap: 10px; padding-bottom: 22px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-live-gallery:last-child { border-bottom: 0; padding-bottom: 0; }
+.cm-live-gallery__name { font: 500 20px var(--cm-font-title); color: var(--cm-ink); margin: 0; }
+.cm-live-captures { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 6px; align-items: flex-end; }
+.cm-live-capture { margin: 0; display: flex; flex-direction: column; gap: 6px; flex: none; }
+.cm-live-capture figcaption { font-size: 12px; color: var(--cm-muted); font-weight: 600; }
+.cm-live-capture__frame { position: relative; overflow: hidden; background: #000; }
+.cm-live-capture--room .cm-live-capture__frame { width: 352px; height: 198px; border-radius: 6px; box-shadow: 0 0 0 1px var(--cm-border); }
+.cm-live-capture--phone .cm-live-capture__frame { width: 107px; height: 220px; border-radius: 14px; box-shadow: 0 0 0 3px var(--cm-ink); }
+.cm-live-capture__in { position: absolute !important; left: 0; top: 0; transform-origin: 0 0; transform: scale(.275); }
+.cm-live-capture--room .cm-live-capture__in { width: 1280px; height: 720px; }
+.cm-live-capture--phone .cm-live-capture__in { width: 390px; height: 800px; }

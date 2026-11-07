@@ -1,0 +1,36 @@
+{# A live contest's address when it cannot be played from here: over, for its class only (signed in
+   or not), or closed to an account the host took out. In the contest's theme, like the rest. #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ session.quizInstance.name }} - {{ 'quizLivePlayPageHeading'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {{ include('quiz_live/_stylesheets.html.twig', {slugs: [theme.slug]}) }}
+{% endblock %}
+
+{% block body %}
+    {% set texts = {
+        over: ['quizLiveClosedOverTitle', 'quizLiveClosedOverText'],
+        reserved: ['quizLiveClosedReservedTitle', 'quizLiveClosedReservedText'],
+        'sign-in': ['quizLiveClosedSignInTitle', 'quizLiveClosedSignInText'],
+        removed: ['quizLiveScreenRemovedTitle', 'quizLiveScreenRemovedText'],
+    } %}
+    <div class="ql ql-phone" data-live-theme="{{ theme.slug }}">
+        <div class="ql-surface">
+            <div class="ql-deco" aria-hidden="true"></div>
+            <div class="ql-scr">
+                <div class="ql-grow ql-center ql-pad ql-gap14">
+                    <span class="ql-pill">{{ session.quizInstance.name }}</span>
+                    <h1 class="fd ql-title-l ql-hero">{{ texts[reason][0]|trans }}</h1>
+                    <p class="ql-muted ql-maxw">{{ texts[reason][1]|trans }}</p>
+                    {% if reason == 'sign-in' %}
+                        <a class="ql-btn ql-btn--inline" href="{{ path('app_login') }}" data-turbo="false">{{ 'quizLiveClosedSignInAction'|trans }}</a>
+                    {% elseif app.user %}
+                        <a class="ql-btn ql-btn--inline ql-btn--alt" href="{{ path('app_home') }}" data-turbo="false">{{ 'quizLiveScreenHome'|trans }}</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

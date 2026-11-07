@@ -270,7 +270,20 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   page carries what the app used to - it asks for its phase again (`…/play/state`, the projector's
   `…/projector/state`) when it comes back from the background, the network or a reconnected stream
   (the hub replays nothing), keeps the screen awake (Screen Wake Lock) and offers an answer the
-  network lost again. A live answer is one JSON `response`
+  network lost again. **Since 2026-11-07 a contest belongs to a class or to none, and may be
+  public** (spec `design/validated/quiz-live-public.md`): Outils › Concours live is
+  `App\Controller\QuizLive\HostController` (`/quiz-live`, filtered by class, `QuizLiveSessionVoter`:
+  the host, and for a class contest its teachers and staff); a contest's public address is
+  `/live/{code}` (`PlayController`, PUBLIC_ACCESS, the waiting room's QR code), where **any known
+  account enters as itself - never as a guest** (« Prénom N. » in a public contest) and a visitor
+  without one enters a public contest as a guest: a pseudonym (`LiveNickname`), one of twenty avatars
+  drawn by the shared generator, a token in a cookie (`LiveGuestToken`, only its hash stored). Anybody
+  joins a contest under way; the host takes a player out of the waiting room only. The phone gets the
+  statement, its picture and the propositions' text. A contest wears a **theme**
+  (`config/quiz_live/themes.yaml` + `assets/styles/quiz_live/themes/<slug>.css`, `LiveThemeCatalog`,
+  Pop by default, seasonal ones offered all year): adding one is those two files, and
+  `/quiz-live/themes` draws its captures from the real screens (`assets/quiz_live/render.js`). A live
+  answer is one JSON `response`
   (`App\Service\QuizLive\LiveResponse`); right is right whatever the type, no partial points.
   **Kahoot reports (.xlsx)** are imported by the screen and by the connector's `quiz_import_kahoot`
   (a .zip of them too) through `App\Service\Kahoot\KahootReportReader`: both report layouts, every
@@ -695,10 +708,19 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `quiz_import_kahoot` turns Kahoot game reports deposited in the library (an .xlsx, or a .zip of
   them) into quizzes, one per report: the whole batch is read first, `dryRun` says what would be
   created, a game exported twice or a quiz of the same name already in the folder is skipped.
-  `library_move` files quizzes, files and whole folders elsewhere in the quiz or file library -
-  a move through each library's own manager, never a copy, so ids and links survive; the call is
-  checked whole before anything moves, then each move is flushed in turn inside one transaction
-  (a folder's subtree and its siblings' names are read from the database).
+  `library_move` files quizzes, séquences, files and whole folders elsewhere in the quiz, séquence
+  or file library - a move through each library's own manager, never a copy, so ids and links
+  survive; the call is checked whole before anything moves, then each move is flushed in turn
+  inside one transaction (a folder's subtree and its siblings' names are read from the database).
+  **Sharing between colleagues** (`share_recipients`, `share_create`, `share_list`,
+  `share_duplicate`, `share_revoke`; `App\Mcp\McpContentShares`, `Feature::ContentSharing`) is
+  Outils › Partages through the screen's own doors: `ContentShareComposer`, `ContentShareAudience`,
+  the three duplicators. Quizzes, files or folders, séquences and séances only - **never a class
+  share (« Partager à une classe ») and never a progression** (the user's decision of 2026-11-07:
+  nothing the connector shares reaches a student). Only the author shares; a group share hands
+  Claude the measured `readerCount` first; `share_duplicate` has a `dryRun` (the confirmation
+  screen: folders, weight, quota) and files the copy straight into a folder of the teacher's own -
+  every folder and séquence it names is checked to be theirs, past the folder voters' staff bypass.
   `progression_get` is **read-only**: Claude suggests a progression, the teacher builds it on the
   progression screens (`McpTimetable` holds the shared doors). `format_guide` is assembled from the import assistants' own catalogues,
   so the screen's prompt and the connector's guide cannot drift. `Feature::ClaudeConnector` is off
@@ -1002,9 +1024,11 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
   (retired, see the companion-repos paragraph): two PWAs only, beaup-app and e-CO.
   `public/manifest.webmanifest` (`id`/`scope` `/`, standalone) and the icons under
   `public/beaup-app/` sit **outside AssetMapper** - an installed app keeps asking the addresses it
-  was installed from; `icon.svg`/`icon-maskable.svg` (a geometric B) are the sources, the PNGs are
-  rendered from them (headless Chrome screenshot), and the mark is the project's own: never an
-  Institution emblem. Caddy sends the manifest's type itself (`@webAppManifest`): the prod image
+  was installed from; `icon.svg`/`icon-maskable.svg` are the sources, the PNGs are rendered from
+  them (headless Chrome screenshot). The mark is « Progression » (the user's choice of 2026-11-07,
+  replacing a geometric B): **the Institution's emblem** (`emblem-white.png`, cut from the HD badge)
+  inside a gold ring three quarters full, open at the bottom - so these icons are the Institution's
+  and listed in `NOTICE` with its other logos. Caddy sends the manifest's type itself (`@webAppManifest`): the prod image
   has no `/etc/mime.types`. **No service worker, no cache, no notification**: Chromium 156 reports
   no installability error and fires `beforeinstallprompt` with none registered, so adding one would
   buy nothing. The offer is caught on every page by `assets/web_app/install_prompt.js` (imported by

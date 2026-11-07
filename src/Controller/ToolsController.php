@@ -58,16 +58,14 @@ class ToolsController extends AbstractController
         return $this->renderPicker($repository, 'app_program_word_clouds', 'wordCloudNavLabel');
     }
 
-    // The live contest is the one quiz screen that needs a class: a session is played by the
-    // students of one Program, unlike the quiz library which is the teacher's own and reached
-    // straight from the menu. It hands over to the class's list of contests, running ones first,
-    // rather than straight to the creation form - a teacher opening this mid-lesson is usually
-    // going back to the session already on the projector, and the form is one button away.
+    // The live contest no longer asks for a class first (2026-11-07): a contest belongs to a class
+    // or to none, and its list filters by class (App\Controller\QuizLive\HostController). The old
+    // address is kept for bookmarks.
     #[RequiresFeature(Feature::QuizLive)]
     #[Route(path: '/tools/quiz-live', name: 'app_tools_quiz_live', methods: ['GET'])]
-    public function quizLive(ProgramRepository $repository): Response
+    public function quizLive(): Response
     {
-        return $this->renderPicker($repository, 'app_program_quiz_live_history', 'quizLiveNavLabel');
+        return $this->redirectToRoute('app_quiz_live_index');
     }
 
     // The cahier de texte used to be picked here too, and no longer is: its own screen

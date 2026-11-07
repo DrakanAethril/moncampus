@@ -1,0 +1,26 @@
+/* Live contest theme « Gelée » (config/quiz_live/themes.yaml).
+   Its tokens, its decoration, its hero animation and what its tiles do differently - the shape
+   every theme copies (assets/styles/quiz_live/live.css says which tokens). */
+
+.ql[data-live-theme="gelee"] { --bg:#FFF1E8; --bg2:#FFE3EC; --panel:#fff; --ink:#3B2546; --muted:#6E5878; --accent:#FF7AA2; --accent2:#6EC6FF; --ok:#5CCB86; --ko:#FF7F93; --okink:#3B2546; --c1:#FF7AA2; --c2:#6EC6FF; --c3:#FFD166; --c4:#7BD88F; --c5:#C3A6FF; --c6:#FFA26B; --tink:#3B2546; --bd:0 solid transparent; --sh:0 6px 0 rgba(59,37,70,.22); --r:24px; --fd:'Fredoka','Arial Rounded MT Bold',sans-serif; --fb:'Nunito',system-ui,sans-serif; --shpfill:#fff; --shpstroke:none; --shpsw:0; --btnbg:#FF7AA2; --btnink:#3B2546; --sel:#3B2546; --track:#fff; }
+.ql[data-live-theme="gelee"] .fd { font-weight: 700; }
+.ql[data-live-theme="gelee"] .ql-btn { font-weight: 700; box-shadow: 0 6px 0 #c94f78; }
+.ql[data-live-theme="gelee"] .ql-btn.ql-btn--alt { box-shadow: 0 6px 0 rgba(59,37,70,.2); }
+.ql[data-live-theme="gelee"] .ql-pill { box-shadow: 0 3px 0 rgba(59,37,70,.15); }
+.ql[data-live-theme="gelee"] .ql-av { box-shadow: 0 0 0 4px #fff, 0 5px 0 4px rgba(59,37,70,.15); }
+.ql[data-live-theme="gelee"] .ql-tile { box-shadow: 0 6px 0 color-mix(in srgb, var(--c) 62%, #3B2546); font-family: var(--fb); font-weight: 800; }
+.ql[data-live-theme="gelee"] .ql-tile::after { content: ""; position: absolute; left: 12px; right: 30%; top: 6px; height: 10px; border-radius: 10px; background: rgba(255,255,255,.55); pointer-events: none; }
+.ql[data-live-theme="gelee"] .ql-tile .ql-badge { border: 0; box-shadow: 0 2px 0 rgba(59,37,70,.2); }
+.ql[data-live-theme="gelee"] .ql-deco::before, .ql[data-live-theme="gelee"] .ql-deco::after { content: ""; position: absolute; border-radius: 50%; filter: blur(2px); opacity: .55; animation: ql-gelee-floaty 9s ease-in-out infinite; }
+.ql[data-live-theme="gelee"] .ql-deco::before { width: 220px; height: 220px; background: #FFD1DE; left: -60px; top: 18%; }
+.ql[data-live-theme="gelee"] .ql-deco::after { width: 180px; height: 180px; background: #CDEBFF; right: -50px; bottom: 12%; animation-delay: -4s; }
+.ql[data-live-theme="gelee"] .ql-hero { animation: ql-gelee-jelly .8s ease both; }
+.ql[data-live-theme="gelee"] .ql-pop { animation: ql-gelee-jelly .7s ease both; }
+.ql[data-live-theme="gelee"] .ql-bob { animation: ql-gelee-wobble 1.8s ease-in-out infinite; }
+.ql[data-live-theme="gelee"] .ql-input { border: 3px solid #fff; box-shadow: 0 5px 0 rgba(59,37,70,.15); }
+.ql[data-live-theme="gelee"] .ql-error { color: #c2304d; }
+.ql[data-live-theme="gelee"] .ql-wait { animation: ql-gelee-wobble 1.2s ease-in-out infinite; }
+.ql[data-live-theme="gelee"] .ql-bar i { border: 0; box-shadow: none; }
+@keyframes ql-gelee-floaty { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(20px, -30px) scale(1.1); } }
+@keyframes ql-gelee-jelly { 0% { transform: scale(.3); opacity: 0; } 35% { transform: scale(1.2, .8); opacity: 1; } 55% { transform: scale(.88, 1.12); } 72% { transform: scale(1.06, .95); } 86% { transform: scale(.98, 1.02); } 100% { transform: none; } }
+@keyframes ql-gelee-wobble { 0%, 100% { transform: scale(1, 1); } 25% { transform: scale(1.06, .94); } 50% { transform: scale(.95, 1.05); } 75% { transform: scale(1.02, .98); } }

@@ -33,13 +33,14 @@ class QuizLiveParticipantRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    // Ranked leaderboard for a session - highest score first, join date as a stable tiebreaker.
+    // Ranked leaderboard for a session - highest score first, join date as a stable tiebreaker. A
+    // left join: a guest has no account, and an inner one would drop every guest from the board.
     /** @return list<QuizLiveParticipant> */
     public function findRankedForSession(QuizLiveSession $session): array
     {
         return $this->createQueryBuilder('p')
             ->addSelect('s')
-            ->join('p.student', 's')
+            ->leftJoin('p.student', 's')
             ->where('p.session = :session')
             ->setParameter('session', $session)
             ->orderBy('p.score', 'DESC')

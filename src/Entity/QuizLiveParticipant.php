@@ -11,9 +11,13 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * One student's presence in a QuizLiveSession. Unique per (session, student) - join is idempotent,
- * so reconnecting (app backgrounded, browser refresh, SSE drop) resumes the same row rather than
- * creating a duplicate - see QuizLiveSessionService::join().
+ * One player's presence in a QuizLiveSession: an account (any account Formatool knows - it keeps its
+ * name and its avatar, it is never a guest) or, in a public contest, a guest (design/validated/
+ * quiz-live-public.md) - a pseudonym, a drawn avatar and the hash of the token its browser holds,
+ * nothing else. Unique per (session, student) for accounts - join is idempotent, so reconnecting
+ * (app backgrounded, browser refresh, SSE drop) resumes the same row rather than creating a
+ * duplicate - see QuizLiveSessionService::joinAccount(). MySQL lets the guests' null students
+ * share the index.
  */
 #[ORM\Entity(repositoryClass: QuizLiveParticipantRepository::class)]
 #[ORM\Table(name: 'quiz_live_participant')]
@@ -30,8 +34,22 @@ class QuizLiveParticipant
     private ?QuizLiveSession $session = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'student_id', nullable: false)]
+    #[ORM\JoinColumn(name: 'student_id', nullable: true)]
     private ?User $student = null;
+
+    // A guest's: the SHA-256 of the token its browser holds in a cookie (App\Service\QuizLive\
+    // LiveGuestCookie). The token itself is never stored.
+    #[ORM\Column(name: 'guest_token_hash', length: 64, unique: true, nullable: true)]
+    private ?string $guestTokenHash = null;
+
+    /**
+     * A guest's drawn avatar, one of the twenty its browser drew with the shared generator
+     * (public/serious-games/shared/avatar.js), normalised on the way in (App\SeriousGame\AvatarConfig).
+     *
+     * @var array<string, mixed>|null
+     */
+    #[ORM\Column(name: 'guest_avatar', type: Types::JSON, nullable: true)]
+    private ?array $guestAvatar = null;
 
     // Editable "Nom de participant" (Turn 1r/1s) - defaults to student->getDisplayName(), purely
     // cosmetic (leaderboard label), never used for identity/auth.
@@ -50,13 +68,34 @@ class QuizLiveParticipant
     #[ORM\OneToMany(mappedBy: 'participant', targetEntity: QuizLiveAnswer::class, cascade: ['persist'], orphanRemoval: true)]
     private Collection $answers;
 
-    public function __construct(QuizLiveSession $session, User $student, string $displayName)
+    public function __construct(QuizLiveSession $session, ?User $student, string $displayName)
     {
         $this->session = $session;
         $this->student = $student;
         $this->displayName = $displayName;
         $this->joinedAt = new \DateTimeImmutable();
         $this->answers = new ArrayCollection();
+    }
+
+    /** @param array<string, mixed> $avatar */
+    public static function forGuest(QuizLiveSession $session, string $pseudonym, array $avatar, string $tokenHash): self
+    {
+        $participant = new self($session, null, $pseudonym);
+        $participant->guestAvatar = $avatar;
+        $participant->guestTokenHash = $tokenHash;
+
+        return $participant;
+    }
+
+    public function isGuest(): bool
+    {
+        return null === $this->student;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getGuestAvatar(): ?array
+    {
+        return $this->guestAvatar;
     }
 
     public function getId(): ?int

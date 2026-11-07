@@ -19,11 +19,15 @@ use App\Enum\QuizScoring;
 use App\Repository\QuizLiveAnswerRepository;
 use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
+use App\SeriousGame\Avatar\AvatarConfig;
 use App\Service\QuizLive\LiveAnswerKind;
+use App\Service\QuizLive\LiveGuestToken;
+use App\Service\QuizLive\LiveNickname;
 use App\Service\QuizLive\LiveNumberBuckets;
 use App\Service\QuizLive\LiveOrderShuffle;
 use App\Service\QuizLive\LiveResponse;
 use App\Service\QuizLive\LiveScoring;
+use App\Service\QuizLive\LiveThemeCatalog;
 use App\Util\BlankTextParser;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -51,6 +55,14 @@ use Symfony\Component\Mercure\Update;
  * Every transition happens under a lock on the session row: two clicks on « Suivant », the host's
  * timer and the last student's answer may all arrive in the same instant, and each must move the
  * room one step, once.
+ *
+ * Since 2026-11-07 (design/validated/quiz-live-public.md) a contest belongs to a class or to none,
+ * and may be public: whoever scans its QR code plays, an account under its own name and avatar
+ * (« Prénom N. » in a public contest), a visitor without one as a guest - a pseudonym, one of twenty
+ * drawn avatars, a token in a cookie (joinGuest()). Anybody may join a contest under way, between two
+ * questions or in the middle of one. And the phones are told the statement, its picture and the
+ * propositions: a public contest may be played far from any projector, so the phone is a whole
+ * screen (it was shapes only until then).
  *
  * @phpstan-import-type UserAvatar from UserAvatars as ParticipantAvatar
  */
@@ -95,6 +107,7 @@ class QuizLiveSessionService
         private readonly UserAvatars $userAvatars,
         private readonly LoggerInterface $logger,
         private readonly Authorization $authorization,
+        private readonly LiveThemeCatalog $themes,
     ) {
     }
 
@@ -102,8 +115,9 @@ class QuizLiveSessionService
      * @param non-empty-list<QuizTemplate> $templates the merged question pool, played in this order
      * @param string|null                  $name      free label for the session; blank falls back
      *                                                to the first template's own name
+     * @param Program|null                 $program   the class it belongs to - none makes it public
      */
-    public function createSession(array $templates, Program $program, User $host, ?int $secondsPerQuestion = null, ?string $name = null): QuizLiveSession
+    public function createSession(array $templates, ?Program $program, User $host, ?int $secondsPerQuestion = null, ?string $name = null, bool $public = false, ?string $theme = null): QuizLiveSession
     {
         $playable = array_values(array_filter($this->poolOf($templates), $this->isPlayable(...)));
         if ([] === $playable) {
@@ -136,7 +150,7 @@ class QuizLiveSessionService
             $this->isPlayable(...),
         );
 
-        $session = new QuizLiveSession($instance, $host, $this->generateUniqueRoomCode());
+        $session = new QuizLiveSession($instance, $host, $this->generateUniqueRoomCode(), $public, $this->themes->resolve($theme ?? '')->slug);
         $this->entityManager->persist($session);
         $this->entityManager->flush();
 
@@ -160,13 +174,21 @@ class QuizLiveSessionService
         ));
     }
 
+    /**
+     * An account enters the room - the phones' web page and the mobile app alike. Any contest not
+     * over yet: the room may already be playing. A class contest takes its own students; a public
+     * one takes every account (it keeps its name and its avatar, it is never a guest). An account
+     * the host took out is not let back in.
+     */
     public function join(QuizLiveSession $session, User $student, string $displayName): QuizLiveParticipant
     {
-        if (LiveSessionStatus::Lobby !== $session->getStatus()) {
-            throw new LiveSessionStateException('This session is no longer joinable.');
+        $this->assertJoinable($session);
+
+        if ($session->wasRemoved($student)) {
+            throw new LiveSessionStateException('You were taken out of this session.');
         }
 
-        if (!$session->getQuizInstance()->getProgram()->getStudents()->contains($student)) {
+        if (!$this->mayJoinAsAccount($session, $student)) {
             throw new LiveSessionStateException('You are not enrolled in this program.');
         }
 
@@ -181,10 +203,113 @@ class QuizLiveSessionService
         }
 
         $this->entityManager->flush();
-
-        $this->publishToHost($session, $this->lobbyPayload($session));
+        $this->announceArrival($session);
 
         return $participant;
+    }
+
+    /**
+     * An account entering from the web page, which asks it nothing: « Prénom N. » in a public
+     * contest - strangers are in the room -, its directory name in a class contest.
+     */
+    public function joinAccount(QuizLiveSession $session, User $user): QuizLiveParticipant
+    {
+        $name = $session->isPublic() ? $user->getShortDisplayName() : $user->getDisplayName();
+
+        return $this->join($session, $user, $name ?? $user->getUsername());
+    }
+
+    public function mayJoinAsAccount(QuizLiveSession $session, User $user): bool
+    {
+        return $session->isPublic() || true === $session->getProgram()?->getStudents()->contains($user);
+    }
+
+    /**
+     * A visitor without an account enters a public contest under a pseudonym and one of the avatars
+     * its browser drew. The token goes back to the browser, only its hash stays here.
+     *
+     * @param array<array-key, mixed> $avatar
+     *
+     * @return array{participant: QuizLiveParticipant, token: string}
+     *
+     * @throws LiveGuestRefusedException the pseudonym, with the reason to show
+     * @throws LiveSessionStateException the contest is over, or not public
+     */
+    public function joinGuest(QuizLiveSession $session, string $nickname, array $avatar): array
+    {
+        $this->assertJoinable($session);
+        if (!$session->isPublic()) {
+            throw new LiveSessionStateException('This session is not public.');
+        }
+
+        $names = array_values(array_map(
+            static fn (QuizLiveParticipant $participant): string => (string) $participant->getDisplayName(),
+            $session->getParticipants()->toArray(),
+        ));
+        $refusal = LiveNickname::refusal($nickname, $names);
+        if (null !== $refusal) {
+            throw new LiveGuestRefusedException($refusal);
+        }
+
+        $token = LiveGuestToken::mint();
+        $participant = QuizLiveParticipant::forGuest($session, LiveNickname::clean($nickname), AvatarConfig::normalize($avatar, []), LiveGuestToken::hash($token));
+        $session->addParticipant($participant);
+        $this->entityManager->persist($participant);
+        $this->entityManager->flush();
+        $this->announceArrival($session);
+
+        return ['participant' => $participant, 'token' => $token];
+    }
+
+    /**
+     * One player's face, as the screens draw it - their page shows it in its head.
+     *
+     * @return ParticipantAvatar
+     */
+    public function avatarFor(QuizLiveParticipant $participant): array
+    {
+        return $this->avatarOf($participant, $this->avatarsOf([$participant]));
+    }
+
+    /** Who this request is in the room: its account, else the guest its cookie names. */
+    public function participantFor(QuizLiveSession $session, ?User $user, ?string $guestTokenHash): ?QuizLiveParticipant
+    {
+        if (null !== $user) {
+            return $this->participantRepository->findOneForStudent($session, $user);
+        }
+        if (null === $guestTokenHash) {
+            return null;
+        }
+
+        return $this->participantRepository->findOneBy(['session' => $session, 'guestTokenHash' => $guestTokenHash]);
+    }
+
+    /**
+     * The host takes a player out of the waiting room - a misplaced pseudonym, an intruder. Before
+     * the first question only: once the room plays, a player is part of its results. An account is
+     * not let back in; a guest may come back under another pseudonym.
+     */
+    public function remove(QuizLiveSession $session, int $participantId): void
+    {
+        if (LiveSessionStatus::Lobby !== $session->getStatus()) {
+            throw new LiveSessionStateException('A player can only be taken out of the waiting room.');
+        }
+
+        foreach ($session->getParticipants() as $participant) {
+            if ($participant->getId() !== $participantId) {
+                continue;
+            }
+            $student = $participant->getStudent();
+            if (null !== $student) {
+                $session->markRemoved($student);
+            }
+            $session->removeParticipant($participant);
+            $this->entityManager->remove($participant);
+            $this->entityManager->flush();
+            $this->announceArrival($session);
+
+            return;
+        }
     }
 
     public function start(QuizLiveSession $session, User $host): void
@@ -250,6 +375,12 @@ class QuizLiveSessionService
         $participant = $this->participantRepository->findOneForStudent($session, $student)
             ?? throw new LiveSessionStateException('You have not joined this session.');
 
+        return $this->submitAnswerFor($session, $participant, $response);
+    }
+
+    /** An answer of a player, account or guest - the room's only door for one. */
+    public function submitAnswerFor(QuizLiveSession $session, QuizLiveParticipant $participant, LiveResponse $response): QuizLiveAnswer
+    {
         $closed = false;
         $answer = $this->locked($session, function () use ($session, $participant, $response, &$closed): QuizLiveAnswer {
             if (LiveSessionStatus::Question !== $session->getStatus() || $session->isQuestionTimeUp()) {
@@ -625,7 +756,7 @@ class QuizLiveSessionService
             'type' => 'participant-joined',
             'participantCount' => \count($session->getParticipants()),
             'participants' => array_map(
-                fn (QuizLiveParticipant $p): array => ['id' => $p->getId(), 'displayName' => $p->getDisplayName(), 'avatar' => $this->avatarOf($p, $avatars)],
+                fn (QuizLiveParticipant $p): array => ['id' => $p->getId(), 'displayName' => $p->getDisplayName(), 'avatar' => $this->avatarOf($p, $avatars), 'guest' => $p->isGuest()],
                 $participants,
             ),
         ];
@@ -642,8 +773,7 @@ class QuizLiveSessionService
     }
 
     /**
-     * The statement alone. The phones only learn which question of how many - the text is on the
-     * board, as it always is in the room.
+     * The statement alone, on the board and on the phones.
      *
      * @return array<string, mixed>
      */
@@ -659,16 +789,17 @@ class QuizLiveSessionService
             'isVote' => !$question->getType()->hasRightAnswer(),
         ];
 
+        $payload += $this->statementOf($question);
         if ($forHost) {
-            $payload += $this->statementOf($question);
             $payload['participantCount'] = \count($session->getParticipants());
         }
 
         return $payload;
     }
 
-    // Host gets the full question - never the correct-answer flag (kept back until Results, same
-    // suspense as the players). Players get shapes only, no label and no question text.
+    // Everybody gets the full question - never the correct-answer flag (kept back until Results).
+    // The phones have had the statement and the propositions' text since 2026-11-07: a public
+    // contest may be played with no projector in sight (see the class docblock).
     /** @return array<string, mixed> */
     private function questionOpenedPayload(QuizLiveSession $session, bool $forHost): array
     {
@@ -685,7 +816,7 @@ class QuizLiveSessionService
             // players (reveals nothing about content/correctness) and required so submitAnswer()
             // has something to validate against.
             $slot = ['answerId' => $answer->getId(), 'shapeIndex' => $position, 'shape' => $shape['shape'], 'color' => $shape['color']];
-            $answers[] = $forHost ? $slot + ['label' => $answer->getLabel()] : $slot;
+            $answers[] = $slot + ['label' => $answer->getLabel()];
         }
 
         $payload = [
@@ -705,8 +836,8 @@ class QuizLiveSessionService
             $payload['decimals'] = $question->getNumericDecimals();
         }
 
+        $payload += $this->statementOf($question);
         if ($forHost) {
-            $payload += $this->statementOf($question);
             $payload['participantCount'] = \count($session->getParticipants());
             $payload['answeredCount'] = $this->answeredCount($session, $question);
         }
@@ -840,6 +971,7 @@ class QuizLiveSessionService
         $rows = [];
         foreach ($shown as $position => $answer) {
             $rows[] = [
+                'answerId' => $answer->getId(),
                 'label' => $answer->getLabel(),
                 'count' => $counts[(int) $answer->getId()] ?? 0,
                 'correct' => $answer->isCorrect(),
@@ -974,9 +1106,35 @@ class QuizLiveSessionService
      */
     private function avatarOf(QuizLiveParticipant $participant, array $avatars): array
     {
+        if ($participant->isGuest()) {
+            return ['photo' => null, 'drawn' => $participant->getGuestAvatar()];
+        }
         $id = $participant->getStudent()?->getId();
 
         return (null !== $id ? $avatars[$id] ?? null : null) ?? ['photo' => null, 'drawn' => null];
+    }
+
+    private function assertJoinable(QuizLiveSession $session): void
+    {
+        if ($session->isOver()) {
+            throw new LiveSessionStateException('This session is no longer joinable.');
+        }
+    }
+
+    /**
+     * Tells the screens who is in the room now: the waiting room redraws its players, a room
+     * already playing only counts them - the board stays on its question.
+     */
+    private function announceArrival(QuizLiveSession $session): void
+    {
+        if (LiveSessionStatus::Lobby === $session->getStatus()) {
+            $this->publishToHost($session, $this->lobbyPayload($session));
+            $this->publishToPlayers($session, ['type' => 'lobby', 'participantCount' => \count($session->getParticipants())]);
+
+            return;
+        }
+
+        $this->publishToHost($session, ['type' => 'participant-count', 'participantCount' => \count($session->getParticipants())]);
     }
 
     /** @param array<string, mixed> $payload */
