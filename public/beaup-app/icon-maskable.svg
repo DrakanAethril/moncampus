@@ -1,12 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <title>beaup-app</title>
-  <!-- The maskable variant of icon.svg: full-bleed navy (the launcher draws its own shape) and the
-       B scaled into the safe zone, the central circle of radius 0.4 × 512 that every mask keeps.
-       Also the source of the 180 px apple-touch-icon, which iOS rounds itself. -->
-  <rect width="512" height="512" fill="#12344d"/>
-  <g transform="translate(256 256) scale(0.9) translate(-8 0)" fill="none" stroke-width="56">
-    <path d="M -70 -100 H 22 A 47 47 0 0 1 22 -6 H -70" stroke="#dbb35f"/>
-    <path d="M -70 -6 H 34 A 53 53 0 0 1 34 100 H -70" stroke="#ffffff"/>
-    <rect x="-100" y="-128" width="60" height="256" rx="8" fill="#ffffff" stroke="none"/>
+  <!-- The maskable variant of icon.svg: full-bleed blue (the launcher draws its own shape). The ring's
+       outer edge, radius 187, already sits inside the safe zone - the central circle of radius
+       0.4 × 512 that every mask keeps - so the drawing is the same. Also the source of the 180 px
+       apple-touch-icon, which iOS rounds itself. -->
+  <rect width="512" height="512" fill="#1B6BA8"/>
+  <g fill="none" stroke-width="22">
+    <circle cx="256" cy="256" r="176" stroke="#ffffff" stroke-opacity=".22"/>
+    <circle cx="256" cy="256" r="176" stroke="#c9a04e" stroke-linecap="round" stroke-dasharray="829.4 1105.8" transform="rotate(135 256 256)"/>
   </g>
+  <image href="emblem-white.png" x="169.54" y="144" width="172.92" height="224"/>
 </svg>

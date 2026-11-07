@@ -1024,9 +1024,11 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
   (retired, see the companion-repos paragraph): two PWAs only, beaup-app and e-CO.
   `public/manifest.webmanifest` (`id`/`scope` `/`, standalone) and the icons under
   `public/beaup-app/` sit **outside AssetMapper** - an installed app keeps asking the addresses it
-  was installed from; `icon.svg`/`icon-maskable.svg` (a geometric B) are the sources, the PNGs are
-  rendered from them (headless Chrome screenshot), and the mark is the project's own: never an
-  Institution emblem. Caddy sends the manifest's type itself (`@webAppManifest`): the prod image
+  was installed from; `icon.svg`/`icon-maskable.svg` are the sources, the PNGs are rendered from
+  them (headless Chrome screenshot). The mark is « Progression » (the user's choice of 2026-11-07,
+  replacing a geometric B): **the Institution's emblem** (`emblem-white.png`, cut from the HD badge)
+  inside a gold ring three quarters full, open at the bottom - so these icons are the Institution's
+  and listed in `NOTICE` with its other logos. Caddy sends the manifest's type itself (`@webAppManifest`): the prod image
   has no `/etc/mime.types`. **No service worker, no cache, no notification**: Chromium 156 reports
   no installability error and fires `beforeinstallprompt` with none registered, so adding one would
   buy nothing. The offer is caught on every page by `assets/web_app/install_prompt.js` (imported by
