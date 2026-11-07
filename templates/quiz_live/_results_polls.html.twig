@@ -1,0 +1,25 @@
+{# « Sondages » of a contest's results (App\Service\QuizLive\LiveQuestionAnalysis): one histogram per
+   vote, a column per proposition in the order the room saw them, then the players who did not
+   vote - each out of the players in the room when the vote closed. #}
+<div class="card cm-card--tabbed">
+    <div class="card-body d-flex flex-column gap-4">
+        {% for poll in analysis.polls %}
+            <section class="cm-live-poll" aria-labelledby="quiz-live-poll-{{ poll.number }}">
+                <h3 class="cm-live-poll__title" id="quiz-live-poll-{{ poll.number }}"><span class="cm-live-poll__number">{{ poll.number }}</span> {{ poll.label }}</h3>
+                <p class="cm-live-poll__meta">{{ 'quizLiveResultsPollVoteCount'|trans({'%count%': poll.answered, '%present%': poll.present}) }}</p>
+                <div class="cm-live-hist">
+                    {% for bar in poll.bars %}
+                        {% set label = bar.none ? 'quizLiveResultsPollNoAnswer'|trans : bar.label %}
+                        <div class="cm-live-hist__col{{ bar.none ? ' cm-live-hist__col--none' }}" title="{{ label }} : {{ bar.count }} ({{ bar.percent }} %)">
+                            <span class="cm-live-hist__plot">
+                                <span class="cm-live-hist__value">{{ bar.count }}<small>{{ bar.percent }} %</small></span>
+                                <span class="cm-live-hist__bar" style="height: {{ bar.percent * 1.4 }}px;"></span>
+                            </span>
+                            <span class="cm-live-hist__label">{{ label }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+    </div>
+</div>

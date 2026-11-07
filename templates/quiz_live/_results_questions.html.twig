@@ -1,0 +1,32 @@
+{# « Analyse par question » of a contest's results (App\Service\QuizLive\LiveQuestionAnalysis): each
+   question's success rate among the players in the room when it closed, no name. Votes are not
+   here - they have no right answer, they have their own tab. #}
+<div class="card cm-card--tabbed">
+    <div class="card-body">
+        <ol class="cm-live-qrates">
+            {% for row in analysis.questions %}
+                {% set tone = row.rate is null ? 'none' : (row.rate >= 70 ? 'good' : (row.rate >= 40 ? 'mid' : 'low')) %}
+                <li class="cm-live-qrate cm-live-qrate--{{ tone }}">
+                    <span class="cm-live-qrate__number">{{ row.number }}</span>
+                    <span class="cm-live-qrate__label">
+                        {{ row.label }}
+                        <span class="cm-live-qrate__meta">
+                            {{ row.typeKey|trans }}
+                            {% if row.present > 0 %}
+                                · {{ 'quizLiveResultsQuestionRightCount'|trans({'%right%': row.right, '%count%': row.present}) }}
+                                {% if row.present > row.answered %}· {{ 'quizLiveResultsQuestionSilentCount'|trans({'%count%': row.present - row.answered}) }}{% endif %}
+                            {% else %}
+                                · {{ 'quizLiveResultsQuestionNotPlayed'|trans }}
+                            {% endif %}
+                        </span>
+                    </span>
+                    <span class="cm-live-qrate__track" role="img" aria-label="{{ row.rate is null ? 'quizLiveResultsQuestionNotPlayed'|trans : row.rate ~ ' %' }}"><span class="cm-live-qrate__fill" style="width: {{ row.rate ?? 0 }}%;"></span></span>
+                    <span class="cm-live-qrate__value">{{ row.rate is null ? '—' : row.rate ~ ' %' }}</span>
+                </li>
+            {% else %}
+                <li class="text-secondary">{{ 'quizLiveResultsQuestionsEmptyMessage'|trans }}</li>
+            {% endfor %}
+        </ol>
+    </div>
+    <div class="card-footer text-secondary" style="font-size: 12.5px;">{{ 'quizLiveResultsQuestionsFootnote'|trans }}</div>
+</div>
