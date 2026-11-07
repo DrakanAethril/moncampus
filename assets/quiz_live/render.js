@@ -176,14 +176,15 @@ export function roomResults(state, ctx) {
     if ('order' === state.kind) {
         mid = `<div class="ql-grow ql-center ql-gap14"><div class="ql-col ql-gap10 ql-orderlist">${(state.rows || []).map((row, i) => `<div class="ql-tile ql-up" style="--c:${colorOf(row.shapeIndex)};animation-delay:${i * 0.25}s"><span class="fd ql-rank">${row.rank}</span>${shape(row.shape, 32)}<span class="ql-t">${esc(row.label)}</span></div>`).join('')}</div>`
             + `<p class="ql-stmt ql-small">${esc(fill(ctx.labels.correctCount, { '%correct%': state.correctCount, '%answered%': state.participantCount }))}</p></div>`;
-    } else if ('text' === state.kind) {
-        mid = `<div class="ql-grow ql-center ql-gap20"><div class="fd ql-hero ql-glow ql-expected">${esc(state.expected || '')}</div><div class="ql-row ql-gap14 ql-wrap ql-jc">${(state.rows || []).slice(0, 6).map((row, i) => `<span class="ql-pill ql-up ql-big" style="animation-delay:${0.4 + i * 0.12}s">${row.correct ? CHECK : CROSS}${esc(row.label)} · ${row.count}</span>`).join('')}</div></div>`;
+    } else if ('text' === state.kind || ('number' === state.kind && !(state.rows || []).some((row) => row.count > 0))) {
+        // A word - or a number nobody gave: the expected answer, alone in the middle.
+        mid = `<div class="ql-grow ql-center ql-gap20"><div class="fd ql-hero ql-glow ql-expected">${esc(state.expected || '')}</div><div class="ql-row ql-gap14 ql-wrap ql-jc">${(state.rows || []).filter((row) => row.count > 0).slice(0, 6).map((row, i) => `<span class="ql-pill ql-up ql-big" style="animation-delay:${0.4 + i * 0.12}s">${row.correct ? CHECK : CROSS}${esc(row.label)} · ${row.count}</span>`).join('')}</div></div>`;
     } else {
         const rows = state.rows || [];
         const max = Math.max(1, ...rows.map((row) => row.count));
         const vote = !!state.isVote;
         const lead = vote ? rows.reduce((best, row, i) => (row.count > rows[best].count ? i : best), 0) : -1;
-        mid = `<div class="ql-grow"><div class="ql-bars">${rows.map((row, i) => {
+        mid = `<div class="ql-grow ql-col"><div class="ql-bars">${rows.map((row, i) => {
             const good = vote ? i === lead : row.correct;
             const colour = undefined !== row.shapeIndex ? colorOf(row.shapeIndex) : (row.correct ? 'var(--ok)' : 'var(--muted)');
             const icon = row.shape ? shape(row.shape, 30) : `<span class="ql-barlabel">${esc(row.label)}</span>`;
@@ -219,7 +220,7 @@ export function roomPodium(state, ctx) {
             return '<div class="ql-pod"></div>';
         }
 
-        return `<div class="ql-pod"><div class="ql-who" style="animation-delay:${delay}s">${face(row.avatar, row.displayName, 110)}<b>${esc(row.displayName)}</b><span class="fd">${fmt(row.score)}</span></div><div class="ql-plinth fd" style="--c:${colour};height:${height}px;animation-delay:${delay - 0.3}s">${k + 1}</div></div>`;
+        return `<div class="ql-pod"><div class="ql-who" style="animation-delay:${delay}s">${face(row.avatar, row.displayName, 110)}<b class="ql-name">${esc(row.displayName)}</b><span class="fd">${fmt(row.score)}</span></div><div class="ql-plinth fd" style="--c:${colour};height:${height}px;animation-delay:${delay - 0.3}s">${k + 1}</div></div>`;
     }).join('');
     const results = ctx.resultsUrl ? `<a class="ql-btn ql-btn--inline ql-btn--alt" href="${esc(ctx.resultsUrl)}" data-turbo="false">${esc(ctx.labels.results)}</a>` : '';
 
@@ -259,7 +260,7 @@ export function phoneLobby(state, ctx) {
         ? `<span class="ql-pill">${esc(ctx.labels.guestNote)}</span>`
         : `<span class="ql-pill">${esc(ctx.labels.accountNote)}</span>`;
 
-    return scr(`${phoneHead(state, ctx, {})}<div class="ql-grow ql-center ql-pad ql-gap14"><div class="ql-bob">${face(ctx.me.avatar, ctx.me.name, 150, 'ql-bigav')}</div><h2 class="fd ql-title-xl ql-hero ql-glow">${esc(ctx.me.name)}</h2><p class="ql-stmt ql-s19">${esc(ctx.labels.inTheRoom)}</p><p class="ql-muted ql-m0">${esc(ctx.labels.lookAtBoard)}<br><span data-bind="count">${state.participantCount ?? ''}</span> ${esc(ctx.labels.playersInRoom)}</p>${note}</div>`);
+    return scr(`${phoneHead(state, ctx, {})}<div class="ql-grow ql-center ql-pad ql-gap14"><div class="ql-bob">${face(ctx.me.avatar, ctx.me.name, 150, 'ql-bigav')}</div><h2 class="fd ql-title-xl ql-hero ql-glow ql-name">${esc(ctx.me.name)}</h2><p class="ql-stmt ql-s19">${esc(ctx.labels.inTheRoom)}</p><p class="ql-muted ql-m0">${esc(ctx.labels.lookAtBoard)}<br><span data-bind="count">${state.participantCount ?? ''}</span> ${esc(ctx.labels.playersInRoom)}</p>${note}</div>`);
 }
 
 export function phoneCountdown(ctx) {
@@ -385,9 +386,13 @@ export function phoneFinished(state, ctx) {
     const medal = rank && rank <= 3
         ? `<svg class="ql-medal" viewBox="0 0 100 100" aria-hidden="true"><path d="M30 4h16l8 30H38zM70 4H54l-8 30h16z" fill="${1 === rank ? '#FF6B6B' : '#4D7CFE'}" stroke="#111" stroke-width="3"/><circle cx="50" cy="62" r="32" fill="${MEDAL[rank - 1]}" stroke="#111" stroke-width="4"/><text x="50" y="76" text-anchor="middle" font-size="38" font-family="Archivo Black, Arial Black, sans-serif" fill="#111">${rank}</text></svg>` : '';
     const message = ctx.me.guest ? fill(ctx.labels.guestThanks, { '%name%': ctx.me.name }) : ctx.labels.accountThanks;
+    // What to do now, said plainly: an account goes home, a guest has nowhere to go and is told so.
+    const next = ctx.homeUrl
+        ? `<a class="ql-btn ql-btn--inline" href="${esc(ctx.homeUrl)}" data-turbo="false">${esc(ctx.labels.home)}</a>`
+        : `<p class="ql-panel ql-rightbox ql-b ql-m0">${esc(ctx.labels.guestDone)}</p>`;
 
     return scr(`${phoneHead({}, ctx, { score: row ? row.score : 0 })}<div class="ql-grow ql-center ql-pad ql-gap14"><div class="ql-dots ql-drumroll" aria-hidden="true"><i></i><i></i><i></i></div>`
-        + `<div class="ql-center ql-gap14 ql-later">${medal}<div class="fd ql-glow ql-rankbig${medal ? ' is-small' : ''}">${rank ? ordinal(rank) : '—'}</div><p class="ql-stmt">${esc(fill(ctx.labels.points, { '%points%': fmt(row ? row.score : 0) }))}</p><p class="ql-muted ql-m0 ql-maxw">${esc(message)}</p>${ctx.homeUrl ? `<a class="ql-btn ql-btn--alt ql-btn--inline" href="${esc(ctx.homeUrl)}" data-turbo="false">${esc(ctx.labels.home)}</a>` : ''}</div></div>`);
+        + `<div class="ql-center ql-gap14 ql-later">${medal}<div class="fd ql-glow ql-rankbig${medal ? ' is-small' : ''}">${rank ? ordinal(rank) : '—'}</div><p class="ql-stmt">${esc(fill(ctx.labels.points, { '%points%': fmt(row ? row.score : 0) }))}</p><p class="ql-muted ql-m0 ql-maxw">${esc(message)}</p>${next}</div></div>`);
 }
 
 export function phoneMessage(title, text, ctx, link = null) {
