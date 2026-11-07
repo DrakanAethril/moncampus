@@ -34,6 +34,7 @@ final readonly class Scenario
         private array $misconceptions,
         private string $helper,
         private bool $restartAnytime,
+        private bool $freeOrder,
     ) {
     }
 
@@ -75,6 +76,7 @@ final readonly class Scenario
             $misconceptions,
             \is_string($data['helper'] ?? null) && '' !== $data['helper'] ? $data['helper'] : 'ines',
             true === ($data['restart_anytime'] ?? null),
+            true === ($data['free_order'] ?? null),
         );
     }
 
@@ -96,6 +98,17 @@ final readonly class Scenario
     public function restartAnytime(): bool
     {
         return $this->restartAnytime;
+    }
+
+    /**
+     * Whether a ticket's steps come in the order written whatever their kinds. The Neko-Con rule
+     * (ScenarioValidator) opens a ticket on its repair, followed by its explanation; a game whose
+     * manifest says `free_order: true` - SQL pas à pas, whose levels practise, ask, then write -
+     * places its repairs where it wants them.
+     */
+    public function freeOrder(): bool
+    {
+        return $this->freeOrder;
     }
 
     public function capacity(): int

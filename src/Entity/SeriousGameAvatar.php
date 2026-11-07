@@ -16,7 +16,7 @@ use Doctrine\ORM\Mapping as ORM;
  * (App\Service\UserAvatars) - the photo, when there is one, stays beside it. The entity and its
  * table kept their serious-games name: renaming them would move every reference for no reader's gain.
  *
- * `$config` is the drawing's settings, version 2 (`start: 'a' | 'b'`, no gender stored), read and
+ * `$config` is the drawing's settings, version 3 (`start: 'a' | 'b'`, no gender stored), read and
  * completed by App\SeriousGame\Avatar\AvatarConfig. It is drawn by one JavaScript module shared by
  * the platform and the games (`public/serious-games/shared/avatar.js`); there is no second
  * implementation in PHP.

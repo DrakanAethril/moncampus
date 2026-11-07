@@ -30,7 +30,7 @@ final readonly class SeriousGameAvatars
     ) {
     }
 
-    /** @return array<string, mixed> the person's config, version 2, defaults filled */
+    /** @return array<string, mixed> the person's config, version 3, defaults filled */
     public function configFor(User $user): array
     {
         $avatar = $this->avatars->findOneForUser($user);

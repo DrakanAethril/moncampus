@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.07'
+      date: '2026-11-07'
+      summary: "Un septième jeu d'entraînement de ce genre rejoint l'essai auprès de l'administration, le premier sans histoire et le premier pensé pour le téléphone : trente niveaux pour découvrir les bases de données et le langage SQL. Les avatars gagnent un vestiaire manga, et l'import Kahoot signale ce que le rapport ne contient pas."
+      entries:
+          - type: nouveaute
+            title: "SQL pas à pas : un jeu d'entraînement pour débuter en bases de données, en trente niveaux"
+            detail: "Chaque niveau apprend une notion, du premier SELECT aux clés étrangères : un court cours, puis prédire, comprendre, compléter, réparer et écrire trois requêtes ; un défi chrono clôt chaque notion sans jamais bloquer la suite."
+          - type: nouveaute
+            title: "Mon avatar : un vestiaire manga"
+            detail: "De nouvelles coupes, couleurs, visages, accessoires et fonds, et un onglet « Effets » : auras, signes au-dessus de la tête ou autour du visage."
+          - type: modification
+            title: "Import Kahoot : ce que le rapport ne contient pas est nommé"
+            detail: "Les questions non jouées ou absentes du rapport sont signalées, et un quiz à plusieurs bonnes réponses joué comme une seule est importé en QCM à plusieurs réponses."
     - version: '2026.11.05'
       date: '2026-11-05'
       summary: "Le concours en direct se joue désormais comme un Kahoot : la question d'abord, puis les réponses et le chrono, les résultats, le classement et le podium, avec tous les types de questions d'un Kahoot. Les rapports de parties Kahoot s'importent en quiz, et les étudiants jouent depuis beaup-app."

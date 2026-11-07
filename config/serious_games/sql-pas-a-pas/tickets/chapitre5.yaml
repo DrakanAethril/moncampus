@@ -1,0 +1,185 @@
+# SQL pas à pas — chapter 5, « Relier les tables ».
+tickets:
+  - id: N17
+    act: 5
+    after: [N16]
+    requester: guide
+    title: "Lire un schéma"
+    request: "clé primaire · clé étrangère · un pour plusieurs"
+    course: "Clés"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Dans la table pret, à quoi sert la colonne specimen_id ?"
+        options:
+          - { text: "C'est une clé étrangère : elle désigne, par son id, le spécimen prêté.", ok: true }
+          - text: "Elle numérote les prêts."
+            misconception: fk-numero
+            reaction: { who: guide, expr: neutre, text: "Les prêts sont numérotés par pret.id, leur clé primaire. specimen_id, lui, renvoie vers la table specimen." }
+          - text: "Elle contient une copie du nom du spécimen."
+            misconception: fk-copie
+            reaction: { who: guide, expr: neutre, text: "Elle contient un id, pas un nom : le nom n'est écrit qu'une fois, dans specimen. C'est tout l'intérêt." }
+          - text: "Elle sert à trier les prêts."
+            misconception: fk-tri
+            reaction: { who: guide, expr: neutre, text: "Une clé étrangère relie deux tables ; trier reste le travail d'ORDER BY." }
+      - id: cle
+        kind: choice
+        prompt: "Quelle colonne est la clé primaire de la table salle ?"
+        options:
+          - { text: "code", ok: true }
+          - text: "libelle"
+            misconception: pk-texte-long
+            reaction: { who: guide, expr: neutre, text: "Le libellé décrit la salle, mais c'est code qui la désigne : specimen.salle y fait référence." }
+          - text: "etage"
+            misconception: pk-repetee
+            reaction: { who: guide, expr: neutre, text: "Plusieurs salles sont au même étage : une clé primaire ne se répète jamais." }
+          - text: "surface_m2"
+            misconception: pk-repetee
+            reaction: { who: guide, expr: neutre, text: "Deux salles pourraient avoir la même surface : une clé primaire doit être unique." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N18
+    act: 5
+    after: [N17]
+    requester: guide
+    title: "Joindre deux tables"
+    request: "JOIN … ON · table.colonne"
+    course: "JOIN"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi les trois spécimens sans salle n'apparaissent-ils pas dans specimen JOIN salle ON specimen.salle = salle.code ?"
+        options:
+          - { text: "Une jointure ne garde que les lignes qui ont une correspondance : NULL ne correspond à aucune salle.", ok: true }
+          - text: "Parce que la jointure coupe la fin du résultat."
+            misconception: join-coupe
+            reaction: { who: guide, expr: neutre, text: "Une jointure ne coupe rien par position : elle garde chaque spécimen qui trouve sa salle, où qu'il soit dans la table." }
+          - text: "Parce que la jointure les a supprimés de la table."
+            misconception: select-supprime
+            reaction: { who: guide, expr: neutre, text: "Un SELECT, même avec une jointure, ne modifie jamais la table." }
+          - text: "Parce qu'il faudrait un ORDER BY pour les voir."
+            misconception: join-tri
+            reaction: { who: guide, expr: neutre, text: "Trier ne fait pas apparaître de lignes. Pour garder les spécimens sans salle, il faudra une autre jointure : LEFT JOIN." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N19
+    act: 5
+    after: [N18]
+    requester: guide
+    title: "Joindre trois tables"
+    request: "alias de tables · colonnes ambiguës"
+    course: "Alias de tables"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "SELECT nom FROM pret p JOIN specimen s ON p.specimen_id = s.id JOIN institution i ON p.institution_id = i.id provoque une erreur. Pourquoi ?"
+        options:
+          - { text: "Deux tables ont une colonne nom : il faut préciser s.nom ou i.nom.", ok: true }
+          - text: "Trois tables dans une requête, c'est trop pour MySQL."
+            misconception: join-limite
+            reaction: { who: guide, expr: neutre, text: "MySQL joint sans peine bien plus de trois tables. Le message dit « ambiguous » : il hésite entre deux colonnes nom." }
+          - text: "Les alias d'une seule lettre sont interdits."
+            misconception: alias-interdits
+            reaction: { who: guide, expr: neutre, text: "p, s et i sont des alias tout à fait valables. Ce qui manque, c'est l'alias devant nom." }
+          - text: "Il manque un GROUP BY."
+            misconception: join-groupby
+            reaction: { who: guide, expr: neutre, text: "Rien n'est compté ni additionné : GROUP BY n'a rien à faire ici." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: C07
+    act: 5
+    after: [N19]
+    requester: guide
+    title: "Défi chrono · Jointures"
+    request: "5 requêtes en 4 min 30, sans indice"
+    course: "JOIN"
+    steps:
+      - { id: chrono, kind: fix, prompt: "Défi chrono" }
+
+  - id: N20
+    act: 5
+    after: [N19]
+    requester: guide
+    title: "Ce qui n'a pas de correspondance"
+    request: "LEFT JOIN · … IS NULL"
+    course: "LEFT JOIN"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pour trouver les spécimens jamais prêtés, pourquoi specimen s LEFT JOIN pret p … WHERE p.id IS NULL fonctionne-t-il ?"
+        options:
+          - { text: "LEFT JOIN garde tous les spécimens ; ceux qui n'ont aucun prêt ont NULL dans les colonnes de pret, et on ne garde qu'eux.", ok: true }
+          - text: "Parce que IS NULL supprime les prêts de la base."
+            misconception: select-supprime
+            reaction: { who: guide, expr: neutre, text: "Un SELECT ne supprime rien : IS NULL ne fait que choisir les lignes affichées." }
+          - text: "Parce que LEFT JOIN ne garde que les lignes sans correspondance."
+            misconception: left-que-sans
+            reaction: { who: guide, expr: neutre, text: "LEFT JOIN garde tout : les spécimens prêtés aussi. C'est le WHERE p.id IS NULL qui ne garde que les autres." }
+          - text: "Parce qu'un prêt terminé vaut NULL."
+            misconception: pret-null
+            reaction: { who: guide, expr: neutre, text: "Un prêt terminé a une date de retour, et son p.id n'est pas NULL. p.id n'est NULL que quand il n'y a aucun prêt." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: N21
+    act: 5
+    after: [N20]
+    requester: guide
+    title: "Une requête dans la requête"
+    request: "sous-requête · IN · agrégat"
+    course: "Sous-requêtes"
+    hints: 11
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi écrire WHERE valeur > (SELECT AVG(valeur) FROM specimen) et pas WHERE valeur > AVG(valeur) ?"
+        options:
+          - { text: "Un agrégat ne s'utilise pas dans un WHERE : la sous-requête calcule d'abord la moyenne, puis WHERE compare chaque ligne à ce nombre.", ok: true }
+          - text: "Les deux écritures donnent le même résultat."
+            misconception: agregat-where
+            reaction: { who: guide, expr: neutre, text: "La seconde est refusée par MySQL : Invalid use of group function. Le WHERE ne connaît pas les agrégats." }
+          - text: "AVG ne fonctionne que dans une sous-requête."
+            misconception: avg-sousreq
+            reaction: { who: guide, expr: neutre, text: "AVG fonctionne partout dans un SELECT. C'est sa place dans le WHERE qui pose problème." }
+          - text: "Pour que la requête aille plus vite."
+            misconception: sousreq-vitesse
+            reaction: { who: guide, expr: neutre, text: "Ce n'est pas une question de vitesse : sans sous-requête, la requête est refusée." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+
+  - id: C08
+    act: 5
+    after: [N21]
+    requester: guide
+    title: "Défi chrono · Jointures externes et sous-requêtes"
+    request: "5 requêtes en 4 min 30, sans indice"
+    course: "LEFT JOIN et sous-requêtes"
+    steps:
+      - { id: chrono, kind: fix, prompt: "Défi chrono" }

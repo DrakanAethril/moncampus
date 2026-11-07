@@ -53,10 +53,11 @@ class KahootReportReader
     /** One note, as a sentence. */
     public function describe(KahootNote $note): string
     {
-        return $this->translator->trans('kahootImportNote_'.$note->kind, [
-            '%number%' => $note->questionNumber,
-            '%type%' => $note->parameters['type'] ?? '',
-            '%tolerance%' => $note->parameters['tolerance'] ?? '',
-        ]);
+        $parameters = ['%number%' => $note->questionNumber];
+        foreach ($note->parameters as $name => $value) {
+            $parameters['%'.$name.'%'] = $value;
+        }
+
+        return $this->translator->trans('kahootImportNote_'.$note->kind, $parameters);
     }
 }
