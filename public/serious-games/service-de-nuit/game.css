@@ -135,9 +135,6 @@ button { font: inherit; color: inherit; }
 .carte.consigne { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: start; border-color: var(--cyan); }
 .carte.consigne b { display: block; font: 400 14px var(--titre); color: var(--cyan); }
 .tete svg { display: block; width: 100%; height: auto; }
-.pistes { display: flex; gap: 6px; margin-top: 8px; }
-.pistes i { flex: 1; height: 6px; border-radius: 3px; background: var(--nuit-4); }
-.pistes i.on { background: var(--ambre); box-shadow: 0 0 8px rgba(255, 181, 71, .6); }
 
 /* The night (workstation) */
 .loge { position: absolute; inset: 0; display: grid; grid-template-rows: auto 1fr; }
@@ -152,6 +149,33 @@ button { font: inherit; color: inherit; }
 .titre-nuit { font: 400 22px/1.15 var(--titre); margin: 12px 0 6px; }
 .demande { margin: 0; font-size: 16px; line-height: 1.5; color: #E4DEF0; }
 .avancement { display: flex; gap: 6px; margin-top: 12px; }
+/* The night's sheet: the request as one line, what to do, what the page shows now and must show */
+.fiche .titre-nuit { margin-top: 0; }
+.fiche .demandeur { grid-template-columns: 44px 1fr; align-items: start; }
+.fiche .bulle { background: var(--nuit-3); border-radius: 10px; padding: 8px 11px; font-size: 14px; line-height: 1.45; color: #E4DEF0; }
+.fiche .bulle b { display: inline; font: 600 14px var(--texte); color: var(--craie); margin-right: 6px; }
+.fiche .but { margin-top: 12px; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--rose); background: var(--rose-doux); font-size: 16px; line-height: 1.45; }
+.fiche .but span { display: block; font: 400 12px var(--titre); letter-spacing: .08em; color: var(--rose); margin-bottom: 3px; }
+.avant-apres { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; margin: 12px 0 0; align-items: baseline; }
+.avant-apres dt { font: 400 12px var(--titre); letter-spacing: .06em; color: var(--dim); }
+.avant-apres dd { margin: 0; }
+.avant-apres code { font: 13px/1.45 var(--mono); padding: 2px 6px; border-radius: 5px; background: #FFFFFF; color: #1B1730; white-space: pre-wrap; }
+.avant-apres dd:nth-of-type(2) code { box-shadow: 0 0 0 2px var(--cyan); }
+.avant-apres small { display: block; color: var(--dim); margin-top: 3px; }
+/* The memo of the notion, always beside the code */
+.memo ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 14px; line-height: 1.4; }
+.memo .vue { margin-top: 10px; }
+.memo .vue pre { margin: 0; padding: 8px 10px; font: 12.5px/1.5 var(--mono); white-space: pre-wrap; background: #17142A; border-radius: 8px; }
+/* The hotel's prepared variables: locked lines on top of a file, a view, an example */
+.prepare { border-bottom: 1px dashed var(--ligne); background: repeating-linear-gradient(135deg, #1B1830 0 8px, #1E1B34 8px 16px); }
+.prepare pre { margin: 0; padding: 6px 14px 8px; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break: break-word; opacity: .78; }
+.prepare .cadenas { display: block; padding: 5px 14px 0; font: 400 11px var(--titre); letter-spacing: .08em; color: var(--ambre); }
+.prepare .cadenas::before { content: "🔒 "; }
+.vue .prepare, .exemple .prepare, .prepare-essais .prepare { border-radius: 8px 8px 0 0; }
+.exemple > .prepare { grid-column: 1 / -1; }
+.prepare-essais { display: grid; gap: 4px; margin: 8px 0; }
+.carnet .sommaire button.avenir span { color: var(--sombre); }
+.carnet .sommaire button.avenir small { font-size: 11px; }
 .avancement i { flex: 1; height: 5px; border-radius: 3px; background: var(--nuit-4); }
 .avancement i.fait { background: var(--cyan); }
 .avancement i.ici { background: var(--rose); }
@@ -164,11 +188,6 @@ button { font: inherit; color: inherit; }
 .criteres li small { display: block; color: #FFB3C3; margin-top: 2px; }
 .criteres li.cache { background: transparent; border: 1px dashed var(--ligne); color: var(--dim); }
 .criteres li.cache::before { content: "?"; }
-.compteur { display: grid; gap: 4px; margin-top: 10px; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--ambre); background: var(--ambre-doux); }
-.compteur .val { font: 600 26px var(--mono); color: var(--ambre); }
-.compteur.ok { border-color: var(--cyan); background: var(--cyan-doux); }
-.compteur.ok .val { color: var(--cyan); }
-.compteur small { color: var(--dim); }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .reaction { display: grid; grid-template-columns: 48px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 10px; background: var(--nuit-3); border-left: 4px solid var(--ko); margin-top: 10px; }
 .reaction.bien { border-left-color: var(--cyan); }
@@ -184,11 +203,11 @@ button { font: inherit; color: inherit; }
 .option code, .option span.code { font-family: var(--mono); font-size: 14px; }
 
 /* Editor */
-.atelier { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; background: var(--nuit-2); border: 1.5px solid var(--ligne); border-radius: 12px; overflow: hidden; }
-.onglets { display: flex; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--ligne); background: #17142A; align-items: flex-end; }
-.onglets button { appearance: none; border: 1px solid transparent; border-bottom: 0; background: none; padding: 7px 14px; border-radius: 8px 8px 0 0; font: 500 13px var(--mono); color: var(--dim); cursor: pointer; }
+.atelier { display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; background: var(--nuit-2); border: 1.5px solid var(--ligne); border-radius: 12px; overflow: hidden; }
+.onglets { display: flex; flex-wrap: wrap; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--ligne); background: #17142A; align-items: flex-end; }
+.onglets button { appearance: none; border: 1px solid transparent; border-bottom: 0; background: none; padding: 7px 12px; border-radius: 8px 8px 0 0; font: 500 13px var(--mono); color: var(--dim); cursor: pointer; }
 .onglets button[aria-selected="true"] { background: var(--nuit-2); border-color: var(--ligne); color: var(--craie); }
-.onglets .outils { margin-left: auto; display: flex; gap: 6px; padding-bottom: 6px; }
+.onglets .outils { margin-left: auto; display: flex; gap: 6px; padding-bottom: 6px; white-space: nowrap; }
 .ed { display: grid; grid-template-columns: 46px 1fr; min-height: 0; height: 100%; font: 14px/1.6 var(--mono); }
 .ed-gouttiere { overflow: hidden; border-right: 1px solid var(--ligne); background: #17142A; color: #5D567A; text-align: right; padding: 12px 8px 12px 0; }
 .ed-nums div { height: 1.6em; }
@@ -209,7 +228,6 @@ button { font: inherit; color: inherit; }
 .tk-comment { color: #6F6890; font-style: italic; }
 .tk-operator { color: #E4DEF0; }
 .tk-name { color: #9FD3FF; }
-.verrou { padding: 24px; color: var(--dim); }
 
 /* The cut: the visitors, what the server sends back, what the browser shows */
 .coupe { background: var(--nuit-2); border: 1.5px solid var(--ligne); border-radius: 12px; display: grid; grid-template-rows: auto auto minmax(0, 1fr); height: min(42vh, 380px); overflow: hidden; }
@@ -268,7 +286,6 @@ button { font: inherit; color: inherit; }
 .etoiles-grandes { display: flex; gap: 8px; }
 .etoiles-grandes i { width: 34px; height: 34px; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); background: #3B3550; }
 .etoiles-grandes i.on { background: var(--ambre); filter: drop-shadow(0 0 8px rgba(255, 181, 71, .8)); }
-.clue { padding: 12px 14px; border-radius: 10px; border: 1.5px dashed var(--ambre); background: var(--ambre-doux); }
 .pieces { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 16px; }
 .pieces li { display: grid; justify-items: center; gap: 6px; max-width: 150px; text-align: center; font-size: 14px; }
 

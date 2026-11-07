@@ -5,12 +5,13 @@
 
      SDNSteps.add({
        id: 'N02', act: 1,
-       learn: ['variables'],                  // the notions this night brings: their notebook pages open here
-       notions: ['variables', 'echo'],        // the notions it exercises: the letters of the sign it feeds
+       learn: ['variables'],                  // the notion this night is about: its notebook page opens with the night,
+                                              // its memo stays beside the code, and serving the night lights its letter
+       notions: ['variables', 'echo'],        // the notions it exercises (the bench checks each has its page)
        page: 'accueil.php',                   // the file the editor opens on
+       show: { before, after, note },         // what the browser shows now, and what it must show once served
        add: { 'chambres.php': '…' },          // files the night brings, added to the site when missing
        ref: { 'accueil.php': '…' },           // the reference: the files it changes (only the bench reads it)
-       cost: { label, max, measure(files, H, base) },  // the meter of the wall, shown while editing (base: the site as the night found it)
        cases: [                               // the visitors, and the checks on the source
          { id, who, page, at: '2026-11-05 23:12', get: {}, reg: {}, visible, label, check(res, H) },
          { id, label, visible, source: true, check(files, H, base) }
@@ -18,15 +19,18 @@
        traps: [{ label, files: { … } }],      // invisible mistakes: pass the visible visitors, fail a hidden one (bench)
        views: { id: { title, lines: […], run: { at, reg, get } } },  // what a « veille » or « line » step shows
        hints: [{ title, body }],              // Sami's cards, after his guided questions; the last gives the solution
-       intro: [{ who, expr, text }], done: [{ who, expr, text }]      // scenes
+       intro: [{ who, expr, text }], done: [{ who, expr, text }]      // scenes: one line each, two at most
      });
 
    The site the student builds is one, from the first night to the last: it lives in the game's display
    state. A night starts from it; « Reprendre la version propre » starts from the night's own start,
    which is the reference of the night before plus what the night adds - the bench checks that this start
-   fails a visible visitor (or the meter) and that the reference passes every visitor, hidden ones
-   included, without a single PHP warning. The hotel appends Augustin's locked file, pied.php, to every
-   page it serves (like PHP's auto_append_file). */
+   fails a visible check and that the reference passes every visitor, hidden ones included, without a
+   single PHP warning.
+
+   Before each visit the hotel prepares a few variables ($garde, $client, $arrivees… : the « registre »).
+   They are never hidden: the editor shows them, greyed and locked, at the top of the file that reads them,
+   with the values of the visitor chosen - what an include of the hotel's registre.php would do. */
 (function (root) {
   'use strict';
   var list = [], byId = {};
@@ -69,12 +73,11 @@
     pad: function (n) { return (n < 10 ? '0' : '') + n; }
   };
 
-  /** Runs one visitor's request against the site: Augustin's pied.php is appended, as the hotel does. */
+  /** Runs one visitor's request against the site, with the variables the hotel prepared for them. */
   function serve(files, c) {
     var site = {}, k;
     for (k in files) site[k] = files[k];
-    if (!site['pied.php']) site['pied.php'] = root.SDNSteps.PIED;
-    return root.SDNPhp.run({ files: site, entry: c.page || 'accueil.php', append: 'pied.php', now: c.at, get: c.get || {}, globals: c.reg || {}, seed: 7 });
+    return root.SDNPhp.run({ files: site, entry: c.page || 'accueil.php', now: c.at, get: c.get || {}, globals: c.reg || {}, seed: 7 });
   }
 
   /** What went wrong with a page that errs: the first error, as the student will read it. */
@@ -155,11 +158,26 @@
     arrivees: ['Mme Roux', 'M. Diaz'], tarifs: { Simple: 62, Double: 78, Suite: 120 }, reservations: { Roux: 12, Diaz: 3, Okafor: 21, Lina: 5 },
     veilleurs: { Sami: 8, Nora: 12, 'Théo': 10 } };
   function reg(o) { var r = {}, k; for (k in REG) r[k] = REG[k]; for (k in o || {}) r[k] = o[k]; return r; }
+  /** The registre's variables a piece of code reads, in the registre's order: what the locked lines at the
+   *  top of a file show. */
+  function prepared(src, names) {
+    var code = H.code(src || '');
+    return (names || Object.keys(REG)).filter(function (k) { return new RegExp('\\$' + k + '(?![A-Za-z0-9_])').test(code); });
+  }
+  /** A value as PHP writes it in code: 'Nora', 12, ['a', 'b'], ['Simple' => 62]. */
+  function literal(v) {
+    if (typeof v === 'string') return "'" + v.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+    if (Array.isArray(v)) return '[' + v.map(literal).join(', ') + ']';
+    if (v && typeof v === 'object') return '[' + Object.keys(v).map(function (k) { return literal(k) + ' => ' + literal(v[k]); }).join(', ') + ']';
+    return String(v);
+  }
 
   root.SDNSteps = {
     helpers: H,
     sees: sees,
     reg: reg,
+    prepared: prepared,
+    literal: literal,
     add: function (def) {
       if (byId[def.id]) throw new Error('Nuit en double : ' + def.id);
       def.cases = def.cases || []; def.hints = def.hints || []; def.views = def.views || {}; def.traps = def.traps || [];
@@ -169,8 +187,8 @@
     get: function (id) { return byId[id]; },
     all: function () { return list; },
     serve: serve, runCases: runCases, startOf: startOf, refOf: refOf, withFiles: withFiles, view: view, viewOutput: viewOutput,
-    /** Augustin's file, appended to every page. Locked until the end of the ground floor (N11). It speaks
-     *  on Thursdays only, at night - the red thread. */
+    /** Augustin's file, read in the optional epilogue only: it is no longer appended to the pages. It speaks
+     *  on Thursdays only, at night. */
     PIED: [
       '<?php',
       '// Pour le veilleur qui viendra après moi. A.',

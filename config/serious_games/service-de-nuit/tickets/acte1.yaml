@@ -17,27 +17,17 @@ tickets:
     priority: haute
     category: 'La loge › L''heure'
     title: 'L''heure de la loge'
-    request: 'Depuis le départ d''Augustin, la page d''accueil affiche toujours « Il est 23:12 ». Mon neveu a « réparé » quelque chose. Mme Roux est descendue ce matin à 8 h 05 en riant. Je veux que la page donne l''heure qu''il est vraiment, à chaque client.'
+    request: 'La page affiche toujours « Il est 23:12 ». Je veux l''heure qu''il est vraiment, à chaque client.'
     steps:
       -
         id: servir
         kind: fix
-        prompt: 'Fais afficher à la page l''heure de chaque visite, puis sers la nuit.'
-      -
-        id: expliquer
-        kind: explain
-        expr: neutre
-        prompt: 'Comment l''heure arrive-t-elle sur la page de Mme Roux ?'
-        options:
-          - { text: 'Quand Mme Roux demande la page, le serveur exécute le PHP : date() lit l''horloge du serveur, et echo écrit l''heure dans le HTML qu''il lui envoie.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Donc la page est fabriquée à chaque visite. Augustin le disait, je n''avais jamais compris.' } }
-          - { text: 'Le navigateur de Mme Roux exécute le PHP et lit l''heure de son téléphone.', misconception: php-cote-navigateur, reaction: { who: sami, expr: sourcil, text: 'Le navigateur ne voit jamais le PHP : il reçoit du HTML déjà fabriqué. L''heure est celle du serveur.' } }
-          - { text: 'Le serveur réécrit le fichier accueil.php toutes les minutes avec la nouvelle heure.', misconception: fichier-reecrit, reaction: { who: sami, expr: sourcil, text: 'Le fichier ne change pas : c''est la page envoyée qui change, à chaque demande.' } }
-          - { text: 'La balise <p> met l''heure à jour toute seule.', misconception: html-dynamique, reaction: { who: sami, expr: sourcil, text: 'Le HTML ne calcule rien, il décrit la page. Le calcul, c''est le PHP, sur le serveur.' } }
+        prompt: 'Fais écrire par PHP l''heure de chaque visite.'
       -
         id: veille
         kind: choice
         label: 'La veille'
-        prompt: 'Avant de partir, Sami te montre ce bout de page. Que lit le client dans son navigateur ?'
+        prompt: 'Que lit le client dans son navigateur ?'
         view: veille
         options:
           - { text: 'Bonsoir Mme Roux !', ok: true, reaction: { who: sami, expr: sourire, text: 'Le PHP disparaît : il est remplacé par ce qu''il écrit.' } }
@@ -47,14 +37,6 @@ tickets:
     guide:
       -
         id: g1
-        kind: choice
-        prompt: 'Mme Roux arrive à 8 h 05, Lina à 10 h 30. Une heure écrite à la main dans le HTML peut-elle être juste pour les deux ?'
-        options:
-          - { text: 'Non : le HTML est le même pour tout le monde. Il faut que le serveur écrive l''heure au moment où chacun demande la page.', ok: true }
-          - { text: 'Oui, si on la met à jour assez souvent.', misconception: mise-a-jour-manuelle, reaction: { who: sami, expr: sourcil, text: 'Il faudrait la changer à chaque minute, et deux clients à la même seconde de deux minutes différentes… Laisse le serveur faire.' } }
-          - { text: 'Oui : le navigateur la corrige tout seul.', misconception: navigateur-corrige, reaction: { who: sami, expr: sourcil, text: 'Le navigateur affiche ce qu''il reçoit, il ne corrige rien.' } }
-      -
-        id: g2
         kind: choice
         prompt: 'Quelle ligne écrit l''heure du serveur sous la forme 08:05 ?'
         options:
@@ -73,22 +55,12 @@ tickets:
     priority: haute
     category: 'La loge › Le téléphone'
     title: 'Le nouveau numéro'
-    request: 'Le standard change demain : notre numéro devient le 05 55 12 34 56. Il est écrit trois fois sur la page, je ne veux plus jamais le chercher partout. Et la page dit « Ce soir, Sami veille sur vous » même quand Sami n''est pas là : le veilleur du soir est noté dans le registre, $garde.'
+    request: 'Notre numéro devient le 05 55 12 34 56. Il est écrit trois fois sur la page : je veux qu''on ne le change plus qu''à un seul endroit.'
     steps:
       -
         id: servir
         kind: fix
-        prompt: 'Écris le nouveau numéro une seule fois, affiche le veilleur du registre, puis sers la nuit.'
-      -
-        id: expliquer
-        kind: explain
-        expr: neutre
-        prompt: 'Pourquoi mettre le numéro dans une variable ?'
-        options:
-          - { text: 'Il n''est écrit qu''une fois : le jour où il change, on modifie une seule ligne, et toute la page suit.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Une ligne au lieu de trois. Et le jour où on change encore, je saurai où regarder.' } }
-          - { text: 'Une variable s''affiche plus vite qu''un texte.', misconception: variable-plus-rapide, reaction: { who: sami, expr: sourcil, text: 'La vitesse n''y est pour rien : c''est une question d''endroit unique où écrire la valeur.' } }
-          - { text: 'Sans variable, PHP refuse d''afficher un numéro de téléphone.', misconception: variable-obligatoire, reaction: { who: sami, expr: sourcil, text: 'PHP affiche très bien un numéro écrit en dur. Le problème, c''est de le changer à trois endroits.' } }
-          - { text: 'La variable garde le numéro même quand le serveur s''éteint.', misconception: variable-memoire, reaction: { who: sami, expr: sourcil, text: 'Une variable ne vit que le temps de fabriquer la page. Elle renaît à chaque visite, avec la valeur que tu lui donnes.' } }
+        prompt: 'Range le nouveau numéro dans une variable, et affiche-la aux trois endroits.'
       -
         id: veille
         kind: choice
@@ -104,47 +76,66 @@ tickets:
       -
         id: g1
         kind: choice
-        prompt: 'Le numéro est écrit trois fois. S''il est rangé dans une variable, combien de lignes faudra-t-il changer la prochaine fois ?'
+        prompt: 'Le numéro est rangé dans $telephone. Comment l''écrire dans la page ?'
         options:
-          - { text: 'Une seule : celle où la variable reçoit le numéro.', ok: true }
-          - { text: 'Trois, comme aujourd''hui.', misconception: variable-copie, reaction: { who: sami, expr: sourcil, text: 'Les trois echo affichent la variable : ils suivent sa valeur sans qu''on y touche.' } }
-          - { text: 'Aucune : PHP retrouve le nouveau numéro tout seul.', misconception: php-devine, reaction: { who: sami, expr: sourcil, text: 'PHP ne devine rien. Quelqu''un doit écrire le numéro, une fois.' } }
-      -
-        id: g2
-        kind: choice
-        prompt: 'Comment afficher le veilleur de ce soir, noté dans le registre ?'
-        options:
-          - { text: '<?php echo $garde; ?>', ok: true }
-          - { text: '<?php echo ''garde''; ?>', misconception: nom-sans-dollar, reaction: { who: sami, expr: sourcil, text: 'Entre guillemets et sans $, c''est le mot « garde ». Une variable commence par $.' } }
-          - { text: '<?php $garde; ?>', misconception: oubli-echo, reaction: { who: sami, expr: sourcil, text: 'La variable est là, mais rien ne l''écrit : il faut echo.' } }
-          - { text: '<?php echo garde; ?>', misconception: dollar-oublie, reaction: { who: sami, expr: sourcil, text: 'Sans $, PHP cherche une constante nommée garde : il ne la trouve pas et s''arrête.' } }
+          - { text: '<?php echo $telephone; ?>', ok: true }
+          - { text: '<?php echo ''telephone''; ?>', misconception: nom-sans-dollar, reaction: { who: sami, expr: sourcil, text: 'Entre guillemets et sans $, c''est le mot « telephone ». Une variable commence par $.' } }
+          - { text: '<?php $telephone; ?>', misconception: oubli-echo, reaction: { who: sami, expr: sourcil, text: 'La variable est là, mais rien ne l''écrit : il faut echo.' } }
+          - { text: '$telephone', misconception: php-sans-balise, reaction: { who: sami, expr: sourcil, text: 'Hors des balises <?php ?>, le navigateur l''affiche tel quel : « $telephone ».' } }
     hints: 2
   -
     id: N03
     act: 1
     after: [N02]
+    course: 'PHP · les variables'
+    requester: sami
+    kind: demande
+    priority: haute
+    category: 'La loge › Le veilleur'
+    title: 'Le veilleur du soir'
+    request: 'La page dit « Sami » même les soirs où je ne suis pas là. L''hôtel prépare $garde avant chaque visite : sers-t''en.'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Remplace « Sami » par $garde, le veilleur préparé par l''hôtel en haut du fichier, aux deux endroits.'
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Ce soir, l''hôtel a préparé $garde = ''Nora''. Que lit le client ?'
+        view: veille
+        options:
+          - { text: 'Ce soir, Nora veille.', ok: true, reaction: { who: sami, expr: sourire, text: 'La page lit la valeur préparée pour cette visite-là.' } }
+          - { text: 'Ce soir, $garde veille.', misconception: nom-affiche, reaction: { who: sami, expr: sourcil, text: 'Entre <?php ?>, echo $garde écrit ce que contient la variable.' } }
+          - { text: 'Ce soir, garde veille.', misconception: nom-sans-dollar, reaction: { who: sami, expr: sourcil, text: 'echo écrit la valeur de $garde, pas son nom.' } }
+          - { text: 'Ce soir, Sami veille.', misconception: valeur-figee, reaction: { who: sami, expr: sourcil, text: 'La page ne garde rien d''un soir à l''autre : elle lit $garde à chaque visite, et ce soir c''est Nora.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Où la page trouve-t-elle le nom du veilleur du soir ?'
+        options:
+          - { text: 'Dans $garde, que l''hôtel range dans les lignes grises en haut du fichier, avant chaque visite.', ok: true }
+          - { text: 'Il faut l''écrire dans le code chaque soir.', misconception: valeur-en-dur, reaction: { who: sami, expr: sourcil, text: 'C''est ce que fait la page aujourd''hui, avec « Sami ». L''hôtel le prépare déjà pour toi.' } }
+          - { text: 'PHP devine qui est de garde.', misconception: php-devine, reaction: { who: sami, expr: sourcil, text: 'PHP ne devine rien : il lit la variable que l''hôtel a remplie.' } }
+    hints: 2
+  -
+    id: N04
+    act: 1
+    after: [N03]
     course: 'PHP · la concaténation'
     requester: mireille
     kind: demande
     priority: haute
     category: 'La loge › L''accueil'
     title: 'Bienvenue à la 12'
-    request: 'Quand un client arrive, je veux que la page l''accueille par son nom, dans l''onglet du navigateur et sous le titre : « Bienvenue Mme Roux, chambre 12 ». Le registre donne $client et $chambre. Et Augustin disait toujours : une phrase s''écrit une fois.'
+    request: 'Je veux que la page accueille chaque client par son nom : « Bienvenue Mme Roux, chambre 12 », dans l''onglet et sous le titre.'
     steps:
       -
         id: servir
         kind: fix
-        prompt: 'Construis la phrase d''accueil une fois, affiche-la dans l''onglet et sous le titre, puis sers la nuit.'
-      -
-        id: expliquer
-        kind: explain
-        expr: neutre
-        prompt: 'Comment la page colle-t-elle « Bienvenue », le nom et la chambre ?'
-        options:
-          - { text: 'Le point colle les morceaux bout à bout : ''Bienvenue '' . $client donne « Bienvenue Mme Roux ». L''espace vient du texte entre guillemets.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Des morceaux de phrase et des valeurs du registre, collés au moment de la visite. C''est malin.' } }
-          - { text: 'Le point ajoute un espace entre les morceaux.', misconception: point-espace, reaction: { who: sami, expr: sourcil, text: 'Le point ne met rien entre les morceaux : sans espace dans le texte, tu obtiens « BienvenueMme Roux ».' } }
-          - { text: 'Le + additionne les textes.', misconception: plus-concatene, reaction: { who: sami, expr: sourcil, text: 'En PHP, + additionne des nombres. Pour coller du texte, c''est le point.' } }
-          - { text: 'Entre guillemets simples, ''$client'' est remplacé par le nom.', misconception: simple-quote-interpolation, reaction: { who: sami, expr: sourcil, text: 'Entre guillemets simples, rien n''est remplacé : tu lirais « $client ». Il faut des guillemets doubles ou le point.' } }
+        prompt: 'Construis la phrase d''accueil une fois, avec $client et $chambre, et affiche-la dans l''onglet et sous le titre.'
       -
         id: veille
         kind: choice
@@ -163,7 +154,7 @@ tickets:
         prompt: 'La phrase doit apparaître à deux endroits, écrite une seule fois. Où la ranger ?'
         options:
           - { text: 'Dans une variable, construite en haut du fichier, puis affichée deux fois.', ok: true }
-          - { text: 'Dans le registre, avec les autres variables.', misconception: registre-ecrit, reaction: { who: sami, expr: sourcil, text: 'Le registre, c''est l''hôtel qui le remplit. La phrase, c''est ta page qui la construit.' } }
+          - { text: 'Dans les lignes grises de l''hôtel.', misconception: registre-ecrit, reaction: { who: sami, expr: sourcil, text: 'Ces lignes, c''est l''hôtel qui les remplit. La phrase, c''est ta page qui la construit.' } }
           - { text: 'Il faut l''écrire deux fois, c''est obligatoire.', misconception: variable-copie, reaction: { who: sami, expr: sourcil, text: 'Une variable s''affiche autant de fois qu''on veut.' } }
       -
         id: g2
@@ -176,33 +167,21 @@ tickets:
           - { text: '$accueil = ''Bienvenue '' + $client + '', chambre '' + $chambre;', misconception: plus-concatene, reaction: { who: sami, expr: sourcil, text: 'Le + additionne : PHP refuse d''additionner du texte.' } }
     hints: 2
   -
-    id: N04
+    id: N05
     act: 1
-    after: [N03]
+    after: [N04]
     course: 'PHP · les calculs'
     requester: mireille
     kind: demande
     priority: haute
     category: 'La loge › Le séjour'
     title: 'Le prix du séjour'
-    request: 'À l''arrivée, la page doit annoncer ce que le client aura à régler : « Total à régler : 238,50 € ». Le registre donne $nuits, $tarif (le prix d''une nuit) et $personnes. N''oublie pas la taxe de séjour : 1,50 € par nuit et par personne.'
-    reward:
-      clue: 'Jeudi à 23 h 12, une ligne apparaît en bas de toutes les pages : « Regarde qui arrive à la 12. » Personne ne l''a écrite dans accueil.php.'
+    request: 'À l''arrivée, la page doit annoncer le total à régler : les nuits, plus la taxe de séjour, 1,50 € par nuit et par personne.'
     steps:
       -
         id: servir
         kind: fix
-        prompt: 'Calcule le séjour de chaque client, taxe comprise, écris-le à la française, puis sers la nuit.'
-      -
-        id: expliquer
-        kind: explain
-        expr: neutre
-        prompt: 'La famille Okafor reste 4 nuits, à 4 personnes. Comment calcules-tu sa taxe de séjour ?'
-        options:
-          - { text: '4 × 4 × 1,50 = 24 € : la taxe se paie par nuit et par personne, $nuits * $personnes * 1.5.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Vingt-quatre euros, c''est ce que je trouve à la calculette. Sauf que maintenant, c''est la page qui le fait.' } }
-          - { text: '4 × 1,50 = 6 € : la taxe se paie une fois par chambre.', misconception: taxe-par-chambre, reaction: { who: sami, expr: sourcil, text: 'Relis la demande : par nuit ET par personne.' } }
-          - { text: '(4 + 4) × 1,50 = 12 €.', misconception: addition-au-lieu-produit, reaction: { who: sami, expr: sourcil, text: 'Par nuit et par personne, ça se multiplie : 4 nuits de 4 personnes, 16 nuitées.' } }
-          - { text: 'PHP écrit 1,50 avec une virgule : $nuits * $personnes * 1,50.', misconception: virgule-decimale, reaction: { who: sami, expr: sourcil, text: 'En PHP, le séparateur décimal est le point : 1.5. La virgule, c''est number_format qui l''écrit à l''affichage.' } }
+        prompt: 'Calcule le total avec $nuits, $tarif et $personnes, taxe comprise, et écris « Total à régler : … € ».'
       -
         id: veille
         kind: choice
@@ -218,17 +197,47 @@ tickets:
       -
         id: g1
         kind: choice
-        prompt: 'Que doit régler Mme Roux : 1 nuit à 78 €, seule ?'
+        prompt: 'La famille Okafor reste 4 nuits, à 4 personnes. Combien de taxe ?'
         options:
-          - { text: '78 + 1 × 1 × 1,50 = 79,50 €', ok: true }
-          - { text: '78 €, la taxe est comprise dans le tarif.', misconception: taxe-comprise, reaction: { who: sami, expr: sourcil, text: 'Non : Mireille l''ajoute à part, 1,50 € par nuit et par personne.' } }
-          - { text: '78 × 1,50 = 117 €', misconception: taxe-multiplie-tarif, reaction: { who: sami, expr: sourcil, text: 'La taxe s''ajoute au prix, elle ne le multiplie pas.' } }
+          - { text: '4 × 4 × 1,50 = 24 € : $nuits * $personnes * 1.5', ok: true }
+          - { text: '4 × 1,50 = 6 €', misconception: taxe-par-chambre, reaction: { who: sami, expr: sourcil, text: 'Par nuit ET par personne : il faut les deux.' } }
+          - { text: '(4 + 4) × 1,50 = 12 €', misconception: addition-au-lieu-produit, reaction: { who: sami, expr: sourcil, text: 'Par nuit et par personne, ça se multiplie : 16 nuitées.' } }
+          - { text: '$nuits * $personnes * 1,50', misconception: virgule-decimale, reaction: { who: sami, expr: sourcil, text: 'En PHP, le séparateur décimal est le point : 1.5.' } }
+    hints: 2
+  -
+    id: N06
+    act: 1
+    after: [N05]
+    course: 'PHP · les calculs'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'La loge › La facture'
+    title: 'À la française'
+    request: '« 79.5 € », ça fait calculette. Sur une facture, j''écris « 79,50 € », et « 1 141,00 € » pour les gros séjours.'
+    steps:
       -
-        id: g2
+        id: servir
+        kind: fix
+        prompt: 'Écris le total avec number_format : deux décimales, la virgule, l''espace des milliers.'
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: '1 141,00 / 7,50', ok: true, reaction: { who: sami, expr: sourire, text: 'Deux décimales, la virgule, l''espace des milliers : c''est ce que disent les trois arguments.' } }
+          - { text: '1141 / 7.5', misconception: format-ignore, reaction: { who: sami, expr: sourcil, text: 'number_format réécrit le nombre : c''est tout son rôle.' } }
+          - { text: '1,141.00 / 7.50', misconception: format-anglais, reaction: { who: sami, expr: sourcil, text: 'Ça, c''est number_format sans ses deux derniers arguments. Ici, ils disent la virgule et l''espace.' } }
+          - { text: '1 141 / 7,5', misconception: decimales-ignorees, reaction: { who: sami, expr: sourcil, text: 'Le 2 demande deux décimales, toujours : 1 141,00 et 7,50.' } }
+    guide:
+      -
+        id: g1
         kind: choice
         prompt: 'Comment écrire 79.5 sous la forme « 79,50 € » ?'
         options:
           - { text: 'number_format($total, 2, '','', '' '') . '' €''', ok: true }
-          - { text: '$total . '',50 €''', misconception: format-a-la-main, reaction: { who: sami, expr: sourcil, text: 'Ça marche pour 79,50… et pour 65 aussi ? Laisse number_format écrire les décimales.' } }
+          - { text: '$total . '',50 €''', misconception: format-a-la-main, reaction: { who: sami, expr: sourcil, text: 'Ça marche pour 79,50… et pour 63,50 ? Laisse number_format écrire les décimales.' } }
           - { text: 'round($total) . '' €''', misconception: round-format, reaction: { who: sami, expr: sourcil, text: 'round() arrondit : 79.5 devient 80. Il faut garder les centimes.' } }
     hints: 2

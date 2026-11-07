@@ -1,8 +1,10 @@
 /* Service de nuit — Augustin's notebooks: one page per notion, and the sign it lights.
 
    A notion is a letter of the hotel's sign: QUATRE-VENTS for the ground floor (the first level), HÔTEL
-   for the floors (the second). Its page opens on the night that brings it (SDNSteps' `learn`), once the
-   student has tried with what they knew; it stays readable from the sign and the notebook afterwards.
+   for the floors (the second). Every page is readable from the start; a page opens by itself on the first
+   night that brings it (SDNSteps' `learn`), and its memo - what to remember, the first example - stays
+   beside the code during every night about it. A `reg` in a run is what the hotel prepares before the
+   code: the game shows it as locked lines on top, like in the site.
 
      { id, letter, word: 'quatre' | 'hotel', index (its place in the word), title, intro,
        blocks: [{ text } | { code, run: { at, reg, get }, note }],   // an example runs and can be edited
@@ -47,16 +49,16 @@
     },
     {
       id: 'variables', letter: 'A', word: 'quatre', index: 2, title: 'Les boîtes à étiquette',
-      intro: 'Une variable est une boîte avec une étiquette qui commence par $. On y range une valeur une fois, et on la lit autant de fois qu\'on veut. Le registre de l\'hôtel en remplit quelques-unes avant ta page : $garde, $client…',
+      intro: 'Une variable est une boîte avec une étiquette qui commence par $. On y range une valeur une fois, et on la lit autant de fois qu\'on veut. L\'hôtel en prépare quelques-unes avant ta page, dans les lignes grises en haut du fichier : $garde, $client…',
       blocks: [
         { code: '<?php\n$telephone = \'05 55 12 34 56\';\n?>\n<p>Appelez le <?php echo $telephone; ?>.</p>\n<p>Ou de nuit : <?php echo $telephone; ?>.</p>', run: {}, note: 'Change le numéro dans la variable : les deux lignes suivent.' },
         { text: 'Une variable ne garde que sa dernière valeur : $chambre = 7; puis $chambre = 12; et elle vaut 12. Elle ne vit que le temps de fabriquer la page.' },
-        { code: '<p>Ce soir, <?php echo $garde; ?> veille sur vous.</p>', run: { reg: { garde: 'Nora' } }, note: '$garde vient du registre : ici, il vaut « Nora ».' }
+        { code: '<p>Ce soir, <?php echo $garde; ?> veille sur vous.</p>', run: { reg: { garde: 'Nora' } }, note: '$garde est préparé par l\'hôtel, dans les lignes grises : ici, il vaut « Nora ».' }
       ],
       retenir: ['$nom = valeur; range une valeur.', 'echo $nom; écrit ce qu\'elle contient.', 'Une valeur écrite une fois se change à un seul endroit.'],
       exos: [
-        { id: 'var1', prompt: 'Le registre donne $hotel : le nom change selon l\'hôtel du groupe. Écris-le dans les deux titres.', start: '<h1>Quatre-Vents</h1>\n<h2>Quatre-Vents</h2>', ref: '<h1><?php echo $hotel; ?></h1>\n<h2><?php echo $hotel; ?></h2>', runs: [{ reg: { hotel: 'Quatre-Vents' } }, { reg: { hotel: 'Trois-Lunes' } }] },
-        { id: 'var2', prompt: 'Le registre donne $garde. Écris « Veilleur : » suivi de son nom.', start: '<p>Veilleur : Sami</p>', ref: '<p>Veilleur : <?php echo $garde; ?></p>', runs: [{ reg: { garde: 'Théo' } }, { reg: { garde: 'Nora' } }] }
+        { id: 'var1', prompt: 'L\'hôtel prépare $hotel : le nom change selon l\'hôtel du groupe. Écris-le dans les deux titres.', start: '<h1>Quatre-Vents</h1>\n<h2>Quatre-Vents</h2>', ref: '<h1><?php echo $hotel; ?></h1>\n<h2><?php echo $hotel; ?></h2>', runs: [{ reg: { hotel: 'Quatre-Vents' } }, { reg: { hotel: 'Trois-Lunes' } }] },
+        { id: 'var2', prompt: 'L\'hôtel prépare $garde. Écris « Veilleur : » suivi de son nom.', start: '<p>Veilleur : Sami</p>', ref: '<p>Veilleur : <?php echo $garde; ?></p>', runs: [{ reg: { garde: 'Théo' } }, { reg: { garde: 'Nora' } }] }
       ]
     },
     {
@@ -70,7 +72,7 @@
       retenir: ['\'a\' . \'b\' donne « ab » : les espaces sont dans le texte.', '"… $x …" remplace $x ; \'… $x …\' non.', '\\\' pour une apostrophe entre guillemets simples.'],
       exos: [
         { id: 'cat1', prompt: 'Construis « Chambre 12, côté cour » dans $ligne à partir de $chambre, puis écris-la.', start: '<?php\n$chambre = 12;\n?>', ref: '<?php\n$chambre = 12;\n$ligne = \'Chambre \' . $chambre . \', côté cour\';\necho $ligne;\n?>', runs: [{}] },
-        { id: 'cat2', prompt: 'Écris « Bonsoir Lina, à demain ! » avec $client (donné par le registre).', start: '<p>Bonsoir Lina, à demain !</p>', ref: '<p><?php echo \'Bonsoir \' . $client . \', à demain !\'; ?></p>', runs: [{ reg: { client: 'Lina' } }, { reg: { client: 'M. Diaz' } }] }
+        { id: 'cat2', prompt: 'Écris « Bonsoir Lina, à demain ! » avec $client (préparé par l\'hôtel).', start: '<p>Bonsoir Lina, à demain !</p>', ref: '<p><?php echo \'Bonsoir \' . $client . \', à demain !\'; ?></p>', runs: [{ reg: { client: 'Lina' } }, { reg: { client: 'M. Diaz' } }] }
       ]
     },
     {
@@ -163,7 +165,7 @@
     },
     {
       id: 'lecture', letter: '-', word: 'quatre', index: 6, title: 'Lire le code des autres',
-      intro: 'Le trait d\'union de QUATRE-VENTS : lire un code qu\'on n\'a pas écrit, ligne à ligne, en suivant les valeurs. C\'est la moitié du métier. Il s\'allume avec le fichier d\'Augustin.',
+      intro: 'Le trait d\'union de QUATRE-VENTS : lire un code qu\'on n\'a pas écrit, ligne à ligne, en suivant les valeurs. C\'est la moitié du métier. Il s\'allume avec le planning du ménage d\'Augustin.',
       blocks: [
         { text: 'Pour lire un if : remplace chaque variable par sa valeur, puis calcule la condition. Pour lire une boucle : note la valeur de $i à chaque tour.' }
       ],
@@ -180,20 +182,20 @@
       retenir: ['[\'a\', \'b\'] : cases 0 et 1.', '$t[0] : la première case.', 'count($t) : le nombre de cases.'],
       exos: [
         { id: 'tab1', prompt: 'Range les mois dans un tableau et écris le mois de la visite en français (date(\'n\') va de 1 à 12).', start: '<?php\n$mois = [\'janvier\', \'février\', \'mars\', \'avril\', \'mai\', \'juin\', \'juillet\', \'août\', \'septembre\', \'octobre\', \'novembre\', \'décembre\'];\n?>', ref: '<?php\n$mois = [\'janvier\', \'février\', \'mars\', \'avril\', \'mai\', \'juin\', \'juillet\', \'août\', \'septembre\', \'octobre\', \'novembre\', \'décembre\'];\necho $mois[date(\'n\') - 1];\n?>', runs: [{ at: THU + '20:00:00' }, { at: '2027-01-15 20:00:00' }, { at: '2027-12-15 20:00:00' }] },
-        { id: 'tab2', prompt: 'Écris la dernière arrivée du registre ($arrivees), quelle que soit la longueur de la liste.', start: '<?php\n\n?>', ref: '<?php\necho $arrivees[count($arrivees) - 1];\n?>', runs: [{ reg: { arrivees: ['Mme Roux', 'M. Diaz', 'Lina'] } }, { reg: { arrivees: ['Famille Okafor'] } }] }
+        { id: 'tab2', prompt: 'Écris la dernière arrivée de $arrivees (préparé par l\'hôtel), quelle que soit la longueur de la liste.', start: '<?php\n\n?>', ref: '<?php\necho $arrivees[count($arrivees) - 1];\n?>', runs: [{ reg: { arrivees: ['Mme Roux', 'M. Diaz', 'Lina'] } }, { reg: { arrivees: ['Famille Okafor'] } }] }
       ]
     },
     {
       id: 'foreach', letter: 'Ô', word: 'hotel', index: 1, title: 'Une fois par case',
       intro: 'foreach parcourt un tableau : un tour par case, et à chaque tour la valeur de la case dans la variable que tu nommes. Il s\'arrête tout seul à la dernière, quelle que soit la longueur.',
       blocks: [
-        { code: '<ul>\n<?php\nforeach ($arrivees as $client) {\n    echo \'<li>\' . $client . \'</li>\';\n}\n?>\n</ul>', run: { reg: { arrivees: ['Mme Roux', 'M. Diaz', 'A. L.'] } }, note: 'Le registre donne trois arrivées.' },
+        { code: '<ul>\n<?php\nforeach ($arrivees as $nom) {\n    echo \'<li>\' . $nom . \'</li>\';\n}\n?>\n</ul>', run: { reg: { arrivees: ['Mme Roux', 'M. Diaz', 'Mme Faure'] } }, note: 'L\'hôtel a préparé trois arrivées.' },
         { text: 'Pour numéroter à partir de 1, un compteur : $rang = 1; avant la boucle, $rang++; dedans.' }
       ],
       retenir: ['foreach ($t as $v) { … } : un tour par case.', 'Pas besoin de count() pour s\'arrêter.', 'Un compteur pour numéroter.'],
       exos: [
         { id: 'fe1', prompt: 'Écris les clés du trousseau ($cles), une par ligne, en <li>.', start: '<ul>\n</ul>', ref: '<ul>\n<?php\nforeach ($cles as $cle) {\n    echo \'<li>\' . $cle . \'</li>\';\n}\n?>\n</ul>', runs: [{ reg: { cles: ['101', '102', '205'] } }, { reg: { cles: [] } }] },
-        { id: 'fe2', prompt: 'Additionne les nuits du registre ($nuitsParClient) et écris le total.', start: '<?php\n$total = 0;\n?>', ref: '<?php\n$total = 0;\nforeach ($nuitsParClient as $n) {\n    $total = $total + $n;\n}\necho $total;\n?>', runs: [{ reg: { nuitsParClient: [3, 1, 4] } }, { reg: { nuitsParClient: [7] } }] }
+        { id: 'fe2', prompt: 'Additionne les nuits de $nuitsParClient (préparé par l\'hôtel) et écris le total.', start: '<?php\n$total = 0;\n?>', ref: '<?php\n$total = 0;\nforeach ($nuitsParClient as $n) {\n    $total = $total + $n;\n}\necho $total;\n?>', runs: [{ reg: { nuitsParClient: [3, 1, 4] } }, { reg: { nuitsParClient: [7] } }] }
       ]
     },
     {
@@ -214,7 +216,8 @@
       intro: 'Une fonction range des instructions sous un nom. On l\'appelle avec des valeurs (ses paramètres), et return rend son résultat à qui l\'a appelée. Écrite dans fonctions.php, une page s\'en sert après include \'fonctions.php\';',
       blocks: [
         { code: '<?php\nfunction prix($montant)\n{\n    return number_format($montant, 2, \',\', \' \') . \' €\';\n}\necho \'Total : \' . prix(79.5) . \' / Suite : \' . prix(1250);\n?>', run: {}, note: 'Remplace return par echo : où sort le prix ?' },
-        { text: 'Un paramètre peut avoir une valeur par défaut : function nuitee($tarif, $nuits = 1). Les variables d\'une fonction ne voient pas celles de la page : passe-les en paramètres.' }
+        { text: 'Un paramètre peut avoir une valeur par défaut : function nuitee($tarif, $nuits = 1). Les variables d\'une fonction ne voient pas celles de la page : passe-les en paramètres.' },
+        { text: 'include \'fonctions.php\'; exécute ce fichier à cet endroit, comme s\'il était recopié là. Les lignes grises en haut de tes fichiers, depuis la première semaine, c\'est la même chose : l\'hôtel inclut son registre, qui range $garde, $client… avant ta page.' }
       ],
       retenir: ['function nom($p) { return …; }', 'return rend une valeur ; echo l\'écrit tout de suite.', 'include \'fonctions.php\'; en haut des pages.'],
       exos: [

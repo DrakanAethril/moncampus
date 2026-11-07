@@ -9,31 +9,21 @@
 # is a « nuit » in the game's words.
 tickets:
   -
-    id: N12
+    id: N18
     act: 4
-    after: [N11]
+    after: [N17]
     course: 'PHP · les tableaux'
     requester: mireille
     kind: demande
     priority: haute
     category: 'Les étages › La date'
     title: 'Jeudi, pas Thursday'
-    request: 'En haut de la page d''accueil, je voudrais la date du jour, en français : « Nous sommes le jeudi 5 novembre. » Et le premier du mois, on écrit « 1er ». J''ai essayé date(''l j F'') : la page m''a répondu « Thursday 5 November ».'
+    request: 'En haut de l''accueil, je voudrais la date du jour en français : « Nous sommes le jeudi 12 novembre. »'
     steps:
       -
         id: servir
         kind: fix
-        prompt: 'Écris la date du jour en français, avec au plus une condition de plus, puis sers la nuit.'
-      -
-        id: expliquer
-        kind: explain
-        expr: neutre
-        prompt: 'Pourquoi $jours[date(''N'') - 1] ?'
-        options:
-          - { text: 'date(''N'') va de 1 (lundi) à 7 (dimanche), et un tableau commence à la case 0 : on retire 1 pour tomber sur la bonne case.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Lundi dans la case 0… Les informaticiens comptent comme les étages : on part du rez-de-chaussée.' } }
-          - { text: 'Parce que PHP compte les jours à partir du dimanche.', misconception: semaine-dimanche, reaction: { who: sami, expr: sourcil, text: 'Avec N, lundi vaut 1 et dimanche 7. Le -1 vient du tableau, qui commence à 0.' } }
-          - { text: 'Pour obtenir la veille.', misconception: moins-un-veille, reaction: { who: sami, expr: sourcil, text: 'On n''enlève pas un jour : on passe du numéro du jour au numéro de la case.' } }
-          - { text: 'Le -1 retire le dernier élément du tableau.', misconception: moins-un-tableau, reaction: { who: sami, expr: sourcil, text: 'Le -1 s''applique au nombre date(''N''), pas au tableau.' } }
+        prompt: 'Range les jours et les mois dans deux tableaux, et écris la date du jour en français, sans ajouter de if.'
       -
         id: veille
         kind: choice
@@ -64,31 +54,58 @@ tickets:
           - { text: 'La case « jeudi » : $jours[''jeudi''].', misconception: cle-texte, reaction: { who: sami, expr: sourcil, text: 'Ce tableau est numéroté : ses cases s''appellent 0, 1, 2…' } }
     hints: 2
   -
-    id: N13
+    id: N19
     act: 4
-    after: [N12]
+    after: [N18]
+    course: 'PHP · if et else'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'Les étages › Le premier du mois'
+    title: 'Le 1er du mois'
+    request: 'Le premier du mois, on écrit « mardi 1er décembre », pas « mardi 1 décembre ».'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Le 1 du mois, écris « 1er » à la place de « 1 », avec une seule condition.'
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: 'le 1er mai', ok: true, reaction: { who: sami, expr: sourire, text: '$q vaut 1 : la condition est vraie, et $q reçoit ''1er'' à la place.' } }
+          - { text: 'le 1 mai', misconception: valeur-remplacee, reaction: { who: sami, expr: sourcil, text: '$q = ''1er''; remplace la valeur de $q : c''est la nouvelle qui est écrite.' } }
+          - { text: 'le 11er mai', misconception: valeur-ajoutee, reaction: { who: sami, expr: sourcil, text: 'Le = remplace, il n''ajoute pas : $q vaut ''1er'', pas ''1'' suivi de ''1er''.' } }
+          - { text: 'le $q mai', misconception: nom-affiche, reaction: { who: sami, expr: sourcil, text: 'Entre guillemets simples, ''le '' est du texte ; $q, hors des guillemets, est remplacé par sa valeur.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
+        prompt: 'Comment écrire « 1er » le premier du mois, et le nombre les autres jours ?'
+        options:
+          - { text: 'Ranger date(''j'') dans une variable, la remplacer par ''1er'' si elle vaut 1, puis l''écrire.', ok: true }
+          - { text: 'Ajouter ''er'' après date(''j'') tous les jours.', misconception: er-partout, reaction: { who: sami, expr: sourcil, text: '« 12er novembre » : seul le 1 prend le « er ».' } }
+          - { text: 'Un tableau de 31 cases.', misconception: tableau-inutile, reaction: { who: sami, expr: sourcil, text: 'Possible, mais 30 cases sur 31 ne feraient que répéter le nombre. Une condition suffit.' } }
+    hints: 2
+  -
+    id: N20
+    act: 4
+    after: [N19]
     course: 'PHP · foreach'
     requester: mireille
     kind: demande
     priority: haute
     category: 'Les étages › Les arrivées'
     title: 'Les arrivées du soir'
-    request: 'Sur la page des arrivées, je recopie chaque soir la liste des clients attendus. Le registre la donne pourtant, dans $arrivees. Je voudrais « 3 arrivées ce soir », puis les noms numérotés : « 1. Mme Roux ». S''il n''y en a qu''une : « 1 arrivée ce soir ». Et s''il n''y en a aucune : « Aucune arrivée ce soir. »'
+    request: 'Chaque soir, je recopie la liste des clients attendus. L''hôtel la prépare pourtant, dans $arrivees : je voudrais les noms numérotés, « 1. Mme Roux ».'
     steps:
       -
         id: servir
         kind: fix
-        prompt: 'Affiche le nombre d''arrivées et la liste numérotée du registre, puis sers la nuit.'
-      -
-        id: expliquer
-        kind: explain
-        expr: neutre
-        prompt: 'Que fait foreach ($arrivees as $client) ?'
-        options:
-          - { text: 'Il passe une fois par case du tableau, et met à chaque tour la valeur de la case dans $client.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Un tour par client, sans que j''aie à les compter.' } }
-          - { text: 'Il met tout le tableau dans $client, une seule fois.', misconception: foreach-une-fois, reaction: { who: sami, expr: sourcil, text: 'Il y a un tour par case : $client change à chaque tour.' } }
-          - { text: 'Il faut savoir combien il y a de clients pour l''écrire.', misconception: foreach-compte, reaction: { who: sami, expr: sourcil, text: 'C''est tout l''intérêt : foreach s''arrête tout seul à la dernière case.' } }
-          - { text: '$client contient le numéro de la case.', misconception: foreach-cle-valeur, reaction: { who: sami, expr: sourcil, text: 'Avec « as $client », c''est la valeur. Le numéro s''obtient avec « as $numero => $client ».' } }
+        prompt: 'Avec foreach, écris un <li> numéroté par nom de $arrivees.'
       -
         id: veille
         kind: choice
@@ -104,48 +121,65 @@ tickets:
       -
         id: g1
         kind: choice
+        prompt: 'Comment numéroter les clients à partir de 1 ?'
+        options:
+          - { text: 'Avec un compteur : $rang = 1 avant la boucle, $rang++ à chaque tour.', ok: true }
+          - { text: 'Avec « as $rang => $nom » tel quel.', misconception: cle-depuis-zero, reaction: { who: sami, expr: sourcil, text: 'Les clés commencent à 0 : « 0. Mme Roux ». Il faudrait ajouter 1.' } }
+          - { text: 'Avec count($arrivees) à chaque tour.', misconception: count-rang, reaction: { who: sami, expr: sourcil, text: 'count() donne le total, le même à chaque tour.' } }
+    hints: 2
+  -
+    id: N21
+    act: 4
+    after: [N20]
+    course: 'PHP · les tableaux'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'Les étages › Combien ce soir'
+    title: 'Combien ce soir ?'
+    request: 'Au-dessus de la liste, le nombre : « 3 arrivées ce soir », « 1 arrivée ce soir » au singulier, et « Aucune arrivée ce soir. » quand il n''y a personne.'
+    steps:
+      -
+        id: servir
+        kind: fix
+        prompt: 'Compte les arrivées avec count(), et écris la bonne des trois phrases au-dessus de la liste.'
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: '1 clé', ok: true, reaction: { who: sami, expr: sourire, text: 'Une case, donc count() vaut 1 : c''est le if qui parle.' } }
+          - { text: '1 clés', misconception: singulier-oublie, reaction: { who: sami, expr: sourcil, text: '$n vaut 1 : la condition est vraie, et le if écrit « 1 clé ».' } }
+          - { text: '0 clés', misconception: count-indice, reaction: { who: sami, expr: sourcil, text: 'count() compte les cases : il y en a une. La case, elle, porte le numéro 0.' } }
+          - { text: '101 clé', misconception: count-valeur, reaction: { who: sami, expr: sourcil, text: 'count() donne le nombre de cases, pas ce qu''elles contiennent.' } }
+    guide:
+      -
+        id: g1
+        kind: choice
         prompt: 'Comment savoir combien il y a d''arrivées ?'
         options:
           - { text: 'count($arrivees)', ok: true }
           - { text: '$arrivees.length', misconception: syntaxe-javascript, reaction: { who: sami, expr: sourcil, text: 'Ça, c''est du JavaScript. En PHP : count().' } }
           - { text: 'Le numéro de la dernière case.', misconception: count-indice, reaction: { who: sami, expr: sourcil, text: 'Les cases commencent à 0 : la dernière d''un tableau de 3 est la case 2.' } }
-      -
-        id: g2
-        kind: choice
-        prompt: 'Comment numéroter les clients à partir de 1 ?'
-        options:
-          - { text: 'Avec un compteur : $rang = 1 avant la boucle, $rang++ à chaque tour.', ok: true }
-          - { text: 'Avec « as $rang => $client » tel quel.', misconception: cle-depuis-zero, reaction: { who: sami, expr: sourcil, text: 'Les clés commencent à 0 : « 0. Mme Roux ». Il faudrait ajouter 1.' } }
-          - { text: 'Avec count($arrivees) à chaque tour.', misconception: count-rang, reaction: { who: sami, expr: sourcil, text: 'count() donne le total, le même à chaque tour.' } }
     hints: 2
   -
-    id: N14
+    id: N22
     act: 4
-    after: [N13]
+    after: [N21]
     course: 'PHP · les tableaux associatifs'
     requester: mireille
     kind: demande
     priority: haute
     category: 'Les étages › Les tarifs'
     title: 'Les tarifs de la saison'
-    request: 'Les tarifs changent avec la saison, et l''annexe aura des chambres familiales. Le registre donne $tarifs : chaque type de chambre avec son prix. Une ligne par type, « Double : 78,00 € », puis en dessous la moins chère : « Dès 62,00 € la nuit ».'
-    reward:
-      clue: 'Dans le registre des réservations, le client de la 12 revient chaque jeudi depuis la retraite d''Augustin, sous le nom « A. L. », et paie en liquide.'
+    request: 'L''hôtel prépare $tarifs : chaque type de chambre avec son prix. Je veux une ligne par type, « Double : 78,00 € ».'
     steps:
       -
         id: servir
         kind: fix
-        prompt: 'Affiche chaque type de chambre avec son prix, puis le moins cher, et sers la nuit.'
-      -
-        id: expliquer
-        kind: explain
-        expr: neutre
-        prompt: 'Dans foreach ($tarifs as $type => $prix), que contient $type ?'
-        options:
-          - { text: 'La clé de la case : « Simple », « Double »… et $prix sa valeur.', ok: true, reaction: { who: mireille, expr: sourire, text: 'Le nom de la chambre et son prix, ensemble. Comme sur l''ardoise du comptoir.' } }
-          - { text: 'Le numéro de la case : 0, 1, 2.', misconception: cle-numero, reaction: { who: sami, expr: sourcil, text: 'Ce tableau a des clés en texte : $type prend « Simple », « Double »…' } }
-          - { text: 'Le prix, et $prix le type.', misconception: cle-valeur-inverse, reaction: { who: sami, expr: sourcil, text: 'À gauche de =>, la clé ; à droite, la valeur.' } }
-          - { text: 'Le type de la variable : int ou string.', misconception: type-php, reaction: { who: sami, expr: sourcil, text: 'Ici, $type est juste un nom de variable : il reçoit la clé de chaque case.' } }
+        prompt: 'Avec foreach ($tarifs as $type => $prix), écris une ligne par type de chambre, le prix à la française.'
       -
         id: veille
         kind: choice
@@ -161,13 +195,42 @@ tickets:
       -
         id: g1
         kind: choice
-        prompt: 'Un soir de haute saison, le registre ajoute « Familiale ». Que doit faire la page ?'
+        prompt: 'Dans foreach ($tarifs as $type => $prix), que contient $type ?'
         options:
-          - { text: 'L''afficher sans qu''on touche au code : la boucle parcourt toutes les cases du registre.', ok: true }
-          - { text: 'Rien : la page ne connaît que Simple, Double et Suite.', misconception: cles-en-dur, reaction: { who: sami, expr: sourcil, text: 'C''est ce qu''il faut éviter : écrire les types en dur.' } }
-          - { text: 'Il faudra ajouter une ligne dans la page.', misconception: cles-en-dur, reaction: { who: sami, expr: sourcil, text: 'Avec foreach, la nouvelle case est lue comme les autres.' } }
+          - { text: 'La clé de la case : « Simple », « Double »… et $prix sa valeur.', ok: true }
+          - { text: 'Le numéro de la case : 0, 1, 2.', misconception: cle-numero, reaction: { who: sami, expr: sourcil, text: 'Ce tableau a des clés en texte : $type prend « Simple », « Double »…' } }
+          - { text: 'Le prix, et $prix le type.', misconception: cle-valeur-inverse, reaction: { who: sami, expr: sourcil, text: 'À gauche de =>, la clé ; à droite, la valeur.' } }
+    hints: 2
+  -
+    id: N23
+    act: 4
+    after: [N22]
+    course: 'PHP · les tableaux associatifs'
+    requester: mireille
+    kind: demande
+    priority: haute
+    category: 'Les étages › Le moins cher'
+    title: 'Le moins cher'
+    request: 'Sous la liste, « Dès 62 € la nuit » est écrit à la main. Je veux le prix le plus bas de la grille : « Dès 62,00 € la nuit ».'
+    steps:
       -
-        id: g2
+        id: servir
+        kind: fix
+        prompt: 'Écris le prix le plus bas de $tarifs avec min(), à la française.'
+      -
+        id: veille
+        kind: choice
+        label: 'La veille'
+        prompt: 'Que lit le client ?'
+        view: veille
+        options:
+          - { text: '62 / 120', ok: true, reaction: { who: sami, expr: sourire, text: 'min et max regardent les valeurs, dans n''importe quel ordre.' } }
+          - { text: 'Simple / Suite', misconception: min-cle, reaction: { who: sami, expr: sourcil, text: 'min() rend la plus petite valeur, pas sa clé.' } }
+          - { text: '62 / 78', misconception: max-dernier, reaction: { who: sami, expr: sourcil, text: 'max() cherche la plus grande valeur, pas la dernière case.' } }
+          - { text: '120 / 62', misconception: min-max-inverse, reaction: { who: sami, expr: sourcil, text: 'min, c''est le plus petit ; max, le plus grand.' } }
+    guide:
+      -
+        id: g1
         kind: choice
         prompt: 'Comment trouver le prix le plus bas ?'
         options:

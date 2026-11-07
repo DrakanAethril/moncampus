@@ -11,18 +11,21 @@
 # What this game adds to the mechanic, without touching the server: the student's site is one, from the
 # first night to the last, and it travels as the game's display state (saveProgress, within the scenario's
 # 256 KB) - never as an answer, which stays {passed, failed}. Trying the site on the visible visitors is free
-# and stays in the frame; only « Servir la nuit » is a delivery.
+# and stays in the frame; only « Servir la nuit » is a delivery. Made for complete beginners: one notion a
+# night, the notebook open from the start, the variables the hotel prepares shown on top of each file, one
+# question after the site (`free_order`: no explanation forced after it), and the story kept to the setting -
+# Augustin's file is an optional epilogue in the game, never a night.
 slug: service-de-nuit
 title: "Service de nuit"
-pitch: "Veilleur·se de nuit d'un petit hôtel, reprendre le site PHP qu'Augustin a laissé et servir chaque nuit des visiteurs, certains cachés : echo, date(), conditions, boucles, tableaux, fonctions, formulaires."
+pitch: "Veilleur·se de nuit d'un petit hôtel, faire marcher son site PHP, une notion par nuit, et servir des visiteurs, certains cachés : echo, date(), variables, conditions, boucles, tableaux, fonctions, formulaires."
 subjects: [Informatique]
 levels: [BTS SIO 1]
 unit_label: nuits
 mechanic: scenario
-# The kinds of step of the scenario: a site served to the visitors by the game, an explanation or a
-# « veille » to choose, a line to designate in Augustin's code, an order.
+# The kinds of step of the scenario: a site served to the visitors by the game, a « veille » to choose, a
+# line to designate in Augustin's code, an order.
 answer_kinds: [fix, choice, line, order]
-version: 1.0.0
+version: 2.0.0
 published: false
 
 words:
@@ -36,13 +39,16 @@ words:
 
 scenario:
   # A night keeps the version it was started with; raise it when a step changes.
-  version: 1
+  # 2: the 17 nights split into 28, one notion each; the explanations and the clues gone (2026-11-07).
+  version: 2
   # One night at a time: the site is one, and each night builds on the one before.
   capacity: 1
   # Who answers a wrong step that names nobody.
   helper: sami
-  # No password: the « pied de page » gathers five clues, the last night tells who the client of the 12 is.
+  # No password, no clue: the red thread is the optional epilogue's, played in the game once it is over.
   password: []
+  # A night is its site, then one question: no explanation forced after the site (ScenarioValidator).
+  free_order: true
   # « Recommencer depuis le début » on the title screen, before the end too, like Black-out.
   restart_anytime: true
   acts:
@@ -50,24 +56,24 @@ scenario:
     - { n: 2, title: "L'horloge", tools: [site] }
     - { n: 3, title: "Les couloirs", tools: [site] }
     - { n: 4, title: "Les étages", tools: [site] }
-    - { n: 5, title: "La chambre 12", tools: [site] }
+    - { n: 5, title: "Le comptoir", tools: [site] }
 
 grades:
   - [0, "Veilleur·se stagiaire"]
-  - [4, "Veilleur·se"]
-  - [8, "Veilleur·se de confiance"]
-  - [12, "Chef·fe de loge"]
-  - [17, "Gardien·ne des Quatre-Vents"]
+  - [6, "Veilleur·se"]
+  - [13, "Veilleur·se de confiance"]
+  - [20, "Chef·fe de loge"]
+  - [28, "Gardien·ne des Quatre-Vents"]
 
 rewards:
-  # Brass once the last night is served (N17); silver at two thirds of the nights with three stars,
-  # gold at 15. Thresholds to review after a first promotion.
+  # Brass once the last night is served (N28); silver at two thirds of the nights with three stars,
+  # gold at 24. Thresholds to review after a first promotion.
   trophy:
     code: cle-12
     label: La clé de la 12
-    lore: "La clé de la chambre 12, sur son étiquette rose, qu'Augustin a rendue un jeudi à 23 h 12 à qui avait appris à lire son site."
-    silver_at: 11
-    gold_at: 15
+    lore: "La clé de la chambre 12, sur son étiquette rose : celle qu'on confie au veilleur qui tient la loge."
+    silver_at: 18
+    gold_at: 24
   pin:
     code: pin-neon
     label: Épinglette Néon
