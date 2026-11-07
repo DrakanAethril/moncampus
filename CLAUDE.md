@@ -708,10 +708,19 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `quiz_import_kahoot` turns Kahoot game reports deposited in the library (an .xlsx, or a .zip of
   them) into quizzes, one per report: the whole batch is read first, `dryRun` says what would be
   created, a game exported twice or a quiz of the same name already in the folder is skipped.
-  `library_move` files quizzes, files and whole folders elsewhere in the quiz or file library -
-  a move through each library's own manager, never a copy, so ids and links survive; the call is
-  checked whole before anything moves, then each move is flushed in turn inside one transaction
-  (a folder's subtree and its siblings' names are read from the database).
+  `library_move` files quizzes, séquences, files and whole folders elsewhere in the quiz, séquence
+  or file library - a move through each library's own manager, never a copy, so ids and links
+  survive; the call is checked whole before anything moves, then each move is flushed in turn
+  inside one transaction (a folder's subtree and its siblings' names are read from the database).
+  **Sharing between colleagues** (`share_recipients`, `share_create`, `share_list`,
+  `share_duplicate`, `share_revoke`; `App\Mcp\McpContentShares`, `Feature::ContentSharing`) is
+  Outils › Partages through the screen's own doors: `ContentShareComposer`, `ContentShareAudience`,
+  the three duplicators. Quizzes, files or folders, séquences and séances only - **never a class
+  share (« Partager à une classe ») and never a progression** (the user's decision of 2026-11-07:
+  nothing the connector shares reaches a student). Only the author shares; a group share hands
+  Claude the measured `readerCount` first; `share_duplicate` has a `dryRun` (the confirmation
+  screen: folders, weight, quota) and files the copy straight into a folder of the teacher's own -
+  every folder and séquence it names is checked to be theirs, past the folder voters' staff bypass.
   `progression_get` is **read-only**: Claude suggests a progression, the teacher builds it on the
   progression screens (`McpTimetable` holds the shared doors). `format_guide` is assembled from the import assistants' own catalogues,
   so the screen's prompt and the connector's guide cannot drift. `Feature::ClaudeConnector` is off

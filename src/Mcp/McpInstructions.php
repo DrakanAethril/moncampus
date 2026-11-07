@@ -28,8 +28,15 @@ final class McpInstructions
         4. Après chaque création, donne à l'enseignant le lien MonCampus renvoyé par l'outil pour qu'il vérifie.
         5. Une évaluation créée n'est visible des étudiants qu'à sa date de visibilité : signale-la toujours à l'enseignant.
         6. Pour déposer un fichier que tu as produit : `file_create` pour un support rédigé, `file_upload` (base64) pour un petit fichier, `file_upload_url` pour tout autre (PDF, archive .zip, vidéo, image) — tu l'envoies alors toi-même avec `curl -X PUT -H "Content-Type: application/octet-stream" --data-binary`. Le `fileId` obtenu sert ensuite partout (`course_material_add`, `lesson_log_attach`, vignette d'un cours…).
-        7. Pour ranger la bibliothèque de quiz ou de fichiers, déplace avec `library_move` (quiz, fichiers ou dossiers entiers) : ne recrée jamais un quiz ou un fichier pour le changer de dossier, ce serait un doublon.
+        7. Pour ranger la bibliothèque de quiz, de séquences ou de fichiers, crée au besoin les dossiers avec `folder_create`, puis déplace avec `library_move` (quiz, séquences, fichiers ou dossiers entiers) : ne recrée jamais un quiz, une séquence ou un fichier pour le changer de dossier, ce serait un doublon.
         8. Pour reprendre des Kahoot : l'enseignant exporte le rapport de chaque partie (.xlsx) depuis Kahoot. Dépose le fichier, ou un .zip de plusieurs rapports, avec `file_upload` ou `file_upload_url`, puis appelle `quiz_import_kahoot` avec `dryRun: true` et montre le compte rendu (questions par type, questions laissées de côté, tolérances de curseur déduites, doublons) ; n'importe pour de bon qu'avec son accord. Ne réécris jamais un Kahoot à la main avec `quiz_create` : l'import lit tous les types et les temps de chaque question.
+
+        Partages entre collègues (si les outils `share_*` sont proposés) :
+        - Un partage donne à lire un contenu de l'enseignant (quiz, fichier ou dossier, séquence, séance) à des collègues ; il n'écrit rien dans leur bibliothèque. Seul l'auteur partage, et jamais à des étudiants. Les progressions se partagent dans MonCampus.
+        - Pour partager : trouve les destinataires avec `share_recipients`, puis appelle `share_create`. Avant un partage à une équipe ou au catalogue, dis à l'enseignant combien de personnes le liront (`readerCount`) et attends son accord : la racine « campus » touche tout l'établissement.
+        - `share_list` donne les partages reçus (`received`), le catalogue de l'établissement (`catalog`) et ceux de l'enseignant (`mine`). Un quiz ou une séquence partagés se lisent avec `quiz_get` ou `sequence_get` avant de décider.
+        - Pour reprendre un contenu partagé, duplique-le avec `share_duplicate` : la copie appartient à l'enseignant et se range directement (`folderId`). Pour une séquence, une séance ou un dossier de fichiers, appelle d'abord `dryRun: true` et dis ce qui sera copié et ce que cela pèse dans sa bibliothèque de fichiers. Une séance va dans une de ses séquences (`sequenceId`) : demande laquelle si ce n'est pas dit.
+        - `share_revoke` retire un partage de l'enseignant sans rien supprimer : les copies déjà faites restent à ses collègues.
 
         Carnet de notes :
         - `evaluation_create` crée une évaluation avec ou sans barème ; `rubric_set` pose ou remplace le barème tant qu'aucun point n'a été saisi.
