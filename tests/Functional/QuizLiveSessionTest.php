@@ -25,7 +25,9 @@ use Doctrine\ORM\EntityManagerInterface;
  * A live concours as Kahoot runs one (the user's decision of 2026-11-05): every type a Kahoot carries,
  * the statement alone before the answers, a question closed by the last answer, the results and each
  * phone's verdict, the scoreboard - skipped after a vote -, the podium. The answers go through the
- * phones' own route; the rules are pinned on primitives in tests/Service/QuizLive/.
+ * phones' own route, the contest's public address (/live/{code}); the rules are pinned on primitives in
+ * tests/Service/QuizLive/. Since 2026-11-07 the phone is told the statement and the propositions too
+ * (design/validated/quiz-live-public.md): a public contest may be played far from the projector.
  */
 class QuizLiveSessionTest extends FunctionalTestCase
 {
@@ -36,6 +38,7 @@ class QuizLiveSessionTest extends FunctionalTestCase
     private QuizTemplate $quiz;
     private EntityManagerInterface $em;
     private int $sessionId = 0;
+    private string $code = '';
 
     protected function setUp(): void
     {
@@ -71,26 +74,30 @@ class QuizLiveSessionTest extends FunctionalTestCase
         $session = $service->createSession([$this->quiz], $this->program, $this->teacher, 20);
         self::assertCount(6, $session->getQuizInstance()->getQuestions());
         $this->sessionId = (int) $session->getId();
+        $this->code = (string) $session->getRoomCode();
         $service->join($session, $this->alice, 'Alice');
         $service->join($session, $this->bruno, 'Bruno');
         $service->start($session, $this->teacher);
 
         $this->client->loginUser($this->teacher);
-        $this->client->request('GET', \sprintf('/programs/%d/quiz/live/%d/projector', $this->program->getId(), $this->sessionId));
+        $this->client->request('GET', \sprintf('/quiz-live/%d/projector', $this->sessionId));
         self::assertResponseIsSuccessful();
 
         $this->advance(LiveSessionStatus::Countdown);
 
-        // 1. QCM - the statement alone first, the text on the board only.
+        // 1. QCM - the statement alone first, on the board and on the phones.
         self::assertSame(LiveSessionStatus::Reading, $this->live()->getStatus());
         self::assertSame('Le SI est', $service->buildHostSnapshot($this->live())['label']);
-        self::assertArrayNotHasKey('label', $service->buildPlayerSnapshot($this->live()));
+        self::assertSame('Le SI est', $service->buildPlayerSnapshot($this->live())['label']);
         $this->advance(LiveSessionStatus::Reading);
         self::assertSame(LiveSessionStatus::Question, $this->live()->getStatus());
         $opened = $service->buildPlayerSnapshot($this->live());
         self::assertSame('choice', $opened['kind']);
         self::assertIsArray($opened['answers']);
-        self::assertArrayNotHasKey('label', $opened['answers'][0], 'a phone gets shapes, never the text');
+        $first = $opened['answers'][0];
+        self::assertIsArray($first);
+        self::assertSame('un ensemble de ressources', $first['label'], 'a phone reads the propositions');
+        self::assertArrayNotHasKey('correct', $first, 'never which one is right');
 
         $this->answer($this->alice, ['answerIds' => [$this->right()[0]]]);
         self::assertSame(LiveSessionStatus::Question, $this->live()->getStatus(), 'Bruno has not answered yet');
@@ -188,6 +195,7 @@ class QuizLiveSessionTest extends FunctionalTestCase
         $service = $this->service();
         $session = $service->createSession([$this->quiz], $this->program, $this->teacher, 20);
         $this->sessionId = (int) $session->getId();
+        $this->code = (string) $session->getRoomCode();
         $service->join($session, $this->alice, 'Alice');
         $service->join($session, $this->bruno, 'Bruno');
         $service->start($session, $this->teacher);
@@ -198,17 +206,17 @@ class QuizLiveSessionTest extends FunctionalTestCase
 
         foreach ([[$this->alice, true], [$this->bruno, false]] as [$student, $answered]) {
             $this->client->loginUser($student);
-            $this->client->request('GET', \sprintf('/programs/%d/quiz/live/%d/play/state', $this->program->getId(), $this->sessionId));
+            $this->client->request('GET', \sprintf('/live/%s/state', $this->code));
             self::assertResponseIsSuccessful();
             $body = json_decode((string) $this->client->getResponse()->getContent(), true);
             self::assertIsArray($body);
             self::assertIsArray($body['state']);
             self::assertSame(['question-opened', $answered], [$body['state']['type'], $body['state']['answered'] ?? null]);
-            self::assertArrayNotHasKey('label', $body['state'], 'the text stays on the board');
+            self::assertArrayNotHasKey('outcomes', $body['state'], 'nobody\'s verdict before the question closes');
         }
 
         $this->client->loginUser($this->teacher);
-        $this->client->request('GET', \sprintf('/programs/%d/quiz/live/%d/projector/state', $this->program->getId(), $this->sessionId));
+        $this->client->request('GET', \sprintf('/quiz-live/%d/projector/state', $this->sessionId));
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Le SI est', (string) $this->client->getResponse()->getContent());
     }
@@ -280,9 +288,9 @@ class QuizLiveSessionTest extends FunctionalTestCase
     private function answer(User $student, array $body, int $expected = 200): void
     {
         $this->client->loginUser($student);
-        $this->client->request('GET', \sprintf('/programs/%d/quiz/live/%d/play', $this->program->getId(), $this->sessionId));
+        $this->client->request('GET', \sprintf('/live/%s/play', $this->code));
         self::assertResponseIsSuccessful();
-        $this->client->request('POST', \sprintf('/programs/%d/quiz/live/%d/answer', $this->program->getId(), $this->sessionId), [], [], [
+        $this->client->request('POST', \sprintf('/live/%s/answer', $this->code), [], [], [
             'CONTENT_TYPE' => 'application/json',
             'HTTP_X-CSRF-Token' => $this->csrfToken('quiz_live_answer'),
         ], json_encode($body, \JSON_THROW_ON_ERROR));

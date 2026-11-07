@@ -1,0 +1,21 @@
+/* Live contest theme « Manga » (config/quiz_live/themes.yaml).
+   Its tokens, its decoration, its hero animation and what its tiles do differently - the shape
+   every theme copies (assets/styles/quiz_live/live.css says which tokens). */
+
+.ql[data-live-theme="manga"] { --bg:#FFFDF4; --bg2:#fff; --panel:#fff; --ink:#0D0D0D; --muted:#3d3d3d; --accent:#FFD000; --accent2:#FF4D4D; --ok:#27AE60; --ko:#EB3B3B; --okink:#0D0D0D; --c1:#FF4D4D; --c2:#2F80ED; --c3:#FFD000; --c4:#27AE60; --c5:#9B51E0; --c6:#F2994A; --tink:#0D0D0D; --bd:4px solid #0D0D0D; --sh:none; --r:4px; --fd:'Bangers',Impact,sans-serif; --fb:'Comic Neue','Comic Sans MS',sans-serif; --shpfill:#fff; --shpstroke:#0D0D0D; --shpsw:2; --btnbg:#0D0D0D; --btnink:#fff; --sel:#0D0D0D; --track:#fff; }
+.ql[data-live-theme="manga"] .fd { letter-spacing: .04em; }
+.ql[data-live-theme="manga"] .ql-btn { transform: skew(-4deg); }
+.ql[data-live-theme="manga"] .ql-av { box-shadow: 0 0 0 3px #0D0D0D; }
+.ql[data-live-theme="manga"] .ql-tiles.is-multi .ql-tile .ql-t { padding: 3px 8px; border-width: 2px; }
+.ql[data-live-theme="manga"] .ql-tile { border-radius: 2px; }
+.ql[data-live-theme="manga"] .ql-tile::before { content: ""; position: absolute; inset: 0; background: radial-gradient(rgba(0,0,0,.22) 1.2px, transparent 1.6px) 0 0 / 7px 7px; pointer-events: none; }
+.ql[data-live-theme="manga"] .ql-tile .ql-t { background: #fff; border: 3px solid #0D0D0D; border-radius: 16px; padding: 4px 10px; flex: 0 1 auto; }
+.ql[data-live-theme="manga"] .ql-tbar { border-width: 2px; }
+.ql[data-live-theme="manga"] .ql-deco { background: radial-gradient(rgba(0,0,0,.09) 1.4px, transparent 1.8px) 0 0 / 9px 9px; }
+.ql[data-live-theme="manga"]  .ql-deco.is-speed { background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(0,0,0,.85) 0deg 1.2deg, transparent 1.2deg 7deg); -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 32%, #000 70%); mask-image: radial-gradient(circle at 50% 50%, transparent 32%, #000 70%); animation: ql-manga-speedSpin 1.4s steps(3) infinite; }
+.ql[data-live-theme="manga"] .ql-hero { animation: ql-manga-impact .5s cubic-bezier(.2,1.4,.4,1) both; }
+.ql[data-live-theme="manga"] .ql-error { color: #b3261e; }
+.ql[data-live-theme="manga"] .ql-pchip { border-radius: 4px; }
+.ql[data-live-theme="manga"] .ql-sq > .ql-stmt { font-family: var(--fb); font-weight: 700; }
+@keyframes ql-manga-impact { 0% { transform: scale(1.9); opacity: 0; } 40% { transform: scale(.92); opacity: 1; } 55% { transform: translate(-6px, 3px); } 70% { transform: translate(5px, -3px); } 85% { transform: translate(-2px, 1px); } 100% { transform: none; } }
+@keyframes ql-manga-speedSpin { to { transform: rotate(7deg); } }

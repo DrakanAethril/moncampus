@@ -1,0 +1,96 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Outils › Concours live (design/validated/quiz-live-public.md): the contests one hosted and those of
+   the classes one teaches, running ones first. A contest belongs to a class or to none - the class is
+   a filter here, and the class's own screens link here with it set. #}
+
+{% block title %}{{ 'quizLiveNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'quizLiveNavLabel'|trans, url: path('app_quiz_live_index')},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'quizLiveNavLabel'|trans }}{% if filteredProgram %} - {{ filteredProgram.displayShortName }}{% endif %}{% endblock %}
+
+{% block page_actions %}
+    <twig:Cm:Button variant="outline" :href="path('app_quiz_live_themes')">{{ 'quizLiveIndexThemesAction'|trans }}</twig:Cm:Button>
+    <twig:Cm:Button variant="gold" :href="path('app_quiz_live_new', filteredProgram ? {program: filteredProgram.id} : {})">{{ 'quizLiveIndexNewAction'|trans }}</twig:Cm:Button>
+{% endblock %}
+
+{% block main %}
+    <div class="card">
+        {# A consultation select: it starts on what is shown, « Tous mes concours » first. #}
+        <form class="cm-filterbar" method="get" action="{{ path('app_quiz_live_index') }}" data-controller="auto-submit">
+            <label class="cm-filterbar__field">
+                <span>{{ 'quizLiveIndexClassFilterLabel'|trans }}</span>
+                <select name="class" class="cm-filterbar__select" data-action="auto-submit#submit">
+                    <option value="" {{ filter == '' ? 'selected' }}>{{ 'quizLiveIndexAllClassesOption'|trans }}</option>
+                    {% for program in programs %}
+                        <option value="{{ program.id }}" {{ filter == program.id ~ '' ? 'selected' }}>{{ program.displayShortName }}</option>
+                    {% endfor %}
+                    <option value="none" {{ filter == 'none' ? 'selected' }}>{{ 'quizLiveIndexNoClassOption'|trans }}</option>
+                </select>
+            </label>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'quizLiveIndexContestColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLiveIndexClassColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLiveIndexOpeningColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLiveHistoryParticipantsColumnLabel'|trans }}</th>
+                        <th>{{ 'quizLiveHistoryPodiumColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        {% set session = row.session %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold">{{ session.quizInstance.name }}</span>
+                                <span class="text-secondary">· {{ (session.finishedAt ?? session.createdAt)|date('d/m/Y \\à H:i') }}</span>
+                                {% if not session.isOver %}<twig:Cm:Badge :of="session.status" class="ms-2"/>{% endif %}
+                            </td>
+                            <td>{{ session.program ? session.program.displayShortName : 'quizLiveIndexNoClassLabel'|trans }}</td>
+                            <td>
+                                {% if session.public %}
+                                    <twig:Cm:Badge tone="gold">{{ 'quizLivePublicBadge'|trans }}</twig:Cm:Badge>
+                                {% else %}
+                                    <twig:Cm:Badge tone="blue">{{ 'quizLiveClassOnlyBadge'|trans }}</twig:Cm:Badge>
+                                {% endif %}
+                            </td>
+                            <td>{{ session.participants|length }}</td>
+                            <td>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    {% for entry in row.podium %}
+                                        <twig:Cm:Badge :tone="loop.first ? 'gold' : 'gray'">{{ loop.index }}. {{ entry.displayName }}{% if loop.first %} · {{ entry.score }}{% endif %}</twig:Cm:Badge>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            {# A running contest leads back to its projector; one that is over has its
+                               results, and only one that is over may be deleted. #}
+                            <td class="cm-actions">
+                                {% if session.isOver %}
+                                    <a href="{{ path('app_quiz_live_results', {id: session.id}) }}" class="cm-action--neutral">{{ 'quizLiveResultsAction'|trans }}</a>
+                                    <form method="post" action="{{ path('app_quiz_live_delete', {id: session.id}) }}" class="d-inline">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('quiz_live_delete') }}">
+                                        <button type="submit" class="cm-action--danger" data-controller="confirm-submit" data-confirm-submit-message-value="{{ 'quizLiveHistoryDeleteConfirmMessage'|trans }}" data-action="confirm-submit#confirm">{{ 'quizLiveHistoryDeleteAction'|trans }}</button>
+                                    </form>
+                                {% else %}
+                                    <a href="{{ path('app_quiz_live_projector', {id: session.id}) }}" class="cm-action--positive" data-turbo="false">{{ 'quizLiveResumeAction'|trans }}</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-secondary">{{ 'quizLiveIndexEmptyMessage'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

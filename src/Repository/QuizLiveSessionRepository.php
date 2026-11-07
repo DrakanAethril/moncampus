@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Program;
 use App\Entity\QuizLiveSession;
+use App\Entity\User;
 use App\Enum\LiveSessionStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -57,5 +58,43 @@ class QuizLiveSessionRepository extends ServiceEntityRepository
             ->addOrderBy('s.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Outils › Concours live (design/validated/quiz-live-public.md): the contests a person hosted,
+     * and those of the classes they teach - the running ones first, like findAllForProgram(). Narrowed
+     * to one class, or to the contests of no class (their host's only), when the screen's filter asks.
+     *
+     * @param list<Program> $programs the classes the person teaches
+     *
+     * @return list<QuizLiveSession>
+     */
+    public function findForHost(User $host, array $programs, ?Program $only = null, bool $classless = false): array
+    {
+        $builder = $this->createQueryBuilder('s')
+            ->addSelect('i')
+            ->addSelect('CASE WHEN s.status IN (:terminalStatuses) THEN 1 ELSE 0 END AS HIDDEN isOver')
+            ->join('s.quizInstance', 'i')
+            ->setParameter('terminalStatuses', [LiveSessionStatus::Finished, LiveSessionStatus::Cancelled])
+            ->orderBy('isOver', 'ASC')
+            ->addOrderBy('s.createdAt', 'DESC');
+
+        if ($classless) {
+            $builder->where('i.program IS NULL')->andWhere('s.host = :host')->setParameter('host', $host);
+        } elseif (null !== $only) {
+            $builder->where('i.program = :program')->setParameter('program', $only);
+        } elseif ([] === $programs) {
+            $builder->where('s.host = :host')->setParameter('host', $host);
+        } else {
+            $builder->where('s.host = :host OR i.program IN (:programs)')->setParameter('host', $host)->setParameter('programs', $programs);
+        }
+
+        return $builder->getQuery()->getResult();
+    }
+
+    /** A contest by the code of its public address (/live/{code}), whatever the case typed. */
+    public function findOneByCode(string $code): ?QuizLiveSession
+    {
+        return $this->findOneBy(['roomCode' => strtoupper(trim($code))]);
     }
 }

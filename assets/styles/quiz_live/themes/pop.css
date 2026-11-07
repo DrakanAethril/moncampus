@@ -1,0 +1,18 @@
+/* Live contest theme « Pop » (config/quiz_live/themes.yaml).
+   Its tokens, its decoration, its hero animation and what its tiles do differently - the shape
+   every theme copies (assets/styles/quiz_live/live.css says which tokens). */
+
+.ql[data-live-theme="pop"] { --bg:#E9E4FF; --bg2:#FFF8D6; --panel:#fff; --ink:#111; --muted:#4a4560; --accent:#FFDD3C; --accent2:#FF8FA3; --ok:#2EC4A0; --ko:#FF6B6B; --okink:#111; --c1:#FF6B6B; --c2:#4D7CFE; --c3:#FFC93C; --c4:#2EC4A0; --c5:#B57BFF; --c6:#FF9F43; --tink:#111; --bd:3px solid #111; --sh:4px 4px 0 #111; --r:16px; --fd:'Archivo Black','Arial Black',sans-serif; --fb:'Archivo',system-ui,sans-serif; --shpfill:#fff; --shpstroke:#111; --shpsw:1.6; --btnbg:#FFDD3C; --btnink:#111; --sel:#111; --track:#fff; }
+.ql[data-live-theme="pop"] .ql-av { box-shadow: 0 0 0 3px #111; }
+.ql[data-live-theme="pop"] .ql-tile:nth-child(odd) { transform: rotate(-.6deg); }
+.ql[data-live-theme="pop"] .ql-tile:nth-child(even) { transform: rotate(.6deg); }
+.ql[data-live-theme="pop"] .ql-tbar { border-width: 2px; }
+.ql[data-live-theme="pop"] .ql-deco { background: radial-gradient(rgba(17,17,17,.13) 1.3px, transparent 1.6px) 0 0 / 18px 18px; }
+.ql[data-live-theme="pop"] .ql-deco::before { content: ""; position: absolute; width: 120px; height: 120px; right: -30px; top: 60px; background: var(--accent2); border: 3px solid #111; border-radius: 50%; }
+.ql[data-live-theme="pop"] .ql-deco::after { content: ""; position: absolute; width: 90px; height: 90px; left: -24px; bottom: 90px; background: var(--accent); border: 3px solid #111; transform: rotate(18deg); }
+.ql[data-live-theme="pop"] .ql-hero { animation: ql-pop-slam .55s cubic-bezier(.2,1.5,.35,1) both; }
+.ql[data-live-theme="pop"] .ql-error { color: #b3261e; }
+.ql[data-live-theme="pop"] .ql-qrcard { transform: rotate(-1.5deg); }
+.ql[data-live-theme="pop"] .ql-pchip:nth-child(3n) { transform: rotate(-2deg); }
+.ql[data-live-theme="pop"] .ql-pchip:nth-child(3n+1) { transform: rotate(1.5deg); }
+@keyframes ql-pop-slam { 0% { transform: scale(2.3) rotate(-14deg); opacity: 0; } 60% { transform: scale(.94) rotate(-2deg); opacity: 1; } 100% { transform: scale(1) rotate(-3deg); } }

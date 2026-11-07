@@ -63,7 +63,7 @@ class QuizLiveController extends AbstractController
         return $this->json(['session' => [
             'sessionId' => $session->getId(),
             'name' => $session->getQuizInstance()->getName(),
-            'programId' => $session->getQuizInstance()->getProgram()->getId(),
+            'programId' => $session->getProgram()?->getId(),
             'hostName' => $session->getHost()->getDisplayName() ?? $session->getHost()->getUsername(),
         ]]);
     }
@@ -133,7 +133,8 @@ class QuizLiveController extends AbstractController
     {
         $session = $repository->find($sessionId) ?? throw $this->createNotFoundException();
 
-        if (!$session->getQuizInstance()->getProgram()->getStudents()->contains($student)) {
+        // The app plays its class's contests only - a public contest is played from its web address.
+        if (true !== $session->getProgram()?->getStudents()->contains($student)) {
             throw $this->createNotFoundException();
         }
 

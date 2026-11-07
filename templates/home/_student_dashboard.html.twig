@@ -30,10 +30,10 @@
                 {% set banner_session = student.banner.session %}
                 <span class="cm-dash-banner__body">
                     <span class="cm-dash-banner__title">{{ 'homeStudentBannerQuizLiveTitle'|trans }}</span>
-                    <span class="cm-dash-banner__text">{{ banner_session.quizInstance.name }} · {{ banner_session.quizInstance.program.displayShortName }} — {{ 'homeStudentBannerQuizLiveHostLabel'|trans({'%host%': banner_session.host.displayName ?? banner_session.host.username}) }}</span>
+                    <span class="cm-dash-banner__text">{{ banner_session.quizInstance.name }}{% if banner_session.program %} · {{ banner_session.program.displayShortName }}{% endif %} — {{ 'homeStudentBannerQuizLiveHostLabel'|trans({'%host%': banner_session.host.displayName ?? banner_session.host.username}) }}</span>
                 </span>
                 <span class="cm-dash-banner__action">
-                    <a href="{{ path('app_program_quiz_live_join', {id: banner_session.quizInstance.program.id, sessionId: banner_session.id}) }}" class="cm-btn cm-btn--gold">{{ 'homeStudentBannerQuizLiveAction'|trans }}</a>
+                    <a href="{{ path('app_quiz_live_entry', {code: banner_session.roomCode}) }}" class="cm-btn cm-btn--gold" data-turbo="false">{{ 'homeStudentBannerQuizLiveAction'|trans }}</a>
                 </span>
             {% elseif student.banner.type == 'wordCloud' %}
                 {# The same shape as the live contest above, and directly under it: a word cloud

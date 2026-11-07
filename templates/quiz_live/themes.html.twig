@@ -1,0 +1,78 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Every theme of the live contest with captures of its screens (design/validated/quiz-live-public.md).
+   A capture is the real screen: the room's and the phone's drawn by assets/quiz_live/render.js from a
+   sample contest (quiz_live_capture_controller.js), the guest page by its own partial - a new theme
+   gets its captures without anybody taking a picture. #}
+
+{% block title %}{{ 'quizLiveThemesHeading'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {{ include('quiz_live/_stylesheets.html.twig', {slugs: themes.all|keys}) }}
+{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'quizLiveNavLabel'|trans, url: path('app_quiz_live_index')},
+        {label: 'quizLiveThemesHeading'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'quizLiveThemesHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary" style="max-width: 80ch;">{{ 'quizLiveThemesIntro'|trans }}</p>
+    {% set shown = show == 'permanent' ? themes.permanent : (show == 'seasonal' ? themes.seasonal : themes.all) %}
+    <twig:Cm:Tabs :tabs="[
+        {url: path('app_quiz_live_themes'), label: 'quizLiveThemesAllTab'|trans, active: show == 'all', count: themes.all|length},
+        {url: path('app_quiz_live_themes', {show: 'permanent'}), label: 'quizLiveThemesPermanentTab'|trans, active: show == 'permanent', count: themes.permanent|length},
+        {url: path('app_quiz_live_themes', {show: 'seasonal'}), label: 'quizLiveThemesSeasonalTab'|trans, active: show == 'seasonal', count: themes.seasonal|length},
+    ]"/>
+    <div class="card cm-card--tabbed">
+        <div class="card-body d-flex flex-column gap-4">
+            {% for theme in shown %}
+                <article class="cm-live-gallery">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        {{ include('quiz_live/_swatch.html.twig', {theme: theme}) }}
+                        <h2 class="cm-live-gallery__name">{{ theme.name }}</h2>
+                        {% if theme.slug == themes.default.slug %}<twig:Cm:Badge tone="gray">{{ 'quizLiveThemeDefaultBadge'|trans }}</twig:Cm:Badge>{% endif %}
+                        {% if theme.seasonal %}
+                            <twig:Cm:Badge :tone="theme.inSeason(today) ? 'gold' : 'gray'">{{ theme.seasonLabel }} · {{ theme.periodLabel }}</twig:Cm:Badge>
+                        {% endif %}
+                        <twig:Cm:Button size="sm" variant="outline" :href="path('app_quiz_live_new', {theme: theme.slug})" class="ms-auto">{{ 'quizLiveThemesTryAction'|trans }}</twig:Cm:Button>
+                    </div>
+                    <p class="text-secondary mb-0" style="max-width: 75ch;">{{ theme.description }}</p>
+                    <div class="cm-live-captures">
+                        {% for capture in [
+                            {kind: 'room', screen: 'lobby', label: 'quizLiveThemesCaptureLobby'},
+                            {kind: 'guest', screen: 'guest', label: 'quizLiveThemesCaptureGuest'},
+                            {kind: 'room', screen: 'question', label: 'quizLiveThemesCaptureQuestion'},
+                            {kind: 'phone', screen: 'question', label: 'quizLiveThemesCapturePhoneQuestion'},
+                            {kind: 'phone', screen: 'results', label: 'quizLiveThemesCapturePhoneRight'},
+                            {kind: 'room', screen: 'podium', label: 'quizLiveThemesCapturePodium'},
+                        ] %}
+                            <figure class="cm-live-capture cm-live-capture--{{ capture.kind == 'room' ? 'room' : 'phone' }}">
+                                <div class="cm-live-capture__frame">
+                                    {% if capture.kind == 'guest' %}
+                                        <div class="ql ql-still cm-live-capture__in" data-live-theme="{{ theme.slug }}" aria-hidden="true" inert>
+                                            {{ include('quiz_live/_guest_form.html.twig', {session: sample, nickname: 'Licorne Pixel', avatarJson: '', error: null, nicknameMax: 16, inert: true}) }}
+                                        </div>
+                                    {% else %}
+                                        <div class="ql ql-still cm-live-capture__in" data-live-theme="{{ theme.slug }}" aria-hidden="true" inert
+                                             data-controller="quiz-live-capture"
+                                             data-quiz-live-capture-kind-value="{{ capture.kind }}"
+                                             data-quiz-live-capture-screen-value="{{ capture.screen }}"
+                                             data-quiz-live-capture-theme-value="{{ theme.toClient|json_encode }}"
+                                             data-quiz-live-capture-labels-value="{{ labels|json_encode }}"
+                                             data-quiz-live-capture-qr-value="{{ capture.screen == 'lobby' ? sampleQr : '' }}"></div>
+                                    {% endif %}
+                                </div>
+                                <figcaption>{{ capture.label|trans }}</figcaption>
+                            </figure>
+                        {% endfor %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

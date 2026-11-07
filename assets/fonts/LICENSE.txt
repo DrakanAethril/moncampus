@@ -11,6 +11,13 @@ Archivo (v25, variable 500-800) and Archivo Black (v23), the `latin` and `latin-
 added for the quiz tournaments' own screens (assets/styles/quiz_tournament.css, direction H « Pop »),
 from the same css2 API; both are SIL Open Font License 1.1 (Omnibus-Type).
 
+The live/ subdirectory holds the faces of the live contest's themes (assets/styles/quiz_live/), the
+`latin` subset only, from the same css2 API (downloaded 2026-11-07): Anton, Bangers, Barlow,
+Bungee, Chakra Petch, Comic Neue, Creepster, Fredoka, Lilita One, Nunito, Pacifico, Quicksand, Rubik
+and Shrikhand under the SIL Open Font License 1.1 reproduced below, and Chewy under the Apache
+License 2.0 (https://www.apache.org/licenses/LICENSE-2.0). Neither licence imposes a condition on
+this application's own licensing.
+
 Provenance: downloaded from the Google Fonts css2 API (Source Sans 3 v19, Spectral v15), which is
 also what the removed <link> pointed at, so the rendering is byte-for-byte the same files the app
 was already serving to visitors.

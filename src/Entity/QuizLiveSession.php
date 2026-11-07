@@ -17,9 +17,15 @@ use Doctrine\ORM\Mapping as ORM;
  * for async launches - see QuizInstance's class docblock). One session per instance, no replay - see
  * design/design_campus_manager/reference/Générateur de quiz.dc.html, Turns 1t/1q/1u/1h/1i/1j.
  *
- * $roomCode is stored for the URL slug/support/fallback only - joining is code-less in the web/
- * mobile UI (a banner in the student's Quiz hub, see QuizLiveSessionRepository::findActiveForProgram()),
- * never a manual-entry field.
+ * $roomCode is the contest's public address since 2026-11-07: /live/{code}, the target of the QR code
+ * the waiting room shows (App\Controller\QuizLive\PlayController). A class still finds its contest
+ * through the banner of its Quiz hub (QuizLiveSessionRepository::findActiveForProgram()).
+ *
+ * A contest belongs to a class or to none (its instance's program, null for none - design/validated/
+ * quiz-live-public.md). $public opens it to whoever scans the QR code, account or not: a guest plays
+ * under a pseudonym and a drawn avatar (QuizLiveParticipant::forGuest()). A contest with no class is
+ * always public - nobody else could join it. $theme names its dress in App\Service\QuizLive\
+ * LiveThemeCatalog; both are fixed at creation.
  */
 #[ORM\Entity(repositoryClass: QuizLiveSessionRepository::class)]
 #[ORM\Table(name: 'quiz_live_session')]
@@ -40,6 +46,21 @@ class QuizLiveSession
 
     #[ORM\Column(name: 'room_code', length: 8, unique: true)]
     private ?string $roomCode = null;
+
+    #[ORM\Column(name: 'is_public')]
+    private bool $public = false;
+
+    #[ORM\Column(length: 32)]
+    private string $theme = 'pop';
+
+    /**
+     * Accounts the host took out of the room: they are not let back in. A guest taken out loses
+     * their seat and may come back under another pseudonym - nothing ties two guests together.
+     *
+     * @var list<int>
+     */
+    #[ORM\Column(name: 'removed_user_ids', type: Types::JSON)]
+    private array $removedUserIds = [];
 
     #[ORM\Column(length: 20, enumType: LiveSessionStatus::class)]
     private LiveSessionStatus $status = LiveSessionStatus::Lobby;
@@ -68,11 +89,14 @@ class QuizLiveSession
     #[ORM\OneToMany(mappedBy: 'session', targetEntity: QuizLiveParticipant::class, cascade: ['persist'], orphanRemoval: true)]
     private Collection $participants;
 
-    public function __construct(QuizInstance $quizInstance, User $host, string $roomCode)
+    public function __construct(QuizInstance $quizInstance, User $host, string $roomCode, bool $public = false, string $theme = 'pop')
     {
         $this->quizInstance = $quizInstance;
         $this->host = $host;
         $this->roomCode = $roomCode;
+        // Nobody could join a contest of no class that was not public.
+        $this->public = $public || null === $quizInstance->getProgram();
+        $this->theme = $theme;
         $this->createdAt = new \DateTimeImmutable();
         $this->participants = new ArrayCollection();
     }
@@ -95,6 +119,48 @@ class QuizLiveSession
     public function getRoomCode(): ?string
     {
         return $this->roomCode;
+    }
+
+    public function isPublic(): bool
+    {
+        return $this->public;
+    }
+
+    public function getTheme(): string
+    {
+        return $this->theme;
+    }
+
+    /** The class the contest belongs to, if any. */
+    public function getProgram(): ?Program
+    {
+        return $this->quizInstance?->getProgram();
+    }
+
+    public function isOver(): bool
+    {
+        return $this->status->isOver();
+    }
+
+    public function wasRemoved(User $user): bool
+    {
+        return \in_array((int) $user->getId(), $this->removedUserIds, true);
+    }
+
+    public function markRemoved(User $user): static
+    {
+        if (!$this->wasRemoved($user)) {
+            $this->removedUserIds[] = (int) $user->getId();
+        }
+
+        return $this;
+    }
+
+    public function removeParticipant(QuizLiveParticipant $participant): static
+    {
+        $this->participants->removeElement($participant);
+
+        return $this;
     }
 
     public function getStatus(): LiveSessionStatus

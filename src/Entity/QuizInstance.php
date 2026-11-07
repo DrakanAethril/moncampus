@@ -40,7 +40,9 @@ class QuizInstance implements AccessConditionHost
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Program::class)]
-    #[ORM\JoinColumn(name: 'program_id', nullable: false)]
+    // Null for a live contest of no class only (QuizMode::Live, design/validated/quiz-live-public.md):
+    // every other launch is made on a class.
+    #[ORM\JoinColumn(name: 'program_id', nullable: true)]
     private ?Program $program = null;
 
     // Provenance only, not a live link - see SequenceInstance::$sourceTemplate's docblock for the
@@ -266,7 +268,7 @@ class QuizInstance implements AccessConditionHost
     #[ORM\OrderBy(['orderIndex' => 'ASC'])]
     private Collection $questions;
 
-    public function __construct(Program $program, User $createdBy)
+    public function __construct(?Program $program, User $createdBy)
     {
         $this->program = $program;
         $this->createdBy = $createdBy;

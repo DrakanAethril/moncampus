@@ -22,7 +22,7 @@
                         <div class="text-uppercase" style="font: 600 11px var(--cm-font-ui); letter-spacing: 2px; color: var(--cm-gold);">{{ 'quizLiveConcoursEnCoursLabel'|trans }}</div>
                         <div style="font: 600 16px var(--cm-font-ui);">{{ activeLiveSession.quizInstance.name }}</div>
                     </div>
-                    <a href="{{ path('app_program_quiz_live_join', {id: program.id, sessionId: activeLiveSession.id}) }}" class="btn ms-auto" style="background: var(--cm-gold); color: var(--cm-navy); font-weight: 700; border: none;">{{ 'quizLiveJoinBannerAction'|trans }}</a>
+                    <a href="{{ path('app_quiz_live_entry', {code: activeLiveSession.roomCode}) }}" data-turbo="false" class="btn ms-auto" style="background: var(--cm-gold); color: var(--cm-navy); font-weight: 700; border: none;">{{ 'quizLiveJoinBannerAction'|trans }}</a>
                 </div>
             </div>
         {% endif %}

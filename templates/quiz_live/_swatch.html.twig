@@ -1,0 +1,2 @@
+{# A theme's colours in a pill: its ground, and three of its accents. #}
+<span class="cm-live-swatch" style="background: {{ theme.swatches[0] }}" aria-hidden="true">{% for colour in theme.swatches|slice(1, 3) %}<i style="background: {{ colour }}"></i>{% endfor %}</span>

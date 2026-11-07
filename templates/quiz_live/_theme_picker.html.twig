@@ -1,0 +1,28 @@
+{# The theme of a new live contest: the permanent ones, then the seasonal ones - offered all year,
+   marked « De saison » in their period (App\Service\QuizLive\LiveThemeCatalog). Pop is the default.
+   Expects `themes` (the catalogue), `today` and `selected` (a slug). #}
+{% for group in [
+    {label: 'quizLiveThemePermanentGroup'|trans, items: themes.permanent, hint: null},
+    {label: 'quizLiveThemeSeasonalGroup'|trans, items: themes.seasonal, hint: 'quizLiveThemeSeasonalHint'|trans},
+] %}
+    <fieldset class="cm-live-themes">
+        <legend class="form-label mb-1">{{ group.label }}{% if group.hint %} <span class="form-hint d-inline">· {{ group.hint }}</span>{% endif %}</legend>
+        <div class="cm-live-themes__grid">
+            {% for theme in group.items %}
+                <label class="cm-radiocard cm-radiocard--inline cm-live-theme">
+                    <input type="radio" name="theme" value="{{ theme.slug }}" {{ theme.slug == selected ? 'checked' }}>
+                    <span class="cm-radiocard__dot"></span>
+                    {{ include('quiz_live/_swatch.html.twig', {theme: theme}) }}
+                    <span class="cm-radiocard__title">{{ theme.name }}</span>
+                    {% if theme.slug == themes.default.slug %}
+                        <twig:Cm:Badge tone="gray">{{ 'quizLiveThemeDefaultBadge'|trans }}</twig:Cm:Badge>
+                    {% elseif theme.inSeason(today) %}
+                        <twig:Cm:Badge tone="gold">{{ 'quizLiveThemeInSeasonBadge'|trans }}</twig:Cm:Badge>
+                    {% elseif theme.seasonal %}
+                        <span class="cm-radiocard__desc">{{ theme.seasonLabel }}</span>
+                    {% endif %}
+                </label>
+            {% endfor %}
+        </div>
+    </fieldset>
+{% endfor %}

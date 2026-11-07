@@ -1,0 +1,44 @@
+{# The guest page's one form (design/validated/quiz-live-public.md): a pseudonym and an avatar among
+   twenty drawn by quiz_live_guest_controller.js. Also drawn, inert, in the theme gallery - the
+   capture is the page itself.
+
+   Expects: session, nickname, avatarJson (an avatar to keep after a refusal), error (a translation
+   key), nicknameMax, and `inert` for the gallery. #}
+{% set nickId = 'ql-nickname' ~ (inert|default(false) ? '-' ~ session.id ~ '-' ~ random() : '') %}
+<div class="ql-deco" aria-hidden="true"></div>
+<form class="ql-scr ql-guest" method="post" action="{{ inert|default(false) ? '#' : path('app_quiz_live_guest', {code: session.roomCode}) }}" data-turbo="false"
+      data-controller="quiz-live-guest"
+      data-action="submit->quiz-live-guest#submit"
+      data-quiz-live-guest-kept-value="{{ avatarJson|default('') }}"
+      data-quiz-live-guest-avatar-label-value="{{ 'quizLiveGuestAvatarLabel'|trans }}"
+      data-quiz-live-guest-choose-avatar-value="{{ 'quizLiveGuestAvatarRequired'|trans }}">
+    {% if not inert|default(false) %}<input type="hidden" name="_token" value="{{ csrf_token('quiz_live_guest') }}">{% endif %}
+    <span class="ql-kind ql-muted">{{ 'quizLiveNavLabel'|trans }} · {{ session.quizInstance.name }}</span>
+    <h1 class="fd ql-title-l">{{ 'quizLiveGuestTitle'|trans }}</h1>
+    <div class="ql-field">
+        <label for="{{ nickId }}" class="ql-b">{{ 'quizLiveGuestNicknameLabel'|trans }}</label>
+        <div class="ql-row ql-gap10">
+            <span class="ql-bob" data-quiz-live-guest-target="preview"><span class="ql-av ql-av-empty" style="width:58px;height:58px">?</span></span>
+            <input id="{{ nickId }}" name="nickname" class="ql-input" maxlength="{{ nicknameMax }}" required autocomplete="off" autocapitalize="words"
+                   placeholder="{{ 'quizLiveGuestNicknamePlaceholder'|trans }}" value="{{ nickname }}"
+                   data-quiz-live-guest-target="nickname" data-action="input->quiz-live-guest#sync">
+            <button type="button" class="ql-btn ql-btn--alt ql-dice" data-action="quiz-live-guest#dice" aria-label="{{ 'quizLiveGuestDiceAction'|trans }}">
+                <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="8.5" cy="8.5" r="1.6" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.6" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.6" fill="currentColor"/></svg>
+            </button>
+        </div>
+        <p class="ql-error" role="alert" data-quiz-live-guest-target="error">{{ error ? error|trans : '' }}</p>
+    </div>
+    <div class="ql-row ql-jsb ql-gap10">
+        <span class="fd ql-s19">{{ 'quizLiveGuestAvatarHeading'|trans }}</span>
+        <button type="button" class="ql-pill" data-action="quiz-live-guest#again">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            {{ 'quizLiveGuestAvatarAgainAction'|trans }}
+        </button>
+    </div>
+    <div class="ql-avgrid" data-quiz-live-guest-target="grid"></div>
+    <input type="hidden" name="avatar" value="" data-quiz-live-guest-target="avatar">
+    <p class="ql-muted ql-m0 ql-note">{{ 'quizLiveGuestNote'|trans }}</p>
+    <div class="ql-grow"></div>
+    <button type="submit" class="ql-btn" data-quiz-live-guest-target="submit">{{ 'quizLiveGuestSubmitAction'|trans }}</button>
+    {% if not inert|default(false) %}<a class="ql-muted ql-tc ql-note" href="{{ path('app_login') }}" data-turbo="false">{{ 'quizLiveGuestAccountLink'|trans }}</a>{% endif %}
+</form>

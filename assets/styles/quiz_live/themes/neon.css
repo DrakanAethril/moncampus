@@ -1,0 +1,34 @@
+/* Live contest theme « Néon » (config/quiz_live/themes.yaml).
+   Its tokens, its decoration, its hero animation and what its tiles do differently - the shape
+   every theme copies (assets/styles/quiz_live/live.css says which tokens). */
+
+.ql[data-live-theme="neon"] { --bg:#0A0520; --bg2:#140A33; --panel:#120A2E; --ink:#F3EEFF; --muted:#AFA2DA; --accent:#00E5FF; --accent2:#FF2E97; --ok:#39FF14; --ko:#FF2E63; --okink:#0A0520; --c1:#FF2E97; --c2:#00E5FF; --c3:#FFE600; --c4:#39FF14; --c5:#C04DFF; --c6:#FF8A00; --tink:var(--c); --bd:2px solid #00E5FF; --sh:0 0 14px rgba(0,229,255,.45); --r:6px; --fd:'Bungee',Impact,sans-serif; --fb:'Chakra Petch',system-ui,sans-serif; --shpfill:none; --shpstroke:currentColor; --shpsw:2.2; --btnbg:#0A0520; --btnink:#00E5FF; --sel:#fff; --track:#1f1547; }
+.ql[data-live-theme="neon"] .fd { text-transform: uppercase; }
+.ql[data-live-theme="neon"] .ql-btn { text-transform: uppercase; letter-spacing: .04em; }
+.ql[data-live-theme="neon"] .ql-btn { border: 2px solid var(--accent); box-shadow: 0 0 14px rgba(0,229,255,.5), inset 0 0 10px rgba(0,229,255,.3); text-shadow: 0 0 8px rgba(0,229,255,.8); }
+.ql[data-live-theme="neon"] .ql-pill { border-width: 1px; color: var(--accent); }
+.ql[data-live-theme="neon"] .ql-av { box-shadow: 0 0 0 2px var(--accent), 0 0 14px rgba(0,229,255,.6); }
+.ql[data-live-theme="neon"] .ql-tile { background: color-mix(in srgb, var(--c) 10%, #0A0520); color: var(--c); border: 2px solid var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 70%, transparent), inset 0 0 14px color-mix(in srgb, var(--c) 30%, transparent); text-shadow: 0 0 8px color-mix(in srgb, var(--c) 80%, transparent); }
+.ql[data-live-theme="neon"] .ql-tile.is-sel { background: color-mix(in srgb, var(--c) 32%, #0A0520); }
+.ql[data-live-theme="neon"] .ql-tbar i { box-shadow: 0 0 10px var(--accent); }
+.ql[data-live-theme="neon"] .ql-deco { background: linear-gradient(180deg, transparent 55%, rgba(192,77,255,.18) 100%); }
+.ql[data-live-theme="neon"] .ql-deco::before { content: ""; position: absolute; left: -50%; right: -50%; bottom: -10%; height: 55%; background-image: linear-gradient(rgba(255,46,151,.55) 2px, transparent 2px), linear-gradient(90deg, rgba(255,46,151,.55) 2px, transparent 2px); background-size: 60px 60px; transform: perspective(300px) rotateX(62deg); transform-origin: 50% 100%; animation: ql-neon-gridRun 1.6s linear infinite; mask-image: linear-gradient(transparent, #000 60%); -webkit-mask-image: linear-gradient(transparent, #000 60%); }
+.ql[data-live-theme="neon"] .ql-deco::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px); }
+.ql[data-live-theme="neon"] .ql-hero { animation: ql-neon-flickerOn .7s steps(1) both; }
+.ql[data-live-theme="neon"] .ql-pop { animation: ql-neon-flickerOn .5s steps(1) both; }
+.ql[data-live-theme="neon"] .ql-glow { text-shadow: 0 0 10px var(--accent), 0 0 24px var(--accent); color: var(--accent); }
+.ql[data-live-theme="neon"] .ql-glow2 { text-shadow: 0 0 10px var(--accent2), 0 0 24px var(--accent2); color: var(--accent2); }
+.ql[data-live-theme="neon"] .ql-input { background: #0A0520; }
+.ql[data-live-theme="neon"] .ql-avpick[aria-pressed="true"] .ql-av { box-shadow: 0 0 0 3px #fff, 0 0 22px var(--accent2); }
+.ql[data-live-theme="neon"] .ql-res.is-ok { background: #062a12; color: var(--ok); }
+.ql[data-live-theme="neon"] .ql-res.is-ko { background: #2c0614; color: var(--ko); }
+.ql[data-live-theme="neon"] .ql-res.is-ok .fd { text-shadow: 0 0 16px var(--ok); }
+.ql[data-live-theme="neon"] .ql-res.is-ko .fd { text-shadow: 0 0 16px var(--ko); }
+.ql[data-live-theme="neon"] .ql-res.is-ko .ql-panel, .ql[data-live-theme="neon"] .ql-res.is-ok .ql-panel { color: var(--ink); }
+.ql[data-live-theme="neon"] .ql-pchip { box-shadow: 0 0 10px rgba(0,229,255,.35); }
+.ql[data-live-theme="neon"] .ql-bar i { background: color-mix(in srgb, var(--c) 35%, #0A0520); border: 2px solid var(--c); box-shadow: 0 0 14px var(--c); }
+.ql[data-live-theme="neon"] .ql-brow.is-me { background: #00303a; }
+.ql[data-live-theme="neon"] .ql-plinth { background: color-mix(in srgb, var(--c) 25%, #0A0520); border: 2px solid var(--c); color: var(--c); box-shadow: 0 0 18px var(--c); }
+.ql[data-live-theme="neon"] .ql-axis { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+@keyframes ql-neon-flickerOn { 0% { opacity: 0; } 10% { opacity: 1; } 20% { opacity: .1; } 32% { opacity: 1; } 44% { opacity: .3; } 56%, 100% { opacity: 1; } }
+@keyframes ql-neon-gridRun { to { background-position: 0 60px, 0 0; } }

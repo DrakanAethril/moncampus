@@ -524,7 +524,7 @@
                                         <a class="dropdown-item {{ current_route starts with 'app_tools_word_cloud' or current_route starts with 'app_program_word_cloud' ? 'active' }}" href="{{ path('app_tools_word_cloud') }}">{{ 'wordCloudNavLabel'|trans }}</a>
                                     {% endif %}
                                     {% if feature('quiz_live') %}
-                                        <a class="dropdown-item {{ current_route == 'app_tools_quiz_live' ? 'active' }}" href="{{ path('app_tools_quiz_live') }}">{{ 'quizLiveNavLabel'|trans }}</a>
+                                        <a class="dropdown-item {{ current_route starts with 'app_quiz_live' ? 'active' }}" href="{{ path('app_quiz_live_index') }}">{{ 'quizLiveNavLabel'|trans }}</a>
                                     {% endif %}
                                     {# After the live quiz, its cousin: the list of the tournaments one follows,
                                        each opening its standings and, for a teacher of a targeted class,
