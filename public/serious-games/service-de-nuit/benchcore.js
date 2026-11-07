@@ -2,12 +2,12 @@
    étapes ».
 
    For every night: both halves exist; the graph is valid; a night to build starts with the site, followed
-   by the explanation; a choice has exactly one right answer and every wrong one names its misconception;
+   by one question at most besides the final order; a choice has exactly one right answer and every wrong one names its misconception;
    a « veille » whose code runs shows, in a browser, exactly its right option and none of the wrong ones; a
    « line » step designates exactly one line of its view; an « order » places every item once and does not
    start solved. For the site: at least one visible visitor and two hidden ones; the night's clean start
    fails what the requester checks; the reference serves every visitor, hidden ones included, without a
-   single PHP warning, and keeps its meter within bounds; every trap - an invisible mistake - passes every
+   single PHP warning; it says what the page shows before and after (`show`); every trap - an invisible mistake - passes every
    visible check and fails at least one hidden visitor. For the notebooks: every notion a night brings has
    its page, every example runs without error, every exercise's reference runs cleanly on every run and
    its start does not already pass. */
@@ -30,7 +30,10 @@
         else if (ids[a].act > t.act) p.push('dépend d\'une nuit d\'un acte suivant : ' + a);
       });
       var hasFix = t.steps.some(function (s) { return s.kind === 'fix'; });
-      if (hasFix && (t.steps[0].kind !== 'fix' || !t.steps[1] || t.steps[1].kind !== 'explain')) p.push('une nuit à construire commence par le site, suivi de l\'explication');
+      if (hasFix && t.steps[0].kind !== 'fix') p.push('une nuit à construire commence par le site');
+      if (hasFix && t.steps.length > 2) p.push('une nuit à construire a une question au plus après le site');
+      if (hasFix && def && (!def.show || !def.show.after)) p.push('pas de « show » : ce que la page doit montrer');
+      if (def && ((def.intro || []).length > 2 || (def.done || []).length > 2)) p.push('une scène de plus de deux répliques');
       if (!hasFix && t.guide && t.guide.length) p.push('aide guidée sur une nuit sans site');
       t.steps.concat(t.guide || []).forEach(function (s) {
         if (s.kind === 'choice' || s.kind === 'explain') {
@@ -83,7 +86,6 @@
           if (!bad.results.some(function (r) { return r.visible && !r.ok; })) p.push('la version propre du départ réussit déjà ce que vérifie le demandeur : rien à faire');
           var good = ST.runCases(def, ref, start);
           good.results.forEach(function (r) { if (!r.ok) p.push('la référence échoue : ' + r.label + (r.detail ? ' (' + r.detail + ')' : '')); });
-          if (def.cost && def.cost.measure(ref, H, start) > def.cost.max) p.push('la référence dépasse le compteur : ' + def.cost.label);
           def.traps.forEach(function (trap) {
             var r = ST.runCases(def, ST.withFiles(ref, trap.files), start);
             var visibleKo = r.results.filter(function (x) { return x.visible && !x.ok; });

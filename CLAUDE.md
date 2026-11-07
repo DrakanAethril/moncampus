@@ -548,16 +548,23 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     cases. Only `{passed, failed}` leaves the browser; the reference plans stay in the package for the bench,
     which also demands that every hidden night catch a mistake the visible night does not show. The source,
     its bench and its playthrough live in the Cours repository, `Games/Fusion/`.
-    **Service de nuit** is the sixth (17 nights in five acts, a small hotel's PHP site, Sami as the helper,
-    one night open at a time) and adds nothing to the server either, but it is the one where **the student
+    **Service de nuit** is the sixth (28 nights in five acts, one notion each, a small hotel's PHP site, Sami
+    as the helper, one night open at a time, `free_order`: the site then one « veille » question) and adds
+    nothing to the server either, but it is the one where **the student
     keeps their code**: the site is one, from the first night to the last, and it travels as the game's
     **display state** (`saveProgress`, within the scenario's 256 KB) - never as an answer, which stays
     `{passed, failed}` (the user's decision of 2026-11-03). Its `fix` steps serve that site to visitors (a
-    time, a day, a registre of variables, a `$_GET`) with a **PHP interpreter written for the game**
+    time, a day, the variables the hotel prepares, a `$_GET`) with a **PHP interpreter written for the game**
     (`public/serious-games/service-de-nuit/php.js`, checked against real PHP 8.5 in the Cours repository);
     « Essayer » plays the visible ones inside the frame and costs nothing, « Servir la nuit » adds the hidden
-    ones and is the delivery. A page that shows a PHP warning is badly served. The sign's letters (one per
-    notion) and Augustin's notebooks live in the game alone. The source, its bench, the cross-check with
+    ones and is the delivery. A page that shows a PHP warning is badly served. **Made for complete
+    beginners** (the user's decisions of 2026-11-07): the notebook is open from the start and opens itself
+    on a night's notion, its memo stays beside the code, a night shows what the page shows now and must
+    show, and the variables the hotel prepares (`$garde`, `$client`…) are never hidden - locked grey lines
+    on top of the file, with the chosen visitor's values. The story is kept to the setting: Augustin's
+    `pied.php` mystery is an **optional epilogue** played in the game once it is over, never a night, and
+    the nights give no clue. The sign's letters (one per notion, lit when its night is served, shining
+    without help) and Augustin's notebooks live in the game alone. The source, its bench, the cross-check with
     real PHP and the playthrough live in the Cours repository, `Games/Service-de-nuit/`.
     **Rétro Rush** is the third (45 issues in a GitLab-like forge, Jade as the helper) and adds
     nothing to the server: its repairs are SQL, run in the frame by **sql.js** (SQLite in
