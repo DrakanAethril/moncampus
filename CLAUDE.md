@@ -274,7 +274,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   public** (spec `design/validated/quiz-live-public.md`): Outils › Concours live is
   `App\Controller\QuizLive\HostController` (`/quiz-live`, filtered by class, `QuizLiveSessionVoter`:
   the host, and for a class contest its teachers and staff); a contest's public address is
-  `/live/{code}` (`PlayController`, PUBLIC_ACCESS, the waiting room's QR code), where **any known
+  `/live/{code}` (`PlayController`, PUBLIC_ACCESS, the waiting room's QR code; `/live` alone asks for the code), where **any known
   account enters as itself - never as a guest** (« Prénom N. » in a public contest) and a visitor
   without one enters a public contest as a guest: a pseudonym (`LiveNickname`), one of twenty avatars
   drawn among the **ménagerie**'s hundred (see « Mon avatar »; stored as its identifier,

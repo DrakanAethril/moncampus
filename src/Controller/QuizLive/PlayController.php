@@ -39,6 +39,8 @@ use Symfony\Component\Security\Http\Util\TargetPathTrait;
  * - A visitor enters a public contest as a guest: a pseudonym, one of twenty avatars drawn among the
  *   ménagerie's hundred (App\Service\FixedAvatars), a token in a cookie (LiveGuestToken). A class contest sends it to sign in.
  * - Anybody may enter a contest under way.
+ * - /live alone asks for the code: the waiting room shows « …/live » with the code below it, and
+ *   that is what gets typed as often as the whole address.
  *
  * No #[RequiresFeature]: a visitor has no role to read the matrix with. The contest exists only when
  * the feature is lit for its host - and, for a class contest, for the account entering it, the rule
@@ -48,6 +50,32 @@ use Symfony\Component\Security\Http\Util\TargetPathTrait;
 class PlayController extends AbstractController
 {
     use TargetPathTrait;
+
+    /**
+     * The address without its code: a page that asks for it, and sends a code it finds on to the
+     * contest's own address. A code nobody's contest carries is answered on the page itself - the
+     * same answer as a contest whose host has the feature off, which does not exist either.
+     */
+    #[Route(path: '/live', name: 'app_quiz_live_join', methods: ['GET'])]
+    public function join(Request $request, QuizLiveSessionRepository $sessions, FeatureAccess $features, LiveThemeCatalog $themes): Response
+    {
+        $typed = $request->query->has('code') ? trim($request->query->getString('code')) : null;
+        $error = null;
+        if (null !== $typed) {
+            $code = self::codeOf($typed);
+            $session = null !== $code ? $this->find($code, $sessions, $features) : null;
+            if (null !== $session) {
+                return $this->redirectToRoute('app_quiz_live_entry', ['code' => $session->getRoomCode()]);
+            }
+            $error = '' === $typed ? 'quizLiveJoinEmpty' : 'quizLiveJoinUnknown';
+        }
+
+        return $this->render('quiz_live/join.html.twig', [
+            'theme' => $themes->default(),
+            'typed' => $typed ?? '',
+            'error' => $error,
+        ], new Response('', 'quizLiveJoinUnknown' === $error ? Response::HTTP_NOT_FOUND : Response::HTTP_OK));
+    }
 
     #[Route(path: '/live/{code}', name: 'app_quiz_live_entry', requirements: ['code' => '[A-Za-z0-9]{4,8}'], methods: ['GET'])]
     public function entry(string $code, Request $request, QuizLiveSessionRepository $sessions, QuizLiveSessionService $service, FeatureAccess $features, LiveThemeCatalog $themes): Response
@@ -205,13 +233,30 @@ class PlayController extends AbstractController
     /** The contest of this address - a 404 unless its host has the feature lit. */
     private function session(string $code, QuizLiveSessionRepository $sessions, FeatureAccess $features): QuizLiveSession
     {
+        return $this->find($code, $sessions, $features) ?? throw $this->createNotFoundException();
+    }
+
+    /** The contest carrying this code, when its host has the feature lit. */
+    private function find(string $code, QuizLiveSessionRepository $sessions, FeatureAccess $features): ?QuizLiveSession
+    {
         $session = $sessions->findOneByCode($code);
         $host = $session?->getHost();
-        if (null === $session || null === $host || !$features->isEnabled(Feature::QuizLive, $host)) {
-            throw $this->createNotFoundException();
-        }
 
-        return $session;
+        return null !== $session && null !== $host && $features->isEnabled(Feature::QuizLive, $host) ? $session : null;
+    }
+
+    /**
+     * The code in what was typed: the code itself, whatever its case and its spaces, or the whole
+     * address pasted from somewhere. Null when nothing in it can be one.
+     */
+    private static function codeOf(string $typed): ?string
+    {
+        if (1 === preg_match('#/live/([A-Za-z0-9]{4,8})(?:[/?\#]|$)#', $typed, $match)) {
+            return strtoupper($match[1]);
+        }
+        $code = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $typed));
+
+        return 1 === preg_match('/^[A-Z0-9]{4,8}$/', $code) ? $code : null;
     }
 
     private function participant(QuizLiveSession $session, Request $request, QuizLiveSessionService $service): ?QuizLiveParticipant

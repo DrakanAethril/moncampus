@@ -1,0 +1,32 @@
+{# /live without its code (App\Controller\QuizLive\PlayController::join()): the waiting room shows
+   « …/live » with the code below it, so the address is typed alone as often as whole. In the default
+   theme: no contest is known yet. #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'quizLiveJoinTitle'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {{ include('quiz_live/_stylesheets.html.twig', {slugs: [theme.slug], page: true}) }}
+{% endblock %}
+
+{% block body %}
+    <div class="ql ql-phone" data-live-theme="{{ theme.slug }}">
+        <div class="ql-surface">
+            <div class="ql-deco" aria-hidden="true"></div>
+            <form class="ql-scr ql-guest" method="get" action="{{ path('app_quiz_live_join') }}" data-turbo="false">
+                <span class="ql-kind ql-muted">{{ 'quizLiveNavLabel'|trans }}</span>
+                <h1 class="fd ql-title-l">{{ 'quizLiveJoinTitle'|trans }}</h1>
+                <div class="ql-field">
+                    <label for="ql-code" class="ql-b">{{ 'quizLiveJoinCodeLabel'|trans }}</label>
+                    <input id="ql-code" name="code" class="ql-input ql-code-input" value="{{ typed }}" required autofocus
+                           autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"
+                           placeholder="{{ 'quizLiveJoinCodePlaceholder'|trans }}">
+                    <p class="ql-error" role="alert">{{ error ? error|trans : '' }}</p>
+                </div>
+                <p class="ql-muted ql-m0">{{ 'quizLiveJoinHint'|trans }}</p>
+                <button type="submit" class="ql-btn">{{ 'quizLiveJoinAction'|trans }}</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

@@ -98,6 +98,8 @@ class FeatureCoverageTest extends KernelTestCase
                 // what its QR code opens, for a guest with no account as much as for a signed-in one.
                 // App\Controller\QuizLive\PlayController asks the feature itself - for the contest's
                 // host, and for the account entering a class contest - and 404s when it is off.
+                // /live alone only asks for a code, and finds no contest whose host has it off.
+                'app_quiz_live_join',
                 'app_quiz_live_entry',
                 'app_quiz_live_guest',
                 'app_quiz_live_play',

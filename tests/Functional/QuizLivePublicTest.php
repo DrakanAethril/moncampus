@@ -273,6 +273,32 @@ class QuizLivePublicTest extends FunctionalTestCase
         self::assertSelectorExists('table', 'an unknown tab falls back on everybody');
     }
 
+    public function testTheAddressWithoutACodeAsksForIt(): void
+    {
+        $session = $this->service()->createSession([$this->quiz], null, $this->teacher, 20, null, true);
+        $code = (string) $session->getRoomCode();
+
+        // The waiting room shows « …/live » and the code below it: /live alone is typed as often.
+        $this->client->request('GET', '/live');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('form[method="get"] input[name="code"]');
+
+        // Typed in lower case, with spaces, or pasted as the whole address, the code is found.
+        foreach ([strtolower($code), substr($code, 0, 3).' '.substr($code, 3), 'https://formations.example.org/live/'.$code] as $typed) {
+            $this->client->request('GET', '/live', ['code' => $typed]);
+            self::assertResponseRedirects('/live/'.$code, null, $typed);
+        }
+
+        $this->client->request('GET', '/live', ['code' => 'ZZZZZZ']);
+        self::assertResponseStatusCodeSame(404);
+        self::assertSelectorTextContains('.ql-error', 'Aucun concours');
+        self::assertSelectorExists('input[name="code"][value="ZZZZZZ"]', 'what was typed stays to be corrected');
+
+        $this->client->request('GET', '/live', ['code' => '']);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.ql-error', 'Tape le code');
+    }
+
     public function testSomebodyElsesContestDoesNotExist(): void
     {
         $session = $this->service()->createSession([$this->quiz], null, $this->teacher, 20);
