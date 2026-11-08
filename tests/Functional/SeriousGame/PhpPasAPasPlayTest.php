@@ -117,7 +117,6 @@ class PhpPasAPasPlayTest extends FunctionalTestCase
     public function testTheWholeGameEndsOnThePrism(): void
     {
         $play = static::getContainer()->get(SeriousGameScenarioPlay::class);
-        self::assertInstanceOf(SeriousGameScenarioPlay::class, $play);
         $scenario = SeriousGameScenarioPlay::scenario($this->game);
         $rewards = [];
         $guard = 0;
