@@ -23,7 +23,7 @@ use Doctrine\ORM\Mapping as ORM;
  *
  * A contest belongs to a class or to none (its instance's program, null for none - design/validated/
  * quiz-live-public.md). $public opens it to whoever scans the QR code, account or not: a guest plays
- * under a pseudonym and a drawn avatar (QuizLiveParticipant::forGuest()). A contest with no class is
+ * under a pseudonym and a ménagerie avatar (QuizLiveParticipant::forGuest()). A contest with no class is
  * always public - nobody else could join it. $theme names its dress in App\Service\QuizLive\
  * LiveThemeCatalog; both are fixed at creation.
  */

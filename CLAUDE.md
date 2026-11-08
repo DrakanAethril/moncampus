@@ -277,7 +277,8 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `/live/{code}` (`PlayController`, PUBLIC_ACCESS, the waiting room's QR code), where **any known
   account enters as itself - never as a guest** (« Prénom N. » in a public contest) and a visitor
   without one enters a public contest as a guest: a pseudonym (`LiveNickname`), one of twenty avatars
-  drawn by the shared generator, a token in a cookie (`LiveGuestToken`, only its hash stored). Anybody
+  drawn among the **ménagerie**'s hundred (see « Mon avatar »; stored as its identifier,
+  `QuizLiveParticipant::$guestFixedAvatar`), a token in a cookie (`LiveGuestToken`, only its hash stored). Anybody
   joins a contest under way; the host takes a player out of the waiting room only. The phone gets the
   statement, its picture and the propositions' text. A contest wears a **theme**
   (`config/quiz_live/themes.yaml` + `assets/styles/quiz_live/themes/<slug>.css`, `LiveThemeCatalog`,
@@ -1063,7 +1064,7 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
 - **Mon avatar** (« Mon profil », `App\Controller\ProfileAvatarController`, every account, outside
   the feature catalogue; design/validated/quiz-tournament.md §16) — what stands for a person wherever
   Formatool draws a face is **their explicit choice**, `User::$avatarChoice` (`AvatarChoice`: `photo` |
-  `drawn`, null = initials), for every role alike. `App\Service\UserAvatars` is the one reading
+  `drawn` | `fixed`, null = initials), for every role alike. `App\Service\UserAvatars` is the one reading
   (`decide()` is the rule on primitives; `of()` / `forUsers()` batched, memoised per request,
   `ResetInterface`); templates ask `user_avatar(user)` and draw a square face with
   `partials/_user_face.html.twig`. **Choosing deletes nothing**: the photo and the drawing both stay
@@ -1074,6 +1075,15 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
   drawing is still the `SeriousGameAvatar` row (name and table kept), with no feature condition; pins
   are offered to whoever holds one and a pin not obtained is refused - nothing is earned in the
   profile. `/serious-games/avatar` answers a 301 to the tunnel, for anybody.
+  **The ménagerie** (`App\Service\FixedAvatars`, 2026-11-08) is a hundred ready-made avatars - 30
+  monsters, 40 animals, 30 pieces of nature - never personalised, one SVG each under
+  `assets/images/menagerie/{id}.svg` (AssetMapper). They are **the only avatars a live-contest guest
+  is offered**, and the third path of « Mon avatar » (one click in the picker chooses one,
+  `User::$avatarFixed` keeps it). Stored as the **identifier**, never a drawing: redrawing a file
+  changes it everywhere, so an identifier is never renamed nor reused; one that leaves the catalogue
+  shows the initials. Being a picture with an address, it is handed out in the `photo` half of
+  `{photo, drawn}` - every screen that draws a photo draws it unchanged. `FixedAvatarsTest` pins the
+  catalogue against the files.
 - **Aide** — `HelpSection`/`HelpArticle` (an article, a FAQ answer or a glossary term, one entity),
   reached from the profile menu only. Every entry names its audiences (`HelpAudience`:
   enseignant/administration/étudiant/tuteur) and `App\Service\HelpAccess` is the single place that

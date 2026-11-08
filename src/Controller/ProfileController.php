@@ -15,6 +15,7 @@ use App\Repository\LdapManagePasswordRepository;
 use App\Repository\UserSshKeyRepository;
 use App\SeriousGame\Avatar\SeriousGameAvatars;
 use App\Service\ContactEmailVerifier;
+use App\Service\FixedAvatars;
 use App\Service\Guest\SshPublicKey;
 use App\Service\JsonRequestPayload;
 use App\Service\QueueStateFormatter;
@@ -33,7 +34,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class ProfileController extends AbstractController
 {
     #[Route(path: '/profile', name: 'app_profile')]
-    public function index(LdapManagePasswordRepository $passwordRequestRepository, QueueStateFormatter $stateFormatter, UserSshKeyRepository $sshKeys, UserAvatars $avatars, SeriousGameAvatars $drawings): Response
+    public function index(LdapManagePasswordRepository $passwordRequestRepository, QueueStateFormatter $stateFormatter, UserSshKeyRepository $sshKeys, UserAvatars $avatars, SeriousGameAvatars $drawings, FixedAvatars $fixedAvatars): Response
     {
         $user = $this->currentUser();
         $passwordRequest = $passwordRequestRepository->findMostRecentForUser($user);
@@ -50,6 +51,9 @@ class ProfileController extends AbstractController
                 'choice' => $user->getAvatarChoice()?->value,
                 'photo' => $avatars->uploadedPhotoUrl($user),
                 'drawing' => $drawings->hasOne($user) ? $drawings->configFor($user) : null,
+                'fixed' => $user->getAvatarFixed(),
+                'fixedUrl' => $avatars->fixedAvatarUrl($user),
+                'menagerie' => $fixedAvatars->byFamily(),
             ],
             'contactEmailForm' => $this->createForm(ContactEmailType::class, $user),
             'messagingPreferencesForm' => $this->createForm(MessagingPreferencesType::class, $user),

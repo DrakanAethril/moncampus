@@ -9,14 +9,19 @@ use App\Entity\User;
 use App\Enum\AvatarChoice;
 use App\Repository\SeriousGameAvatarRepository;
 use App\Service\FileUploadService;
+use App\Service\FixedAvatars;
 use App\Service\UserAvatars;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Asset\Packages;
+use Symfony\Component\Asset\PathPackage;
+use Symfony\Component\Asset\VersionStrategy\EmptyVersionStrategy;
 
 /**
  * The face Formatool draws for a person follows the choice they made on « Mon profil »
  * (design/validated/quiz-tournament.md §16), whatever their role: their photo, their drawn avatar,
- * or nothing - the templates then write the initials. The choice deletes nothing: the photo and the
- * drawing stay, only what is shown changes.
+ * an avatar of the ménagerie - handed out as a picture, like the photo - or nothing: the templates
+ * then write the initials. The choice deletes nothing: the photo, the drawing and the ménagerie
+ * avatar stay, only what is shown changes.
  */
 final class UserAvatarsTest extends TestCase
 {
@@ -27,12 +32,36 @@ final class UserAvatarsTest extends TestCase
         self::assertSame(['photo' => 'p.jpg', 'drawn' => null], UserAvatars::decide(AvatarChoice::Photo, 'p.jpg', self::CONFIG));
         self::assertSame(['photo' => null, 'drawn' => self::CONFIG], UserAvatars::decide(AvatarChoice::Drawn, 'p.jpg', self::CONFIG));
         self::assertSame(['photo' => null, 'drawn' => null], UserAvatars::decide(null, 'p.jpg', self::CONFIG));
+        self::assertSame(['photo' => 'm.svg', 'drawn' => null], UserAvatars::decide(AvatarChoice::Fixed, 'p.jpg', self::CONFIG, 'm.svg'));
+        self::assertSame(['photo' => 'p.jpg', 'drawn' => null], UserAvatars::decide(AvatarChoice::Photo, 'p.jpg', self::CONFIG, 'm.svg'));
     }
 
     public function testAChoiceWithNothingBehindItFallsBackToTheInitials(): void
     {
         self::assertSame(['photo' => null, 'drawn' => null], UserAvatars::decide(AvatarChoice::Photo, null, self::CONFIG));
         self::assertSame(['photo' => null, 'drawn' => null], UserAvatars::decide(AvatarChoice::Drawn, 'p.jpg', null));
+        self::assertSame(['photo' => null, 'drawn' => null], UserAvatars::decide(AvatarChoice::Fixed, 'p.jpg', self::CONFIG));
+    }
+
+    public function testAMenagerieAvatarIsShownAsAPicture(): void
+    {
+        $student = $this->user(5, ['ROLE_STUDENT'])->setAvatarKey('avatars/5.jpg')->setAvatarFixed('goupil')->setAvatarChoice(AvatarChoice::Fixed);
+        $avatars = $this->avatars([$student]);
+
+        self::assertSame('/assets/images/menagerie/goupil.svg', $avatars->photoUrl($student));
+        self::assertSame('https://cdn.test/avatars/5.jpg', $avatars->uploadedPhotoUrl($student));
+        self::assertNull($avatars->drawnConfig($student));
+        self::assertSame([5 => ['photo' => '/assets/images/menagerie/goupil.svg', 'drawn' => null]], $avatars->forUsers([$student]));
+
+        $student->setAvatarChoice(AvatarChoice::Photo);
+        self::assertSame('/assets/images/menagerie/goupil.svg', $avatars->fixedAvatarUrl($student));
+    }
+
+    public function testAnIdentifierOutOfTheMenagerieShowsTheInitials(): void
+    {
+        $student = $this->user(6, ['ROLE_STUDENT'])->setAvatarFixed('licorne')->setAvatarChoice(AvatarChoice::Fixed);
+
+        self::assertSame(['photo' => null, 'drawn' => null], $this->avatars([])->of($student));
     }
 
     public function testATeacherWhoChoseTheDrawingIsDrawn(): void
@@ -90,7 +119,7 @@ final class UserAvatarsTest extends TestCase
         $repository = $this->createMock(SeriousGameAvatarRepository::class);
         $repository->expects(self::once())->method('findForUsers')->with([$drawn])->willReturn([]);
 
-        (new UserAvatars($this->createStub(FileUploadService::class), $repository))->forUsers([$drawn, $photo]);
+        (new UserAvatars($this->createStub(FileUploadService::class), $repository, self::menagerie()))->forUsers([$drawn, $photo]);
     }
 
     /** @param list<User> $withAvatar */
@@ -108,7 +137,12 @@ final class UserAvatarsTest extends TestCase
         $files = $this->createStub(FileUploadService::class);
         $files->method('url')->willReturnCallback(static fn (string $key): string => 'https://cdn.test/'.$key);
 
-        return new UserAvatars($files, $repository);
+        return new UserAvatars($files, $repository, self::menagerie());
+    }
+
+    private static function menagerie(): FixedAvatars
+    {
+        return new FixedAvatars(new Packages(new PathPackage('/assets', new EmptyVersionStrategy())));
     }
 
     /** @param list<string> $roles */

@@ -191,9 +191,15 @@ class User implements UserInterface
 
     // What stands for this person wherever Formatool draws a face (design/validated/
     // quiz-tournament.md §16): the photo above, the avatar drawn on « Mon profil »
-    // (App\Entity\SeriousGameAvatar), or - null - the initials. Choosing deletes neither.
+    // (App\Entity\SeriousGameAvatar), the ménagerie avatar below, or - null - the initials.
+    // Choosing deletes none of them.
     #[ORM\Column(name: 'avatar_choice', length: 10, nullable: true, enumType: AvatarChoice::class)]
     private ?AvatarChoice $avatarChoice = null;
+
+    // The identifier of the ménagerie avatar this person picked (App\Service\FixedAvatars), kept
+    // when another choice is shown so « Mon avatar » can offer it back.
+    #[ORM\Column(name: 'avatar_fixed', length: 40, nullable: true)]
+    private ?string $avatarFixed = null;
 
     // Whether an internal message received by this user (App\Controller\MessageController) also
     // gets forwarded to their $contactEmail, provided it's verified - see
@@ -620,6 +626,18 @@ class User implements UserInterface
     public function setAvatarChoice(?AvatarChoice $avatarChoice): static
     {
         $this->avatarChoice = $avatarChoice;
+
+        return $this;
+    }
+
+    public function getAvatarFixed(): ?string
+    {
+        return $this->avatarFixed;
+    }
+
+    public function setAvatarFixed(?string $avatarFixed): static
+    {
+        $this->avatarFixed = $avatarFixed;
 
         return $this;
     }

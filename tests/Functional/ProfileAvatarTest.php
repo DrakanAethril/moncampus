@@ -119,6 +119,40 @@ class ProfileAvatarTest extends FunctionalTestCase
         self::assertSelectorTextContains('#mon-avatar', 'Utiliser mon avatar');
     }
 
+    public function testAMenagerieAvatarIsPickedInOneClickAndOfferedBack(): void
+    {
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'avatar.menagerie');
+        $student->setAvatarKey('avatars/menagerie.png')->setAvatarChoice(AvatarChoice::Photo);
+        $this->em->flush();
+        $this->client->loginUser($student);
+        $this->client->request('GET', '/profile');
+        self::assertCount(100, $this->client->getCrawler()->filter('#avatar-menagerie-panel button[name="fixed"]'));
+
+        $this->choose('fixed', ['fixed' => 'capy']);
+        self::assertResponseRedirects('/profile#mon-avatar');
+        $student = $this->reload($student);
+        self::assertSame(AvatarChoice::Fixed, $student->getAvatarChoice());
+        self::assertSame('capy', $student->getAvatarFixed());
+        self::assertSame('avatars/menagerie.png', $student->getAvatarKey());
+
+        $this->client->request('GET', '/profile');
+        self::assertSelectorExists('.cm-user__avatar[style*="menagerie/capy"]');
+        self::assertSelectorExists('#avatar-menagerie-panel button[value="capy"][aria-pressed="true"]');
+
+        // Another choice keeps it, and « Utiliser cet avatar » takes it back.
+        $this->choose('photo');
+        $this->choose('fixed');
+        $student = $this->reload($student);
+        self::assertSame(AvatarChoice::Fixed, $student->getAvatarChoice());
+        self::assertSame('capy', $student->getAvatarFixed());
+
+        // An identifier the ménagerie does not hold is a forged request.
+        $this->client->request('GET', '/profile');
+        $this->choose('fixed', ['fixed' => 'licorne']);
+        self::assertResponseStatusCodeSame(404);
+        self::assertSame('capy', $this->reload($student)->getAvatarFixed());
+    }
+
     public function testAChoiceWithNothingBehindItIsRefused(): void
     {
         $tutor = $this->createUser(['ROLE_USER', 'ROLE_TUTOR'], 'avatar.empty');
@@ -127,6 +161,7 @@ class ProfileAvatarTest extends FunctionalTestCase
 
         $this->choose('drawn');
         $this->choose('photo');
+        $this->choose('fixed');
         self::assertNull($this->reload($tutor)->getAvatarChoice());
 
         $this->client->request('POST', '/profile/avatar/choice', ['_token' => 'nope', 'choice' => 'none']);
@@ -177,9 +212,10 @@ class ProfileAvatarTest extends FunctionalTestCase
         $this->client->request('POST', '/profile/avatar/draw', [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_X_CSRF_TOKEN' => $this->csrfToken('profile_avatar_draw')], (string) json_encode($config));
     }
 
-    private function choose(string $value): void
+    /** @param array<string, string> $extra */
+    private function choose(string $value, array $extra = []): void
     {
-        $this->client->request('POST', '/profile/avatar/choice', ['_token' => $this->csrfToken('profile_avatar_choice'), 'choice' => $value]);
+        $this->client->request('POST', '/profile/avatar/choice', ['_token' => $this->csrfToken('profile_avatar_choice'), 'choice' => $value] + $extra);
     }
 
     private function reload(User $user): User

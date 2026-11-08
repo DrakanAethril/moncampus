@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Enum\Feature;
 use App\Repository\QuizLiveSessionRepository;
 use App\Security\FeatureAccess;
+use App\Service\FixedAvatars;
 use App\Service\JsonRequestPayload;
 use App\Service\LiveGuestRefusedException;
 use App\Service\LiveSessionStateException;
@@ -35,8 +36,8 @@ use Symfony\Component\Security\Http\Util\TargetPathTrait;
  *
  * - An account enters at once, under its own name and avatar - it is never a guest -, a class
  *   contest taking its own students only.
- * - A visitor enters a public contest as a guest: a pseudonym, one of twenty drawn avatars, a token in
- *   a cookie (LiveGuestToken). A class contest sends it to sign in.
+ * - A visitor enters a public contest as a guest: a pseudonym, one of twenty avatars drawn among the
+ *   ménagerie's hundred (App\Service\FixedAvatars), a token in a cookie (LiveGuestToken). A class contest sends it to sign in.
  * - Anybody may enter a contest under way.
  *
  * No #[RequiresFeature]: a visitor has no role to read the matrix with. The contest exists only when
@@ -110,20 +111,19 @@ class PlayController extends AbstractController
         }
 
         $nickname = LiveNickname::clean((string) $request->request->get('nickname', ''));
-        $avatarJson = (string) $request->request->get('avatar', '');
-        $avatar = json_decode($avatarJson, true);
-        if (!\is_array($avatar) || [] === $avatar) {
+        $avatar = $request->request->getString('avatar');
+        if (!FixedAvatars::exists($avatar)) {
             return $this->renderGuest($session, $themes, $nickname, null, 'quizLiveGuestAvatarRequired', Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         if (!$limiter->create('ip:'.$request->getClientIp())->consume()->isAccepted()) {
-            return $this->renderGuest($session, $themes, $nickname, $avatarJson, 'quizLiveGuestTooManyAttempts', Response::HTTP_TOO_MANY_REQUESTS);
+            return $this->renderGuest($session, $themes, $nickname, $avatar, 'quizLiveGuestTooManyAttempts', Response::HTTP_TOO_MANY_REQUESTS);
         }
 
         try {
             $joined = $service->joinGuest($session, $nickname, $avatar);
         } catch (LiveGuestRefusedException $exception) {
-            return $this->renderGuest($session, $themes, $nickname, $avatarJson, $exception->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->renderGuest($session, $themes, $nickname, $avatar, $exception->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (LiveSessionStateException) {
             return $this->redirectToRoute('app_quiz_live_entry', ['code' => $session->getRoomCode()]);
         }
@@ -221,13 +221,13 @@ class PlayController extends AbstractController
         return $service->participantFor($session, $user instanceof User ? $user : null, LiveGuestToken::fromRequest($request, $session));
     }
 
-    private function renderGuest(QuizLiveSession $session, LiveThemeCatalog $themes, string $nickname, ?string $avatarJson, ?string $error, int $status = Response::HTTP_OK): Response
+    private function renderGuest(QuizLiveSession $session, LiveThemeCatalog $themes, string $nickname, ?string $avatar, ?string $error, int $status = Response::HTTP_OK): Response
     {
         return $this->render('quiz_live/guest.html.twig', [
             'session' => $session,
             'theme' => $themes->resolve($session->getTheme()),
             'nickname' => $nickname,
-            'avatarJson' => $avatarJson,
+            'keptAvatar' => $avatar,
             'error' => $error,
             'nicknameMax' => LiveNickname::MAX,
         ], new Response('', $status));
