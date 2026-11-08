@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.08'
+      date: '2026-11-08'
+      summary: "PHP pas à pas, un nouveau jeu pour apprendre à programmer en PHP depuis zéro, niveau après niveau. Les conditions, les boucles et les tableaux y reviennent sans cesse, pour que ça tienne."
+      entries:
+          - type: nouveaute
+            title: "PHP pas à pas : un jeu d'entraînement pour débuter en programmation PHP, en cinquante-deux niveaux"
+            detail: "Chaque niveau apprend une notion : un court cours, puis prédire, suivre le programme tour après tour, comprendre, compléter, réparer et écrire trois programmes, avec des rappels des notions déjà vues ; un défi de maîtrise sans chronomètre clôt chaque notion, et l'exécution pas à pas montre le programme ligne par ligne."
     - version: '2026.11.07.3'
       date: '2026-11-07'
       summary: "Service de nuit, le jeu d'initiation au PHP, est refait pour des débutants complets : une notion par nuit, et le carnet ouvert dès le départ. Les résultats d'un concours en direct montrent la réussite question par question et les réponses aux sondages."
