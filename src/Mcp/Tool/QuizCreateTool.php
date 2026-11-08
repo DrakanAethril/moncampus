@@ -8,6 +8,7 @@ use App\Enum\Feature;
 use App\Mcp\McpLibraryAccess;
 use App\Mcp\McpLinks;
 use App\Mcp\McpQuizDocuments;
+use App\Mcp\McpQuizImages;
 use App\Mcp\McpTool;
 use App\Mcp\McpToolCall;
 use App\Mcp\McpToolException;
@@ -33,6 +34,7 @@ final readonly class QuizCreateTool implements McpTool
         private QuizQuestionCompleteness $completeness,
         private EntityManagerInterface $entityManager,
         private McpLinks $links,
+        private McpQuizImages $images,
     ) {
     }
 
@@ -48,7 +50,7 @@ final readonly class QuizCreateTool implements McpTool
 
     public function description(): string
     {
-        return 'Crée un quiz dans la bibliothèque de l\'enseignant à partir d\'un document « moncampus-quiz/1 » (voir format_guide). Le document est refusé en entier à la moindre question invalide, avec la liste des corrections à faire. Facultatif : le ranger dans un dossier (folderId) et le rattacher à une séquence (sequenceId) ou à une séance (seanceId). Le quiz n\'est lancé auprès d\'aucune classe.';
+        return 'Crée un quiz dans la bibliothèque de l\'enseignant à partir d\'un document « moncampus-quiz/1 » (voir format_guide). Une question peut porter son image ("imageFileId", une image de la bibliothèque de fichiers). Le document est refusé en entier à la moindre question invalide, avec la liste des corrections à faire. Facultatif : le ranger dans un dossier (folderId) et le rattacher à une séquence (sequenceId) ou à une séance (seanceId). Le quiz n\'est lancé auprès d\'aucune classe.';
     }
 
     public function inputSchema(): array
@@ -91,13 +93,17 @@ final readonly class QuizCreateTool implements McpTool
 
         $quiz = $this->writer->newTemplate($call->user, $folder, $payload['name'], $payload['subject'], $payload['description'], \count($payload['questions']));
         $this->writer->fill($quiz, $this->importer, $payload['questions'], $attachTo);
+        $created = array_values($quiz->getQuestions()->toArray());
+        foreach ($payload['images'] as $index => $image) {
+            $this->images->attach($created[$index], $image);
+        }
         $this->entityManager->persist($quiz);
         $this->entityManager->flush();
 
         $waiting = $this->completeness->countIncomplete($quiz->getQuestions());
 
         return McpToolResult::data(
-            \sprintf('Quiz « %s » créé avec %d questions%s : %s', $quiz->getName(), $quiz->getQuestions()->count(), $waiting > 0 ? \sprintf(' (%d attendent encore une image ou des zones, à compléter dans MonCampus)', $waiting) : '', $this->links->quiz($quiz)),
+            \sprintf('Quiz « %s » créé avec %d questions%s : %s', $quiz->getName(), $quiz->getQuestions()->count(), $waiting > 0 ? \sprintf(' (%d attendent encore une image ou des zones : quiz_update avec "images", ou dans MonCampus)', $waiting) : '', $this->links->quiz($quiz)),
             [
                 'id' => $quiz->getId(),
                 'url' => $this->links->quiz($quiz),

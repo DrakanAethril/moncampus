@@ -698,7 +698,15 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   its features are lit. Texts sent to the model (tool descriptions, `McpInstructions`, prompts) are
   **French prompt text**, like the prompt catalogues. Rules the tools hold: nothing is deleted; a
   document is refused whole at the first invalid item (Claude corrects and resends); no image
-  reference crosses (`mediaRef`/`imageKey`); an evaluation it creates is visible to students only
+  reference crosses (`mediaRef`/`imageKey`) - **a quiz question's picture is `imageFileId`, an image
+  of the teacher's file library** (`App\Mcp\McpQuizImages`), linked as the question editor links
+  one (the file's key + `libraryNode`, never a copy): the statement's picture, the « image » type's,
+  the one a « zone » / « legende » with `"support":{"kind":"image","zones":[…]}` is placed on
+  (zones as 0-1 fractions of the image). **`quiz_update` modifies a quiz** (`QuizUpdateTool`):
+  named fields, a question rewritten **in place** by its number (`App\Service\QuizQuestionRewriter`:
+  it keeps id, position and picture - video markers point at it and would die with a new row), a
+  picture set, the order; never a question deleted, everything checked before anything is written.
+  `quiz_get` numbers the questions and hands pictures back as `imageFileId`, never `imageKey`; an evaluation it creates is visible to students only
   at a **future** date (D+1 by default) - and `evaluation_update`, which names its fields and reads
   them all before writing one, moves that date only to another future moment
   (`McpGradebook::futureVisibility()`): « visible now » stays a gesture of the screen; a barème

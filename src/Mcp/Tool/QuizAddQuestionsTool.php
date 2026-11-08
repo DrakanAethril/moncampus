@@ -8,6 +8,7 @@ use App\Enum\Feature;
 use App\Mcp\McpLibraryAccess;
 use App\Mcp\McpLinks;
 use App\Mcp\McpQuizDocuments;
+use App\Mcp\McpQuizImages;
 use App\Mcp\McpTool;
 use App\Mcp\McpToolCall;
 use App\Mcp\McpToolException;
@@ -29,6 +30,7 @@ final readonly class QuizAddQuestionsTool implements McpTool
         private EntityManagerInterface $entityManager,
         private ClockInterface $clock,
         private McpLinks $links,
+        private McpQuizImages $images,
     ) {
     }
 
@@ -44,7 +46,7 @@ final readonly class QuizAddQuestionsTool implements McpTool
 
     public function description(): string
     {
-        return 'Ajoute des questions à la fin d\'un quiz existant de la bibliothèque. Chaque question a la forme d\'un élément de "questions" du format « moncampus-quiz/1 ». Les questions existantes ne sont ni modifiées ni supprimées. Tout est refusé à la moindre question invalide.';
+        return 'Ajoute des questions à la fin d\'un quiz existant de la bibliothèque. Chaque question a la forme d\'un élément de "questions" du format « moncampus-quiz/1 ». Une question peut porter son image ("imageFileId"). Les questions existantes ne sont ni modifiées ni supprimées (pour les modifier : quiz_update). Tout est refusé à la moindre question invalide.';
     }
 
     public function inputSchema(): array
@@ -84,11 +86,15 @@ final readonly class QuizAddQuestionsTool implements McpTool
 
         $before = $quiz->getQuestions()->count();
         $this->importer->appendQuestions($quiz, $payload['questions']);
+        $added = \array_slice(array_values($quiz->getQuestions()->toArray()), $before);
+        foreach ($payload['images'] as $index => $image) {
+            $this->images->attach($added[$index], $image);
+        }
         $quiz->setLastUpdatedBy($call->user);
         $quiz->setLastUpdatedDate($this->clock->now());
         $this->entityManager->flush();
 
-        $added = $quiz->getQuestions()->count() - $before;
+        $added = \count($added);
 
         return McpToolResult::data(
             \sprintf('%d questions ajoutées au quiz « %s », qui en compte maintenant %d : %s', $added, $quiz->getName(), $quiz->getQuestions()->count(), $this->links->quiz($quiz)),
