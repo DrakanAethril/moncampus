@@ -26,10 +26,17 @@ final class AvatarChoiceTest extends TestCase
         self::assertFalse(AvatarChoice::Drawn->isPossible(hasPhoto: true, hasDrawing: false));
     }
 
+    public function testTheMenagerieNeedsAnAvatarPicked(): void
+    {
+        self::assertTrue(AvatarChoice::Fixed->isPossible(hasPhoto: false, hasDrawing: false, hasFixed: true));
+        self::assertFalse(AvatarChoice::Fixed->isPossible(hasPhoto: true, hasDrawing: true, hasFixed: false));
+    }
+
     public function testTheFormValueIsReadStrictly(): void
     {
         self::assertSame(AvatarChoice::Photo, AvatarChoice::fromFormValue('photo'));
         self::assertSame(AvatarChoice::Drawn, AvatarChoice::fromFormValue('drawn'));
+        self::assertSame(AvatarChoice::Fixed, AvatarChoice::fromFormValue('fixed'));
         self::assertNull(AvatarChoice::fromFormValue('none'));
         $this->expectException(\ValueError::class);
         AvatarChoice::fromFormValue('gravatar');

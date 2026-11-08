@@ -55,7 +55,7 @@
                                 <div class="cm-live-capture__frame">
                                     {% if capture.kind == 'guest' %}
                                         <div class="ql ql-still cm-live-capture__in" data-live-theme="{{ theme.slug }}" aria-hidden="true" inert>
-                                            {{ include('quiz_live/_guest_form.html.twig', {session: sample, nickname: 'Licorne Pixel', avatarJson: '', error: null, nicknameMax: 16, inert: true}) }}
+                                            {{ include('quiz_live/_guest_form.html.twig', {session: sample, nickname: 'Licorne Pixel', keptAvatar: '', error: null, nicknameMax: 16, inert: true}) }}
                                         </div>
                                     {% else %}
                                         <div class="ql ql-still cm-live-capture__in" data-live-theme="{{ theme.slug }}" aria-hidden="true" inert

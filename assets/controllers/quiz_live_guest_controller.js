@@ -1,54 +1,48 @@
 import { Controller } from '@hotwired/stimulus';
-import { loadAvatarModule } from '../serious_game/avatar_module.js';
 
 /**
  * The guest page of a public live contest (design/validated/quiz-live-public.md): a pseudonym and an
- * avatar, on one screen. The twenty avatars are drawn here by the generator every avatar of
- * Formatool comes from (public/serious-games/shared/avatar.js); « Nouveaux avatars » draws twenty
- * others. The chosen one travels in a hidden field and is normalised by the server, which also
- * judges the pseudonym (App\Service\QuizLive\LiveNickname) - this page only spares a round trip.
+ * avatar, on one screen. The twenty avatars are drawn here among the ménagerie's hundred
+ * (App\Service\FixedAvatars, handed in as `catalogue`); « Nouveaux avatars » draws twenty others,
+ * none of those just shown. The chosen one travels in a hidden field as its identifier, which the
+ * server checks against the catalogue; it also judges the pseudonym (App\Service\QuizLive\
+ * LiveNickname) - this page only spares a round trip.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['grid', 'preview', 'avatar', 'nickname', 'submit', 'error'];
 
-    static values = { kept: String, avatarLabel: String, chooseAvatar: String, tooShort: String };
+    static values = { kept: String, catalogue: Array, chooseAvatar: String, tooShort: String };
 
     static ANIMALS = ['Loutre', 'Panda', 'Koala', 'Licorne', 'Hérisson', 'Renard', 'Lama', 'Pieuvre', 'Tigre', 'Capybara', 'Axolotl', 'Faucon', 'Manchot', 'Castor'];
 
     static WORDS = ['Cosmique', 'Turbo', 'Ninja', 'Rapide', 'Malin', 'Zen', 'Pixel', 'Électrique', 'Masqué', 'Volant', 'Rieur', 'Express', 'Agile', 'Polaire'];
 
     connect() {
+        this.catalogue = this.catalogueValue;
         this.choices = [];
         this.picked = -1;
-        let kept = null;
-        try {
-            kept = this.keptValue ? JSON.parse(this.keptValue) : null;
-        } catch {
-            kept = null;
-        }
-        loadAvatarModule().then((module) => {
-            this.module = module;
-            this.draw(kept);
-        });
+        this.draw(this.catalogue.find((avatar) => avatar.id === this.keptValue));
         this.sync();
     }
 
+    // Twenty distinct avatars, the ones just shown left out while the hundred allow it; a kept one
+    // (a refused pseudonym) comes back first, still chosen.
     draw(kept = null) {
-        this.choices = Array.from({ length: 20 }, () => this.module.random());
-        this.picked = -1;
-        if (kept && 'object' === typeof kept) {
-            this.choices[0] = this.module.normalize(kept);
-            this.picked = 0;
+        const shown = new Set(this.choices.map((avatar) => avatar.id));
+        const pool = this.catalogue.filter((avatar) => !shown.has(avatar.id) && avatar !== kept);
+        for (let i = pool.length - 1; i > 0; i -= 1) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
         }
-        this.gridTarget.innerHTML = this.choices.map((config, i) => `<button type="button" class="ql-avpick ql-pop" style="animation-delay:${i * 25}ms" data-index="${i}" data-action="quiz-live-guest#pick" aria-pressed="${i === this.picked}" aria-label="${this.avatarLabelValue} ${i + 1}"><span class="ql-av">${this.module.svg(config, { size: 100 })}</span></button>`).join('');
+        this.choices = kept ? [kept, ...pool.slice(0, 19)] : pool.slice(0, 20);
+        this.picked = kept ? 0 : -1;
+        this.gridTarget.innerHTML = this.choices.map((avatar, i) => `<button type="button" class="ql-avpick ql-pop" style="animation-delay:${i * 25}ms" data-index="${i}" data-action="quiz-live-guest#pick" aria-pressed="${i === this.picked}" aria-label="${escape(avatar.name)}" title="${escape(avatar.name)}">${face(avatar, 0)}</button>`).join('');
         this.paintPick();
     }
 
     again() {
-        if (this.module) {
-            this.draw();
-        }
+        this.draw();
     }
 
     pick(event) {
@@ -63,11 +57,9 @@ export default class extends Controller {
         this.gridTarget.querySelectorAll('[data-index]').forEach((button) => {
             button.setAttribute('aria-pressed', String(Number(button.dataset.index) === this.picked));
         });
-        const config = this.choices[this.picked];
-        this.avatarTarget.value = config ? JSON.stringify(config) : '';
-        this.previewTarget.innerHTML = config && this.module
-            ? `<span class="ql-av" style="width:58px;height:58px">${this.module.svg(config, { size: 100 })}</span>`
-            : '<span class="ql-av ql-av-empty" style="width:58px;height:58px">?</span>';
+        const avatar = this.choices[this.picked];
+        this.avatarTarget.value = avatar ? avatar.id : '';
+        this.previewTarget.innerHTML = avatar ? face(avatar, 58) : '<span class="ql-av ql-av-empty" style="width:58px;height:58px">?</span>';
     }
 
     // Only pairs that fit the field: a value set by script escapes `maxlength`, and the server cuts
@@ -91,4 +83,15 @@ export default class extends Controller {
             this.errorTarget.textContent = this.chooseAvatarValue;
         }
     }
+}
+
+function escape(text) {
+    return String(text).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+// The picture as the frame's background, like a photo everywhere else in the contest (render.js).
+function face(avatar, size) {
+    const box = size ? `width:${size}px;height:${size}px;` : '';
+
+    return `<span class="ql-av" style="${box}background-image:url(${escape(JSON.stringify(avatar.url))})"></span>`;
 }

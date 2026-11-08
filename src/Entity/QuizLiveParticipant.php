@@ -43,13 +43,19 @@ class QuizLiveParticipant
     private ?string $guestTokenHash = null;
 
     /**
-     * A guest's drawn avatar, one of the twenty its browser drew with the shared generator
-     * (public/serious-games/shared/avatar.js), normalised on the way in (App\SeriousGame\AvatarConfig).
+     * A guest's drawn avatar, from before the ménagerie: the guests who joined until 2026-11-08 chose
+     * one of twenty drawn by the shared generator (public/serious-games/shared/avatar.js). Kept for
+     * their results; a guest joining now has a ménagerie avatar instead ($guestFixedAvatar).
      *
      * @var array<string, mixed>|null
      */
     #[ORM\Column(name: 'guest_avatar', type: Types::JSON, nullable: true)]
     private ?array $guestAvatar = null;
+
+    // A guest's avatar: the identifier of one of the ménagerie's hundred (App\Service\FixedAvatars),
+    // chosen among the twenty its page drew.
+    #[ORM\Column(name: 'guest_fixed_avatar', length: 40, nullable: true)]
+    private ?string $guestFixedAvatar = null;
 
     // Editable "Nom de participant" (Turn 1r/1s) - defaults to student->getDisplayName(), purely
     // cosmetic (leaderboard label), never used for identity/auth.
@@ -77,11 +83,10 @@ class QuizLiveParticipant
         $this->answers = new ArrayCollection();
     }
 
-    /** @param array<string, mixed> $avatar */
-    public static function forGuest(QuizLiveSession $session, string $pseudonym, array $avatar, string $tokenHash): self
+    public static function forGuest(QuizLiveSession $session, string $pseudonym, string $fixedAvatar, string $tokenHash): self
     {
         $participant = new self($session, null, $pseudonym);
-        $participant->guestAvatar = $avatar;
+        $participant->guestFixedAvatar = $fixedAvatar;
         $participant->guestTokenHash = $tokenHash;
 
         return $participant;
@@ -96,6 +101,11 @@ class QuizLiveParticipant
     public function getGuestAvatar(): ?array
     {
         return $this->guestAvatar;
+    }
+
+    public function getGuestFixedAvatar(): ?string
+    {
+        return $this->guestFixedAvatar;
     }
 
     public function getId(): ?int

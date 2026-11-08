@@ -9,6 +9,7 @@ use App\Enum\AvatarChoice;
 use App\Form\AvatarUploadType;
 use App\SeriousGame\Avatar\SeriousGameAvatars;
 use App\Service\FileUploadService;
+use App\Service\FixedAvatars;
 use App\Service\StagedUpload;
 use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,10 +21,12 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * « Mon avatar », on « Mon profil » (design/validated/quiz-tournament.md §16): one choice, two paths,
- * for every account - send a photo, or draw an avatar in the creation tunnel. What stands for the
- * person is `User::$avatarChoice` (App\Service\UserAvatars); sending a photo chooses the photo,
- * saving a drawing chooses the drawing, and switching between them deletes neither.
+ * « Mon avatar », on « Mon profil » (design/validated/quiz-tournament.md §16): one choice, three
+ * paths, for every account - send a photo, draw an avatar in the creation tunnel, or pick one of the
+ * ménagerie's ready-made avatars (App\Service\FixedAvatars). What stands for the person is
+ * `User::$avatarChoice` (App\Service\UserAvatars); sending a photo chooses the photo, saving a
+ * drawing chooses the drawing, picking a ménagerie avatar chooses it, and switching between them
+ * deletes nothing.
  *
  * Not behind a feature (FeatureCoverageTest, « outside the catalogue on purpose »): it is how
  * somebody presents their own account. The drawing is the serious games' editor
@@ -76,7 +79,10 @@ class ProfileAvatarController extends AbstractController
         return $this->redirectToRoute('app_profile', ['_fragment' => 'mon-avatar']);
     }
 
-    /** « Utiliser ma photo » / « Utiliser mon avatar » / « Aucun (initiales) »: nothing is deleted. */
+    /**
+     * « Utiliser ma photo » / « Utiliser mon avatar » / « Aucun (initiales) », and a ménagerie avatar
+     * picked (`fixed` names it) or taken back (`fixed` absent): nothing is deleted.
+     */
     #[Route(path: '/profile/avatar/choice', name: 'app_profile_avatar_choice', methods: ['POST'])]
     public function choose(Request $request, EntityManagerInterface $entityManager, SeriousGameAvatars $drawings): Response
     {
@@ -91,7 +97,16 @@ class ProfileAvatarController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        if (null !== $choice && !$choice->isPossible(null !== $user->getAvatarKey(), $drawings->hasOne($user))) {
+        // A ménagerie avatar named is picked - one the catalogue does not hold is a forged request.
+        if (AvatarChoice::Fixed === $choice && $request->request->has('fixed')) {
+            $fixed = $request->request->getString('fixed');
+            if (!FixedAvatars::exists($fixed)) {
+                throw $this->createNotFoundException();
+            }
+            $user->setAvatarFixed($fixed);
+        }
+
+        if (null !== $choice && !$choice->isPossible(null !== $user->getAvatarKey(), $drawings->hasOne($user), FixedAvatars::exists((string) $user->getAvatarFixed()))) {
             $this->addFlash('error', 'profileAvatarChoiceUnavailableFlash');
 
             return $this->redirectToRoute('app_profile', ['_fragment' => 'mon-avatar']);

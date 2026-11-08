@@ -104,18 +104,33 @@ class QuizLivePublicTest extends FunctionalTestCase
         $this->client->request('GET', '/live/'.$code);
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('form input[name="nickname"]');
+        // The twenty are drawn among the ménagerie's hundred, handed to the page whole.
+        $catalogue = json_decode((string) $this->client->getCrawler()->filter('form[data-quiz-live-guest-catalogue-value]')->attr('data-quiz-live-guest-catalogue-value'), true);
+        self::assertIsArray($catalogue);
+        self::assertCount(100, $catalogue);
+
+        // An avatar out of the ménagerie - a drawn one, as before it - is refused.
+        $this->guest($code, 'Loutre Cosmique', (string) json_encode(['skin' => 2, 'hair' => 'court']));
+        self::assertResponseStatusCodeSame(422);
+        $this->guest($code, 'Loutre Cosmique', 'licorne');
+        self::assertResponseStatusCodeSame(422);
 
         $this->guest($code, 'Loutre Cosmique');
         self::assertResponseRedirects('/live/'.$code.'/play');
+        $guest = $this->em->getRepository(QuizLiveParticipant::class)->findOneBy(['displayName' => 'Loutre Cosmique']);
+        self::assertInstanceOf(QuizLiveParticipant::class, $guest);
+        self::assertSame('goupil', $guest->getGuestFixedAvatar());
+        self::assertNull($guest->getGuestAvatar());
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 
         // A second visitor may not take the same name, whatever its case.
         $this->client->getCookieJar()->clear();
         $this->client->request('GET', '/live/'.$code);
-        $this->guest($code, 'LOUTRE cosmique');
+        $this->guest($code, 'LOUTRE cosmique', 'axel');
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('.ql-error', 'Déjà pris');
+        self::assertSelectorExists('form[data-quiz-live-guest-kept-value="axel"]', 'the avatar is kept after a refusal');
 
         // An account is never a guest: the class's student enters at once, under its own name.
         $this->client->loginUser($this->student);
@@ -147,6 +162,7 @@ class QuizLivePublicTest extends FunctionalTestCase
         self::assertSelectorTextContains('table', 'Loutre Cosmique');
         self::assertSelectorTextContains('table', 'Retardataire');
         self::assertSelectorTextContains('table', 'Invité');
+        self::assertSelectorExists('.cm-live-face[style*="menagerie/goupil"]', 'a guest wears its ménagerie avatar in the results');
         $this->client->request('GET', \sprintf('/quiz-live/%d/results?show=guests', $session->getId()));
         self::assertSelectorTextNotContains('table', 'Public.student');
     }
@@ -290,12 +306,12 @@ class QuizLivePublicTest extends FunctionalTestCase
         $service->advance($this->live($session), $this->teacher, LiveSessionStatus::Results);
     }
 
-    private function guest(string $code, string $nickname): void
+    private function guest(string $code, string $nickname, string $avatar = 'goupil'): void
     {
         $this->client->request('POST', '/live/'.$code.'/guest', [
             '_token' => $this->csrfToken('quiz_live_guest'),
             'nickname' => $nickname,
-            'avatar' => json_encode(['skin' => 2, 'hair' => 'court'], \JSON_THROW_ON_ERROR),
+            'avatar' => $avatar,
         ]);
     }
 
