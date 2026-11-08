@@ -1,0 +1,381 @@
+# PHP pas à pas — chapter 4, « Les tableaux ». A ticket is a level or a mastery challenge (« défi de
+# maîtrise »); the steps run in the order written (scenario.free_order). A `fix` step is measured by the
+# game on the visible case and the hidden ones and sends {passed, failed}; an `explain` step - « Comprendre »
+# - is corrected here, each wrong option naming its misconception. `hints` is the number of written hints
+# the game holds for the level's measured steps, two per reminder: the bench checks it against the package.
+tickets:
+  - id: N25
+    act: 4
+    after: [N24]
+    requester: guide
+    title: "Une liste"
+    request: "[…] · la case 0 · count · count - 1"
+    course: "Une liste"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Avec $notes = [12, 8, 15], pourquoi la dernière note est-elle $notes[2] et pas $notes[3] ?"
+        options:
+          - { text: "Parce que les cases sont numérotées à partir de 0 : trois cases portent les numéros 0, 1 et 2. La dernière est toujours count($notes) - 1.", ok: true }
+          - text: "Parce que count($notes) vaut 2."
+            misconception: c4-count-indice
+            reaction: { who: guide, expr: neutre, text: "count($notes) compte les cases : il y en a 3. C'est le numéro de la dernière qui vaut 2, un de moins que le nombre de cases, parce qu'on commence à 0." }
+          - text: "Parce que $notes[3] existe aussi, mais elle vaut 0."
+            misconception: c4-case-absente-zero
+            reaction: { who: guide, expr: neutre, text: "Il n'y a pas de case 3. La lire ne donne pas 0 : PHP affiche l'avertissement « Undefined array key 3 »." }
+          - text: "Parce que la case 0 reste vide : les valeurs commencent à la case 1."
+            misconception: c4-case-un
+            reaction: { who: guide, expr: neutre, text: "La case 0 n'est jamais vide : c'est elle qui contient la première valeur, 12. $notes[1] est la deuxième note." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N26
+    act: 4
+    after: [N25]
+    requester: guide
+    title: "Parcourir"
+    request: "for ($i = 0; $i < count…) · foreach … as"
+    course: "Parcourir une liste"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Dans for ($i = 0; $i < count($t); $i++), pourquoi la condition est-elle < et pas <= ?"
+        options:
+          - { text: "Parce que les cases vont de 0 à count($t) - 1 : avec <=, le dernier tour lirait la case count($t), qui n'existe pas.", ok: true }
+          - text: "Les deux marchent : avec <=, la boucle fait juste un tour de plus qui n'affiche rien."
+            misconception: c4-tour-de-trop-muet
+            reaction: { who: guide, expr: neutre, text: "Ce tour de trop n'est pas muet : il lit une case qui n'existe pas, et PHP affiche l'avertissement « Undefined array key »." }
+          - text: "Parce qu'avec <=, la boucle sauterait la première case."
+            misconception: c4-borne-premiere
+            reaction: { who: guide, expr: neutre, text: "La première case dépend du départ, $i = 0. La condition décide de la fin : <= ajoute un tour au bout, pas au début." }
+          - text: "Parce que count($t) compte à partir de 0, comme les cases."
+            misconception: c4-count-zero
+            reaction: { who: guide, expr: neutre, text: "count compte normalement : 3 cases, count vaut 3. Ce sont les numéros de case qui partent de 0, d'où le dernier numéro count - 1." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N27
+    act: 4
+    after: [N26]
+    requester: guide
+    title: "Modifier et ajouter"
+    request: "$t[] = · $t[$i] = · foreach copie"
+    course: "Ajouter et modifier"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Après foreach ($notes as $n) { $n = $n + 1; }, pourquoi les notes de $notes n'ont-elles pas changé ?"
+        options:
+          - { text: "Parce que $n reçoit une copie de chaque case : changer $n change la copie. Pour changer la liste, il faut écrire dans la case, $notes[$i] = …", ok: true }
+          - text: "Parce qu'il fallait écrire $n++ au lieu de $n = $n + 1."
+            misconception: c4-incrementer-different
+            reaction: { who: guide, expr: neutre, text: "$n++ et $n = $n + 1 font la même chose : l'un comme l'autre ne touchent que la copie $n, jamais la case du tableau." }
+          - text: "Parce qu'un tableau ne peut plus être modifié une fois créé."
+            misconception: c4-tableau-fige
+            reaction: { who: guide, expr: neutre, text: "Un tableau se modifie très bien : $notes[1] = 14; change la case 1, $notes[] = 9; ajoute une case. C'est $n qui n'est pas la case." }
+          - text: "Elles ont changé : c'est seulement l'affichage qui montre les anciennes valeurs."
+            misconception: c4-foreach-reference
+            reaction: { who: guide, expr: neutre, text: "L'affichage montre bien ce que contient $notes. Ouvre « Pas à pas » : $n change à chaque tour, $notes reste la même." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M11
+    act: 4
+    after: [N27]
+    requester: guide
+    title: "Défi de maîtrise · Listes"
+    request: "3 programmes, sans indice"
+    course: "Les listes"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N28
+    act: 4
+    after: [N27]
+    requester: guide
+    title: "Totaliser"
+    request: "somme · moyenne · le plus grand · array_sum"
+    course: "Totaliser une liste"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pour trouver la plus grande valeur d'une liste, pourquoi part-on de $max = $t[0] et pas de $max = 0 ?"
+        options:
+          - { text: "Parce que si toutes les valeurs sont négatives, aucune ne dépasse 0 : $max resterait à 0, une valeur qui n'est pas dans la liste. La première case, elle, est une vraie valeur.", ok: true }
+          - text: "C'est pareil : les valeurs d'une liste sont toujours positives, donc 0 marche toujours."
+            misconception: c4-max-zero
+            reaction: { who: guide, expr: neutre, text: "Des températures, des altitudes ou des soldes peuvent être tous négatifs. Avec -3, -8 et -1, $max = 0 afficherait 0 au lieu de -1." }
+          - text: "Parce que la première case est toujours la plus grande."
+            misconception: c4-premiere-plus-grande
+            reaction: { who: guide, expr: neutre, text: "La première case n'est qu'un point de départ : la boucle la remplace dès qu'une case la dépasse." }
+          - text: "Parce que $max = 0 effacerait la case 0 du tableau."
+            misconception: c4-affectation-efface
+            reaction: { who: guide, expr: neutre, text: "$max = 0 range 0 dans la variable $max ; le tableau n'est pas touché. Le problème, c'est que 0 n'est peut-être aucune des valeurs." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N29
+    act: 4
+    after: [N28]
+    requester: guide
+    title: "Filtrer dans un nouveau tableau"
+    request: "$res = [] · if · $res[] = · implode"
+    course: "Filtrer une liste"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pour garder les notes d'au moins 10 dans $admis, pourquoi écrit-on $admis = []; avant la boucle, et pas au début de la boucle ?"
+        options:
+          - { text: "Parce que dans la boucle, $admis = []; viderait la liste à chaque tour : il ne resterait au mieux que la dernière note gardée.", ok: true }
+          - text: "C'est pareil : cette ligne n'est exécutée qu'une fois de toute façon."
+            misconception: c4-boucle-une-fois
+            reaction: { who: guide, expr: neutre, text: "Tout ce qui est entre les accolades de la boucle est exécuté à chaque tour, cette ligne comprise. Ouvre « Pas à pas » pour voir la liste se vider." }
+          - text: "Parce que dans la boucle, $admis serait une autre variable à chaque tour."
+            misconception: c4-variable-par-tour
+            reaction: { who: guide, expr: neutre, text: "C'est toujours la même variable $admis. Le problème est qu'on la remet à vide à chaque tour." }
+          - text: "Parce qu'on n'a pas le droit d'écrire [] dans une boucle."
+            misconception: c4-crochets-boucle
+            reaction: { who: guide, expr: neutre, text: "On peut écrire [] où l'on veut : $admis[] = $n; est justement dans la boucle. C'est la remise à vide, à chaque tour, qui pose problème." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N30
+    act: 4
+    after: [N29]
+    requester: guide
+    title: "Chercher"
+    request: "drapeau · le premier qui… · in_array · array_search"
+    course: "Chercher dans une liste"
+    hints: 16
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Dans une boucle qui cherche $cherche avec un drapeau $trouve, pourquoi ne faut-il pas écrire else { $trouve = false; } ?"
+        options:
+          - { text: "Parce que la case suivante, différente, remettrait le drapeau à false : seule la dernière case compterait. Une fois trouvé, c'est trouvé.", ok: true }
+          - text: "Le else ne change rien : $trouve vaut déjà false au départ."
+            misconception: c4-else-sans-effet
+            reaction: { who: guide, expr: neutre, text: "Au départ, oui. Mais après avoir trouvé, $trouve vaut true, et le else de la case suivante le remet à false. Suis-le avec « Pas à pas »." }
+          - text: "Parce que else est interdit à l'intérieur d'une boucle."
+            misconception: c4-else-boucle
+            reaction: { who: guide, expr: neutre, text: "Un if / else marche très bien dans une boucle. C'est ce else-là qui pose problème, parce qu'il défait ce qu'on a trouvé." }
+          - text: "Parce que sans break, la boucle ne s'arrête jamais."
+            misconception: c4-foreach-infini
+            reaction: { who: guide, expr: neutre, text: "foreach s'arrête toujours après la dernière case. break sert seulement à sortir plus tôt, quand on a trouvé." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M12
+    act: 4
+    after: [N30]
+    requester: guide
+    title: "Défi de maîtrise · Totaliser, filtrer, chercher"
+    request: "3 programmes, sans indice"
+    course: "Totaliser, filtrer, chercher"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N31
+    act: 4
+    after: [N30]
+    requester: guide
+    title: "Clés et valeurs"
+    request: "['clé' => valeur] · lire · modifier · ajouter une clé"
+    course: "Tableau associatif"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Dans $notes = ['Léa' => 14, 'Tom' => 9], qu'est-ce que 'Léa' ?"
+        options:
+          - { text: "La clé : le nom de la case, qui remplace son numéro. 14 est la valeur rangée dans cette case, et on la lit avec $notes['Léa'].", ok: true }
+          - text: "Une deuxième valeur, rangée dans la même case que 14."
+            misconception: c4-cle-valeur
+            reaction: { who: guide, expr: neutre, text: "Une case ne contient qu'une valeur, 14. 'Léa' est l'étiquette de la case : c'est par elle qu'on la retrouve." }
+          - text: "Le nom d'une variable, qu'on pourrait écrire $Léa."
+            misconception: c4-cle-variable
+            reaction: { who: guide, expr: neutre, text: "'Léa' n'est pas une variable : c'est un texte qui sert de nom à une case du tableau $notes. On écrit $notes['Léa']." }
+          - text: "Un autre nom de la case 0, puisque c'est la première : $notes[0] vaut aussi 14."
+            misconception: c4-cle-numero
+            reaction: { who: guide, expr: neutre, text: "Dans un tableau associatif, les cases n'ont pas de numéro : $notes[0] n'existe pas et donnerait un avertissement." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N32
+    act: 4
+    after: [N31]
+    requester: guide
+    title: "foreach avec la clé, la clé absente"
+    request: "foreach ($t as $k => $v) · isset · ??"
+    course: "foreach avec la clé, isset et ??"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pourquoi écrire $notes['Hugo'] ?? 0 plutôt que $notes['Hugo'] quand Hugo n'est peut-être pas dans le carnet ?"
+        options:
+          - { text: "Parce que lire une clé qui n'existe pas affiche un avertissement ; ?? donne la valeur de la case si elle existe, et 0 sinon, sans avertissement.", ok: true }
+          - text: "Parce qu'une clé absente vaut 0 de toute façon : ?? l'écrit seulement plus clairement."
+            misconception: c4-absente-zero
+            reaction: { who: guide, expr: neutre, text: "Une clé absente ne vaut pas 0 : la lire provoque l'avertissement « Undefined array key ». C'est ?? qui fournit le 0." }
+          - text: "Parce que ?? ajoute la case Hugo au carnet, avec la note 0."
+            misconception: c4-coalesce-ajoute
+            reaction: { who: guide, expr: neutre, text: "?? ne modifie pas le tableau : il donne seulement une valeur de remplacement. Le carnet n'a toujours pas de case Hugo." }
+          - text: "Parce que ?? compare la note de Hugo à 0."
+            misconception: c4-coalesce-compare
+            reaction: { who: guide, expr: neutre, text: "?? ne compare rien : il regarde seulement si la case existe. Si oui, sa valeur ; sinon, ce qui est écrit après ??." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M13
+    act: 4
+    after: [N32]
+    requester: guide
+    title: "Défi de maîtrise · Clés et valeurs"
+    request: "3 programmes, sans indice"
+    course: "Clés et valeurs"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
+
+  - id: N33
+    act: 4
+    after: [N32]
+    requester: guide
+    title: "Compter des occurrences"
+    request: "$compte[$x] = ($compte[$x] ?? 0) + 1 · le plus fréquent"
+    course: "Compter les occurrences"
+    hints: 17
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - { id: viser, kind: fix, prompt: "Viser" }
+      - id: comprendre
+        kind: explain
+        prompt: "Pour compter les votes, pourquoi écrire $compte[$v] = ($compte[$v] ?? 0) + 1; et pas seulement $compte[$v] = $compte[$v] + 1; ?"
+        options:
+          - { text: "Parce que la première fois qu'un lieu apparaît, sa case n'existe pas encore : la lire donnerait un avertissement. ?? 0 part de 0 et la case est créée à 1.", ok: true }
+          - text: "Parce que sans ??, chaque vote serait compté deux fois."
+            misconception: c4-double-compte
+            reaction: { who: guide, expr: neutre, text: "Chaque tour ajoute 1, avec ou sans ??. La différence est au premier passage : la case n'existe pas, et la lire sans ?? donne un avertissement." }
+          - text: "Parce que ?? 0 remet le compteur à zéro à chaque tour."
+            misconception: c4-coalesce-raz
+            reaction: { who: guide, expr: neutre, text: "?? 0 ne sert que si la case n'existe pas. Dès qu'elle existe, ?? donne sa valeur, et le compteur continue de monter." }
+          - text: "Parce que + 1 ne marche pas sur une case de tableau."
+            misconception: c4-plus-case
+            reaction: { who: guide, expr: neutre, text: "Une case qui contient un nombre se calcule comme ce nombre : $compte['Zoo'] + 1 marche très bien, une fois la case créée." }
+      - { id: completer, kind: fix, prompt: "Compléter" }
+      - { id: reparer, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: N34
+    act: 4
+    after: [N33]
+    requester: guide
+    title: "Atelier : tableaux"
+    request: "les erreurs fréquentes · tout le chapitre"
+    course: "Atelier : tableaux"
+    hints: 22
+    steps:
+      - { id: predire, kind: fix, prompt: "Prédire" }
+      - { id: suivre, kind: fix, prompt: "Suivre" }
+      - id: comprendre
+        kind: explain
+        prompt: "Ton programme de moyenne affiche le bon résultat avec $notes = [12, 8, 15]. Quel cas faut-il essayer ensuite pour être sûr de lui ?"
+        options:
+          - { text: "La liste vide : count vaut 0, et diviser par 0 arrête le programme. C'est le cas qu'un exemple « normal » ne montre jamais.", ok: true }
+          - text: "Aucun : un programme qui marche sur un exemple marche sur tous."
+            misconception: c4-un-cas-suffit
+            reaction: { who: guide, expr: neutre, text: "Un exemple ne montre que ce cas-là. La liste vide, une seule case ou des valeurs négatives cassent souvent un programme qui marchait." }
+          - text: "Une liste plus longue, comme [12, 8, 15, 10, 9, 14]."
+            misconception: c4-tester-plus-long
+            reaction: { who: guide, expr: neutre, text: "Si le programme marche pour 3 notes, il marchera presque toujours pour 6 : rien de nouveau ne s'y passe. Ce sont les cas extrêmes qui piègent, et d'abord la liste vide." }
+          - text: "Les mêmes notes dans un autre ordre, comme [15, 12, 8]."
+            misconception: c4-ordre-teste
+            reaction: { who: guide, expr: neutre, text: "L'ordre ne change ni le total ni le nombre de notes : la moyenne sera la même. Le cas qui piège, c'est la liste vide." }
+      - { id: reparer1, kind: fix, prompt: "Réparer" }
+      - { id: reparer2, kind: fix, prompt: "Réparer" }
+      - { id: reparer3, kind: fix, prompt: "Réparer" }
+      - { id: reparer4, kind: fix, prompt: "Réparer" }
+      - { id: reparer5, kind: fix, prompt: "Réparer" }
+      - { id: ecrire1, kind: fix, prompt: "Écrire" }
+      - { id: ecrire2, kind: fix, prompt: "Écrire" }
+      - { id: ecrire3, kind: fix, prompt: "Écrire" }
+      - { id: rappel1, kind: fix, prompt: "Rappel" }
+      - { id: rappel2, kind: fix, prompt: "Rappel" }
+
+  - id: M14
+    act: 4
+    after: [N34]
+    requester: guide
+    title: "Défi de maîtrise · Compter dans un tableau"
+    request: "3 programmes, sans indice"
+    course: "Compter dans un tableau"
+    steps:
+      - { id: maitrise, kind: fix, prompt: "Défi de maîtrise" }
