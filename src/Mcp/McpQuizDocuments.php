@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Mcp;
 
+use App\Entity\FileLibraryNode;
 use App\Service\MixedJsonImporter;
 use App\Service\QuizCsvImportException;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * A « moncampus-quiz/1 » document as the connector reads it: the import screen's own reader
- * (App\Service\MixedJsonImporter), and two rules of its own.
+ * (App\Service\MixedJsonImporter), and three rules of its own.
  *
  * - **All or nothing.** The screen lets a teacher look at the rejected questions and create the
  *   quiz without them; the connector has nobody looking, so one rejected question refuses the whole
@@ -18,8 +19,12 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * - **No image reference.** A `mediaRef` points into the import session of a browser, which a tool
  *   call does not have; an `imageKey` is a raw key of the bucket, and accepting one would let a
  *   document copy any object it can name into the teacher's quiz.
+ * - **A picture is a library file.** A question names its picture by `imageFileId`, a file of the
+ *   teacher's own library (App\Mcp\McpQuizImages), checked here with the rest of the document and
+ *   handed back by position under `images` - the readers ignore the key; the tools link the file
+ *   once the questions exist.
  *
- * @phpstan-type QuizDocument array{format: string, name: string, subject: ?string, description: ?string, fileName: string, questions: list<array<string, mixed>>, errors: list<string>}
+ * @phpstan-type QuizDocument array{format: string, name: string, subject: ?string, description: ?string, fileName: string, questions: list<array<string, mixed>>, errors: list<string>, images: array<int, FileLibraryNode>}
  */
 final readonly class McpQuizDocuments
 {
@@ -28,6 +33,7 @@ final readonly class McpQuizDocuments
     public function __construct(
         private MixedJsonImporter $importer,
         private TranslatorInterface $translator,
+        private McpQuizImages $images,
     ) {
     }
 
@@ -44,15 +50,25 @@ final readonly class McpQuizDocuments
             throw new McpToolException($this->translator->trans($exception->getMessageKey(), $exception->getParameters()));
         }
 
-        $imageRefs = $this->imageReferences(json_decode($json, true) ?? []);
+        $document = json_decode($json, true);
+        $imageRefs = $this->imageReferences($document ?? []);
         if ([] !== $imageRefs) {
             $payload['errors'][] = \sprintf(
-                'Références d\'image refusées (%s) : ce connecteur ne transporte pas d\'images. Retirez-les ; l\'enseignant ajoutera les images dans MonCampus.',
+                'Références d\'image refusées (%s) : une image se désigne par "imageFileId", l\'identifiant d\'une image de la bibliothèque de fichiers (déposée avec file_upload ou file_upload_url).',
                 implode(', ', array_unique($imageRefs)),
             );
         }
 
-        return $payload;
+        $questions = \is_array($document) && \is_array($document['questions'] ?? null) ? array_values($document['questions']) : [];
+        $resolved = $this->images->resolve($questions);
+        array_push($payload['errors'], ...$resolved['errors']);
+        // The pictures go by position: one question read for each question sent, which a refused
+        // question would break - but a refused question refuses the document anyway.
+        if ([] !== $resolved['images'] && \count($payload['questions']) !== \count($questions)) {
+            $payload['errors'][] = 'Les images n\'ont pas pu être rapportées à leurs questions : corrigez d\'abord les questions refusées.';
+        }
+
+        return $payload + ['images' => $resolved['images']];
     }
 
     /**

@@ -26,6 +26,16 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.08.3'
+      date: '2026-11-08'
+      summary: "Le connecteur Claude, toujours en essai, sait illustrer les questions de quiz avec des images de la bibliothèque, y compris les questions à zones sur une image. Il sait aussi modifier un quiz existant."
+      entries:
+          - type: nouveaute
+            title: "Connecteur Claude, en essai : des images dans les questions de quiz, y compris les zones et légendes posées sur une image"
+            detail: "Les images viennent de la bibliothèque de fichiers de l'enseignant ; les questions qui attendaient leur image peuvent la recevoir."
+          - type: nouveaute
+            title: "Connecteur Claude, en essai : modifier un quiz existant, sans supprimer aucune question"
+            detail: "Renommer le quiz, réécrire une question à sa place, lui poser une image, changer l'ordre des questions."
     - version: '2026.11.08.2'
       date: '2026-11-08'
       summary: "Cent avatars tout prêts et pleins d'humour, monstres gentils, animaux et éléments de la nature, rejoignent Formatool. Les invités d'un concours en direct choisissent désormais le leur parmi eux, et chacun peut en adopter un dans son profil."
