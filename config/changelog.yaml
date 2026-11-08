@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.08.2'
+      date: '2026-11-08'
+      summary: "Cent avatars tout prêts et pleins d'humour, monstres gentils, animaux et éléments de la nature, rejoignent Formatool. Les invités d'un concours en direct choisissent désormais le leur parmi eux, et chacun peut en adopter un dans son profil."
+      entries:
+          - type: nouveaute
+            title: "La ménagerie : cent avatars tout prêts à choisir d'un clic dans « Mon avatar »"
+            detail: "Ils s'ajoutent à la photo et à l'avatar dessiné ; changer de choix ne supprime rien."
+          - type: modification
+            title: "Concours en direct : un invité choisit son avatar parmi vingt avatars de la ménagerie, et « Nouveaux avatars » en propose vingt autres"
     - version: '2026.11.08'
       date: '2026-11-08'
       summary: "PHP pas à pas, un nouveau jeu pour apprendre à programmer en PHP depuis zéro, niveau après niveau. Les conditions, les boucles et les tableaux y reviennent sans cesse, pour que ça tienne."
