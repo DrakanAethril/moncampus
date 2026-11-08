@@ -1,6 +1,6 @@
-{# A player's face on the results page: an account's own choice (« Mon profil »), a guest's drawn
-   avatar. #}
-{% set face = participant.guest ? {photo: null, drawn: participant.guestAvatar} : user_avatar(participant.student) %}
+{# A player's face on the results page: an account's own choice (« Mon profil »), a guest's ménagerie
+   avatar - or, for a guest who joined before the ménagerie, the drawn one. #}
+{% set face = participant.guest ? {photo: fixed_avatar_url(participant.guestFixedAvatar), drawn: participant.guestAvatar} : user_avatar(participant.student) %}
 {{ include('partials/_user_face.html.twig', {
     face: face,
     initials: (participant.displayName|default('?'))|slice(0, 1)|upper,

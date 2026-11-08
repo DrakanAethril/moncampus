@@ -1,10 +1,12 @@
 {# « Mon avatar » (design/validated/quiz-tournament.md §16): what stands for the person across
-   Formatool, for every account. One choice, two paths - send a photo, or draw an avatar in the
-   creation tunnel - and the initials. Both the photo and the drawing stay once made: choosing one
-   deletes nothing, so the other is offered back with « Utiliser … ».
+   Formatool, for every account. One choice, three paths - send a photo, draw an avatar in the
+   creation tunnel, or pick one of the ménagerie (App\Service\FixedAvatars) - and the initials. The
+   photo, the drawing and the ménagerie avatar all stay once made: choosing one deletes nothing, so
+   the others are offered back with « Utiliser … ».
 
-   Expects `avatarCard` ({choice: 'photo'|'drawn'|null, photo: url|null, drawing: config|null}),
-   `avatarForm`, `user`, `profile_initials`. #}
+   Expects `avatarCard` ({choice: 'photo'|'drawn'|'fixed'|null, photo: url|null, drawing: config|null,
+   fixed: id|null, fixedUrl: url|null, menagerie: FixedAvatars::byFamily()}), `avatarForm`, `user`,
+   `profile_initials`. #}
 {% set choice = avatarCard.choice %}
 <section class="card cm-avatar-card" id="mon-avatar">
     <div class="card-header">
@@ -53,6 +55,25 @@
                 </div>
             </div>
 
+            {# The ménagerie #}
+            <div class="cm-avatar-card__option{{ choice == 'fixed' ? ' is-chosen' }}">
+                <span class="cm-avatar-card__face{{ avatarCard.fixedUrl ? '' : ' is-empty' }}"{% if avatarCard.fixedUrl %} style="background-image: url({{ avatarCard.fixedUrl }})"{% endif %}>
+                    {% if not avatarCard.fixedUrl %}<twig:ux:icon name="paw" width="28" height="28" aria-hidden="true"/>{% endif %}
+                </span>
+                <div class="cm-avatar-card__label">
+                    {{ 'profileAvatarFixedLabel'|trans }}
+                    {% if choice == 'fixed' %}<twig:Cm:Badge tone="green">{{ 'profileAvatarShownBadge'|trans }}</twig:Cm:Badge>{% endif %}
+                </div>
+                <div class="cm-avatar-card__actions">
+                    {% if avatarCard.fixedUrl and choice != 'fixed' %}
+                        {{ include('profile/_avatar_choice_button.html.twig', {value: 'fixed', label: 'profileAvatarUseFixedAction'|trans, variant: 'primary'}) }}
+                    {% endif %}
+                    <twig:Cm:Button variant="outline" size="sm" data-bs-toggle="collapse" data-bs-target="#avatar-menagerie-panel" aria-expanded="false" aria-controls="avatar-menagerie-panel">
+                        {{ (avatarCard.fixedUrl ? 'profileAvatarChangeFixedAction' : 'profileAvatarPickFixedAction')|trans }}
+                    </twig:Cm:Button>
+                </div>
+            </div>
+
             {# The initials #}
             <div class="cm-avatar-card__option{{ choice is null ? ' is-chosen' }}">
                 <span class="cm-avatar-card__face cm-avatar-card__face--initials">{{ profile_initials }}</span>
@@ -77,6 +98,25 @@
                 {{ form_end(avatarForm) }}
                 <p class="cm-avatar-card__note">{{ 'profileAvatarPhotoChoosesNote'|trans }}</p>
             </div>
+        </div>
+
+        {# One click on an avatar of the ménagerie chooses it. #}
+        <div class="collapse" id="avatar-menagerie-panel">
+            <form class="cm-avatar-card__upload" method="post" action="{{ path('app_profile_avatar_choice') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('profile_avatar_choice') }}">
+                <input type="hidden" name="choice" value="fixed">
+                {% for group in avatarCard.menagerie %}
+                    <h3 class="cm-avatar-menagerie__family">{{ group.family.labelKey|trans }}</h3>
+                    <div class="cm-avatar-menagerie">
+                        {% for avatar in group.avatars %}
+                            <button type="submit" name="fixed" value="{{ avatar.id }}" class="cm-avatar-menagerie__pick" title="{{ avatar.name }}" aria-label="{{ avatar.name }}" aria-pressed="{{ avatar.id == avatarCard.fixed and choice == 'fixed' ? 'true' : 'false' }}">
+                                <img src="{{ avatar.url }}" alt="" width="56" height="56" loading="lazy">
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                <p class="cm-avatar-card__note">{{ 'profileAvatarFixedChoosesNote'|trans }}</p>
+            </form>
         </div>
     </div>
 </section>

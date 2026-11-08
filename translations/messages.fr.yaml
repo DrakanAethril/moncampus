@@ -2061,10 +2061,18 @@ avatarUploadSubmitAction: 'Envoyer'
 avatarUploadInvalidTypeMessage: 'Veuillez envoyer une image JPEG, PNG ou WebP.'
 avatarUploadMaxSizeHelpText: 'Taille maximale : 2 Mo'
 profileAvatarCardTitle: 'Mon avatar'
-profileAvatarCardHelp: "Ce qui vous représente partout dans Formatool : votre photo, l'avatar que vous dessinez, ou vos initiales. Changer de choix ne supprime rien : vous pourrez revenir à l'autre."
+profileAvatarCardHelp: "Ce qui vous représente partout dans Formatool : votre photo, l'avatar que vous dessinez, un avatar de la ménagerie ou vos initiales. Changer de choix ne supprime rien : vous pourrez revenir aux autres."
 profileAvatarPhotoLabel: 'Ma photo'
 profileAvatarDrawnLabel: 'Mon avatar dessiné'
 profileAvatarInitialsLabel: 'Aucun (initiales)'
+profileAvatarFixedLabel: 'Un avatar de la ménagerie'
+profileAvatarPickFixedAction: 'Choisir dans la ménagerie'
+profileAvatarChangeFixedAction: "Changer d'avatar"
+profileAvatarUseFixedAction: 'Utiliser cet avatar'
+profileAvatarFixedChoosesNote: "Un clic sur un avatar le choisit ; votre photo et votre avatar dessiné, s'ils existent, restent disponibles."
+fixedAvatarFamilyMonster: 'Monstres'
+fixedAvatarFamilyAnimal: 'Animaux'
+fixedAvatarFamilyNature: 'Nature'
 profileAvatarShownBadge: 'Affiché'
 profileAvatarSendPhotoAction: 'Envoyer une photo'
 profileAvatarReplacePhotoAction: 'Changer de photo'
@@ -2075,7 +2083,7 @@ profileAvatarUseDrawingAction: 'Utiliser mon avatar'
 profileAvatarUseInitialsAction: 'Utiliser mes initiales'
 profileAvatarPhotoChoosesNote: "La photo envoyée devient ce qui vous représente ; votre avatar dessiné, s'il existe, reste disponible."
 profileAvatarChoiceSavedFlash: 'Votre choix est enregistré.'
-profileAvatarChoiceUnavailableFlash: "Ce choix n'est pas possible : envoyez d'abord une photo ou créez votre avatar."
+profileAvatarChoiceUnavailableFlash: "Ce choix n'est pas possible : envoyez d'abord une photo, créez votre avatar ou choisissez-en un dans la ménagerie."
 profileAvatarBackAction: 'Retour à mon profil'
 profileAvatarDrawHeading: 'Créer mon avatar'
 profileAvatarDrawSaveAction: 'Enregistrer et utiliser cet avatar'
@@ -3452,7 +3460,6 @@ quizLiveGuestNicknamePlaceholder: 'Ex. Loutre Cosmique'
 quizLiveGuestDiceAction: 'Un pseudo au hasard'
 quizLiveGuestAvatarHeading: 'Ton avatar'
 quizLiveGuestAvatarAgainAction: 'Nouveaux avatars'
-quizLiveGuestAvatarLabel: 'Avatar'
 quizLiveGuestNote: 'Ton pseudo et ton avatar sont vus par tous les joueurs. Pas de nom de famille.'
 quizLiveGuestSubmitAction: 'Entrer dans la salle'
 quizLiveGuestAccountLink: 'J’ai un compte Formatool'

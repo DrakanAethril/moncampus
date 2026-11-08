@@ -12,9 +12,13 @@ use Symfony\Contracts\Service\ResetInterface;
 /**
  * What stands for a person where Formatool draws a face: what they chose on « Mon profil »
  * (`User::$avatarChoice`, design/validated/quiz-tournament.md §16), for every role alike - the photo
- * they sent, the avatar they drew, or nothing, in which case the templates write the initials. A
- * choice with nothing behind it (a photo chosen, then never there) also answers the initials.
- * Choosing deletes nothing: the photo and the drawing stay, only what is shown changes.
+ * they sent, the avatar they drew, an avatar of the ménagerie, or nothing, in which case the
+ * templates write the initials. A choice with nothing behind it (a photo chosen, then never there)
+ * also answers the initials. Choosing deletes nothing: the photo, the drawing and the ménagerie
+ * avatar stay, only what is shown changes.
+ *
+ * A ménagerie avatar is a picture with an address (App\Service\FixedAvatars), so it is handed out
+ * in the `photo` half: every screen that draws a photo draws it unchanged.
  *
  * The drawn avatar is handed out as its stored settings: the drawing is the one JavaScript module
  * the platform and the games share (`public/serious-games/shared/avatar.js`, through the
@@ -34,29 +38,44 @@ final class UserAvatars implements ResetInterface
     public function __construct(
         private readonly FileUploadService $fileUploadService,
         private readonly SeriousGameAvatarRepository $drawings,
+        private readonly FixedAvatars $fixedAvatars,
     ) {
     }
 
     /**
-     * The rule, on primitives: the choice picks one of the two, and a choice with nothing behind
-     * it shows neither.
+     * The rule, on primitives: the choice picks one of the three, and a choice with nothing behind
+     * it shows none.
      *
      * @param array<string, mixed>|null $drawn
      *
      * @return UserAvatar
      */
-    public static function decide(?AvatarChoice $choice, ?string $photo, ?array $drawn): array
+    public static function decide(?AvatarChoice $choice, ?string $photo, ?array $drawn, ?string $fixed = null): array
     {
         return [
-            'photo' => AvatarChoice::Photo === $choice ? $photo : null,
+            'photo' => match ($choice) {
+                AvatarChoice::Photo => $photo,
+                AvatarChoice::Fixed => $fixed,
+                default => null,
+            },
             'drawn' => AvatarChoice::Drawn === $choice ? $drawn : null,
         ];
     }
 
-    /** The photo to show for this person - null unless they chose it. */
+    /** The picture to show for this person - their photo or their ménagerie avatar, if chosen. */
     public function photoUrl(?User $user): ?string
     {
-        return AvatarChoice::Photo === $user?->getAvatarChoice() ? $this->uploadedPhotoUrl($user) : null;
+        return match ($user?->getAvatarChoice()) {
+            AvatarChoice::Photo => $this->uploadedPhotoUrl($user),
+            AvatarChoice::Fixed => $this->fixedAvatarUrl($user),
+            default => null,
+        };
+    }
+
+    /** The ménagerie avatar this person picked, shown or not - « Mon avatar » offers it back. */
+    public function fixedAvatarUrl(?User $user): ?string
+    {
+        return $this->fixedAvatars->url($user?->getAvatarFixed());
     }
 
     /** The photo this person sent, shown or not - « Mon avatar » offers it back. */
@@ -108,7 +127,7 @@ final class UserAvatars implements ResetInterface
         $out = [];
         foreach ($users as $user) {
             $id = (int) $user->getId();
-            $out[$id] = self::decide($user->getAvatarChoice(), $this->uploadedPhotoUrl($user), isset($drawn[$id]) ? $drawn[$id]->getConfig() : null);
+            $out[$id] = self::decide($user->getAvatarChoice(), $this->uploadedPhotoUrl($user), isset($drawn[$id]) ? $drawn[$id]->getConfig() : null, $this->fixedAvatarUrl($user));
         }
 
         return $out;

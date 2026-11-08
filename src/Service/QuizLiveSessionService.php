@@ -19,7 +19,6 @@ use App\Enum\QuizScoring;
 use App\Repository\QuizLiveAnswerRepository;
 use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
-use App\SeriousGame\Avatar\AvatarConfig;
 use App\Service\QuizLive\LiveAnswerKind;
 use App\Service\QuizLive\LiveGuestToken;
 use App\Service\QuizLive\LiveNickname;
@@ -59,8 +58,8 @@ use Symfony\Component\Mercure\Update;
  * Since 2026-11-07 (design/validated/quiz-live-public.md) a contest belongs to a class or to none,
  * and may be public: whoever scans its QR code plays, an account under its own name and avatar
  * (« Prénom N. » in a public contest), a visitor without one as a guest - a pseudonym, one of twenty
- * drawn avatars, a token in a cookie (joinGuest()). Anybody may join a contest under way, between two
- * questions or in the middle of one. And the phones are told the statement, its picture and the
+ * avatars drawn among the ménagerie's hundred (App\Service\FixedAvatars), a token in a cookie
+ * (joinGuest()). Anybody may join a contest under way, between two questions or in the middle of one. And the phones are told the statement, its picture and the
  * propositions: a public contest may be played far from any projector, so the phone is a whole
  * screen (it was shapes only until then).
  *
@@ -108,6 +107,7 @@ class QuizLiveSessionService
         private readonly LoggerInterface $logger,
         private readonly Authorization $authorization,
         private readonly LiveThemeCatalog $themes,
+        private readonly FixedAvatars $fixedAvatars,
     ) {
     }
 
@@ -226,16 +226,15 @@ class QuizLiveSessionService
 
     /**
      * A visitor without an account enters a public contest under a pseudonym and one of the avatars
-     * its browser drew. The token goes back to the browser, only its hash stays here.
-     *
-     * @param array<array-key, mixed> $avatar
+     * its page drew - an identifier of the ménagerie, refused if it is not one. The token goes back to
+     * the browser, only its hash stays here.
      *
      * @return array{participant: QuizLiveParticipant, token: string}
      *
-     * @throws LiveGuestRefusedException the pseudonym, with the reason to show
+     * @throws LiveGuestRefusedException the pseudonym or the avatar, with the reason to show
      * @throws LiveSessionStateException the contest is over, or not public
      */
-    public function joinGuest(QuizLiveSession $session, string $nickname, array $avatar): array
+    public function joinGuest(QuizLiveSession $session, string $nickname, string $avatar): array
     {
         $this->assertJoinable($session);
         if (!$session->isPublic()) {
@@ -250,9 +249,12 @@ class QuizLiveSessionService
         if (null !== $refusal) {
             throw new LiveGuestRefusedException($refusal);
         }
+        if (!FixedAvatars::exists($avatar)) {
+            throw new LiveGuestRefusedException('quizLiveGuestAvatarRequired');
+        }
 
         $token = LiveGuestToken::mint();
-        $participant = QuizLiveParticipant::forGuest($session, LiveNickname::clean($nickname), AvatarConfig::normalize($avatar, []), LiveGuestToken::hash($token));
+        $participant = QuizLiveParticipant::forGuest($session, LiveNickname::clean($nickname), $avatar, LiveGuestToken::hash($token));
         $session->addParticipant($participant);
         $this->entityManager->persist($participant);
         $this->entityManager->flush();
@@ -1084,7 +1086,7 @@ class QuizLiveSessionService
 
     /**
      * The faces the projector draws beside the participants: the one each chose on « Mon profil » -
-     * photo or drawn avatar (App\Service\UserAvatars) - else nothing: the screen then writes the
+     * photo, drawn or ménagerie avatar (App\Service\UserAvatars) - else nothing: the screen then writes the
      * pseudonym's initial. One query for the whole room.
      *
      * @param list<QuizLiveParticipant> $participants
@@ -1107,7 +1109,7 @@ class QuizLiveSessionService
     private function avatarOf(QuizLiveParticipant $participant, array $avatars): array
     {
         if ($participant->isGuest()) {
-            return ['photo' => null, 'drawn' => $participant->getGuestAvatar()];
+            return ['photo' => $this->fixedAvatars->url($participant->getGuestFixedAvatar()), 'drawn' => $participant->getGuestAvatar()];
         }
         $id = $participant->getStudent()?->getId();
 

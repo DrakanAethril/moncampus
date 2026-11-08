@@ -1,16 +1,16 @@
 {# The guest page's one form (design/validated/quiz-live-public.md): a pseudonym and an avatar among
-   twenty drawn by quiz_live_guest_controller.js. Also drawn, inert, in the theme gallery - the
-   capture is the page itself.
+   twenty that quiz_live_guest_controller.js draws from the ménagerie (fixed_avatars()). Also drawn,
+   inert, in the theme gallery - the capture is the page itself.
 
-   Expects: session, nickname, avatarJson (an avatar to keep after a refusal), error (a translation
-   key), nicknameMax, and `inert` for the gallery. #}
+   Expects: session, nickname, keptAvatar (the ménagerie identifier to keep after a refusal), error (a
+   translation key), nicknameMax, and `inert` for the gallery. #}
 {% set nickId = 'ql-nickname' ~ (inert|default(false) ? '-' ~ session.id ~ '-' ~ random() : '') %}
 <div class="ql-deco" aria-hidden="true"></div>
 <form class="ql-scr ql-guest" method="post" action="{{ inert|default(false) ? '#' : path('app_quiz_live_guest', {code: session.roomCode}) }}" data-turbo="false"
       data-controller="quiz-live-guest"
       data-action="submit->quiz-live-guest#submit"
-      data-quiz-live-guest-kept-value="{{ avatarJson|default('') }}"
-      data-quiz-live-guest-avatar-label-value="{{ 'quizLiveGuestAvatarLabel'|trans }}"
+      data-quiz-live-guest-kept-value="{{ keptAvatar|default('') }}"
+      data-quiz-live-guest-catalogue-value="{{ fixed_avatars()|map(a => {id: a.id, name: a.name, url: a.url})|json_encode }}"
       data-quiz-live-guest-choose-avatar-value="{{ 'quizLiveGuestAvatarRequired'|trans }}">
     {% if not inert|default(false) %}<input type="hidden" name="_token" value="{{ csrf_token('quiz_live_guest') }}">{% endif %}
     <span class="ql-kind ql-muted">{{ 'quizLiveNavLabel'|trans }} · {{ session.quizInstance.name }}</span>
