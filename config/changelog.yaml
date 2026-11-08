@@ -26,6 +26,16 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.08.4'
+      date: '2026-11-08'
+      summary: "Dans les concours en direct, les noms des joueurs s'affichent désormais en entier, sur le téléphone comme à l'écran de la salle. Et l'adresse du concours tapée sans son code demande ce code au lieu d'afficher une erreur."
+      entries:
+          - type: fix
+            title: "Concours en direct : les noms longs ne sont plus coupés, ils passent à la ligne"
+            detail: "Sur le téléphone des joueurs, au classement projeté et sur le podium."
+          - type: modification
+            title: "Concours en direct : l'adresse de connexion saisie sans le code ouvre une page qui le demande"
+            detail: "Le code est reconnu en minuscules, avec des espaces ou collé avec l'adresse entière."
     - version: '2026.11.08.3'
       date: '2026-11-08'
       summary: "Le connecteur Claude, toujours en essai, sait illustrer les questions de quiz avec des images de la bibliothèque, y compris les questions à zones sur une image. Il sait aussi modifier un quiz existant."
