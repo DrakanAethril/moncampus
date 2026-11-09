@@ -74,7 +74,7 @@ class BlankFilterQueryTest extends FunctionalTestCase
     public function testStaffFilterBarsRenderWhenEveryFilterIsBlank(): void
     {
         $this->assertRenders($this->admin, [
-            '/ufa/reminders?period=',
+            '/ufa/reminder-batches?tab=',
             \sprintf('/ufa/programs/%d/tutors/reminders?period=', $this->program->getId()),
             '/help/manage?section=',
         ]);

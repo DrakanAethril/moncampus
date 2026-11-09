@@ -4,13 +4,13 @@
     <div class="cm-dash-banner">
         <span class="cm-dash-banner__icon"><twig:ux:icon name="alert-circle" width="20" height="20"/></span>
         <span class="cm-dash-banner__body">
-            {# One line, no count and no subtitle: the banner says that something is pending and
-               points at the screen that names it; the detail belongs on /ufa/reminders, which
-               resolves it properly rather than from two SQL counts. #}
+            {# One line, no count and no subtitle: the banner says that somebody waits on a step no
+               running batch covers, and opens the creation form on the busiest one - the form names
+               the count, read properly rather than from two SQL counts. #}
             <span class="cm-dash-banner__title">{{ 'homeStaffBannerEvaluationsTitle'|trans }}</span>
         </span>
         <span class="cm-dash-banner__action">
-            <a href="{{ path('app_ufa_alternance_reminders') }}" class="cm-btn cm-btn--gold">{{ 'homeStaffBannerEvaluationsAction'|trans }}</a>
+            <a href="{{ path('app_ufa_reminder_batch_new', {target: staff.banner.key}) }}" class="cm-btn cm-btn--gold">{{ 'homeStaffBannerEvaluationsAction'|trans }}</a>
         </span>
     </div>
 {% endif %}

@@ -526,10 +526,10 @@ class HomeController extends AbstractController
     private function buildStaffData(\DateTimeImmutable $today, ?User $user): array
     {
         return [
-            // A yes/no, and read from the very board /ufa/reminders is built on: the banner says
-            // there is something to relance, so it must not be able to say it when that screen
-            // has nothing to show. It carries no count and no bilan - the screen names those.
-            'banner' => $this->reminderBoard->hasPendingReminders($user),
+            // Read from the very board the reminder batches are built on: the banner says there is
+            // somebody to chase whom no running batch holds, and opens the creation form on the
+            // step most of them wait on - which can therefore never say there is nobody.
+            'banner' => $this->reminderBoard->unqueued($user)['busiest'],
             'engagementBanner' => $this->buildStaffEngagementBanner(),
             'timetable' => $this->buildStaffTimetable($today, null),
         ];

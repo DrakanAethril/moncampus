@@ -231,6 +231,13 @@ services:
         arguments:
             $ignHttpClient: '@app.ign_http_client'
 
+    # The pace of the UFA's reminder batches (App\Service\ReminderBatch\ReminderBatchSender): so many
+    # mails a minute for every batch together, on working days within the sending hours. Kept well
+    # under the main SES account's rate, which also carries the platform's own mails meanwhile.
+    App\Service\ReminderBatch\ReminderBatchPace:
+        factory: ['App\Service\ReminderBatch\ReminderBatchPace', 'fromSettings']
+        arguments: ['%env(int:UFA_REMINDER_MAILS_PER_MINUTE)%', '%env(UFA_REMINDER_SEND_HOURS)%']
+
     # The État's Recherche d'entreprises API (SIRENE + RNE), which proposes an employer's SIRET on
     # « UFA > Entreprises ». Open, keyless, 7 requests/s per IP. Called while a screen waits, so the
     # timeouts are short - a slow answer degrades to « service indisponible », never to a hung page.

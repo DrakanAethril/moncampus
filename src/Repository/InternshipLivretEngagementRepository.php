@@ -80,4 +80,33 @@ class InternshipLivretEngagementRepository extends ServiceEntityRepository
 
         return array_fill_keys(array_map('intval', $tutorLinkIds), true);
     }
+
+    /**
+     * Where each alternance of one Program stands on its three engagement signatures, in one
+     * query - what AlternanceReminderBoard needs to tell « waiting on the tutor » from « waiting on
+     * the alternant ». An alternance with no row yet is absent: nobody has signed anything.
+     *
+     * @return array<int, array{tutor: bool, student: bool, center: bool}> tutor link id => signed
+     */
+    public function findSignatureStatesForProgram(Program $program): array
+    {
+        $rows = $this->createQueryBuilder('e')
+            ->select('IDENTITY(e.tutorLink) AS tutorLinkId', 'e.signedTutorAt', 'e.signedStudentAt', 'e.signedCenterAt')
+            ->join('e.tutorLink', 'l')
+            ->where('l.program = :program')
+            ->setParameter('program', $program)
+            ->getQuery()
+            ->getResult();
+
+        $states = [];
+        foreach ($rows as $row) {
+            $states[(int) $row['tutorLinkId']] = [
+                'tutor' => null !== $row['signedTutorAt'],
+                'student' => null !== $row['signedStudentAt'],
+                'center' => null !== $row['signedCenterAt'],
+            ];
+        }
+
+        return $states;
+    }
 }

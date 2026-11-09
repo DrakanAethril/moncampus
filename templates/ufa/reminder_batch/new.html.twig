@@ -1,0 +1,88 @@
+{# UFA › Relances › Nouvelle relance (E2): one stage of the livret, every formation or a few - and
+   nothing else. No recipients to pick: the batch takes everybody the stage waits on, and the count
+   is shown before the click. The pace and the sending hours are the platform's. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'reminderBatchNewTitle'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'ufa/reminder_batch/_breadcrumb.html.twig' with {leaf: 'reminderBatchNewTitle'|trans} only %}
+{% endblock %}
+
+{% block page_title %}{{ 'reminderBatchNewTitle'|trans }}{% endblock %}
+
+{% block main %}
+    <form method="post" class="cm-dd-page cm-rb-new" action="{{ path('app_ufa_reminder_batch_new') }}"
+          data-controller="reminder-batch-form"
+          data-reminder-batch-form-preview-url-value="{{ path('app_ufa_reminder_batch_preview') }}"
+          data-reminder-batch-form-launch-label-value="{{ 'reminderBatchNewLaunchAction'|trans }}"
+          data-reminder-batch-form-remove-label-value="{{ 'reminderBatchNewRemoveProgramLabel'|trans }}"
+          data-reminder-batch-form-no-results-value="{{ 'reminderBatchNewNoProgramFoundText'|trans }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('ufa_reminder_batch_new') }}">
+        <input type="hidden" name="expected" value="{{ plan ? plan.toSendCount : 0 }}" data-reminder-batch-form-target="expected">
+
+        {% if error %}
+            <div class="cm-rb-error" role="alert">{{ error|trans }}</div>
+        {% endif %}
+
+        <div class="cm-dd-card cm-dd-card--pad">
+            {% if targets is empty %}
+                <p class="cm-rb-summary__line">{{ 'reminderBatchNewNoTargetText'|trans }}</p>
+            {% else %}
+                <label class="cm-dd-field">
+                    <span class="cm-dd-label">{{ 'reminderBatchNewStepLabel'|trans }}</span>
+                    <select name="target" class="cm-dd-select" required data-reminder-batch-form-target="step" data-action="reminder-batch-form#refresh">
+                        <option value="">{{ 'reminderBatchNewStepPlaceholder'|trans }}</option>
+                        {% set group = null %}
+                        {% for entry in targets %}
+                            {% set entryGroup = entry.target.step.isPeriod ? 'reminderBatchNewPeriodGroupLabel'|trans({'%rank%': entry.target.rank}) : 'reminderBatchNewEngagementGroupLabel'|trans %}
+                            {% if entryGroup != group %}
+                                {% if group is not null %}</optgroup>{% endif %}
+                                <optgroup label="{{ entryGroup }}">
+                                {% set group = entryGroup %}
+                            {% endif %}
+                            <option value="{{ entry.target.key }}"{{ target and target.key == entry.target.key ? ' selected' }}>
+                                {{ entry.target.step.labelKey|trans({'%rank%': entry.target.rank}) }} — {{ 'reminderBatchNewStepWaitingText'|trans({'%count%': entry.waiting}) }}
+                            </option>
+                        {% endfor %}
+                        {% if group is not null %}</optgroup>{% endif %}
+                    </select>
+                    <span class="cm-dd-meta">{{ 'reminderBatchNewStepHint'|trans }}</span>
+                </label>
+
+                <fieldset class="cm-dd-field">
+                    <legend class="cm-dd-label">{{ 'reminderBatchNewProgramsLabel'|trans }}</legend>
+                    <label class="cm-rb-choice">
+                        <input type="radio" name="scope" value="all"{{ allPrograms ? ' checked' }} data-reminder-batch-form-target="scopeAll" data-action="reminder-batch-form#toggleScope">
+                        {{ 'reminderBatchNewAllProgramsLabel'|trans }}
+                    </label>
+                    <label class="cm-rb-choice">
+                        <input type="radio" name="scope" value="pick"{{ not allPrograms ? ' checked' }} data-action="reminder-batch-form#toggleScope">
+                        {{ 'reminderBatchNewPickProgramsLabel'|trans }}
+                    </label>
+                    <div class="cm-rb-picker" data-reminder-batch-form-target="picker"{{ allPrograms ? ' hidden' }}>
+                        <select name="programs[]" multiple data-reminder-batch-form-target="programs"
+                                aria-label="{{ 'reminderBatchNewProgramsLabel'|trans }}"
+                                data-placeholder="{{ 'reminderBatchNewProgramsPlaceholder'|trans }}">
+                            {% for program in available %}
+                                <option value="{{ program.id }}"{{ program.id in pickedIds ? ' selected' }}>{{ program.displayShortName }}{% if program.testProgram %} ({{ 'reminderBatchTestProgramSuffix'|trans }}){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="cm-rb-tags" data-reminder-batch-form-target="tags"></div>
+                    </div>
+                    <span class="cm-dd-meta">{{ 'reminderBatchNewProgramsHint'|trans }}</span>
+                </fieldset>
+            {% endif %}
+
+            <div class="cm-rb-summary" data-reminder-batch-form-target="summary" aria-live="polite">
+                {% include 'ufa/reminder_batch/_new_summary.html.twig' with {plan: plan, endsAt: endsAt, hasPrograms: plan is not null} only %}
+            </div>
+        </div>
+
+        <twig:Cm:ActionBar>
+            <twig:block name="meta"><a href="{{ path('app_ufa_configuration_emails') }}">{{ 'reminderBatchNewSeeMailAction'|trans }}</a></twig:block>
+            <twig:Cm:Button variant="outline" href="{{ path('app_ufa_reminder_batches') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+            <twig:Cm:Button variant="primary" type="submit" data-reminder-batch-form-target="launch" data-action="reminder-batch-form#launch" disabled>{{ 'reminderBatchNewLaunchAction'|trans }}</twig:Cm:Button>
+        </twig:Cm:ActionBar>
+    </form>
+{% endblock %}
