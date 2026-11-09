@@ -247,9 +247,9 @@ class EcoParcoursController extends AbstractController
         return $markers;
     }
 
-    // "1 page A4 par balise" export (screen 1f) - each checkpoint's page is rendered/converted to
-    // PDF individually then merged in position order, since GotenbergClient only converts one
-    // standalone HTML document at a time (see App\Service\GotenbergClient's own docblock).
+    // "1 page A4 par balise" export (screen 1f) - every checkpoint is one page of a single HTML
+    // document, converted by Gotenberg in one call. Converting each page on its own then merging
+    // cost one Chromium round trip per checkpoint, which ran past max_execution_time at 30 flags.
     #[Route(path: '/eco/parcours/{id}/pdf', name: 'app_eco_parcours_pdf')]
     public function pdf(int $id, EcoParcoursRepository $repository, GotenbergClient $gotenbergClient): Response
     {
@@ -257,19 +257,21 @@ class EcoParcoursController extends AbstractController
         $this->denyAccessUnlessGranted(EcoParcoursVoter::EDIT, $parcours);
 
         $checkpoints = $parcours->getCheckpoints()->toArray();
-        $total = \count($checkpoints);
 
-        if (0 === $total) {
+        if ([] === $checkpoints) {
             throw $this->createNotFoundException();
         }
 
+        $html = $this->renderView('eco/_checkpoint_pdf_page.html.twig', [
+            'parcours' => ['name' => $parcours->getName() ?? ''],
+            'pages' => array_map(
+                fn (EcoCheckpoint $checkpoint): array => ['checkpoint' => $checkpoint, 'qrSvg' => $this->checkpointQrSvg($checkpoint)],
+                array_values($checkpoints),
+            ),
+        ]);
+
         try {
-            $pdfs = array_map(
-                fn (EcoCheckpoint $checkpoint, int $index): string => $this->renderCheckpointPdf($parcours->getName() ?? '', $checkpoint, $index + 1, $total, $gotenbergClient),
-                $checkpoints,
-                array_keys($checkpoints),
-            );
-            $merged = $gotenbergClient->mergePdfs($pdfs);
+            $pdf = $gotenbergClient->convertHtmlToPdf($html);
         } catch (GotenbergUnavailableException) {
             $this->addFlash('error', 'ecoParcoursExportPdfFailedFlashMessage');
 
@@ -278,30 +280,20 @@ class EcoParcoursController extends AbstractController
 
         $filename = (new AsciiSlugger())->slug($parcours->getName() ?? 'parcours')->lower()->toString();
 
-        return new Response($merged, 200, [
+        return new Response($pdf, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, \sprintf('eco-balises-%s.pdf', $filename)),
         ]);
     }
 
-    private function renderCheckpointPdf(string $parcoursName, EcoCheckpoint $checkpoint, int $pageNumber, int $pageTotal, GotenbergClient $gotenbergClient): string
+    private function checkpointQrSvg(EcoCheckpoint $checkpoint): string
     {
-        $qrSvg = (new Builder(
+        return (new Builder(
             writer: new SvgWriter(),
             data: (string) $checkpoint->getShortCode(),
             size: 600,
             margin: 10,
         ))->build()->getString();
-
-        $html = $this->renderView('eco/_checkpoint_pdf_page.html.twig', [
-            'parcours' => ['name' => $parcoursName],
-            'checkpoint' => $checkpoint,
-            'qrSvg' => $qrSvg,
-            'pageNumber' => $pageNumber,
-            'pageTotal' => $pageTotal,
-        ]);
-
-        return $gotenbergClient->convertHtmlToPdf($html);
     }
 
     // The token travels in the request body, not an X-CSRF-Token header: this is a plain POST form
