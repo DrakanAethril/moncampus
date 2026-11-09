@@ -26,6 +26,27 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.09'
+      date: '2026-11-09'
+      summary: "Dans le serious game PHP pas à pas, un niveau réussi se relit étape par étape et se rejoue, et un carnet garde la synthèse des notions vues. Côté UFA, les relances partent désormais par lots, et une alternance peut avoir un second tuteur."
+      entries:
+          - type: nouveaute
+            title: "PHP pas à pas : revoir un niveau réussi, avec sa réponse et la solution de chaque étape"
+            detail: "Pour les questions, la bonne explication et pourquoi les autres sont fausses."
+          - type: nouveaute
+            title: "PHP pas à pas : rejouer un niveau, un chapitre ou tout le jeu"
+            detail: "Un niveau rejoué reste réussi : un meilleur résultat relève ses étoiles, un moins bon ne les baisse jamais."
+          - type: nouveaute
+            title: "PHP pas à pas : « Mon carnet », une fiche par notion vue et les fonctions PHP rencontrées"
+            detail: "La règle, l'essentiel à retenir, un exemple à essayer et les pièges, avec une recherche. Fermé pendant les défis et l'épreuve finale."
+          - type: nouveaute
+            title: "Relances UFA par lots : une étape du livret relancée dans toutes les formations en alternance, ou une sélection"
+            detail: "Les mails partent progressivement, chaque personne n'est relancée qu'une fois, et l'écran suit l'avancée de l'envoi."
+          - type: nouveaute
+            title: "Alternance : un second tuteur peut être désigné"
+            detail: "Il suit l'alternance et signe le livret comme le tuteur principal."
+          - type: fix
+            title: "e-CO : l'impression des balises d'un grand parcours n'échoue plus"
     - version: '2026.11.08.4'
       date: '2026-11-08'
       summary: "Dans les concours en direct, les noms des joueurs s'affichent désormais en entier, sur le téléphone comme à l'écran de la salle. Et l'adresse du concours tapée sans son code demande ce code au lieu d'afficher une erreur."
