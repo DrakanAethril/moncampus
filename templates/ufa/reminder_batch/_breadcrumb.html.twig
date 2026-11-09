@@ -1,0 +1,9 @@
+{# Accueil › UFA › Relances [› leaf] - every screen of the reminder batches. #}
+{% set segments = [
+    {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+    {label: 'reminderBatchNavLabel'|trans, url: path('app_ufa_reminder_batches')},
+] %}
+{% if leaf is defined and leaf %}
+    {% set segments = segments|merge([{label: leaf, url: app.request.requestUri}]) %}
+{% endif %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}

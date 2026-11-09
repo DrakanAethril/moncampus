@@ -1,0 +1,16 @@
+{# Where a batch stands in time: running (next pass, estimated end, shared ceiling, outside the
+   sending hours), paused (since when, by whom), or over. #}
+{% if batch.status.value == 'paused' %}
+    {{ 'reminderBatchPausedSinceText'|trans({'%date%': batch.pausedAt|date('d/m à H:i'), '%name%': batch.pausedBy ? (batch.pausedBy.displayName ?? batch.pausedBy.username) : '—'}) }}
+{% elseif schedule %}
+    {% if schedule.opensAt %}
+        {{ 'reminderBatchOutsideHoursText'|trans({'%date%': schedule.opensAt|localized_date('EEEE d MMMM à HH:mm')}) }}
+    {% elseif schedule.endsAt %}
+        {{ 'reminderBatchEndsAtText'|trans({'%time%': schedule.endsAt|date('H:i'), '%date%': schedule.endsAt|date('d/m')}) }}
+    {% endif %}
+    {% if schedule.shared %}· {{ 'reminderBatchSharedCeilingText'|trans }}{% endif %}
+{% elseif batch.status.value == 'finished' and batch.finishedAt %}
+    {{ 'reminderBatchFinishedAtText'|trans({'%date%': batch.finishedAt|date('d/m à H:i')}) }}
+{% elseif batch.status.value == 'cancelled' and batch.cancelledAt %}
+    {{ 'reminderBatchCancelledAtText'|trans({'%date%': batch.cancelledAt|date('d/m à H:i'), '%name%': batch.cancelledBy ? (batch.cancelledBy.displayName ?? batch.cancelledBy.username) : '—'}) }}
+{% endif %}

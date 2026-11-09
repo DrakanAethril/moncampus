@@ -65,6 +65,9 @@ final class PlatformSchedule implements ScheduleProviderInterface
         // The quiz tournament's duels both players left: finished once their last question is
         // over, since an unfinished duel refuses « Prêt » to both players everywhere.
         'app:quiz-tournament:close-duels' => '* * * * *',
+        // The UFA's reminder batches, sent at the platform's pace: what makes a batch survive the
+        // tab that launched it. Outside the sending hours a pass does nothing.
+        'app:ufa:reminder-batches:send' => '* * * * *',
         // The hypervisors' badges and the address ranges, refreshed off the page render. Offset
         // from each other so the two never start in the same minute.
         'app:proxmox:check' => '*/5 * * * *',

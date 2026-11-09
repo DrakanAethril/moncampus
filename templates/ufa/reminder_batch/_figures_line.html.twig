@@ -1,0 +1,10 @@
+{# « 21 envoyées · 2 non envoyées, étape faite · 1 échec · 13 à envoyer » - only the non-zero ones. #}
+{% set parts = [] %}
+{% if figures.sent %}{% set parts = parts|merge(['reminderBatchFigureSentText'|trans({'%count%': figures.sent})]) %}{% endif %}
+{% if figures.alreadyDone %}{% set parts = parts|merge(['reminderBatchFigureAlreadyDoneText'|trans({'%count%': figures.alreadyDone})]) %}{% endif %}
+{% if figures.notConcerned %}{% set parts = parts|merge(['reminderBatchFigureNotConcernedText'|trans({'%count%': figures.notConcerned})]) %}{% endif %}
+{% if figures.failed %}{% set parts = parts|merge(['reminderBatchFigureFailedText'|trans({'%count%': figures.failed})]) %}{% endif %}
+{% if figures.uncertain %}{% set parts = parts|merge(['reminderBatchFigureUncertainText'|trans({'%count%': figures.uncertain})]) %}{% endif %}
+{% if figures.waiting %}{% set parts = parts|merge(['reminderBatchFigureWaitingText'|trans({'%count%': figures.waiting})]) %}{% endif %}
+{% if figures.cancelled %}{% set parts = parts|merge(['reminderBatchFigureCancelledText'|trans({'%count%': figures.cancelled})]) %}{% endif %}
+{{ parts|join(' · ') }}

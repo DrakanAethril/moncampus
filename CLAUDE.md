@@ -99,6 +99,7 @@ asked — made the second run throw « A lock is already in place ».
 | `app:ecoledirecte:check` | **Diagnostic, not scheduled.** Runs the one step of an École Directe login that needs no account (the GTK cookie of `login.awp?gtk=1`) and says whether École Directe still answers it from this server. The platform holds no École Directe credentials and must not, so this is the most it can prove on its own |
 | `app:counters:recompute` | **Scheduled, once a night** (`docs/production.md`). Checks every stored counter of the platform (`App\Counter\RecomputableCounter`, one tagged service each) against its source and corrects the drifts - each correction logged at error level, so it reaches Discord: a drift is a bug, not a figure to patch. The counters move in real time with what changes them; this is the safety net. `--counter=`, `--dry-run` |
 | `app:quiz-tournament:close-duels` | **Scheduled every minute.** Finishes the tournament duels both players left: a duel runs on the server's clock whether anybody watches it, and the duel screen finishes it as soon as one player asks after its last question - but nobody asks when both are gone, and an unfinished duel refuses « Prêt » to both players in every tournament. Goes through `QuizTournamentDuelEngine::settle()`, the screens' own door (scores, ratings, exactly once). Also writes the challenges whose 24 h are over as expired / missed (two guarded UPDATEs: a room that starts its duel in the same second keeps « played »). Locked (`SharedLockableTrait`) |
+| `app:ufa:reminder-batches:send` | **Scheduled every minute.** Sends the next lines of the UFA's reminder batches (UFA › Relances), at most `UFA_REMINDER_MAILS_PER_MINUTE` a pass for every batch together, within `UFA_REMINDER_SEND_HOURS` on working days. Each line is read again just before its mail and written « En envoi » before SES is called; one a dead pass left so becomes « Incertaine » and is never resent. A refused mail is a failed line, not a non-zero exit. Locked (`SharedLockableTrait`). See `docs/production.md` |
 | `app:eco:read-terrain` | **Scheduled every minute.** Asks the IGN's Géoplateforme what e-CO's statistics read: the terrain analysis of the oldest parcours waiting for one (button « Analyser le terrain », last flag located, or a race on a parcours never analysed), then the terrain altitude / path / wood of every GPS fix of the oldest closed race not yet read. A Géoplateforme that does not answer is a *warning* and a retry next minute, never a non-zero exit. See `docs/production.md`, « e-CO and the IGN's Géoplateforme » |
 | `app:rncp:fetch` | **Scheduled every minute.** Serves the « Récupérer chez France compétences » requests of the portfolio's Référentiels tab: finds the day's `export-fiches-rncp-v4-1-*.zip` through the data.gouv.fr API (no URL written down), downloads it once into `var/rncp/`, streams through it (`XMLReader` over `zip://`) and writes the fiche into the `RncpImport`. Nothing requested, nothing downloaded. A network failure is « En échec » on screen, never a non-zero exit. `--file=` reads a local export |
 | `app:rncp:check` | **Scheduled Mondays 05:30.** Rereads each référentiel's RNCP fiche - still active, end of registration, a fiche that now replaces it - into `Referential::$rncpWatch`; the Référentiels screen turns a change into a banner, logged at *warning*. Never rewrites a référentiel: a new fiche is a new version |
@@ -939,6 +940,31 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   The PDF (`templates/ufa/ecf/print.html.twig`, also the online reader's frame) reproduces the
   ministry's template page for page - lengths in points measured on it; an element wider than the
   page makes Chromium scale the whole document down, so nothing may overflow.
+- **Relances UFA** (UFA › Relances) — `InternshipReminderBatch` → `InternshipReminderBatchItem`,
+  `App\Controller\Ufa\ReminderBatchController`, `src/Service/ReminderBatch/`, spec
+  `design/validated/ufa-reminder-batches.md`. A **batch** chases **one** stage of the livret - the
+  tutor's or the alternant's engagement signature, or their evaluation of a bilan named by its
+  **rank** (« the 2nd bilan of each formation », `ReminderBatchTarget`) - in every real formation in
+  alternance or the ones picked. Rules the code holds:
+  - **`AlternanceReminderBoard` is who waits**, for the batches and for the staff home banner alike
+    (which falls silent once a running batch holds everybody, and opens the form on the busiest
+    step). An alternance waits on at most one person; the order is the resolver's
+    (`AlternancePeriodStatusResolver::engagementStep()` on primitives for the engagement).
+  - **Frozen at launch** (`ReminderBatchLauncher`, under a lock): every alternance the step waits on,
+    to send or set aside with its reason (`ReminderBatchPlanner`: no address, or already waiting in a
+    running/paused batch on the same target). The launch refuses a count that moved since the form
+    showed it. Nothing is sent by the screen.
+  - **Sent by `app:ufa:reminder-batches:send`** (`ReminderBatchSender`) at the platform's pace
+    (`ReminderBatchPace`), each line **read again** before its mail (`ReminderBatchRecheck`: still
+    their turn → sent; the livret moved on → « Non envoyée, étape faite »; else « Plus concernée »),
+    written « En envoi » **before** SES is called. **A batch never resends anything**: a failed or
+    uncertain line stays as it is, and the person enters the next batch made on that step.
+  - A sent line writes the same `InternshipReminder` (now with its `batch`) and UFA activity line as
+    a reminder by hand, signed by whoever launched the batch; `$auto` stays false. The reminder by
+    hand stays synchronous and warns when a batch is about to write to the same person.
+  - The figures are a GROUP BY over the lines, never stored. « Envoyée » means SES accepted the mail:
+    the screens claim neither delivery nor an answer. A batch is never deleted (cancelling keeps what
+    was sent). `/ufa/reminders`, the old grouped screen, answers a 301 to the list.
 - **Dossiers intervenants** (UFA › INTERVENANTS; « Mes dossiers administratifs » in the profile
   menu) — `TeacherDossier` → `TeacherDossierGroup` / `TeacherDossierDocument` →
   `TeacherDossierSubmission` → `TeacherDossierReview`, `App\Controller\Ufa\TeacherDossier*`,

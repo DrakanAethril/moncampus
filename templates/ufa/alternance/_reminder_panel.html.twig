@@ -7,6 +7,10 @@
     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
 <div class="modal-body">
+    {% if queuedItem %}
+        <div class="alert alert-warning">{{ 'reminderBatchQueuedWarningText'|trans({'%batch%': queuedItem.batch.step.shortLabelKey|trans({'%rank%': queuedItem.batch.periodRank})}) }}
+            <a href="{{ path('app_ufa_reminder_batch_show', {id: queuedItem.batch.id}) }}">{{ 'reminderBatchNavLabel'|trans }}</a></div>
+    {% endif %}
     <div class="mb-3">
         <label class="form-label">{{ 'ufaAlternanceReminderRecipientLabel'|trans }}</label>
         <div class="form-control-plaintext">
@@ -63,7 +67,14 @@
             <label class="form-label">{{ 'ufaAlternanceReminderHistoryLabel'|trans }}</label>
             <ul class="list-unstyled text-secondary small mb-0">
                 {% for reminder in reminders %}
-                    <li>{{ reminder.sentAt|date('d/m/Y') }} — {{ 'ufaAlternanceReminderHistoryEntryLabel'|trans({'%by%': reminder.sentBy.displayName ?? reminder.sentBy.username}) }}</li>
+                    {% set by = reminder.sentBy.displayName ?? reminder.sentBy.username %}
+                    <li>{{ reminder.sentAt|date('d/m/Y') }} —
+                        {% if reminder.batch %}
+                            <a href="{{ path('app_ufa_reminder_batch_show', {id: reminder.batch.id}) }}">{{ 'ufaAlternanceReminderHistoryBatchEntryLabel'|trans({'%batch%': reminder.batch.step.shortLabelKey|trans({'%rank%': reminder.batch.periodRank}), '%by%': by}) }}</a>
+                        {% else %}
+                            {{ 'ufaAlternanceReminderHistoryEntryLabel'|trans({'%by%': by}) }}
+                        {% endif %}
+                    </li>
                 {% endfor %}
             </ul>
         </div>

@@ -41,6 +41,7 @@ class PlatformScheduleTest extends KernelTestCase
             'app:eco:read-terrain' => '* * * * *',
             'app:rncp:fetch' => '* * * * *',
             'app:quiz-tournament:close-duels' => '* * * * *',
+            'app:ufa:reminder-batches:send' => '* * * * *',
             'app:proxmox:check' => '*/5 * * * *',
             'app:proxmox:scan-addresses' => '2-59/5 * * * *',
             'app:class-board:photo' => '7 * * * *',

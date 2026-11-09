@@ -211,19 +211,27 @@ class AlternancePeriodStatusResolver
     {
         $engagement = $this->engagementRepository->findOneForTutorLink($tutorLink);
 
-        if (null === $engagement || null === $engagement->getSignedTutorAt()) {
-            return new AlternanceStepStatus(AlternanceStepStatus::STEP_ENGAGEMENT_TUTOR, true, $tutorLink->getTutor(), null, null);
-        }
+        return match (self::engagementStep(null !== $engagement?->getSignedTutorAt(), null !== $engagement?->getSignedStudentAt(), null !== $engagement?->getSignedCenterAt())) {
+            AlternanceStepStatus::STEP_ENGAGEMENT_TUTOR => new AlternanceStepStatus(AlternanceStepStatus::STEP_ENGAGEMENT_TUTOR, true, $tutorLink->getTutor(), null, null),
+            AlternanceStepStatus::STEP_ENGAGEMENT_STUDENT => new AlternanceStepStatus(AlternanceStepStatus::STEP_ENGAGEMENT_STUDENT, true, $tutorLink->getStudent(), null, null),
+            AlternanceStepStatus::STEP_ENGAGEMENT_CENTER => new AlternanceStepStatus(AlternanceStepStatus::STEP_ENGAGEMENT_CENTER, true, null, null, null),
+            default => null,
+        };
+    }
 
-        if (null === $engagement->getSignedStudentAt()) {
-            return new AlternanceStepStatus(AlternanceStepStatus::STEP_ENGAGEMENT_STUDENT, true, $tutorLink->getStudent(), null, null);
-        }
-
-        if (null === $engagement->getSignedCenterAt()) {
-            return new AlternanceStepStatus(AlternanceStepStatus::STEP_ENGAGEMENT_CENTER, true, null, null, null);
-        }
-
-        return null;
+    /**
+     * The order of the three engagement signatures - the tutor, then the alternant, then the
+     * centre - and nothing else; null once all three are in. Public and on primitives so that a
+     * board reading the signatures of a whole formation at once applies this very order.
+     */
+    public static function engagementStep(bool $tutorSigned, bool $studentSigned, bool $centerSigned): ?string
+    {
+        return match (false) {
+            $tutorSigned => AlternanceStepStatus::STEP_ENGAGEMENT_TUTOR,
+            $studentSigned => AlternanceStepStatus::STEP_ENGAGEMENT_STUDENT,
+            $centerSigned => AlternanceStepStatus::STEP_ENGAGEMENT_CENTER,
+            default => null,
+        };
     }
 
     // The order of the three signatures, and nothing else. Whether an index is in hand only

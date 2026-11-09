@@ -10,8 +10,8 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * A logged send of one alternance's follow-up reminder (single, from the 34c panel, or bulk, from
- * the 26i grouped-relances screen) - "Internship"-prefixed to avoid a bare, collision-prone
+ * A logged send of one alternance's follow-up reminder (single, from the 34c panel, or by a reminder
+ * batch, InternshipReminderBatch) - "Internship"-prefixed to avoid a bare, collision-prone
  * "Reminder" class name. $auto exists for a future automatic/cron-triggered reminder but is always
  * false today: every send in this app is staff-triggered by a button click, there is no scheduled
  * task that sets it (see AlternanceReminderService).
@@ -47,12 +47,18 @@ class InternshipReminder
     #[ORM\Column]
     private bool $auto = false;
 
-    public function __construct(InternshipTutorLink $tutorLink, AlternanceReminderStep $step, User $sentBy, ?InternshipEvaluationPeriod $evaluationPeriod = null)
+    // The batch that sent it; null for a reminder sent one at a time from the alternance's page.
+    #[ORM\ManyToOne(targetEntity: InternshipReminderBatch::class)]
+    #[ORM\JoinColumn(name: 'batch_id', nullable: true, onDelete: 'SET NULL')]
+    private ?InternshipReminderBatch $batch = null;
+
+    public function __construct(InternshipTutorLink $tutorLink, AlternanceReminderStep $step, User $sentBy, ?InternshipEvaluationPeriod $evaluationPeriod = null, ?InternshipReminderBatch $batch = null)
     {
         $this->tutorLink = $tutorLink;
         $this->step = $step;
         $this->sentBy = $sentBy;
         $this->evaluationPeriod = $evaluationPeriod;
+        $this->batch = $batch;
         $this->sentAt = new \DateTimeImmutable();
     }
 
@@ -89,5 +95,10 @@ class InternshipReminder
     public function isAuto(): bool
     {
         return $this->auto;
+    }
+
+    public function getBatch(): ?InternshipReminderBatch
+    {
+        return $this->batch;
     }
 }

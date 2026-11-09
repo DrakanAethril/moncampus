@@ -1,0 +1,19 @@
+{# What the platform knows about one line - and nothing it does not: no delivery, no reading. #}
+{% set status = item.status.value %}
+{% if status == 'sent' %}
+    {{ 'reminderBatchDetailSentText'|trans({'%time%': item.settledAt|date('d/m H:i'), '%email%': item.recipientEmail}) }}{% if item.copiedSecondaryTutor %} · {{ 'reminderBatchDetailSecondaryCopyText'|trans }}{% endif %}
+{% elseif status == 'already_done' %}
+    {{ 'reminderBatchDetailAlreadyDoneText'|trans({'%time%': item.settledAt|date('d/m H:i')}) }}
+{% elseif status == 'not_concerned' %}
+    {{ 'reminderBatchDetailNotConcernedText'|trans }}
+{% elseif status == 'failed' %}
+    {{ item.lastError }}{% if item.recipientEmail %} · {{ item.recipientEmail }}{% endif %}{% if item.attempts > 1 %} · {{ 'reminderBatchDetailAttemptsText'|trans({'%count%': item.attempts}) }}{% endif %}
+{% elseif status == 'uncertain' %}
+    {{ 'reminderBatchDetailUncertainText'|trans }}
+{% elseif status == 'excluded' %}
+    {{ item.exclusionReason.labelKey|trans }}
+{% elseif status == 'pending' or status == 'sending' %}
+    {% if item.lastError %}{{ 'reminderBatchDetailRetryText'|trans({'%error%': item.lastError}) }}{% endif %}
+{% elseif status == 'cancelled' %}
+    {{ 'reminderBatchDetailCancelledText'|trans }}
+{% endif %}

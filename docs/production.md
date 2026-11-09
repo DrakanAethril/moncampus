@@ -312,6 +312,7 @@ starts the worker by itself: `up --wait` brings it up with the rest.
 | `app:eco:read-terrain` | every minute | e-CO and the IGN's Géoplateforme, below |
 | `app:rncp:fetch` | every minute | Portfolio: France compétences' open data, below |
 | `app:quiz-tournament:close-duels` | every minute | the command's own docblock (finishes the duels both players left; needs `MERCURE_URL`, it flushes) |
+| `app:ufa:reminder-batches:send` | every minute | The UFA's reminder batches, below |
 | `app:proxmox:check` | every 5 minutes | the command's own docblock |
 | `app:proxmox:scan-addresses` | every 5 minutes, offset by 2 | the command's own docblock |
 | `app:class-board:photo` | every hour, at :07 | The virtual board's photograph of the day, below |
@@ -353,6 +354,28 @@ What changed, and what to know:
 `docker compose … exec -T php bin/console app:…` line (`crontab -e` as the user that owns the
 deploy directory). Until then each task runs twice. The shared locks keep the two runs from
 overlapping, and every task tolerates a second pass, but it is noise, not a design.
+
+## The UFA's reminder batches (scheduled)
+
+UFA › Relances launches *batches*: one stage of the livret, in every formation in alternance or a
+few. The screen only freezes the list; `app:ufa:reminder-batches:send` sends it, **every minute,
+from the schedule**, so a closed tab stops nothing. A pass sends at most
+`UFA_REMINDER_MAILS_PER_MINUTE` mails (30 by default) for every batch together, oldest batch first,
+and only within `UFA_REMINDER_SEND_HOURS` (« 8-18 » by default), Monday to Friday, Paris time.
+Both have defaults in `.env`; set them in `.env.prod.local` only to change them.
+
+- **Keep the ceiling well under the main SES account's rate.** The batches share that account with
+  everything else the platform sends (magic links, notifications): check « Sending quota » in the SES
+  console of `AWS_SES_REGION` - the maximum send rate per second and the 24-hour quota - before
+  raising it.
+- A *passing* SES error (throttling, SES not answering) puts the line back for the next pass and
+  stops this one, logged at *warning*; the line fails after three tries. A refused mail fails its
+  line at once, with SES's message on the batch's screen. Neither is a non-zero exit: a failed mail
+  is a fact the screen shows, not a platform error.
+- A line is written « En envoi » before SES is called. A pass that dies in between leaves it so, and
+  the next pass marks it « Incertaine » - never sent again on its own.
+- « Envoyée » means SES accepted the mail. The main account sends no delivery events, so nothing
+  says whether it was delivered or read.
 
 ## Collecting Courrier pro inbound mail (scheduled)
 

@@ -1,0 +1,154 @@
+{# UFA › Relances › a batch: followed while it runs (E5), its account once done (E6). The live part
+   is a turbo-frame the page reloads every 10 s while the batch is running or paused - the screen
+   only watches, `app:ufa:reminder-batches:send` does the sending. #}
+{% extends 'layout/app.html.twig' %}
+
+{% set label = batch.step.labelKey|trans({'%rank%': batch.periodRank}) %}
+{% set active = batch.status.active %}
+
+{% block title %}{{ label }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'ufa/reminder_batch/_breadcrumb.html.twig' with {leaf: batch.step.shortLabelKey|trans({'%rank%': batch.periodRank})} only %}
+{% endblock %}
+
+{% block page_title %}{{ label }}{% endblock %}
+
+{% block main %}
+    {% set token = csrf_token('ufa_reminder_batch_' ~ batch.id) %}
+    <div class="cm-dd-page">
+        <div class="cm-dd-head">
+            <span class="cm-dd-meta">
+                {% include 'ufa/reminder_batch/_programs.html.twig' with {batch: batch} only %}
+                · {{ 'reminderBatchLaunchedByText'|trans({'%date%': batch.createdAt|date('d/m à H:i'), '%name%': batch.createdBy.displayName ?? batch.createdBy.username}) }}
+            </span>
+            {% if active %}
+                <div class="cm-dd-head__actions">
+                    {% if batch.status.value == 'running' %}
+                        <form method="post" action="{{ path('app_ufa_reminder_batch_pause', {id: batch.id}) }}">
+                            <input type="hidden" name="_token" value="{{ token }}">
+                            <twig:Cm:Button variant="outline" size="sm" type="submit"><twig:ux:icon name="player-pause" width="14" height="14"/> {{ 'reminderBatchPauseAction'|trans }}</twig:Cm:Button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{{ path('app_ufa_reminder_batch_resume', {id: batch.id}) }}">
+                            <input type="hidden" name="_token" value="{{ token }}">
+                            <twig:Cm:Button variant="outline" size="sm" type="submit"><twig:ux:icon name="player-play" width="14" height="14"/> {{ 'reminderBatchResumeAction'|trans }}</twig:Cm:Button>
+                        </form>
+                    {% endif %}
+                    {# Two clicks, never a confirm(). #}
+                    <form method="post" action="{{ path('app_ufa_reminder_batch_cancel', {id: batch.id}) }}">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <twig:Cm:Button variant="danger" size="sm" type="submit"
+                                        data-controller="confirm-click"
+                                        data-confirm-click-label-value="{{ 'reminderBatchConfirmCancelAction'|trans }}"
+                                        data-action="click->confirm-click#arm">{{ 'reminderBatchCancelAction'|trans }}</twig:Cm:Button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+
+        <div{% if active %} data-controller="frame-refresh" data-frame-refresh-url-value="{{ app.request.requestUri }}"{% endif %}>
+            <turbo-frame id="reminder-batch-live" data-frame-refresh-target="frame" data-live="{{ active ? 'true' : 'false' }}">
+                <div class="cm-rb-live">
+                    <div class="cm-rb-status">
+                        <twig:Cm:Badge :of="batch.status"/>
+                        <span class="cm-dd-meta">{% include 'ufa/reminder_batch/_schedule.html.twig' with {batch: batch, schedule: schedule} only %}</span>
+                        {% if active %}
+                            <span class="cm-dd-meta cm-rb-status__updated">{{ 'reminderBatchUpdatedAtText'|trans({'%time%': 'now'|date('H:i:s')}) }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="cm-dd-kpis">
+                        <div class="cm-dd-kpi">
+                            <span class="cm-dd-collabel">{{ 'reminderBatchKpiSentLabel'|trans }}</span>
+                            <span class="cm-dd-kpi__value cm-rb-kpi--sent">{{ figures.sent }}</span>
+                        </div>
+                        <div class="cm-dd-kpi">
+                            <span class="cm-dd-collabel">{{ 'reminderBatchKpiAlreadyDoneLabel'|trans }}</span>
+                            <span class="cm-dd-kpi__value">{{ figures.alreadyDone + figures.notConcerned }}</span>
+                        </div>
+                        <div class="cm-dd-kpi">
+                            <span class="cm-dd-collabel">{{ 'reminderBatchKpiFailedLabel'|trans }}</span>
+                            <span class="cm-dd-kpi__value{{ figures.failed + figures.uncertain > 0 ? ' cm-dd-kpi__value--alert' }}">{{ figures.failed + figures.uncertain }}</span>
+                        </div>
+                        {% if active %}
+                            <div class="cm-dd-kpi">
+                                <span class="cm-dd-collabel">{{ 'reminderBatchKpiWaitingLabel'|trans }}</span>
+                                <span class="cm-dd-kpi__value">{{ figures.waiting }}</span>
+                            </div>
+                        {% endif %}
+                        <div class="cm-dd-kpi">
+                            <span class="cm-dd-collabel">{{ 'reminderBatchKpiExcludedLabel'|trans }}</span>
+                            <span class="cm-dd-kpi__value">{{ figures.excluded }}</span>
+                        </div>
+                    </div>
+
+                    {% if programRows|length > 1 %}
+                        <div class="cm-dd-card">
+                            <div class="cm-rb-programs__head">
+                                <span class="cm-dd-collabel">{{ 'reminderBatchProgramColumnLabel'|trans }}</span>
+                                <span class="cm-dd-collabel">{{ 'reminderBatchProgressColumnLabel'|trans }}</span>
+                                <span class="cm-dd-collabel">{{ 'reminderBatchKpiSentLabel'|trans }}</span>
+                                <span class="cm-dd-collabel">{{ 'reminderBatchKpiWaitingLabel'|trans }}</span>
+                            </div>
+                            {% for row in programRows %}
+                                <div class="cm-rb-programs__row">
+                                    <span class="cm-rb-programs__name">{{ row.program.displayShortName }}</span>
+                                    {% include 'ufa/reminder_batch/_bar.html.twig' with {figures: row.figures} only %}
+                                    <span>{{ row.figures.sent }}</span>
+                                    <span>{{ row.figures.waiting }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="cm-dd-card">
+                        <div class="cm-dd-toolbar">
+                            <div class="cm-dd-filters">
+                                {% for candidate in filters %}
+                                    <a class="cm-dd-filter {{ filter == candidate.status ? 'is-on' }}" data-turbo-frame="_top"
+                                       href="{{ path('app_ufa_reminder_batch_show', {id: batch.id, filter: candidate.status ? candidate.status.value : null}) }}">
+                                        {{ candidate.status ? candidate.status.labelKey|trans : 'reminderBatchFilterAllLabel'|trans }}<span class="cm-dd-filter__count">{{ candidate.count }}</span>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="cm-rb-table-wrap">
+                            <table class="cm-rb-table">
+                                <thead>
+                                    <tr>
+                                        <th>{{ 'reminderBatchRecipientColumnLabel'|trans }}</th>
+                                        <th>{{ 'reminderBatchAlternanceColumnLabel'|trans }}</th>
+                                        <th>{{ 'reminderBatchProgramColumnLabel'|trans }}</th>
+                                        <th>{{ 'reminderBatchStateColumnLabel'|trans }}</th>
+                                        <th>{{ 'reminderBatchDetailColumnLabel'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                        {% set link = item.tutorLink %}
+                                        {% set recipient = batch.step.value ends with 'tutor' ? link.tutor : link.student %}
+                                        <tr>
+                                            <td>{{ recipient ? (recipient.displayName ?? recipient.username) : '—' }}</td>
+                                            <td><a href="{{ path('app_ufa_alternance_show', {id: link.id}) }}" data-turbo-frame="_top">{{ link.student ? (link.student.displayName ?? link.student.username) : '—' }}</a></td>
+                                            <td>{{ item.program.displayShortName }}{% if item.evaluationPeriod %}<span class="cm-dd-meta"> · {{ item.evaluationPeriod.name }}</span>{% endif %}</td>
+                                            <td><twig:Cm:Badge :of="item.status"/></td>
+                                            <td class="cm-dd-meta">{% include 'ufa/reminder_batch/_item_detail.html.twig' with {item: item} only %}</td>
+                                        </tr>
+                                    {% else %}
+                                        <tr><td colspan="5" class="cm-rb-empty">{{ 'reminderBatchNoLineText'|trans }}</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if figures.failed > 0 and not active %}
+                        <p class="cm-rb-note">{{ 'reminderBatchFailedNoteText'|trans }}</p>
+                    {% endif %}
+                    <p class="cm-rb-note">{{ 'reminderBatchSentMeaningText'|trans }}</p>
+                </div>
+            </turbo-frame>
+        </div>
+    </div>
+{% endblock %}
