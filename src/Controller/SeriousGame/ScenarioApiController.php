@@ -21,8 +21,9 @@ use Symfony\Component\Routing\Attribute\Route;
 /**
  * The SDK calls of the « scénario » mechanic (design/validated/serious-games-neko-con.md §3.3) -
  * getScenario, markActSeen, startTicket, submitStep, useHint, submitGuide, endTicket and the « Nouvelle
- * partie » - relayed by the host page like the common ones (GameApiController). A game of the
- * series mechanic has none of these routes: 404.
+ * partie », plus replayTicket and reviewTicket for a game whose closed tickets replay - relayed by the
+ * host page like the common ones (GameApiController). A game of the series mechanic has none of these
+ * routes: 404.
  *
  * The step answered is named by its identifier. A delivery's input is `{passed, failed}`: the code
  * itself never reaches the server (§3.4).
@@ -62,6 +63,18 @@ class ScenarioApiController extends AbstractController
     public function start(Request $request, string $slug, SeriousGameRepository $games, SeriousGameScenarioPlay $play): JsonResponse
     {
         return $this->call($request, $games, $slug, static fn (SeriousGame $game, JsonRequestPayload $payload, User $player): array => $play->startTicket($player, $game, $payload->string('ticket')));
+    }
+
+    #[Route(path: '/serious-games/api/{slug}/tickets/replay', name: 'app_serious_games_api_ticket_replay', methods: ['POST'])]
+    public function replay(Request $request, string $slug, SeriousGameRepository $games, SeriousGameScenarioPlay $play): JsonResponse
+    {
+        return $this->call($request, $games, $slug, static fn (SeriousGame $game, JsonRequestPayload $payload, User $player): array => $play->replayTicket($player, $game, $payload->string('ticket'), true === ($payload->toArray()['fresh'] ?? null)));
+    }
+
+    #[Route(path: '/serious-games/api/{slug}/tickets/review', name: 'app_serious_games_api_ticket_review', methods: ['POST'])]
+    public function review(Request $request, string $slug, SeriousGameRepository $games, SeriousGameScenarioPlay $play): JsonResponse
+    {
+        return $this->call($request, $games, $slug, static fn (SeriousGame $game, JsonRequestPayload $payload, User $player): array => $play->reviewTicket($player, $game, $payload->string('ticket')));
     }
 
     #[Route(path: '/serious-games/api/{slug}/ticket-sessions/{id}/step', name: 'app_serious_games_api_ticket_step', requirements: ['id' => '\d+'], methods: ['POST'])]

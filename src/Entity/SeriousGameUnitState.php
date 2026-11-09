@@ -244,6 +244,14 @@ class SeriousGameUnitState
         return $this;
     }
 
+    /** A closed ticket played again: its stars can only raise the best, and nothing else moves. */
+    public function recordReplay(int $stars): static
+    {
+        $this->best = max($this->best ?? 0, $stars);
+
+        return $this;
+    }
+
     /** « Nouvelle partie »: the ticket leaves the board; its best stars and first closing stay. */
     public function resetForNewGame(): static
     {

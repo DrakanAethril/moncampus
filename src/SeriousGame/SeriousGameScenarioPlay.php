@@ -40,6 +40,11 @@ use Doctrine\ORM\EntityManagerInterface;
  * abandoned. The game's display state (lines seen, acts presented, drafts, sound) is
  * SeriousGameProgress' data; `actsSeen` in it is the server's.
  *
+ * A game whose scenario says `replay: true` (PHP pas à pas) also reads a closed ticket again with its
+ * corrections and plays it again: a replay is a session of mode `replay` that keeps its own step and
+ * hints, leaves the ticket closed, and whose stars can only raise the ticket's. Its answers are
+ * written like any other, but the teachers' reading reads the first go's only (mode `ticket`).
+ *
  * @phpstan-import-type Progress from SeriousGamePlay
  */
 final readonly class SeriousGameScenarioPlay
@@ -142,6 +147,83 @@ final readonly class SeriousGameScenarioPlay
         $this->progressFor($player, $game)->touch();
         $this->entityManager->flush();
 
+        return $this->opened($session, $ticket, $ticket->stepIndex($state->getStepId()), $state->getGuideStep(), $state->getHints());
+    }
+
+    /**
+     * Plays a closed ticket again (`scenario.replay`, PHP pas à pas): a session of its own, from the
+     * first step, while the ticket stays closed - nothing the board, the next tickets or the rewards
+     * read moves. The replay still open is resumed, unless `$fresh` asks to start it over. Same
+     * shape as startTicket(), plus `replay: true`.
+     *
+     * @return array<string, mixed>
+     */
+    public function replayTicket(User $player, SeriousGame $game, string $ticketId, bool $fresh): array
+    {
+        [, $ticket, $state] = $this->closedTicket($player, $game, $ticketId);
+        if (!$state->isClosed()) {
+            throw new SeriousGamePlayRefused('ticket-not-closed');
+        }
+
+        $open = $this->sessions->findOpenReplays($player, $game, $ticket->id);
+        $session = $fresh ? null : array_pop($open);
+        foreach ($open as $older) {
+            $older->abandon();
+        }
+        // A revision removed the step in progress: the replay starts again rather than block.
+        $stepId = $session?->getReplayStepId();
+        if (null !== $session && Scenario::ALL_STEPS_DONE !== $stepId && null === $ticket->step($stepId)) {
+            $session->moveReplayTo($ticket->firstStepId());
+        }
+        if (null === $session) {
+            $session = SeriousGameSession::replay($player, $game, $ticket->id, $ticket->firstStepId());
+            $this->entityManager->persist($session);
+        }
+        $this->progressFor($player, $game)->touch();
+        $this->entityManager->flush();
+
+        return $this->opened($session, $ticket, $ticket->stepIndex($session->getReplayStepId()), 0, $session->getReplayHints()) + ['replay' => true];
+    }
+
+    /**
+     * A closed ticket read again with its corrections (`scenario.replay`): each step's question and,
+     * for a step the server corrects, which option is right and why the others are not. Once a
+     * ticket is closed - in this game or a former one - its answers are no secret any more.
+     *
+     * @return array{id: string, steps: list<array<string, mixed>>}
+     */
+    public function reviewTicket(User $player, SeriousGame $game, string $ticketId): array
+    {
+        [, $ticket, $state] = $this->closedTicket($player, $game, $ticketId);
+        if (!$state->isClosed() && null === $state->getBest()) {
+            throw new SeriousGamePlayRefused('ticket-not-closed');
+        }
+
+        return ['id' => $ticket->id, 'steps' => array_map(static function (ScenarioStep $step): array {
+            $view = ['id' => $step->id, 'kind' => $step->kind->value, 'prompt' => $step->prompt];
+            if ($step->kind->hasOptions()) {
+                $view['options'] = array_map(static fn (array $o): array => ['text' => $o['text'], 'ok' => $o['ok'], 'why' => $o['reaction']['text'] ?? null], $step->options);
+            }
+            if ([] !== $step->answers) {
+                $view['answers'] = $step->answers;
+            }
+            if (ScenarioStepKind::Order === $step->kind) {
+                $view['items'] = $step->items;
+                $view['order'] = $step->order;
+            }
+
+            return $view;
+        }, $ticket->steps)];
+    }
+
+    /**
+     * What opening a ticket answers: the session, the ticket with its steps **without** their
+     * answers, the step and the help in progress.
+     *
+     * @return array<string, mixed>
+     */
+    private function opened(SeriousGameSession $session, ScenarioTicket $ticket, int $step, int $guideStep, int $hints): array
+    {
         return [
             'session' => $session->getId(),
             'ticket' => [
@@ -159,10 +241,10 @@ final readonly class SeriousGameScenarioPlay
                 'bascule' => $ticket->bascule,
                 'final' => $ticket->final,
             ],
-            'step' => $ticket->stepIndex($state->getStepId()),
+            'step' => $step,
             'guide' => array_map(static fn (ScenarioStep $s): array => $s->publicView(self::optionOrder($session, $s)), $ticket->guide),
-            'guideStep' => $state->getGuideStep(),
-            'hints' => $state->getHints(),
+            'guideStep' => $guideStep,
+            'hints' => $hints,
         ];
     }
 
@@ -173,13 +255,16 @@ final readonly class SeriousGameScenarioPlay
      */
     public function submitStep(User $player, SeriousGameSession $session, string $stepId, mixed $input): array
     {
+        if ($session->isReplay()) {
+            return $this->submitReplayStep($player, $session, $stepId, $input);
+        }
         [$scenario, $ticket, $state] = $this->openTicket($player, $session);
         $step = $ticket->step($state->getStepId());
         if (null === $step || $step->id !== $stepId) {
             throw new SeriousGamePlayRefused('step-mismatch');
         }
 
-        $grade = $this->grade($scenario, $session, $state, $step, $input, false);
+        $grade = $this->grade($scenario, $session, $state->getScenarioVersion() ?? $scenario->version(), $step, $input, false);
         if ($grade['ok']) {
             $state->moveToStep($ticket->stepAfter($step->id));
         }
@@ -198,6 +283,9 @@ final readonly class SeriousGameScenarioPlay
      */
     public function submitGuide(User $player, SeriousGameSession $session, string $stepId, mixed $input): array
     {
+        if ($session->isReplay()) {
+            throw new SeriousGamePlayRefused('guide-locked');
+        }
         [$scenario, $ticket, $state] = $this->openTicket($player, $session);
         $step = $ticket->guide[$state->getGuideStep()] ?? null;
         if (null === $step || $step->id !== $stepId) {
@@ -207,7 +295,7 @@ final readonly class SeriousGameScenarioPlay
             throw new SeriousGamePlayRefused('guide-locked');
         }
 
-        $grade = $this->grade($scenario, $session, $state, $step, $input, true);
+        $grade = $this->grade($scenario, $session, $state->getScenarioVersion() ?? $scenario->version(), $step, $input, true);
         if ($grade['ok']) {
             $state->passGuideStep();
         }
@@ -224,6 +312,16 @@ final readonly class SeriousGameScenarioPlay
      */
     public function useHint(User $player, SeriousGameSession $session): array
     {
+        if ($session->isReplay()) {
+            [, $ticket] = $this->replayedTicket($player, $session);
+            if ($session->getReplayHints() < $ticket->maxHints()) {
+                $session->askReplayHint();
+                $this->progressFor($player, $session->getGame())->touch();
+                $this->entityManager->flush();
+            }
+
+            return ['hints' => $session->getReplayHints(), 'guideStep' => 0];
+        }
         [, $ticket, $state] = $this->openTicket($player, $session);
         if ($state->getHints() < $ticket->maxHints()) {
             $state->askHint();
@@ -242,6 +340,9 @@ final readonly class SeriousGameScenarioPlay
      */
     public function endTicket(User $player, SeriousGameSession $session): array
     {
+        if ($session->isReplay()) {
+            return $this->endReplay($player, $session);
+        }
         [$scenario, $ticket, $state] = $this->openTicket($player, $session);
         if (Scenario::ALL_STEPS_DONE !== $state->getStepId()) {
             throw new SeriousGamePlayRefused('ticket-not-finished');
@@ -299,7 +400,8 @@ final readonly class SeriousGameScenarioPlay
     /**
      * « Nouvelle partie », after the certificate (§3.5) - or at any time when the manifest says so
      * (`restart_anytime`, Black-out): the tickets leave the board. Rewards, the grade reached, the
-     * best stars and the history stay.
+     * best stars and the history stay, and so do the keys of the display state the scenario names
+     * (`keep_on_new_game`: PHP pas à pas' notebook and archive of answers).
      */
     public function newGame(User $player, SeriousGame $game): void
     {
@@ -312,12 +414,18 @@ final readonly class SeriousGameScenarioPlay
         foreach ($this->states->findForPlayer($player, $game) as $state) {
             $state->resetForNewGame();
         }
-        foreach ($this->sessions->findOpenTicketSessions($player, $game) as $session) {
+        foreach ([...$this->sessions->findOpenTicketSessions($player, $game), ...$this->sessions->findOpenReplays($player, $game)] as $session) {
             $session->abandon();
         }
         $progress = $this->progressFor($player, $game);
-        $mute = $progress->getData()['mute'] ?? null;
-        $progress->setData(\is_bool($mute) ? ['mute' => $mute] : [])->touch();
+        $data = $progress->getData();
+        $kept = \is_bool($data['mute'] ?? null) ? ['mute' => $data['mute']] : [];
+        foreach ($scenario->keptOnNewGame() as $key) {
+            if (\array_key_exists($key, $data)) {
+                $kept[$key] = $data[$key];
+            }
+        }
+        $progress->setData($kept)->touch();
         $this->entityManager->flush();
     }
 
@@ -432,11 +540,11 @@ final readonly class SeriousGameScenarioPlay
         return 'acte'.$act;
     }
 
-    /** A ticket's session of the player, still open. */
+    /** A ticket's session of the player - an opening or a replay -, still open. */
     public function ownedTicketSession(User $player, SeriousGame $game, int $id): SeriousGameSession
     {
         $session = $this->sessions->findOwned($id, $player, $game);
-        if (null === $session || SeriousGameSessionMode::Ticket !== $session->getMode()) {
+        if (null === $session || !\in_array($session->getMode(), [SeriousGameSessionMode::Ticket, SeriousGameSessionMode::Replay], true)) {
             throw new SeriousGamePlayRefused('session-unknown');
         }
         if ($session->isEnded()) {
@@ -465,11 +573,112 @@ final readonly class SeriousGameScenarioPlay
     }
 
     /**
+     * A ticket of a game that replays, as the player's board knows it.
+     *
+     * @return array{0: Scenario, 1: ScenarioTicket, 2: SeriousGameUnitState}
+     */
+    private function closedTicket(User $player, SeriousGame $game, string $ticketId): array
+    {
+        $scenario = self::scenario($game);
+        if (!$scenario->replay()) {
+            throw new SeriousGamePlayRefused('replay-off');
+        }
+        $ticket = $scenario->ticket($ticketId);
+        $state = null === $ticket ? null : $this->states->findOneFor($player, $game, $ticket->id);
+        if (null === $ticket || null === $state) {
+            throw new SeriousGamePlayRefused('ticket-unknown');
+        }
+
+        return [$scenario, $ticket, $state];
+    }
+
+    /**
+     * The ticket a replay plays - still closed, which a « Nouvelle partie » would have undone (it
+     * also ends the replays).
+     *
+     * @return array{0: Scenario, 1: ScenarioTicket, 2: SeriousGameUnitState}
+     */
+    private function replayedTicket(User $player, SeriousGameSession $session): array
+    {
+        $result = $this->closedTicket($player, $session->getGame(), (string) $session->getUnitCode());
+        if (!$result[2]->isClosed()) {
+            throw new SeriousGamePlayRefused('ticket-not-closed');
+        }
+
+        return $result;
+    }
+
+    /**
+     * Corrects the replay's step in progress: the same correction and the same answer row as a
+     * first go, the step kept on the session.
+     *
+     * @return array<string, mixed>
+     */
+    private function submitReplayStep(User $player, SeriousGameSession $session, string $stepId, mixed $input): array
+    {
+        [$scenario, $ticket] = $this->replayedTicket($player, $session);
+        $step = $ticket->step((string) $session->getReplayStepId());
+        if (null === $step || $step->id !== $stepId) {
+            throw new SeriousGamePlayRefused('step-mismatch');
+        }
+
+        $grade = $this->grade($scenario, $session, $scenario->version(), $step, $input, false);
+        if ($grade['ok']) {
+            $session->moveReplayTo($ticket->stepAfter($step->id));
+        }
+        $this->entityManager->flush();
+
+        return $grade + [
+            'next' => $ticket->stepIndex($session->getReplayStepId()),
+            'done' => Scenario::ALL_STEPS_DONE === $session->getReplayStepId(),
+        ];
+    }
+
+    /**
+     * Ends a replay whose steps are all answered: its stars, counted like a first go's on its own
+     * answers and hints, raise the ticket's best and the board's stars when better, and lower
+     * nothing. `quality` is what the board now shows, `stars` this go's.
+     *
+     * @return array<string, mixed>
+     */
+    private function endReplay(User $player, SeriousGameSession $session): array
+    {
+        [, $ticket, $state] = $this->replayedTicket($player, $session);
+        if (Scenario::ALL_STEPS_DONE !== $session->getReplayStepId()) {
+            throw new SeriousGamePlayRefused('ticket-not-finished');
+        }
+        $game = $session->getGame();
+
+        $before = $this->sessions->latestTicketStars($player, $game)[$ticket->id] ?? $state->getBest() ?? 0;
+        $errors = ScenarioRules::errors(array_map(
+            static fn (SeriousGameAnswer $a): array => ['kind' => self::kindOf($ticket, $a), 'ok' => $a->isOk(), 'help' => $a->isHelp()],
+            $this->answers->findForSessions([$session]),
+        ));
+        $stars = ScenarioRules::stars($errors, $session->getReplayHints());
+        $session->end($stars);
+        $state->recordReplay($stars);
+        $this->progressFor($player, $game)->touch();
+        $this->entityManager->flush();
+        $rewards = SeriousGameRules::canCollect($player->getRoles()) ? $this->rewards->grant($player, $game) : [];
+        $this->entityManager->flush();
+
+        return [
+            'status' => $state->getStatus()?->value,
+            'replay' => true,
+            'stars' => $stars,
+            'quality' => max($before, $stars),
+            'improved' => $stars > $before,
+            'newCards' => [],
+            'rewards' => $rewards,
+        ];
+    }
+
+    /**
      * Corrects a step and writes the answer.
      *
      * @return array{ok: bool, misconception?: string, reaction?: array{who: string, expr: string, text: string}}
      */
-    private function grade(Scenario $scenario, SeriousGameSession $session, SeriousGameUnitState $state, ScenarioStep $step, mixed $input, bool $help): array
+    private function grade(Scenario $scenario, SeriousGameSession $session, int $version, ScenarioStep $step, mixed $input, bool $help): array
     {
         if ($step->kind->hasOptions()) {
             // The game answers a rank in the order it was shown: back to the rank written.
@@ -484,7 +693,7 @@ final readonly class SeriousGameScenarioPlay
 
         $previous = $this->answers->findForSession($session);
         $last = [] === $previous ? null : $previous[array_key_last($previous)];
-        $answer = SeriousGameAnswer::forStep($session, \count($previous), (string) $session->getUnitCode(), $state->getScenarioVersion() ?? $scenario->version(), $step->id, $help, $last?->getAnsweredAt() ?? $session->getStartedAt());
+        $answer = SeriousGameAnswer::forStep($session, \count($previous), (string) $session->getUnitCode(), $version, $step->id, $help, $last?->getAnsweredAt() ?? $session->getStartedAt());
         $answer->answer($grade->stored, $grade->ok, $grade->misconception, false);
         $this->entityManager->persist($answer);
         $this->progressFor($session->getPlayer(), $session->getGame())->touch();

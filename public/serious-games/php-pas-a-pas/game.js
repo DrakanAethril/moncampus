@@ -7,7 +7,14 @@
    nothing, only « Vérifier » counts. A program that does not even run is not a delivery: its error is
    explained and nothing is sent. The display state (saveProgress) keeps the lessons seen, the drafts, the
    hints shown, the reminders drawn, the mistakes per notion (which the reminders aim at), the best score
-   of the final test and of each « lecture éclair » - which is never sent at all. */
+   of the final test and of each « lecture éclair » - which is never sent at all.
+
+   A level done is read again (« Revoir »: each step, the student's answer - archived in `answers` when the
+   step is passed, never sent - beside the solution) and played again (replayTicket): a replay keeps its
+   drafts, hints and reminders under `<id>@r`, never reopens the level, and its stars only raise it. A
+   chapter or the whole game is replayed level after level (`rerun`). « Mon carnet » is the showcase of the
+   notions turned into fiches (carnet/*.js), closed during the mastery challenges, the final test and the
+   « lectures éclair ». */
 (function () {
   'use strict';
   var C = window.PPPContent, E = window.PPPEngine, SND = window.PPPSound;
@@ -15,7 +22,7 @@
   var app = document.getElementById('app');
   var FINAL_PASS = 10;
 
-  var G = { user: null, prog: null, sc: null, data: {}, cards: {}, view: 'map', lv: null, ticket: null, session: null, step: 0, hints: 0, run: null, rewards: [], opened: {}, busy: false };
+  var G = { user: null, prog: null, sc: null, data: {}, cards: {}, view: 'map', lv: null, ticket: null, session: null, step: 0, hints: 0, run: null, rewards: [], opened: {}, busy: false, key: null, replay: false, reviews: {}, redraw: null };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function $(sel, root) { return (root || app).querySelector(sel); }
@@ -107,22 +114,97 @@
   function closeSheet() { sheet.classList.remove('open'); sheet.setAttribute('aria-hidden', 'true'); sheetKind = null; }
   $$('[data-close]', sheet).forEach(function (e) { e.addEventListener('click', closeSheet); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && sheetKind) closeSheet(); });
-  function openVitrine() {
-    openSheet('vit', 'Vitrine des notions', '<div class="vit">' + vitHtml() + '</div><p class="note">Vue : cours ouvert. Pratiquée : niveau réussi. Maîtrisée : défi de maîtrise réussi. ⚡ : lecture éclair à 7 sur 8 ou plus.</p>');
+  // ——— « Mon carnet »: a fiche per notion once seen, and the PHP functions met ———
+  /* Closed while a mastery challenge, the final test or a « lecture éclair » is played: they ask without help. */
+  function carnetOpen() { return ['mastery', 'final', 'flash'].indexOf(G.view) === -1; }
+  function md(t) { return esc(t).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>'); }
+  function levelOfNotion(id) { return levels().filter(function (lv) { return lv.kind === 'level' && (lv.notions || []).indexOf(id) !== -1; })[0] || null; }
+  /* A notion to go back to: its mastery challenge not won yet, and two mistakes or more counted against it. */
+  function toReview(id) {
+    if (notionState(id) === 'maitrisee') return false;
+    return levels().some(function (m) { return m.kind === 'mastery' && (G.data.miss[m.id] || 0) >= 2 && (m.covers || []).some(function (lid) { var l = C.get(lid); return l && (l.notions || []).indexOf(id) !== -1; }); });
+  }
+  function fnsSeen() { return C.fns().filter(function (f) { return !!notionState(f.notion); }); }
+  function openCarnet(tab) {
+    if (!carnetOpen()) { toastText('Le carnet est fermé pendant les défis de maîtrise, l\'épreuve finale et les lectures éclair.'); return; }
+    var fns = fnsSeen(), list = tab === 'fns'
+      ? (fns.length ? fns.map(function (f) { return '<button type="button" class="fn-item" data-fn="' + esc(f.name) + '" data-q="' + esc((f.name + ' ' + f.does).toLowerCase()) + '"><code>' + esc(f.name) + '()</code><span>' + md(f.does) + '</span></button>'; }).join('') : '<p class="note">Aucune fonction rencontrée pour l\'instant : elles arrivent avec les tableaux.</p>')
+      : '<div class="vit">' + vitHtml(null, true) + '</div><p class="note">Touche une notion pour sa fiche. Vue : cours ouvert. Pratiquée : niveau réussi. Maîtrisée : défi de maîtrise réussi. ⚡ : lecture éclair à 7 sur 8 ou plus.</p>';
+    openSheet('carnet', 'Mon carnet', '<div class="cn-tabs" role="tablist"><button type="button" role="tab" class="cn-tab" data-tab="notions" aria-selected="' + (tab !== 'fns') + '">Notions</button><button type="button" role="tab" class="cn-tab" data-tab="fns" aria-selected="' + (tab === 'fns') + '">Fonctions PHP · ' + fns.length + '</button></div>' +
+      '<input type="search" class="val cn-q" id="cn-q" placeholder="Chercher dans le carnet" aria-label="Chercher dans le carnet" autocomplete="off" autocapitalize="off" spellcheck="false"><div id="cn-list">' + list + '</div>');
+    $$('[data-tab]', sheet).forEach(function (b) { b.addEventListener('click', function () { openCarnet(b.dataset.tab); }); });
+    $$('[data-fiche]', sheet).forEach(function (b) { b.addEventListener('click', function () { showFiche(b.dataset.fiche); }); });
+    $$('[data-fn]', sheet).forEach(function (b) { b.addEventListener('click', function () { showFn(b.dataset.fn); }); });
+    $('#cn-q', sheet).addEventListener('input', function () {
+      var q = this.value.trim().toLowerCase();
+      $$('[data-q]', sheet).forEach(function (el) { el.hidden = !!q && el.dataset.q.indexOf(q) === -1; });
+      $$('.vit-ch', sheet).forEach(function (h) { var n = h.nextElementSibling, any = false; while (n && !n.classList.contains('vit-ch')) { if (n.dataset.q && !n.hidden) any = true; n = n.nextElementSibling; } h.hidden = !!q && !any; });
+    });
     var d = $('#open-vit .dot'); if (d) d.hidden = true;
   }
+  function ficheTop(back) { return '<button type="button" class="cn-back" data-back="' + back + '">← Carnet</button>'; }
+  function bindFicheSheet(back) {
+    $$('[data-back]', sheet).forEach(function (b) { b.addEventListener('click', function () { openCarnet(back); }); });
+    $$('[data-fn]', sheet).forEach(function (b) { b.addEventListener('click', function () { showFn(b.dataset.fn); }); });
+    $$('[data-fiche]', sheet).forEach(function (b) { b.addEventListener('click', function () { showFiche(b.dataset.fiche); }); });
+  }
+  function tryIt(title, code, vars, lv) {
+    closeSheet();
+    var back = G.redraw || showMap;
+    lessonScreen({ pill: 'Carnet', title: title, html: '<p>Modifie l\'exemple et exécute-le : rien n\'est noté.</p>', example: code, vars: vars }, 'Retour', back, lv);
+  }
+  function showFiche(id) {
+    if (!carnetOpen()) return;
+    var n = C.notion(id), f = C.ficheOf(id), lv = levelOfNotion(id), st = notionState(id);
+    if (!n || !f || !st) return;
+    var html = n.ch === 8, lessons = [];
+    levels().forEach(function (l) {
+      if (l.kind !== 'level' || (l.notions || []).indexOf(id) === -1 || !(closed(l.id) || stateOf(l) === 'open')) return;
+      Object.keys(l.lessons).forEach(function (k) { if (closed(l.id) || G.data.seen[l.id + ':' + k]) lessons.push([l, k]); });
+    });
+    openSheet('carnet', 'Mon carnet', ficheTop('notions') + '<div class="fiche">' +
+      '<div class="fi-h"><span class="glyph">' + esc(n.g) + '</span><div><b>' + esc(n.label) + '</b><span class="st">' + esc(chapterOf(n.ch).title) + ' · ' + STATE_LABEL[st] + (toReview(id) ? ' · <span class="again">à revoir</span>' : '') + '</span></div></div>' +
+      '<pre class="fi-rule">' + hlCode(f.rule, html) + '</pre>' +
+      '<ul class="fi-points">' + f.points.map(function (p) { return '<li>' + md(p) + '</li>'; }).join('') + '</ul>' +
+      '<div class="out-h">Exemple</div>' + codeHtml(f.example, f.vars, { html: html }) + consoleHtml(f.example, f.vars, html) +
+      '<div class="out-h">Attention</div><ul class="fi-traps">' + f.traps.map(function (t) { return '<li>' + md(t) + '</li>'; }).join('') + '</ul>' +
+      ((f.fns || []).length ? '<div class="out-h">Fonctions</div><div class="fi-fns">' + f.fns.filter(function (x) { return C.fns().some(function (y) { return y.name === x; }); }).map(function (x) { return '<button type="button" class="chip kw" data-fn="' + esc(x) + '">' + esc(x) + '()</button>'; }).join('') + '</div>' : '') +
+      (lessons.length ? '<div class="out-h">Les cours complets</div><div class="lessons-list">' + lessons.map(function (x, i) { return '<button type="button" class="opt" data-cn-lesson="' + i + '">' + esc(x[0].lessons[x[1]].title) + ' <small>· niveau ' + x[0].num + '</small></button>'; }).join('') + '</div>' : '') +
+      '</div>', '<div class="acts"><button type="button" class="btn" data-fa="trace">Pas à pas</button><button type="button" class="btn primary" data-fa="try">Essayer l\'exemple</button></div>');
+    bindFicheSheet('notions');
+    $$('[data-cn-lesson]', sheet).forEach(function (b) { b.addEventListener('click', function () { var x = lessons[+b.dataset.cnLesson]; closeSheet(); lessonScreen(x[0].lessons[x[1]], 'Retour', G.redraw || showMap, x[0]); scroller.scrollTop = 0; }); });
+    $('[data-fa="trace"]', sheet).addEventListener('click', function () { openTrace(f.example, f.vars, html); });
+    $('[data-fa="try"]', sheet).addEventListener('click', function () { tryIt(n.label, f.example, f.vars, lv); });
+  }
+  function showFn(name) {
+    if (!carnetOpen()) return;
+    var f = C.fns().filter(function (x) { return x.name === name; })[0], n = f && C.notion(f.notion);
+    if (!f || !n || !notionState(f.notion)) return;
+    var html = n.ch === 8;
+    openSheet('carnet', 'Mon carnet', ficheTop('fns') + '<div class="fiche">' +
+      '<div class="fi-h"><span class="glyph">ƒ</span><div><b>' + esc(f.name) + '()</b><span class="st">fonction de PHP</span></div></div>' +
+      '<pre class="fi-rule">' + hlCode(f.sig, false) + '</pre><p>' + md(f.does) + '</p>' +
+      (f.note ? '<ul class="fi-traps"><li>' + md(f.note) + '</li></ul>' : '') +
+      '<div class="out-h">Exemple</div>' + codeHtml(f.example, f.vars, { html: html }) + consoleHtml(f.example, f.vars, html) +
+      '<div class="out-h">Notion</div><div class="fi-fns"><button type="button" class="chip" data-fiche="' + esc(n.id) + '">' + esc(n.g) + ' ' + esc(n.label) + '</button></div>' +
+      '</div>', '<div class="acts"><button type="button" class="btn" data-fa="trace">Pas à pas</button><button type="button" class="btn primary" data-fa="try">Essayer l\'exemple</button></div>');
+    bindFicheSheet('fns');
+    $('[data-fa="trace"]', sheet).addEventListener('click', function () { openTrace(f.example, f.vars, html); });
+    $('[data-fa="try"]', sheet).addEventListener('click', function () { tryIt(f.name + '()', f.example, f.vars, levelOfNotion(f.notion)); });
+  }
+
   function openLessons() {
     var lv = G.lv;
     openSheet('lessons', 'Les cours du niveau', lv && Object.keys(lv.lessons).length ? '<div class="lessons-list">' + Object.keys(lv.lessons).map(function (k) { return '<button type="button" class="opt" data-lesson="' + esc(k) + '">' + esc(lv.lessons[k].title) + '</button>'; }).join('') + '</div>' : '<p class="note">Aucun cours ici.</p>');
     $$('[data-lesson]', sheet).forEach(function (b) { b.addEventListener('click', function () { closeSheet(); showLesson(b.dataset.lesson, true); }); });
   }
 
-  function vitHtml(pulse) {
+  function vitHtml(pulse, click) {
     var reached = reachedChapter();
     return C.chapters.filter(function (ch) { return ch.n <= Math.max(reached, 1); }).map(function (ch) {
       return '<p class="vit-ch">' + esc(ch.title) + '</p>' + C.notions.filter(function (n) { return n.ch === ch.n; }).map(function (n) {
-        var st = notionState(n.id), fl = notionFlash(n.id);
-        return '<div class="vit-item ' + (pulse && pulse[n.id] ? 'pulse' : '') + '" data-s="' + st + '"><span class="glyph">' + esc(n.g) + '</span><span><span class="lab">' + esc(n.label) + (fl ? ' <span class="bolt" title="Lue en un éclair">⚡</span>' : '') + '</span><span class="st">' + STATE_LABEL[st] + '</span></span></div>';
+        var st = notionState(n.id), fl = notionFlash(n.id), tag = click && st && C.ficheOf(n.id) ? 'button' : 'div';
+        return '<' + tag + (tag === 'button' ? ' type="button" data-fiche="' + n.id + '"' : '') + ' class="vit-item ' + (pulse && pulse[n.id] ? 'pulse' : '') + '" data-s="' + st + '" data-q="' + esc((n.label + ' ' + n.id).toLowerCase()) + '"><span class="glyph">' + esc(n.g) + '</span><span><span class="lab">' + esc(n.label) + (fl ? ' <span class="bolt" title="Lue en un éclair">⚡</span>' : '') + '</span><span class="st">' + STATE_LABEL[st] + (st && toReview(n.id) ? ' · <span class="again">à revoir</span>' : '') + '</span></span></' + tag + '>';
       }).join('');
     }).join('');
   }
@@ -131,7 +213,8 @@
     var changed = C.notions.filter(function (n) { return lastNotion[n.id] !== undefined && lastNotion[n.id] !== notionState(n.id); }), pulse = {};
     changed.forEach(function (n) { pulse[n.id] = 1; });
     snapshotNotions();
-    side.innerHTML = '<div><h4>Vitrine des notions</h4><div class="vit">' + vitHtml(pulse) + '</div></div>';
+    side.innerHTML = '<div><h4>Mon carnet</h4><div class="vit">' + vitHtml(pulse, carnetOpen()) + '</div></div>';
+    $$('[data-fiche]', side).forEach(function (b) { b.addEventListener('click', function () { showFiche(b.dataset.fiche); }); });
     if (changed.length) {
       var d = $('#open-vit .dot'); if (d) d.hidden = false;
       var same = changed.every(function (n) { return notionState(n.id) === notionState(changed[0].id); }), t = $('#toast');
@@ -144,11 +227,11 @@
   }
   function toastText(text) { var t = $('#toast'); t.textContent = text; t.style.bottom = (foot.offsetHeight + 10) + 'px'; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('show'); }, 3200); }
   function icoBtn(id, svg, label, extra, cls) { return '<button class="ico ' + (cls || '') + '" id="' + id + '" type="button" aria-label="' + label + '" title="' + label + '">' + svg + (extra || '') + '</button>'; }
-  function sideButtons() { return icoBtn('open-vit', ICON.vit, 'Vitrine des notions', '<span class="dot" hidden></span>', 'sidebar-only'); }
+  function sideButtons() { return icoBtn('open-vit', ICON.vit, 'Mon carnet', '<span class="dot" hidden></span>', 'sidebar-only'); }
   function bindTop() {
     var b;
     if ((b = $('#back'))) b.addEventListener('click', function () { stopTimer(); G.run = null; showMap(); });
-    if ((b = $('#open-vit'))) b.addEventListener('click', openVitrine);
+    if ((b = $('#open-vit'))) b.addEventListener('click', function () { openCarnet('notions'); });
     if ((b = $('#open-lessons'))) b.addEventListener('click', openLessons);
     if ((b = $('#mute'))) b.addEventListener('click', function () { G.data.mute = !G.data.mute; SND.setMuted(G.data.mute); save(); b.innerHTML = G.data.mute ? ICON.mute : ICON.sound; b.setAttribute('aria-label', G.data.mute ? 'Activer le son' : 'Couper le son'); });
   }
@@ -336,7 +419,7 @@
     return out;
   }
   function showMap() {
-    G.view = 'map'; G.lv = null; G.ticket = null; G.session = null; G.run = null; stopTimer();
+    G.view = 'map'; G.lv = null; G.ticket = null; G.session = null; G.run = null; G.replay = false; G.redraw = showMap; stopTimer();
     var done = levels().filter(function (lv) { return lv.kind === 'level' && closed(lv.id); }).length, total = levels().filter(function (lv) { return lv.kind === 'level'; }).length;
     top.innerHTML = '<div class="row"><div class="brand">PHP pas à pas<small>' + esc(G.prog && G.prog.grade || '') + '</small></div><span class="stars" title="Étoiles">★ ' + totalStars() + '</span>' + sideButtons() + icoBtn('mute', G.data.mute ? ICON.mute : ICON.sound, G.data.mute ? 'Activer le son' : 'Couper le son') + '</div>' +
       '<div class="where"><b>' + done + '/' + total + '</b> niveaux · ' + C.notions.filter(function (n) { return notionState(n.id) === 'maitrisee'; }).length + ' notions maîtrisées</div>';
@@ -344,6 +427,8 @@
     var nl = nextOpen(), cur = nl ? nl.chapter : reachedChapter();
     var html = '<div class="lvmap">';
     if (!G.data.intro) html += '<div class="hello"><h2>Bienvenue' + (G.user && G.user.firstName ? ', ' + esc(G.user.firstName) : '') + '</h2><p>Chaque niveau t\'apprend une notion de PHP : un cours court, puis des exercices de plus en plus libres, jusqu\'à écrire tes propres programmes. Les conditions, les boucles et les tableaux reviennent sans cesse, dans des rappels, pour que ça tienne. Les défis de maîtrise déclarent une notion acquise. « Pas à pas » te montre ton programme s\'exécuter, ligne par ligne.</p></div>';
+    var run = G.data.rerun, runNext = run && C.get(run.ids[run.i]);
+    if (runNext) html += '<div class="rerun"><div><span class="chap-k">Reprise en cours · ' + (run.i + 1) + ' sur ' + run.ids.length + '</span><b>' + esc(run.label) + '</b><span class="note">Ensuite : ' + esc(ticketName(runNext)) + '</span></div><div class="rerun-acts"><button type="button" class="btn small" id="rerun-stop">Arrêter</button><button type="button" class="btn primary small" id="rerun-go">Continuer</button></div></div>';
     if (closed('FIN')) html += '<div class="trophy-band">' + (window.SGRewards ? window.SGRewards.art('trophy', 'prisme', { size: 72, finish: finishOf('prisme') }) : '') + '<div><h3>L\'épreuve finale est réussie</h3><p>Le prisme est dans ta vitrine.</p></div></div>';
     C.chapters.forEach(function (ch) {
       var items = mapItems(ch), tickets = items.filter(function (x) { return x.kind !== 'flash'; });
@@ -357,17 +442,24 @@
       var doneN = tickets.filter(function (lv) { return closed(lv.id); }).length;
       var expanded = G.opened[ch.n] !== undefined ? G.opened[ch.n] : ch.n === cur;
       html += '<section class="chap"><button type="button" class="chap-h" data-chap="' + ch.n + '" aria-expanded="' + expanded + '"><span class="chap-k">Chapitre ' + ch.n + ' · ' + doneN + '/' + tickets.length + '</span><h3>' + esc(ch.title) + '</h3><div class="chap-bar"><span style="width:' + Math.round(doneN / tickets.length * 100) + '%"></span></div></button>';
-      if (expanded) html += '<ol class="path">' + items.map(function (lv) { return lv.kind === 'flash' ? flashRow(lv) : levelRow(lv, nl); }).join('') + '</ol>';
+      if (expanded) html += '<ol class="path">' + items.map(function (lv) { return lv.kind === 'flash' ? flashRow(lv) : levelRow(lv, nl); }).join('') + '</ol>' +
+        (doneN ? '<button type="button" class="btn ghost small chap-rerun" data-rerun="' + ch.n + '">Rejouer ce chapitre (' + plural(doneN, 'niveau ou défi', 'niveaux et défis') + ')</button>' : '');
       html += '</section>';
     });
+    if (levels().some(function (lv) { return closed(lv.id); })) html += '<button type="button" class="btn ghost small" id="rerun-all">Rejouer tout le jeu, niveau après niveau</button><p class="note">Rejouer ne fait rien perdre : les niveaux restent réussis, et un meilleur résultat remplace tes étoiles.</p>';
     html += '<button type="button" class="btn ghost small" id="restart">Recommencer le jeu depuis le début</button></div>';
     main.innerHTML = html;
     $$('[data-chap]', main).forEach(function (b) { b.addEventListener('click', function () { var n = +b.dataset.chap; G.opened[n] = b.getAttribute('aria-expanded') !== 'true'; showMap(); }); });
     $$('.lv[data-lv]', main).forEach(function (b) { b.addEventListener('click', function () { openLevel(C.get(b.dataset.lv)); }); });
     $$('.lv[data-flash]', main).forEach(function (b) { b.addEventListener('click', function () { showFlashIntro(C.get(b.dataset.flash)); }); });
+    $$('[data-rerun]', main).forEach(function (b) { b.addEventListener('click', function () { var ch = chapterOf(+b.dataset.rerun); startRerun('Chapitre ' + ch.n + ' · ' + ch.title, mapItems(ch).filter(function (x) { return x.kind !== 'flash'; }).map(function (x) { return x.id; })); }); });
+    var b2;
+    if ((b2 = $('#rerun-all'))) b2.addEventListener('click', function () { var ids = []; C.chapters.forEach(function (ch) { mapItems(ch).forEach(function (x) { if (x.kind !== 'flash') ids.push(x.id); }); }); startRerun('Tout le jeu', ids); });
+    if ((b2 = $('#rerun-go'))) b2.addEventListener('click', function () { startReplay(runNext, false); });
+    if ((b2 = $('#rerun-stop'))) b2.addEventListener('click', function () { delete G.data.rerun; save(true); showMap(); });
     var rs = $('#restart');
     rs.addEventListener('click', function () {
-      if (!rs.dataset.armed) { rs.dataset.armed = '1'; rs.textContent = 'Confirmer : tout recommencer (les récompenses restent)'; return; }
+      if (!rs.dataset.armed) { rs.dataset.armed = '1'; rs.textContent = 'Confirmer : tout recommencer (récompenses, carnet et réponses restent)'; return; }
       api('newGame', {}).then(function () { location.reload(); });
     });
     setFoot(nl ? [{ label: (G.cards[nl.id] && G.cards[nl.id].status === 'doing' ? 'Reprendre · ' : 'Commencer · ') + (nl.kind === 'final' ? 'épreuve finale' : 'niveau ' + nl.num), cls: 'primary', fn: function () { openLevel(nl); } }] : [], null);
@@ -386,6 +478,7 @@
     if (st === 'done') meta = '<span class="st">' + starLine(qualityOf(lv.id)) + '</span>' + (chal ? (lv.kind === 'final' ? ' · réussie' : ' · maîtrisé') : '');
     else if (lv.kind === 'final' && G.data.best[lv.id] !== undefined) meta = 'Meilleur : ' + G.data.best[lv.id] + '/' + lv.draw;
     else if (chal && st === 'open') meta = lv.kind === 'mastery' ? 'Non tenté · ne bloque pas la suite' : 'Ouverte';
+    if (st === 'done' && G.data.rp[lv.id]) meta += ' · rejeu en cours';
     else if (st === 'open' && G.cards[lv.id] && G.cards[lv.id].status === 'doing') meta = 'Étape ' + (G.cards[lv.id].step + 1) + ' sur ' + G.cards[lv.id].steps;
     else if (st === 'open') meta = Object.keys(lv.steps).length + ' étapes · 20 min environ';
     return '<li><button type="button" class="' + cls + '" data-lv="' + lv.id + '"' + (st === 'locked' ? ' disabled aria-disabled="true"' : '') + '><span class="lv-node">' + node + '</span><span class="lv-text"><span class="lv-k">' + esc(k) + '</span><b>' + esc(lv.title) + '</b><span class="lv-sub">' + esc(sub) + '</span>' + (meta ? '<span class="lv-meta">' + meta + '</span>' : '') + '</span></button></li>';
@@ -405,13 +498,34 @@
     G.busy = true;
     api('startTicket', { ticket: lv.id }).then(function (r) {
       G.busy = false;
-      G.lv = lv; G.ticket = r.ticket; G.session = r.session; G.step = r.step; G.hints = r.hints || 0; G.run = null;
-      if (lv.kind === 'mastery') { G.view = 'mastery'; return showMasteryIntro(); }
-      if (lv.kind === 'final') { G.view = 'final'; return showFinalIntro(); }
-      G.view = 'level';
-      if (G.step >= G.ticket.steps.length) return endLevel();
-      showStep();
+      begin(lv, r, false);
     }).catch(function (e) { G.busy = false; toastText('Impossible d\'ouvrir ce niveau : ' + e.message); });
+  }
+  function begin(lv, r, replay) {
+    G.lv = lv; G.ticket = r.ticket; G.session = r.session; G.step = r.step; G.hints = r.hints || 0; G.run = null;
+    G.replay = !!replay; G.key = replay ? lv.id + '@r' : lv.id;
+    if (lv.kind === 'mastery') { G.view = 'mastery'; return showMasteryIntro(); }
+    if (lv.kind === 'final') { G.view = 'final'; return showFinalIntro(); }
+    G.view = 'level';
+    if (G.step >= G.ticket.steps.length) return endLevel();
+    showStep();
+  }
+  /* Plays a level done again, from its first step: a session of its own on the server, the level stays
+     done. A replay left half-way is resumed unless `fresh`. */
+  function startReplay(lv, fresh) {
+    if (!lv || stateOf(lv) !== 'done' || G.busy) return;
+    if (!G.data.rp[lv.id]) fresh = true;
+    G.busy = true;
+    api('replayTicket', { ticket: lv.id, fresh: !!fresh }).then(function (r) {
+      G.busy = false;
+      if (fresh) forgetKey(lv.id + '@r');
+      G.data.rp[lv.id] = 1; save();
+      begin(lv, r, true);
+    }).catch(function (e) { G.busy = false; toastText('Impossible de rejouer ce niveau : ' + e.message); });
+  }
+  function forgetKey(key) {
+    delete G.data.drafts[key]; delete G.data.hints[key]; delete G.data.recall[key];
+    Object.keys(G.data.seen).forEach(function (k) { if (k.indexOf(key + ':') === 0) delete G.data.seen[k]; });
   }
   var KIND = {
     choose: ['k-pred', 'Prédire'], value: ['k-pred', 'Prédire'], trace: ['k-sui', 'Suivre'], cases: ['k-sui', 'Suivre'], aim: ['k-vis', 'Viser'], aimw: ['k-vis', 'Viser'],
@@ -421,14 +535,15 @@
   function kindLabel(def, server) { if (!def || server.kind === 'explain' || server.kind === 'choice') return 'Comprendre'; return (KIND[def.kind] || ['', 'Défi'])[1]; }
   function levelTop(title) {
     var lv = G.lv, steps = G.ticket.steps, n = steps.length;
-    top.innerHTML = '<div class="row">' + icoBtn('back', ICON.back, 'Retour à la carte des niveaux') + '<div class="ttl"><small>Niveau ' + lv.num + ' · ' + esc(chapterOf(lv.chapter).title) + '</small><b>' + esc(lv.title) + '</b></div>' + (Object.keys(lv.lessons).length ? icoBtn('open-lessons', ICON.book, 'Revoir les cours du niveau') : '') + sideButtons() + '</div>' +
+    top.innerHTML = '<div class="row">' + icoBtn('back', ICON.back, 'Retour à la carte des niveaux') + '<div class="ttl"><small>Niveau ' + lv.num + ' · ' + (G.replay ? 'rejeu' : esc(chapterOf(lv.chapter).title)) + '</small><b>' + esc(lv.title) + '</b></div>' + (Object.keys(lv.lessons).length ? icoBtn('open-lessons', ICON.book, 'Revoir les cours du niveau') : '') + sideButtons() + '</div>' +
       '<div class="prog" style="grid-template-columns:repeat(' + n + ',1fr)">' + steps.map(function (s, i) { return '<span class="seg ' + kindClass(lv.steps[s.id], s) + (i < G.step ? ' done' : '') + (i === G.step ? ' cur' : '') + '"><span></span></span>'; }).join('') + '</div>' +
       '<div class="where"><b>' + Math.min(G.step + 1, n) + '/' + n + '</b> · ' + esc(title || '') + '</div>';
     bindTop();
   }
   function showStep() {
     var s = G.ticket.steps[G.step], def = G.lv.steps[s.id] || {};
-    if (def.before && !G.data.seen[G.lv.id + ':' + def.before]) return showLesson(def.before, false);
+    G.redraw = showStep;
+    if (def.before && !G.data.seen[G.key + ':' + def.before]) return showLesson(def.before, false);
     lastField = null;
     levelTop(kindLabel(def, s));
     if (s.kind === 'explain' || s.kind === 'choice') renderQuestion(s);
@@ -445,25 +560,27 @@
     var lv = G.lv, l = lv.lessons[key];
     if (!l) return showStep();
     (lv.notions || []).forEach(function (n) { G.data.nseen[n] = 1; });
-    G.data.seen[lv.id + ':' + key] = 1; save();
+    G.data.seen[G.key + ':' + key] = 1; save();
     lastField = null;
     levelTop('Cours');
     lessonScreen(l, review ? 'Retour à l\'étape' : 'À l\'exercice →', showStep);
   }
-  function lessonScreen(l, label, back) {
-    main.innerHTML = '<div class="kind k-cap"><span class="pill">Cours</span><h3>' + esc(l.title) + '</h3></div><div class="lesson">' + l.html + '</div>' +
-      (l.example ? editorHtml(l.example, l.vars, { html: isHtml(), note: 'exemple à modifier, rien n\'est noté' }) + (l.tryit ? '<p class="try">' + esc(l.tryit) + '</p>' : '') + '<div id="res" class="out"></div>' : '');
-    if (l.example) bindEditor(isHtml());
-    var run = function (scroll) { var res = $('#res', main); res.innerHTML = consoleHtml($('#php', main).value, l.vars, isHtml()); if (scroll) reveal(res); };
+  function lessonScreen(l, label, back, lv) {
+    lv = lv || G.lv;
+    var html = !!(lv && chapterOf(lv.chapter).compare === 'html');
+    main.innerHTML = '<div class="kind k-cap"><span class="pill">' + esc(l.pill || 'Cours') + '</span><h3>' + esc(l.title) + '</h3></div><div class="lesson">' + l.html + '</div>' +
+      (l.example ? editorHtml(l.example, l.vars, { html: html, note: 'exemple à modifier, rien n\'est noté' }) + (l.tryit ? '<p class="try">' + esc(l.tryit) + '</p>' : '') + '<div id="res" class="out"></div>' : '');
+    if (l.example) bindEditor(html);
+    var run = function (scroll) { var res = $('#res', main); res.innerHTML = consoleHtml($('#php', main).value, l.vars, html); if (scroll) reveal(res); };
     if (l.example) { run(false); bindRunKey(function () { run(true); }); }
-    setFoot([].concat(l.example ? [{ label: 'Pas à pas', fn: function () { openTrace($('#php', main).value, l.vars, isHtml()); } }, { label: '▶ Exécuter', fn: function () { run(true); } }] : [], [{ label: label, cls: 'primary', fn: back }]), l.example ? chipList({ example: l.example, vars: l.vars }, G.lv) : null);
+    setFoot([].concat(l.example ? [{ label: 'Pas à pas', fn: function () { openTrace($('#php', main).value, l.vars, html); } }, { label: '▶ Exécuter', fn: function () { run(true); } }] : [], [{ label: label, cls: 'primary', fn: back }]), l.example ? chipList({ example: l.example, vars: l.vars }, lv) : null);
     sideAndNews();
     scroller.scrollTop = 0;
   }
-  function isHtml() { var ch = G.lv && chapterOf(G.lv.chapter); return !!(ch && ch.compare === 'html'); }
 
   // Corrected by the server: an explanation or a choice, its options in the order the server shuffled.
   function renderQuestion(s) {
+    var wrongs = [];
     main.innerHTML = '<div class="kind k-qcm"><span class="pill">Comprendre</span><h3>Une question</h3></div>' + ask('k-qcm', 'Question', esc(s.prompt)) + '<div class="opts">' + s.options.map(function (o, i) { return '<button type="button" class="opt" data-i="' + i + '">' + esc(o) + '</button>'; }).join('') + '</div><div id="res" class="out"></div>';
     $$('.opt', main).forEach(function (b) {
       b.addEventListener('click', function () {
@@ -474,10 +591,12 @@
           var res = $('#res', main), react = r.reaction && r.reaction.text ? '<div class="react">' + esc(r.reaction.text) + '</div>' : '';
           if (r.ok) {
             SND.ok(); b.classList.add('right'); $$('.opt', main).forEach(function (o) { o.disabled = true; });
+            archive(s.id, { a: s.options[+b.dataset.i], w: wrongs });
             res.innerHTML = '<div class="banner good">Exactement.</div>' + react;
             stepDone(r);
           } else {
             SND.ko(); b.classList.add('wrong'); b.disabled = true;
+            wrongs.push(s.options[+b.dataset.i]);
             res.innerHTML = '<div class="banner bad">Pas tout à fait.</div>' + react;
           }
           reveal(res);
@@ -495,7 +614,7 @@
   }
 
   // The written hints of a measured step, one rung at a time; each one asked counts in the stars.
-  function hintsShown(sid) { var t = G.data.hints[G.lv.id] || {}; return t[sid] || 0; }
+  function hintsShown(sid) { var t = G.data.hints[G.key] || {}; return t[sid] || 0; }
   function helpHtml(def, sid) {
     var n = hintsShown(sid);
     if (!n) return '';
@@ -508,8 +627,8 @@
       G.busy = true;
       api('useHint', { session: G.session }).then(function (r) {
         G.busy = false; G.hints = r.hints;
-        G.data.hints[G.lv.id] = G.data.hints[G.lv.id] || {};
-        G.data.hints[G.lv.id][sid] = hintsShown(sid) + 1; save();
+        G.data.hints[G.key] = G.data.hints[G.key] || {};
+        G.data.hints[G.key][sid] = hintsShown(sid) + 1; save();
         rerender();
         reveal($('#help', main));
       }).catch(function (e) { G.busy = false; toastText(e.message); });
@@ -530,13 +649,17 @@
     if (!m) return;
     G.data.miss[m] = (G.data.miss[m] || 0) + 1; save();
   }
-  function draftOf(sid) { var d = G.data.drafts[G.lv.id]; return d ? d[sid] : undefined; }
-  function setDraft(sid, v) { G.data.drafts[G.lv.id] = G.data.drafts[G.lv.id] || {}; G.data.drafts[G.lv.id][sid] = v; save(); }
+  function draftOf(sid) { var d = G.data.drafts[G.key]; return d ? d[sid] : undefined; }
+  function setDraft(sid, v) { G.data.drafts[G.key] = G.data.drafts[G.key] || {}; G.data.drafts[G.key][sid] = v; save(); }
+  /* What the student answered to a step they passed, kept for « Revoir »: the latest go wins. Never sent
+     anywhere - the display state is the student's. */
+  function archive(sid, entry) { var a = G.data.answers[G.lv.id] = G.data.answers[G.lv.id] || {}; a[sid] = entry; save(); }
+  function archived(lv, sid) { var a = G.data.answers[lv.id]; return a && a[sid] ? a[sid] : null; }
 
   /* ——— The reminders: drawn from the mastery pools of the notions already passed, the ones where the
      student went wrong first, then the core (conditions, loops, arrays). Kept once drawn. */
   function recallDef(sid) {
-    var lv = G.lv, mine = G.data.recall[lv.id] = G.data.recall[lv.id] || {}, ref = mine[sid];
+    var lv = G.lv, mine = G.data.recall[G.key] = G.data.recall[G.key] || {}, ref = mine[sid];
     var item = ref && C.get(ref.m) && C.get(ref.m).pool[ref.i];
     if (!item) {
       var cands = levels().filter(function (m) { return m.kind === 'mastery' && m.covers.every(function (id) { var c = C.get(id); return c && c.num < lv.num; }); });
@@ -557,7 +680,7 @@
   // ——— Predict: what does this code print? ———
   function renderChoose(s, def) {
     var rerender = function () { renderChoose(s, def); };
-    var opts = seeded(def.options, G.session + ':' + s.id), out = E.printed(def), mode = def.html ? 'html' : 'words';
+    var opts = seeded(def.options, G.session + ':' + s.id), out = E.printed(def), mode = def.html ? 'html' : 'words', wrongs = [];
     main.innerHTML = '<div class="kind k-pred"><span class="pill">Prédire</span><h3>Avant d\'exécuter</h3></div>' + ask('k-pred', 'Consigne', esc(def.ask)) + codeHtml(def.code, def.vars, { html: def.html }) +
       '<div id="help">' + helpHtml(def, s.id) + '</div><div class="opts">' + opts.map(function (o) { return '<button type="button" class="opt mono" data-o="' + esc(o) + '">' + esc(o) + '</button>'; }).join('') + '</div><div id="res" class="out"></div>';
     $$('.opt', main).forEach(function (b) {
@@ -566,9 +689,10 @@
         var right = E.norm(b.dataset.o, mode) === out, box = $('#res', main);
         deliver(s.id, { passed: right, failed: right ? [] : ['Prédiction'] }, function (r) {
           b.classList.add('right'); $$('.opt', main).forEach(function (o) { o.disabled = true; });
+          archive(s.id, { a: b.dataset.o, w: wrongs });
           box.innerHTML = '<div class="banner good">Bien vu : c\'est ce qu\'il affiche.</div>';
           stepDone(r, [{ label: 'Pas à pas', fn: function () { openTrace(def.code, def.vars, def.html); } }]);
-        }).then(function (r) { if (r && !r.ok) { b.classList.add('wrong'); b.disabled = true; box.innerHTML = '<div class="banner bad">Pas tout à fait. Relis le code ligne par ligne, puis choisis à nouveau.</div>'; } reveal(box); });
+        }).then(function (r) { if (r && !r.ok) { wrongs.push(b.dataset.o); b.classList.add('wrong'); b.disabled = true; box.innerHTML = '<div class="banner bad">Pas tout à fait. Relis le code ligne par ligne, puis choisis à nouveau.</div>'; } reveal(box); });
       });
     });
     setFoot([hintAction(def, s.id, rerender)], null);
@@ -577,13 +701,13 @@
     var rerender = function () { var v = $('#val', main) ? $('#val', main).value : ''; renderValue(s, def); $('#val', main).value = v; };
     main.innerHTML = '<div class="kind k-pred"><span class="pill">Prédire</span><h3>Avant d\'exécuter</h3></div>' + ask('k-pred', 'Consigne', esc(def.ask)) + codeHtml(def.code, def.vars) +
       '<div id="help">' + helpHtml(def, s.id) + '</div><label class="out-h" for="val">Ta réponse</label><input id="val" class="val" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"><div id="res" class="out"></div>';
-    var expected = E.printed(def);
+    var expected = E.printed(def), wrongs = [];
     var check = function () {
       var input = $('#val', main).value, box = $('#res', main);
       if (!input.trim()) { box.innerHTML = '<div class="banner info">Écris ta réponse.</div>'; return; }
       var ok = E.sameAnswer(input, expected);
-      deliver(s.id, { passed: ok, failed: ok ? [] : ['Valeur'] }, function (r) { box.innerHTML = '<div class="banner good">Exactement : ' + esc(expected) + '.</div>'; $('#val', main).disabled = true; stepDone(r, [{ label: 'Pas à pas', fn: function () { openTrace(def.code, def.vars); } }]); })
-        .then(function (r) { if (r && !r.ok) box.innerHTML = '<div class="banner bad">Ce n\'est pas ça. Suis le programme ligne par ligne, une variable après l\'autre.</div>'; reveal(box); });
+      deliver(s.id, { passed: ok, failed: ok ? [] : ['Valeur'] }, function (r) { archive(s.id, { a: input, w: wrongs }); box.innerHTML = '<div class="banner good">Exactement : ' + esc(expected) + '.</div>'; $('#val', main).disabled = true; stepDone(r, [{ label: 'Pas à pas', fn: function () { openTrace(def.code, def.vars); } }]); })
+        .then(function (r) { if (r && !r.ok) wrongs.push(input); if (r && !r.ok) box.innerHTML = '<div class="banner bad">Ce n\'est pas ça. Suis le programme ligne par ligne, une variable après l\'autre.</div>'; reveal(box); });
     };
     $('#val', main).addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); check(); } });
     setFoot([hintAction(def, s.id, rerender), { label: 'Vérifier', cls: 'primary', fn: check }], null);
@@ -594,7 +718,7 @@
     var isTrace = def.kind === 'trace', rows = isTrace ? E.traceRows(def) : E.caseRows(def), cols = isTrace ? def.watch : ['affiche'];
     // A table of cases shows its first value on the grey line; the game tries every one of them.
     var shown = isTrace ? def.vars : (function () { var o = Object.assign({}, def.vars || {}); o[def.var] = def.values[0]; return o; })();
-    var saved = draftOf(s.id) || {}, wrongOnce = !!(G.data.drafts[G.lv.id] && G.data.drafts[G.lv.id][s.id + ':ko']);
+    var saved = draftOf(s.id) || {}, wrongOnce = !!(G.data.drafts[G.key] && G.data.drafts[G.key][s.id + ':ko']);
     var rerender = function () { renderTable(s, def); };
     var head = isTrace ? '<th>tour</th>' + cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') : '<th>' + esc('$' + def.var) + '</th><th>affiche</th>';
     var body = rows.map(function (row, r) {
@@ -614,11 +738,12 @@
       if ($$('.cell', main).some(function (i) { return !i.value.trim(); })) { box.innerHTML = '<div class="banner info">Remplis toutes les cases, puis vérifie.</div>'; reveal(box); return; }
       deliver(s.id, { passed: !bad.length, failed: bad.length ? ['Tableau : ' + bad.length + ' case(s)'] : [] }, function (r) {
         $$('.cell', main).forEach(function (i) { i.disabled = true; i.classList.add('good'); });
+        archive(s.id, { a: Object.assign({}, saved) });
         box.innerHTML = '<div class="banner good">Tableau juste.</div>';
         stepDone(r, [{ label: 'Comparer au pas à pas', fn: function () { openTrace(def.code, shown, def.html); } }]);
       }).then(function (r) {
         if (!r || r.ok) return reveal(box);
-        G.data.drafts[G.lv.id][s.id + ':ko'] = 1; save();
+        (G.data.drafts[G.key] = G.data.drafts[G.key] || {})[s.id + ':ko'] = 1; save();
         box.innerHTML = '<div class="banner bad">' + plural(bad.length, 'case à revoir', 'cases à revoir') + ' (en rouge).</div><p class="hint-p">« Pas à pas » montre maintenant le programme ligne par ligne : suis-le, puis corrige.</p>';
         footer(true); reveal(box);
       });
@@ -663,6 +788,7 @@
         if (mine.errors.length) box.innerHTML = errHtml(mine.errors[0]);
       }
       deliver(s.id, { passed: ok, failed: ok ? [] : failed }, function (r) {
+        archive(s.id, { a: tap ? picked : $('#val', main).value.trim() });
         box.innerHTML = '<div class="banner good">C\'est la bonne case : <code>$' + esc(def.var) + esc(def.target) + '</code>.</div>';
         $$('.leaf', main).forEach(function (x) { x.disabled = true; });
         stepDone(r);
@@ -708,6 +834,7 @@
       markBlanks();
     } else bindEditor(html, function (v) { setDraft(s.id, v); });
     var run = function () { var box = $('#res', main); box.innerHTML = consoleHtml(code(), def.vars, html); reveal(box); };
+    var refused = 0;
     var verify = function () {
       var text = code(), box = $('#res', main);
       if (!text.trim() || (isComp && $$('.blank', main).some(function (b) { return !b.value.trim(); }))) { box.innerHTML = '<div class="banner info">' + (isComp ? 'Remplis tous les trous, puis vérifie.' : 'Écris ton programme, puis vérifie.') + '</div>'; reveal(box); return; }
@@ -715,12 +842,14 @@
       if (!res.deliverable) { box.innerHTML = (res.error ? errHtml(res.error) : '') + '<p class="hint-p">Ce programme ne s\'exécute pas : rien n\'est compté. Corrige l\'erreur (« Tester » ne coûte rien), puis vérifie.</p>'; SND.ko(); reveal(box); return; }
       box.innerHTML = verdictHtml(res);
       deliver(s.id, res, function (r) {
+        var drawn = rec && G.data.recall[G.key] && G.data.recall[G.key][s.id];
+        archive(s.id, Object.assign({ a: text, k: refused }, drawn ? { m: drawn.m, i: drawn.i } : {}));
         box.insertAdjacentHTML('afterbegin', '<div class="banner good">Exactement ce qui était demandé, sur le cas visible et ' + plural(res.criteria.length - 1, 'cas caché', 'cas cachés') + '.</div>');
         $('#help', main).innerHTML = '';
         $$('.blank', main).forEach(function (b) { b.disabled = true; });
         if ($('#php', main)) $('#php', main).readOnly = true;
         stepDone(r, [{ label: 'Pas à pas', fn: function () { openTrace(code(), def.vars, html); } }]);
-      }, rec ? def.recallOf : null).then(function () { reveal(box); });
+      }, rec ? def.recallOf : null).then(function (r) { if (r && !r.ok) refused++; reveal(box); });
     };
     var footer = function () { setFoot([hintAction(def, s.id, function () { renderProgram(s, rec ? recallDef(s.id) : def); }), { label: 'Pas à pas', fn: function () { openTrace(code(), def.vars, html); } }, { label: '▶ Tester', fn: run }, { label: 'Vérifier', cls: 'primary', fn: verify }], isComp ? (def.words || []).map(function (w) { return [/^\$/.test(w) ? 'var' : (KEYWORD.test(w) ? 'kw' : 'sym'), w]; }) : chipList(def, G.lv)); };
     footer();
@@ -738,6 +867,8 @@
       G.busy = false;
       SND.level();
       var lv = G.lv;
+      if (G.replay) { forgetKey(G.key); delete G.data.rp[lv.id]; r.rerun = rerunStep(lv); } else { delete G.data.drafts[lv.id]; delete G.data.hints[lv.id]; }
+      save(true);
       if (r.rewards && r.rewards.length) G.rewards = G.rewards.concat(r.rewards);
       return refresh().then(function () { return api('getProgress'); }).then(function (p) { G.prog = p; showEnd(lv, r); });
     }).catch(function (e) { G.busy = false; toastText(e.message); });
@@ -750,39 +881,179 @@
   function uniqueNotions(ch) { var o = []; (ch.covers || []).forEach(function (id) { (C.get(id).notions || []).forEach(function (n) { if (o.indexOf(n) === -1) o.push(n); }); }); return o; }
   function showEnd(lv, r) {
     G.view = 'end';
-    var q = r.quality || 0, nl = nextOpen(), chal = lv.kind !== 'level';
+    var replay = !!r.replay, q = (replay ? r.stars : r.quality) || 0, nl = replay ? null : nextOpen(), chal = lv.kind !== 'level';
+    G.redraw = showMap;
     top.innerHTML = '<div class="row">' + icoBtn('back', ICON.back, 'Retour à la carte des niveaux') + '<div class="ttl"><small>' + (chal ? (lv.kind === 'final' ? 'Épreuve finale' : 'Défi de maîtrise') : 'Niveau ' + lv.num) + '</small><b>' + esc(lv.title) + '</b></div>' + sideButtons() + '</div>';
     bindTop();
-    var title = lv.kind === 'final' ? 'Épreuve finale réussie' : (chal ? 'Défi de maîtrise réussi' : 'Niveau ' + lv.num + ' réussi');
-    var open = C.flashes().filter(function (f) { return flashOpen(f) && flashBest(f) === null && f.covers.indexOf(lv.id) !== -1; })[0] || C.flashes().filter(function (f) { return flashOpen(f) && flashBest(f) === null && masteryOf(f.covers[f.covers.length - 1]) && masteryOf(f.covers[f.covers.length - 1]).id === lv.id; })[0];
+    var title = replay ? (lv.kind === 'final' ? 'Épreuve finale repassée' : (chal ? 'Défi de maîtrise refait' : 'Niveau ' + lv.num + ' rejoué')) : (lv.kind === 'final' ? 'Épreuve finale réussie' : (chal ? 'Défi de maîtrise réussi' : 'Niveau ' + lv.num + ' réussi'));
+    var open = !replay && C.flashes().filter(function (f) { return flashOpen(f) && flashBest(f) === null && f.covers.indexOf(lv.id) !== -1; })[0] || C.flashes().filter(function (f) { return flashOpen(f) && flashBest(f) === null && masteryOf(f.covers[f.covers.length - 1]) && masteryOf(f.covers[f.covers.length - 1]).id === lv.id; })[0];
     main.innerHTML = '<div class="lvdone"><span class="lvdone-n' + (chal ? ' chal' : '') + '">' + (chal ? (lv.kind === 'final' ? ICON.star : ICON.check) : lv.num) + '</span><h3>' + esc(title) + '</h3><p>' + esc(lv.title) + '</p><span class="s">' + starLine(q) + '</span><p>' + (q === 3 ? 'Sans erreur et sans indice.' : (q === 2 ? 'Avec une ou deux erreurs ou indices.' : 'Avec plusieurs erreurs ou indices : les rappels y reviendront, et le défi de maîtrise te dira si c\'est acquis.')) + '</p></div>' +
       (lv.kind === 'mastery' ? '<div class="banner good">Notions maîtrisées : ' + uniqueNotions(lv).map(function (n) { return esc(C.notion(n).label); }).join(', ') + '.</div>' : '') +
       (lv.kind === 'final' ? '<div class="banner good">Tu sais afficher, calculer, décider, répéter, ranger dans des tableaux, écrire des fonctions et des pages. Bravo.</div>' : '') +
+      (replay ? '<div class="banner ' + (r.improved ? 'good' : 'info') + '">' + (r.improved ? 'Nouveau record : ' + starLine(r.quality) + ' sur la carte.' : 'Sur la carte, ' + (chal ? 'il' : 'ce niveau') + ' garde ' + starLine(r.quality) + ' : un rejeu ne fait jamais baisser.') + '</div>' +
+        (r.rerun ? '<p class="hint-p">' + (r.rerun.over ? 'La reprise « ' + esc(r.rerun.label) + ' » est terminée.' : 'Reprise « ' + esc(r.rerun.label) + ' » : ' + r.rerun.i + ' sur ' + r.rerun.n + '.') + '</p>' : '') : '') +
       rewardsHtml(r.rewards) +
       (nl ? '<p class="hint-p">Ensuite : <b>' + (nl.kind === 'final' ? 'l\'épreuve finale' : 'niveau ' + nl.num + ', ' + esc(nl.title)) + '</b>.' + (masteryOpen().length ? ' Un défi de maîtrise t\'attend aussi sur la carte : il ne bloque rien.' : '') + '</p>' : '') +
       (open ? '<p class="hint-p">Une lecture éclair est ouverte : <b>' + esc(open.title) + '</b>, huit codes à lire en deux minutes, pour le réflexe.</p>' : '');
-    setFoot([{ label: 'Carte des niveaux', fn: showMap }].concat(nl ? [{ label: nl.kind === 'final' ? 'Épreuve finale →' : 'Niveau ' + nl.num + ' →', cls: 'primary', fn: function () { openLevel(nl); } }] : []), null);
+    if (replay) setFoot([{ label: 'Carte des niveaux', fn: showMap }, r.rerun && r.rerun.next ? { label: 'Suivant de la reprise →', cls: 'primary', fn: function () { startReplay(C.get(r.rerun.next), false); } } : { label: chal ? 'Revoir' : 'Revoir le niveau', cls: 'primary', fn: function () { openLevel(lv); } }], null);
+    else setFoot([{ label: 'Carte des niveaux', fn: showMap }].concat(nl ? [{ label: nl.kind === 'final' ? 'Épreuve finale →' : 'Niveau ' + nl.num + ' →', cls: 'primary', fn: function () { openLevel(nl); } }] : []), null);
     sideAndNews();
     scroller.scrollTop = 0;
   }
   function masteryOpen() { return levels().filter(function (lv) { return lv.kind === 'mastery' && stateOf(lv) === 'open'; }); }
-  function showDone(lv) {
-    G.lv = lv; G.view = 'done';
-    top.innerHTML = '<div class="row">' + icoBtn('back', ICON.back, 'Retour à la carte des niveaux') + '<div class="ttl"><small>Niveau ' + lv.num + ' · réussi</small><b>' + esc(lv.title) + '</b></div>' + sideButtons() + '</div>';
+  // ——— « Revoir »: a level done, step by step, the student's answer beside the solution ———
+  /* The corrections of « Comprendre » are the server's: asked once the level is done, kept for the visit. */
+  function loadReview(lv) {
+    if (G.reviews[lv.id]) return Promise.resolve(G.reviews[lv.id]);
+    return api('reviewTicket', { ticket: lv.id }).then(function (r) { G.reviews[lv.id] = r; return r; }).catch(function () { return null; });
+  }
+  function reviewOf(lv, sid) { var r = G.reviews[lv.id]; return r ? (r.steps || []).filter(function (x) { return x.id === sid; })[0] || null : null; }
+  function stepLabel(def) { return def.kind && KIND[def.kind] ? KIND[def.kind] : ['k-qcm', 'Comprendre']; }
+  function ticketName(lv) { return lv.kind === 'final' ? 'l\'épreuve finale' : (lv.kind === 'mastery' ? 'le défi « ' + lv.title + ' »' : 'niveau ' + lv.num + ', ' + lv.title); }
+  function doneTop(lv, sub) {
+    top.innerHTML = '<div class="row">' + icoBtn('back', ICON.back, 'Retour à la carte des niveaux') + '<div class="ttl"><small>' + esc(sub) + '</small><b>' + esc(lv.title) + '</b></div>' + sideButtons() + '</div>';
     bindTop();
-    main.innerHTML = '<div class="lvdone"><span class="lvdone-n">' + lv.num + '</span><h3>Niveau réussi</h3><p>' + esc(lv.title) + '</p><span class="s">' + starLine(qualityOf(lv.id)) + '</span></div><div class="out-h">Les cours du niveau</div><div class="lessons-list">' + Object.keys(lv.lessons).map(function (k) { return '<button type="button" class="opt" data-lesson="' + esc(k) + '">' + esc(lv.lessons[k].title) + '</button>'; }).join('') + '</div>';
-    $$('[data-lesson]', main).forEach(function (b) { b.addEventListener('click', function () { lessonScreen(lv.lessons[b.dataset.lesson], 'Retour', function () { showDone(lv); }); }); });
-    setFoot([{ label: 'Carte des niveaux', cls: 'primary', fn: showMap }], null);
+  }
+  function showDone(lv) {
+    G.lv = lv; G.view = 'done'; G.key = lv.id; G.replay = false; G.redraw = function () { showDone(lv); };
+    doneTop(lv, 'Niveau ' + lv.num + ' · réussi');
+    var ids = Object.keys(lv.steps);
+    var rows = ids.map(function (sid, i) {
+      var def = lv.steps[sid], k = stepLabel(def), rv = reviewOf(lv, sid), text = def.kind === 'recall' ? 'Un programme tiré parmi les notions déjà vues' : (def.ask || (rv && rv.prompt) || 'Une question');
+      return '<button type="button" class="rv-row" data-sid="' + esc(sid) + '"><span class="rv-n">' + (i + 1) + '</span><span class="rv-t"><span class="rv-k ' + k[0] + '">' + esc(k[1]) + '</span>' + esc(text) + '</span>' + (archived(lv, sid) ? '<span class="rv-m" title="Ta réponse est gardée">✓</span>' : '') + '</button>';
+    }).join('');
+    main.innerHTML = '<div class="lvdone"><span class="lvdone-n">' + lv.num + '</span><h3>Niveau réussi</h3><p>' + esc(lv.title) + '</p><span class="s">' + starLine(qualityOf(lv.id)) + '</span></div>' +
+      '<div class="out-h">Les exercices</div><p class="note">Touche une étape pour revoir l\'énoncé, ta réponse et la solution.</p><div class="rv-list">' + rows + '</div>' +
+      '<div class="out-h">Les cours du niveau</div><div class="lessons-list">' + Object.keys(lv.lessons).map(function (k) { return '<button type="button" class="opt" data-lesson="' + esc(k) + '">' + esc(lv.lessons[k].title) + '</button>'; }).join('') + '</div>';
+    $$('[data-sid]', main).forEach(function (b) { b.addEventListener('click', function () { showReviewStep(lv, b.dataset.sid); }); });
+    $$('[data-lesson]', main).forEach(function (b) { b.addEventListener('click', function () { lessonScreen(lv.lessons[b.dataset.lesson], 'Retour', function () { showDone(lv); }, lv); }); });
+    setFoot([{ label: 'Carte', fn: showMap }, { label: G.data.rp[lv.id] ? 'Reprendre le rejeu' : 'Rejouer le niveau', cls: 'primary', fn: function () { startReplay(lv, false); } }], null);
     sideAndNews();
+    scroller.scrollTop = 0;
+    if (!G.reviews[lv.id]) loadReview(lv).then(function (r) { if (r && G.view === 'done' && G.lv === lv) showDone(lv); });
+  }
+  function showReviewStep(lv, sid) {
+    G.lv = lv; G.view = 'review'; G.redraw = function () { showReviewStep(lv, sid); };
+    var ids = Object.keys(lv.steps), i = ids.indexOf(sid), def = lv.steps[sid] || {}, kind = def.kind || 'explain', k = stepLabel(def), mine = archived(lv, sid), acts = [];
+    doneTop(lv, 'Niveau ' + lv.num + ' · revoir l\'étape ' + (i + 1) + ' sur ' + ids.length);
+    var missing = '<p class="note">Ta réponse à cette étape n\'a pas été gardée : le niveau a été joué avant que le jeu garde les réponses. Rejoue-le pour la retrouver ici.</p>';
+    var tried = function (w) { return w && w.length ? '<p class="hint-p">Avant, tu avais essayé : ' + w.map(function (x) { return '« ' + esc(x) + ' »'; }).join(', ') + '.</p>' : '<p class="hint-p">Trouvé du premier coup.</p>'; };
+    var body = '<div class="kind ' + k[0] + '"><span class="pill">' + esc(k[1]) + '</span><h3>Étape ' + (i + 1) + ' sur ' + ids.length + '</h3></div>';
+    if (kind === 'explain') {
+      var rv = reviewOf(lv, sid);
+      if (!rv) { body += '<p class="note">Chargement de la correction…</p>'; loadReview(lv).then(function (r) { if (r && G.view === 'review' && G.lv === lv) showReviewStep(lv, sid); }); }
+      else {
+        body += ask('k-qcm', 'Question', esc(rv.prompt)) + '<ul class="rv-opts">' + (rv.options || []).map(function (o) {
+          return '<li class="' + (o.ok ? 'ok' : 'ko') + '"><span class="mk">' + (o.ok ? '✓' : '✗') + '</span><span>' + esc(o.text) + (o.why ? '<span class="why">' + esc(o.why) + '</span>' : '') + '</span></li>';
+        }).join('') + '</ul>' + (mine ? tried(mine.w) : '');
+      }
+    } else if (kind === 'choose' || kind === 'value') {
+      var out = E.printed(def), mode = def.html ? 'html' : 'words';
+      var right = kind === 'choose' ? def.options.filter(function (o) { return E.norm(o, mode) === out; })[0] : out;
+      body += ask('k-pred', 'Consigne', esc(def.ask)) + codeHtml(def.code, def.vars, { html: def.html }) +
+        '<div class="out-h">La bonne réponse</div><pre class="rv-sol">' + esc(right) + '</pre>' + (mine ? tried(mine.w) : missing);
+      acts.push({ label: 'Pas à pas', fn: function () { openTrace(def.code, def.vars, def.html); } });
+    } else if (kind === 'trace' || kind === 'cases') {
+      var isTrace = kind === 'trace', rows = isTrace ? E.traceRows(def) : E.caseRows(def), cols = isTrace ? def.watch : ['affiche'];
+      var shown = isTrace ? def.vars : (function () { var o = Object.assign({}, def.vars || {}); o[def.var] = def.values[0]; return o; })();
+      body += ask('k-sui', 'Consigne', esc(def.ask)) + codeHtml(def.code, shown, { cur: isTrace ? def.after + 1 : null, html: def.html }) +
+        '<div class="out-h">Le tableau juste</div><div class="tbl-wrap"><table class="follow"><thead><tr>' + (isTrace ? '<th>tour</th>' + cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') : '<th>' + esc('$' + def.var) + '</th><th>affiche</th>') + '</tr></thead><tbody>' +
+        rows.map(function (row, r) { return '<tr><td class="t">' + (isTrace ? r + 1 : esc(E.literal(def.values[r]))) + '</td>' + (isTrace ? row : [row]).map(function (v) { return '<td class="sol">' + esc(v) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' +
+        (mine ? '<p class="hint-p">Ton tableau était juste.</p>' : missing);
+      acts.push({ label: 'Pas à pas', fn: function () { openTrace(def.code, shown, def.html); } });
+    } else if (kind === 'aim' || kind === 'aimw') {
+      body += ask('k-vis', 'Consigne', esc(def.ask)) + '<div class="boxes"><span class="box-name">$' + esc(def.var) + '</span>' + boxesHtml((def.vars || {})[def.var], '', { tap: false, target: def.target }) + '</div>' +
+        '<div class="out-h">La bonne case</div><pre class="rv-sol">$' + esc(def.var) + esc(def.target) + '</pre>' + (mine ? (kind === 'aimw' ? '<p class="hint-p">Tu avais écrit <code>' + esc(mine.a) + '</code>.</p>' : '<p class="hint-p">Tu l\'avais trouvée.</p>') : missing);
+    } else {
+      var d = def;
+      if (kind === 'recall') {
+        var ref = mine && mine.m ? mine : (G.data.recall[lv.id] || {})[sid], item = ref && C.get(ref.m) && C.get(ref.m).pool[ref.i];
+        d = item ? Object.assign({}, item, { kind: 'recall' }) : null;
+        if (!d) body += '<p class="note">Le programme tiré pour ce rappel n\'a pas été gardé.</p>';
+      }
+      if (d) {
+        var html = !!d.html;
+        body += ask(k[0], kind === 'recall' ? 'Rappel · ' + esc(C.get(ref.m).title) : 'Consigne', esc(d.ask)) + expectHtml(d) +
+          (kind === 'repair' ? '<div class="out-h">Le programme à réparer</div>' + codeHtml(d.starter, d.vars, { html: html }) : '') +
+          (mine ? '<div class="out-h">Ta réponse' + (mine.k ? ' · juste après ' + plural(mine.k, 'essai refusé', 'essais refusés') : '') + '</div>' + codeHtml(mine.a, d.vars, { html: html }) : missing) +
+          '<div class="out-h">Une solution</div>' + codeHtml(d.ref, d.vars, { html: html }) +
+          (mine ? '<p class="note">Il y a souvent plusieurs façons justes d\'écrire un programme : la tienne l\'était, puisqu\'elle passait tous les cas.</p>' : '');
+        acts.push({ label: 'Pas à pas', fn: function () { openTrace(mine ? mine.a : d.ref, d.vars, html); } });
+        acts.push({ label: 'Essayer', fn: function () { sandbox(d, mine ? mine.a : d.ref, lv); } });
+      }
+    }
+    main.innerHTML = body;
+    acts.push({ label: '←', fn: function () { if (i > 0) showReviewStep(lv, ids[i - 1]); else showDone(lv); } });
+    acts.push(i < ids.length - 1 ? { label: 'Suivante →', cls: 'primary', fn: function () { showReviewStep(lv, ids[i + 1]); } } : { label: 'Fin', cls: 'primary', fn: function () { showDone(lv); } });
+    setFoot(acts, null);
+    sideAndNews();
+    scroller.scrollTop = 0;
+  }
+  /* A program to change and run, noted nowhere: the review's « Essayer ». */
+  function sandbox(d, code, lv) {
+    var back = G.redraw;
+    lessonScreen({ pill: 'Essayer', title: 'Modifie, exécute : rien n\'est noté', html: '<p>' + esc(d.ask) + '</p>', example: code, vars: d.vars }, 'Retour', back, lv);
+    scroller.scrollTop = 0;
   }
   function showChallengeDone(lv) {
-    G.lv = lv; G.view = 'done';
-    top.innerHTML = '<div class="row">' + icoBtn('back', ICON.back, 'Retour à la carte des niveaux') + '<div class="ttl"><small>' + (lv.kind === 'final' ? 'Épreuve finale · réussie' : 'Défi de maîtrise · réussi') + '</small><b>' + esc(lv.title) + '</b></div>' + sideButtons() + '</div>';
-    bindTop();
-    main.innerHTML = '<div class="lvdone"><span class="lvdone-n chal">' + (lv.kind === 'final' ? ICON.star : ICON.check) + '</span><h3>' + (lv.kind === 'final' ? 'Épreuve réussie' : 'Défi réussi') + '</h3><p>' + esc(lv.title) + '</p><span class="s">' + starLine(qualityOf(lv.id)) + '</span>' + (lv.kind === 'final' && G.data.best[lv.id] !== undefined ? '<p>Meilleur score : ' + G.data.best[lv.id] + '/' + lv.draw + '</p>' : '') + '</div>' +
-      (lv.kind === 'mastery' ? '<div class="banner good">Notions maîtrisées : ' + uniqueNotions(lv).map(function (n) { return esc(C.notion(n).label); }).join(', ') + '.</div>' : '');
-    setFoot([{ label: 'Carte des niveaux', cls: 'primary', fn: showMap }], null);
+    G.lv = lv; G.view = 'done'; G.key = lv.id; G.replay = false; G.redraw = function () { showChallengeDone(lv); };
+    var fin = lv.kind === 'final', run = archived(lv, 'run');
+    doneTop(lv, fin ? 'Épreuve finale · réussie' : 'Défi de maîtrise · réussi');
+    var programs = run ? run.qs.map(function (qi, i) {
+      var q = lv.pool[qi];
+      if (!q) return '';
+      return '<div class="rv-prog"><div class="out-h">Programme ' + (i + 1) + (fin ? ' · ' + (run.r[i] ? 'réussi' : 'non réussi') : '') + '</div>' + ask('k-chal', 'Consigne', esc(q.ask)) +
+        (run.a[i] ? '<div class="out-h">Ta réponse</div>' + codeHtml(run.a[i], q.vars, { html: !!q.html }) : '') +
+        '<div class="out-h">Une solution</div>' + codeHtml(q.ref, q.vars, { html: !!q.html }) + '</div>';
+    }).join('') : '<p class="note">Les programmes de ta dernière tentative n\'ont pas été gardés : ils le seront la prochaine fois.</p>';
+    main.innerHTML = '<div class="lvdone"><span class="lvdone-n chal">' + (fin ? ICON.star : ICON.check) + '</span><h3>' + (fin ? 'Épreuve réussie' : 'Défi réussi') + '</h3><p>' + esc(lv.title) + '</p><span class="s">' + starLine(qualityOf(lv.id)) + '</span>' + (fin && G.data.best[lv.id] !== undefined ? '<p>Meilleur score : ' + G.data.best[lv.id] + '/' + lv.draw + '</p>' : '') + '</div>' +
+      (lv.kind === 'mastery' ? '<div class="banner good">Notions maîtrisées : ' + uniqueNotions(lv).map(function (n) { return esc(C.notion(n).label); }).join(', ') + '.</div>' : '') +
+      '<div class="out-h">' + (fin ? 'Ta dernière épreuve' : 'Ton dernier défi') + '</div>' + programs;
+    setFoot([{ label: 'Carte', fn: showMap }, { label: fin ? 'Repasser l\'épreuve' : 'Refaire le défi', cls: 'primary', fn: function () { startReplay(lv, true); } }], null);
     sideAndNews();
+    scroller.scrollTop = 0;
+  }
+  /* The programs of a mastery challenge or a final test, as the student wrote them: the latest go. */
+  function archiveRun(r) {
+    var lv = G.lv;
+    archive('run', { qs: r.qs.map(function (q) { return lv.pool.indexOf(q); }), a: r.qs.map(function (_, i) { return (r.codes && r.codes[i]) || ''; }), r: r.qs.map(function (_, i) { return r.results[i] === true; }), k: r.errors || 0 });
+  }
+
+  // ——— Replaying a chapter or the whole game: its levels and challenges done, one after the other ———
+  function startRerun(label, ids) {
+    ids = ids.filter(function (id) { return closed(id); });
+    if (!ids.length) return;
+    G.data.rerun = { label: label, ids: ids, i: 0 }; save(true);
+    startReplay(C.get(ids[0]), true);
+  }
+  /* The level just replayed moves the run on: what it answers is the next one, or that it is over. */
+  function rerunStep(lv) {
+    var run = G.data.rerun;
+    if (!run || run.ids[run.i] !== lv.id) return null;
+    run.i++;
+    while (run.i < run.ids.length && !closed(run.ids[run.i])) run.i++;
+    if (run.i >= run.ids.length) { delete G.data.rerun; return { over: true, label: run.label }; }
+    return { next: run.ids[run.i], label: run.label, i: run.i, n: run.ids.length };
+  }
+
+  /* Before the archive of answers, a level's drafts were all that was left of what the student wrote: those
+     of the levels done become their answers, and the drafts go (the server drops a closed level's). */
+  function adoptDrafts() {
+    var changed = false, CODE = { repair: 1, write: 1, recall: 1, trace: 1, cases: 1 };
+    Object.keys(G.data.drafts).forEach(function (id) {
+      var lv = C.get(id), d = G.data.drafts[id];
+      if (!lv || lv.kind !== 'level' || !closed(id) || !d || typeof d !== 'object') return;
+      var a = G.data.answers[id] = G.data.answers[id] || {}, drawn = G.data.recall[id] || {};
+      Object.keys(d).forEach(function (sid) {
+        var def = lv.steps[sid];
+        if (!def || a[sid]) return;
+        if (def.kind === 'complete' && Array.isArray(d[sid])) { var vals = d[sid], n = 0; a[sid] = { a: def.template.replace(/\[\[\]\]/g, function () { return String(vals[n++] || '').trim(); }) }; }
+        else if (CODE[def.kind]) a[sid] = Object.assign({ a: d[sid] }, def.kind === 'recall' && drawn[sid] ? { m: drawn[sid].m, i: drawn[sid].i } : {});
+      });
+      delete G.data.drafts[id];
+      changed = true;
+    });
+    if (changed) save(true);
   }
 
   // ——— A mastery challenge: programs drawn from its pool, untimed, without a hint ———
@@ -821,7 +1092,7 @@
       var text = code(), box = $('#res', main);
       if (!text.trim()) return;
       var res = E.check(q, text);
-      if (res.passed) { r.results[r.i] = true; SND.ok(); box.innerHTML = '<div class="flash ok">Juste, sur tous les cas.</div>'; setTimeout(advance, 600); return; }
+      if (res.passed) { r.results[r.i] = true; (r.codes = r.codes || {})[r.i] = text; SND.ok(); box.innerHTML = '<div class="flash ok">Juste, sur tous les cas.</div>'; setTimeout(advance, 600); return; }
       SND.ko();
       if (!res.deliverable) { box.innerHTML = (res.error ? errHtml(res.error) : '') + '<p class="hint-p">Ce programme ne s\'exécute pas : corrige-le, rien n\'est compté.</p>'; reveal(box); return; }
       r.errors++;
@@ -843,6 +1114,7 @@
   function finishMastery() {
     var r = G.run, stepId = G.ticket.steps[0].id;
     r.over = true;
+    archiveRun(r);
     challengeTop();
     main.innerHTML = '<div class="score win"><span class="out-h">' + esc(G.lv.title) + '</span><b>' + r.qs.length + '/' + r.qs.length + '</b><span>' + (r.errors ? plural(r.errors, 'essai faux', 'essais faux') + ' en chemin' : 'sans un essai faux') + '</span></div><div id="res" class="out"></div>';
     setFoot([], null);
@@ -891,6 +1163,7 @@
     stopTimer(); r.over = true; r.used = Math.min(r.limit, (Date.now() - r.start) / 1000);
     var ok = r.results.filter(function (x) { return x === true; }).length;
     G.data.best[lv.id] = Math.max(G.data.best[lv.id] || 0, ok); save();
+    archiveRun(r);
     var win = ok >= FINAL_PASS, stepId = G.ticket.steps[0].id;
     challengeTop();
     main.innerHTML = '<div class="score' + (win ? ' win' : '') + '"><span class="out-h">' + esc(lv.title) + '</span><b>' + ok + '/' + r.qs.length + '</b><span>en ' + fmt(r.used) + (r.used >= r.limit ? ' · temps écoulé' : '') + '</span></div>' +
@@ -962,8 +1235,10 @@
     G.user = res[0]; G.prog = res[1];
     var d = G.prog && G.prog.data;
     G.data = d && typeof d === 'object' && !Array.isArray(d) ? d : {};
-    ['seen', 'nseen', 'drafts', 'hints', 'best', 'flash', 'miss', 'recall'].forEach(function (k) { if (!G.data[k] || typeof G.data[k] !== 'object' || Array.isArray(G.data[k])) G.data[k] = {}; });
+    ['seen', 'nseen', 'drafts', 'hints', 'best', 'flash', 'miss', 'recall', 'answers', 'rp'].forEach(function (k) { if (!G.data[k] || typeof G.data[k] !== 'object' || Array.isArray(G.data[k])) G.data[k] = {}; });
     if (!Array.isArray(G.data.recallUsed)) G.data.recallUsed = [];
+    if (G.data.rerun && (!Array.isArray(G.data.rerun.ids) || typeof G.data.rerun.i !== 'number')) delete G.data.rerun;
+    adoptDrafts();
     SND.setMuted(!!G.data.mute);
     return E.ready();
   }).then(function () {

@@ -125,23 +125,24 @@ class SeriousGameSessionRepository extends ServiceEntityRepository
     }
 
     /**
-     * The stars of each ticket at its latest closing: ticket => stars. A ticket closed in the
-     * current game was closed by its latest scored opening.
+     * The stars of each ticket at its latest closing, raised by the replays played since: ticket =>
+     * stars. A ticket closed in the current game was closed by its latest scored opening; a replay
+     * (SeriousGameSessionMode::Replay) can only raise what it shows, never lower it.
      *
      * @return array<string, int>
      */
     public function latestTicketStars(User $player, SeriousGame $game): array
     {
-        /** @var list<array{unitCode: string|null, score: int|string|null}> $rows */
+        /** @var list<array{unitCode: string|null, score: int|string|null, mode: SeriousGameSessionMode|string}> $rows */
         $rows = $this->createQueryBuilder('s')
-            ->select('s.unitCode', 's.score')
+            ->select('s.unitCode', 's.score', 's.mode')
             ->andWhere('s.player = :player')
             ->andWhere('s.game = :game')
-            ->andWhere('s.mode = :mode')
+            ->andWhere('s.mode IN (:modes)')
             ->andWhere('s.score IS NOT NULL')
             ->setParameter('player', $player)
             ->setParameter('game', $game)
-            ->setParameter('mode', SeriousGameSessionMode::Ticket)
+            ->setParameter('modes', [SeriousGameSessionMode::Ticket, SeriousGameSessionMode::Replay])
             ->orderBy('s.endedAt', 'ASC')
             ->addOrderBy('s.id', 'ASC')
             ->getQuery()
@@ -149,11 +150,37 @@ class SeriousGameSessionRepository extends ServiceEntityRepository
 
         $out = [];
         foreach ($rows as $row) {
-            if (null !== $row['unitCode'] && null !== $row['score']) {
-                $out[$row['unitCode']] = (int) $row['score'];
+            if (null === $row['unitCode'] || null === $row['score']) {
+                continue;
             }
+            $stars = (int) $row['score'];
+            $mode = $row['mode'] instanceof SeriousGameSessionMode ? $row['mode'] : SeriousGameSessionMode::tryFrom($row['mode']);
+            $out[$row['unitCode']] = SeriousGameSessionMode::Replay === $mode ? max($out[$row['unitCode']] ?? 0, $stars) : $stars;
         }
 
         return $out;
+    }
+
+    /**
+     * The replays of a ticket still open, oldest first - all of them when no ticket is named.
+     *
+     * @return list<SeriousGameSession>
+     */
+    public function findOpenReplays(User $player, SeriousGame $game, ?string $ticket = null): array
+    {
+        $qb = $this->createQueryBuilder('s')
+            ->andWhere('s.player = :player')
+            ->andWhere('s.game = :game')
+            ->andWhere('s.mode = :mode')
+            ->andWhere('s.endedAt IS NULL')
+            ->setParameter('player', $player)
+            ->setParameter('game', $game)
+            ->setParameter('mode', SeriousGameSessionMode::Replay)
+            ->orderBy('s.startedAt', 'ASC');
+        if (null !== $ticket) {
+            $qb->andWhere('s.unitCode = :ticket')->setParameter('ticket', $ticket);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 }

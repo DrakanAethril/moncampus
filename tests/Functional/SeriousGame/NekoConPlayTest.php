@@ -188,6 +188,15 @@ class NekoConPlayTest extends FunctionalTestCase
         $this->call('POST', 'scenario/new-game', [], 409);
     }
 
+    public function testAClosedTicketIsNeitherReadAgainNorReplayedWithoutTheScenarioSayingSo(): void
+    {
+        $this->call('GET', 'scenario');
+        $this->playTicket('T04');
+
+        self::assertSame('replay-off', $this->call('POST', 'tickets/replay', ['ticket' => 'T04'], 409)['error']);
+        self::assertSame('replay-off', $this->call('POST', 'tickets/review', ['ticket' => 'T04'], 409)['error']);
+    }
+
     public function testASeriesGameHasNoScenario(): void
     {
         $this->installGame('pompei', ['ROLE_STUDENT'], ['rosa']);

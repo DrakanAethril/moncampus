@@ -294,6 +294,8 @@ export default class extends Controller {
             case 'markActSeen': return { method: 'POST', path: '/scenario/act-seen', body: { act: Number.parseInt(params.act, 10) || 0 } };
             case 'newGame': return { method: 'POST', path: '/scenario/new-game' };
             case 'startTicket': return { method: 'POST', path: '/tickets', body: { ticket: String(params.ticket ?? '').slice(0, 40) } };
+            case 'replayTicket': return { method: 'POST', path: '/tickets/replay', body: { ticket: String(params.ticket ?? '').slice(0, 40), fresh: true === params.fresh } };
+            case 'reviewTicket': return { method: 'POST', path: '/tickets/review', body: { ticket: String(params.ticket ?? '').slice(0, 40) } };
             case 'submitStep':
             case 'submitGuide': {
                 const route = ticketPath('submitStep' === method ? 'step' : 'guide');

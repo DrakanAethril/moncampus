@@ -609,7 +609,17 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     drawn from a pool, no hint, untimed, one measured step whose wrong tries are sent as refused deliveries
     before the win - and an optional **« lecture éclair »** (eight codes to read in two minutes, by touch),
     **which is not a ticket**: only its best score is kept, in the display state. The final test is timed
-    (60 min) and passed at 10 of 12.
+    (60 min) and passed at 10 of 12. **A level done is read again and replayed** (the user's decisions of
+    2026-11-09, spec §8), the one scenario game that does, through two server doors its manifest opens
+    (`scenario.replay`): `reviewTicket` hands a **closed** ticket's corrections (the right explanation, why
+    each other is wrong), and `replayTicket` plays it again as a session of mode **`replay`** - its own step
+    and hints on the session, the ticket left closed, its stars only ever *raising* `best` and the board's
+    (`latestTicketStars()` reads a replay as a max over the latest closing); the teachers' reading reads
+    mode `ticket` only. What the student answered is archived in the display state (`answers`, never sent)
+    for « Revoir »; at load, the drafts of the levels done (all an earlier version kept) become answers.
+    `keep_on_new_game` makes « Recommencer » keep the archive and the notebook. **« Mon carnet »** - a fiche
+    per notion and the PHP functions met (`carnet/chapitre*.js`, checked by the bench) - is closed during
+    the mastery challenges, the final test and the « lectures éclair ».
   - **`/serious-games/stats`** (`StatsController`, `App\SeriousGame\Stats\`): usage, progression,
     analysis of the units, a class's list and the years, for every game - read by **every teacher**
     and the administrators with the names (`SeriousGameVoter::READ_STATS`, the user's decision of
