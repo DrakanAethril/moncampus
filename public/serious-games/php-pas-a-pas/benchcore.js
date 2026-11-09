@@ -15,7 +15,9 @@
      reminder always has a mastery pool to draw from;
    - a mastery challenge has more programs in its pool than it draws, a « lecture éclair » too;
    - with the scenario: the same levels, the same steps in the same kinds, as many written hints as the
-     server counts, a question with exactly one right answer whose wrong ones name their misconception.
+     server counts, a question with exactly one right answer whose wrong ones name their misconception;
+   - « Mon carnet »: a fiche per notion, its example and every function's running without a warning and
+     printing something, a function entry for every function a notion offers in the bar of words.
 
    PPPBench.run({ only, scenario }) → [{ id, title, ok, problems }] */
 (function (root) {
@@ -227,7 +229,32 @@
       out.push({ id: f.id, title: f.title, ok: !problems.length, problems: problems });
     });
     if (opts.scenario && !opts.only) Object.keys(tickets).forEach(function (id) { if (!C.get(id)) out.push({ id: id, title: tickets[id].title || id, ok: false, problems: [id + ' : absent du jeu'] }); });
+    if (!opts.only) out.push(notebook());
     return out;
+  }
+
+  /* « Mon carnet » (carnet/*.js): one fiche per notion, examples that run, the functions of the bar. */
+  function notebook() {
+    var problems = [], names = C.fns().map(function (f) { return f.name; });
+    function example(what, code, vars, html) {
+      var r = E.run(code, vars || {}, { html: html });
+      if (r.errors.length) problems.push(what + ' : ' + r.errors[0].raw);
+      else if (!String(r.output).trim()) problems.push(what + ' : n\'affiche rien');
+    }
+    C.notions.forEach(function (n) {
+      var f = C.ficheOf(n.id);
+      if (!f) { problems.push('fiche absente : ' + n.id); return; }
+      if (!f.rule || !(f.points || []).length || !(f.traps || []).length) problems.push(n.id + ' : règle, points ou pièges manquants');
+      example('exemple de ' + n.id, f.example, f.vars, n.ch === 8);
+      (f.fns || []).forEach(function (x) { if (names.indexOf(x) === -1) problems.push(n.id + ' : fonction ' + x + ' sans entrée'); });
+      n.chips.forEach(function (c) { if (/\($/.test(c) && names.indexOf(c.slice(0, -1)) === -1) problems.push('fonction ' + c + ' de la barre sans entrée'); });
+    });
+    C.fns().forEach(function (f) {
+      var n = C.notion(f.notion);
+      if (!n) { problems.push(f.name + ' : notion inconnue ' + f.notion); return; }
+      example('exemple de ' + f.name + '()', f.example, f.vars, n.ch === 8);
+    });
+    return { id: 'CARNET', title: 'Mon carnet', ok: !problems.length, problems: problems };
   }
 
   root.PPPBench = { run: run, leavesOf: leavesOf, valueOf: valueOf };

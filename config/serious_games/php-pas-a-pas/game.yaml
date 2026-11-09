@@ -17,6 +17,11 @@
 # got wrong first -, steps answered by touch (the table of a loop's turns, the box to aim at in an array),
 # and the step through. A mastery challenge is untimed and never blocks the next level; a « lecture éclair »
 # - eight codes to read in two minutes - is not a ticket at all: the game keeps its best score.
+#
+# A level done is read again - each step, the student's answer beside the solution, the right explanation
+# and why the others are wrong (reviewTicket) - and played again as a replay (replayTicket): the level
+# stays done, the stars of the go raise its own when better. « Mon carnet » holds a fiche per notion and
+# the PHP functions met (carnet/*.js in the package).
 slug: php-pas-a-pas
 title: "PHP pas à pas"
 pitch: "Apprendre à programmer en PHP depuis zéro, niveau après niveau : un cours court, des exercices de plus en plus libres, et les conditions, les boucles et les tableaux repratiqués sans cesse. Se joue sur téléphone."
@@ -50,6 +55,11 @@ scenario:
   # A level practises, follows, asks, then writes, then recalls: its repairs are not first (ScenarioValidator).
   free_order: true
   restart_anytime: true
+  # A level done can be read again with its corrections and played again: a replay never reopens it, and
+  # its stars only raise the level's. The notebook's « vu » and the archive of the student's answers are
+  # theirs, not the game's progress: « Recommencer le jeu » keeps them.
+  replay: true
+  keep_on_new_game: [answers, nseen]
   acts:
     - { n: 1, title: "Afficher et calculer", tools: [console] }
     - { n: 2, title: "Décider", tools: [console] }
