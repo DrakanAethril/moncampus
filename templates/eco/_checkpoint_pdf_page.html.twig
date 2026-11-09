@@ -1,11 +1,11 @@
-{# Standalone print document (no base.html.twig) - one instance rendered per checkpoint by
-   App\Controller\EcoParcoursController::pdf(), each converted to its own PDF via GotenbergClient
-   then merged into a single "1 page A4 per checkpoint" export (screen 1f). #}
+{# Standalone print document (no base.html.twig) - the "1 page A4 per checkpoint" export (screen 1f),
+   rendered whole by App\Controller\EcoParcoursController::pdf() and converted by Gotenberg in one
+   call: one .eco-pdf-page per checkpoint, each closed by a page break. #}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>{{ checkpoint.name }}</title>
+<title>{{ parcours.name }}</title>
 <style>
     @page { size: A4; margin: 0; }
     body { margin: 0; font-family: 'Source Sans 3', Arial, sans-serif; }
@@ -18,7 +18,10 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+        overflow: hidden;
+        break-after: page;
     }
+    .eco-pdf-page:last-child { break-after: auto; }
     .eco-pdf-eyebrow { font-weight: 700; font-size: 12pt; color: #8a99a6; letter-spacing: 3pt; text-transform: uppercase; }
     .eco-pdf-name { font-weight: 700; font-size: 34pt; color: #12344d; margin: 8mm 0 4mm; text-align: center; }
     .eco-pdf-code { font-family: ui-monospace, monospace; font-weight: 600; font-size: 12pt; color: #5b6c79; background: #f2f5f8; border-radius: 3mm; padding: 2mm 8mm; }
@@ -28,12 +31,14 @@
 </style>
 </head>
 <body>
+{% for page in pages %}
 <div class="eco-pdf-page">
     <div class="eco-pdf-eyebrow">E-CO · {{ parcours.name|upper }}</div>
-    <div class="eco-pdf-name">{{ checkpoint.name|upper }}</div>
-    <div class="eco-pdf-code">{{ checkpoint.shortCode }}</div>
-    <div class="eco-pdf-qr">{{ qrSvg|raw }}</div>
-    <div class="eco-pdf-footer">{{ 'ecoCheckpointPdfFooterText'|trans({'%page%': pageNumber, '%total%': pageTotal}) }}</div>
+    <div class="eco-pdf-name">{{ page.checkpoint.name|upper }}</div>
+    <div class="eco-pdf-code">{{ page.checkpoint.shortCode }}</div>
+    <div class="eco-pdf-qr">{{ page.qrSvg|raw }}</div>
+    <div class="eco-pdf-footer">{{ 'ecoCheckpointPdfFooterText'|trans({'%page%': loop.index, '%total%': loop.length}) }}</div>
 </div>
+{% endfor %}
 </body>
 </html>
