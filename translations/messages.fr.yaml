@@ -12370,3 +12370,10 @@ quizLivePlayerNumberHint: 'Choisissez la valeur, puis validez'
 quizLivePlayerTextHint: 'Tapez votre réponse, puis validez'
 quizLivePlayerVoteHint: 'Votez pour une proposition'
 quizLiveAnswerRetryLabel: 'Réponse non envoyée : la connexion a sauté. Répondez à nouveau.'
+internshipTutorLinkSecondaryTutorSameAsTutorMessage: "Le tuteur secondaire doit être une autre personne que le tuteur principal."
+internshipTutorLinkSecondaryTutorIsStudentMessage: "L'alternant ne peut pas être son propre tuteur secondaire."
+internshipTutorLinkSecondaryTutorIncompleteMessage: "Renseignez le prénom, le nom et l'email du nouveau tuteur secondaire, ou choisissez « Aucun »."
+ufaAlternanceSecondaryTutorNoneLabel: "Aucun"
+ufaAlternanceSecondaryTutorSectionLabel: "Tuteur secondaire (facultatif)"
+ufaAlternanceSecondaryTutorSectionHelp: "Il accède au livret, le complète et le signe comme le tuteur principal. Les relances vont au tuteur principal, le tuteur secondaire en copie."
+ufaAlternanceSecondaryTutorShortLabel: "Tuteur secondaire"

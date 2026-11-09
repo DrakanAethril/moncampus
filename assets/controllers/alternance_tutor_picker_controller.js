@@ -7,12 +7,18 @@ import { Controller } from '@hotwired/stimulus';
 // picked option's own enterpriseId payload field ("l'entreprise est reprise automatiquement",
 // 32a) and pokes enterprise-picker so its new-enterprise fields fold away - the user keeps the
 // mockup's "Changer d'entreprise" affordance simply by changing that dropdown again.
+// The secondary tutor's block sets carryEnterprise to false: the employer is the principal's.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['hidden'];
+    static values = { carryEnterprise: { type: Boolean, default: true } };
 
     pick(event) {
         this.hiddenTarget.value = event.target.value;
+
+        if (!this.carryEnterpriseValue) {
+            return;
+        }
 
         const tomSelect = event.target.tomselect;
         const option = tomSelect ? tomSelect.options[event.target.value] : null;

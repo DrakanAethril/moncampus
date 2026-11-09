@@ -66,6 +66,7 @@ class InternshipAlternanceType extends AbstractType
     {
         $builder
             ->add('tutor', InternshipTutorFieldsType::class)
+            ->add('secondaryTutor', InternshipTutorFieldsType::class, ['optional' => true, 'initial_mode' => 'none'])
             ->add('enterprise', EntityType::class, [
                 'class' => Enterprise::class,
                 'choices' => $this->enterpriseRepository->findAllActiveOrderedByName($this->currentUser()),
@@ -125,6 +126,7 @@ class InternshipAlternanceType extends AbstractType
             // Sets $tutor (picked account, or one provisioned on the spot) and hands back the
             // employer that tutor was last seen at, if any.
             $carriedEnterprise = $this->tutorResolver->resolve($form->get('tutor'), $tutorLink);
+            $this->tutorResolver->resolveSecondary($form->get('secondaryTutor'), $tutorLink);
 
             if (null === $tutorLink->getEnterprise() && null !== $carriedEnterprise) {
                 $tutorLink->setEnterprise($carriedEnterprise);
@@ -159,7 +161,7 @@ class InternshipAlternanceType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => InternshipTutorLink::class]);
+        $resolver->setDefaults(['data_class' => InternshipTutorLink::class, 'error_mapping' => ['secondaryTutor' => 'secondaryTutor']]);
     }
 
     private function currentUser(): ?User

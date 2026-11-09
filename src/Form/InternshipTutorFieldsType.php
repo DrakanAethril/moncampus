@@ -26,17 +26,29 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * Everything is required: false at the form level - a missing tutor surfaces as the entity's own
  * Assert\NotNull on $tutor rather than as four separate "this field is required" errors on inputs
  * the staff member may legitimately have left hidden.
+ *
+ * The same block names the optional secondary tutor: `optional` adds a third mode, « Aucun »
+ * ('none'), and `initial_mode` is the mode the block opens on - an edit opens on 'existing' when a
+ * secondary tutor is already there, so leaving it alone keeps them.
  */
 class InternshipTutorFieldsType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $choices = ['ufaAlternanceNewTutorExistingLabel' => 'existing', 'ufaAlternanceNewTutorNewLabel' => 'new'];
+        if (true === $options['optional']) {
+            $choices = ['ufaAlternanceSecondaryTutorNoneLabel' => 'none'] + $choices;
+        }
+
         $builder
             ->add('mode', ChoiceType::class, [
                 'expanded' => true,
-                'choices' => ['ufaAlternanceNewTutorExistingLabel' => 'existing', 'ufaAlternanceNewTutorNewLabel' => 'new'],
-                'data' => 'existing',
+                'choices' => $choices,
+                'data' => $options['initial_mode'],
                 'label' => false,
+                // The optional block draws no « obligatoire » mark; « Aucun » is its empty choice.
+                'required' => !$options['optional'],
+                'placeholder' => false,
             ])
             ->add('existingTutorId', HiddenType::class, ['required' => false])
             ->add('firstname', TextType::class, ['label' => 'internshipTutorLinkTutorFirstNameFieldLabel', 'required' => false])
@@ -48,6 +60,8 @@ class InternshipTutorFieldsType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['mapped' => false, 'label' => false]);
+        $resolver->setDefaults(['mapped' => false, 'label' => false, 'optional' => false, 'initial_mode' => 'existing']);
+        $resolver->setAllowedTypes('optional', 'bool');
+        $resolver->setAllowedValues('initial_mode', ['none', 'existing', 'new']);
     }
 }

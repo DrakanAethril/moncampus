@@ -141,6 +141,12 @@
                                 <div class="datagrid-title">{{ 'ufaAlternanceRoleTutorLabel'|trans }}</div>
                                 <div class="datagrid-content">{{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }} · {{ tutorLink.tutor.contactEmail ?? '—' }}</div>
                             </div>
+                            {% if tutorLink.secondaryTutor %}
+                                <div class="datagrid-item">
+                                    <div class="datagrid-title">{{ 'ufaAlternanceSecondaryTutorShortLabel'|trans }}</div>
+                                    <div class="datagrid-content">{{ tutorLink.secondaryTutor.displayName ?? tutorLink.secondaryTutor.username }} · {{ tutorLink.secondaryTutor.contactEmail ?? '—' }}</div>
+                                </div>
+                            {% endif %}
                             {% if tutorLink.supervisor %}
                                 <div class="datagrid-item">
                                     <div class="datagrid-title">{{ 'ufaAlternanceRoleSupervisorLabel'|trans }}</div>

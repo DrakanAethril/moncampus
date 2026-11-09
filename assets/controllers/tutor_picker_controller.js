@@ -12,9 +12,10 @@ export default class extends Controller {
         this.toggle();
     }
 
+    // A third mode, 'none', exists on the optional secondary tutor's block: both panels fold away.
     toggle() {
-        const isExisting = this.modeTargets.find((radio) => radio.checked)?.value !== 'new';
-        this.existingPanelTarget.classList.toggle('d-none', !isExisting);
-        this.newPanelTarget.classList.toggle('d-none', isExisting);
+        const mode = this.modeTargets.find((radio) => radio.checked)?.value ?? 'existing';
+        this.existingPanelTarget.classList.toggle('d-none', mode !== 'existing');
+        this.newPanelTarget.classList.toggle('d-none', mode !== 'new');
     }
 }

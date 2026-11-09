@@ -45,6 +45,14 @@ class AlternanceReminderService
     public function sendSingle(InternshipTutorLink $tutorLink, AlternanceReminderStep $step, ?InternshipEvaluationPeriod $period, array $ccRoles, User $sentBy): ?InternshipReminder
     {
         $recipientEmail = $this->emailForStep($tutorLink, $step);
+        // The tutors' steps are the principal's to receive, the secondary tutor in copy - who
+        // becomes the recipient when the principal has no address, rather than nobody.
+        $secondaryTutorEmail = $tutorLink->getSecondaryTutor()?->getContactEmail();
+        $tutorStep = \in_array($step, [AlternanceReminderStep::EngagementTutor, AlternanceReminderStep::Tutor], true);
+        if (null === $recipientEmail && $tutorStep) {
+            $recipientEmail = $secondaryTutorEmail;
+            $secondaryTutorEmail = null;
+        }
         if (null === $recipientEmail) {
             return null;
         }
@@ -65,11 +73,18 @@ class AlternanceReminderService
                 'ctaRouteParams' => [],
             ]);
 
+        $ccEmails = [];
+        if ($tutorStep) {
+            $ccEmails[] = $secondaryTutorEmail;
+        }
         foreach ($ccRoles as $ccRole) {
-            $ccEmail = 'tutor' === $ccRole ? $tutorLink->getTutor()?->getContactEmail() : $tutorLink->getSupervisor()?->getContactEmail();
-            if (null !== $ccEmail) {
-                $email->addCc($ccEmail);
-            }
+            // « Le tuteur » in copy is both tutors.
+            $ccEmails = 'tutor' === $ccRole
+                ? [...$ccEmails, ...array_map(static fn (User $tutor): ?string => $tutor->getContactEmail(), $tutorLink->getTutors())]
+                : [...$ccEmails, $tutorLink->getSupervisor()?->getContactEmail()];
+        }
+        foreach (array_unique(array_filter($ccEmails, static fn (?string $address): bool => null !== $address && $address !== $recipientEmail)) as $ccEmail) {
+            $email->addCc($ccEmail);
         }
 
         $this->mailer->send($email);

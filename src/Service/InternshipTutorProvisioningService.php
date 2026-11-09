@@ -61,6 +61,44 @@ class InternshipTutorProvisioningService
         bool $testUser,
         User $requestedBy,
     ): User {
+        [$user, $ldapUser] = $this->createAccount($firstname, $lastname, $contactEmail, $phone, $testUser, $requestedBy);
+
+        $tutorLink->setTutor($user);
+        $tutorLink->setLdapManageUser($ldapUser);
+
+        return $user;
+    }
+
+    /**
+     * Same account as provision(), hung off $tutorLink as its secondary tutor. The link's
+     * $ldapManageUser stays the principal's request: it records what created the link's tutor,
+     * and nothing reads it for the second one.
+     */
+    public function provisionSecondary(
+        InternshipTutorLink $tutorLink,
+        string $firstname,
+        string $lastname,
+        string $contactEmail,
+        string $phone,
+        bool $testUser,
+        User $requestedBy,
+    ): User {
+        [$user] = $this->createAccount($firstname, $lastname, $contactEmail, $phone, $testUser, $requestedBy);
+
+        $tutorLink->setSecondaryTutor($user);
+
+        return $user;
+    }
+
+    /** @return array{User, LdapManageUser} */
+    private function createAccount(
+        string $firstname,
+        string $lastname,
+        string $contactEmail,
+        string $phone,
+        bool $testUser,
+        User $requestedBy,
+    ): array {
         $ldapUser = new LdapManageUser($firstname, $lastname, 'tutor', 'account_create');
         $ldapUser->setAddedBy($requestedBy->getUsername());
 
@@ -99,10 +137,7 @@ class InternshipTutorProvisioningService
         $this->entityManager->persist($user);
         $this->entityManager->persist($ldapUser);
 
-        $tutorLink->setTutor($user);
-        $tutorLink->setLdapManageUser($ldapUser);
-
-        return $user;
+        return [$user, $ldapUser];
     }
 
     // Whether a brand new tutor may be created with this contact e-mail. False means some account

@@ -11,9 +11,10 @@ use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
- * Scopes access to an InternshipTutorLink's evaluation form to the one ROLE_TUTOR user
- * actually linked as its tutor - the first Voter in this codebase, since every other feature
- * area so far only needed role-based (not per-object-owner) access checks.
+ * Scopes access to an InternshipTutorLink's evaluation form to the ROLE_TUTOR users actually
+ * linked as its tutors - the principal or the secondary one, who hold the same rights - the first
+ * Voter in this codebase, since every other feature area so far only needed role-based (not
+ * per-object-owner) access checks.
  */
 class InternshipTutorLinkVoter extends Voter
 {
@@ -34,6 +35,6 @@ class InternshipTutorLinkVoter extends Voter
             return false;
         }
 
-        return $tutorLink->getTutor() === $user;
+        return $tutorLink->isTutor($user);
     }
 }

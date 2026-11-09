@@ -1,8 +1,12 @@
 {# Shared "Tuteur en entreprise" block - App\Form\InternshipTutorFieldsType, rendered identically
    on "Créer une alternance" (32a) and on both alternance edit forms. Expects `tutorField`
    (form.tutor) and, on an edit, `currentTutor` so the search field opens on the tutor already
-   attached instead of an empty box. #}
+   attached instead of an empty box. The optional secondary tutor's block (form.secondaryTutor,
+   with its « Aucun » mode) passes `searchId` - two searches on one page - and `carryEnterprise:
+   false`: only the principal tutor's employer is carried over to the Entreprise section. #}
+{% set search_id = searchId ?? 'tutor-search' %}
 <div data-controller="tutor-picker">
+    {{ form_errors(tutorField) }}
     <div class="mb-3">
         {% for radio in tutorField.mode %}
             <label class="form-check form-check-inline">
@@ -11,9 +15,9 @@
             </label>
         {% endfor %}
     </div>
-    <div data-tutor-picker-target="existingPanel" data-controller="alternance-tutor-picker">
-        <label class="form-label" for="tutor-search">{{ 'ufaAlternanceNewTutorSearchFieldLabel'|trans }}</label>
-        <select id="tutor-search" name="existingTutorSearch" class="form-select"
+    <div data-tutor-picker-target="existingPanel" data-controller="alternance-tutor-picker" data-alternance-tutor-picker-carry-enterprise-value="{{ (carryEnterprise ?? true) ? 'true' : 'false' }}">
+        <label class="form-label" for="{{ search_id }}">{{ 'ufaAlternanceNewTutorSearchFieldLabel'|trans }}</label>
+        <select id="{{ search_id }}" name="{{ search_id }}" class="form-select"
                 data-controller="tom-select"
                 data-tom-select-url-value="{{ path('app_ufa_alternance_tutor_search') }}"
                 data-tom-select-placeholder-value="{{ 'ufaAlternanceNewTutorSearchFieldLabel'|trans }}"

@@ -50,6 +50,9 @@
                         <h3 class="mb-0">{{ 'ufaAlternanceNewSection2Label'|trans }}</h3>
                     </div>
                     {% include 'ufa/alternance/_tutor_fields.html.twig' with {tutorField: form.tutor} %}
+                    <h4 class="mt-3 mb-2">{{ 'ufaAlternanceSecondaryTutorSectionLabel'|trans }}</h4>
+                    <p class="text-secondary small mb-2">{{ 'ufaAlternanceSecondaryTutorSectionHelp'|trans }}</p>
+                    {% include 'ufa/alternance/_tutor_fields.html.twig' with {tutorField: form.secondaryTutor, searchId: 'secondary-tutor-search', carryEnterprise: false} %}
                 </div>
 
                 {# Section 3 - Entreprise #}
