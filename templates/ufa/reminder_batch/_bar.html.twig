@@ -1,0 +1,8 @@
+{# A batch's progress, one segment per outcome - of the lines it had to deal with, the set-aside
+   ones never were. #}
+<span class="cm-rb-bar" role="img" aria-label="{{ 'reminderBatchProgressAria'|trans({'%done%': figures.handled, '%total%': figures.toHandle}) }}">
+    <i class="cm-rb-bar__seg cm-rb-bar__seg--sent" style="width: {{ figures.share(figures.sent) }}%"></i>
+    <i class="cm-rb-bar__seg cm-rb-bar__seg--done" style="width: {{ figures.share(figures.alreadyDone + figures.notConcerned) }}%"></i>
+    <i class="cm-rb-bar__seg cm-rb-bar__seg--failed" style="width: {{ figures.share(figures.failed) }}%"></i>
+    <i class="cm-rb-bar__seg cm-rb-bar__seg--uncertain" style="width: {{ figures.share(figures.uncertain) }}%"></i>
+</span>

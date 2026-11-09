@@ -141,6 +141,13 @@
   /* A « lecture éclair »: not a ticket, never sent; the game keeps its best score. */
   function flash(def) { def.kind = 'flash'; def.draw = def.draw || 8; def.seconds = def.seconds || 120; flashes.push(def); byId[def.id] = def; return def; }
 
+  /* The notebook (« Mon carnet », carnet/chapitre*.js): one fiche per notion - the rule, what to remember,
+     an example the game runs, the traps - and one entry per PHP function, filed under the notion that
+     introduces it. A fiche shows once its notion is « vue », a function once its notion is. */
+  var fiches = {}, fns = {};
+  function fiche(def) { fiches[def.notion] = def; return def; }
+  function fn(def) { fns[def.name] = def; return def; }
+
   /* The written hints a measured step may give: one for a step answered by touch, two (a method, then a
      skeleton) for a program to complete, repair or write - a reminder draws its own, always two. */
   var ONE = { choose: 1, value: 1, trace: 1, cases: 1, aim: 1, aimw: 1 };
@@ -162,6 +169,10 @@
     mastery: mastery,
     final: final,
     flash: flash,
+    fiche: fiche,
+    fn: fn,
+    ficheOf: function (notion) { return fiches[notion] || null; },
+    fns: function () { return Object.keys(fns).sort().map(function (k) { return fns[k]; }); },
     get: function (id) { return byId[id] || null; },
     all: function () { return levels.slice(); },
     flashes: function () { return flashes.slice(); },

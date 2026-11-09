@@ -51,6 +51,11 @@ class InternshipTutorLinkType extends AbstractType
             // App\Form\InternshipTutorFieldsType. On an edit it opens on "tuteur existant" with
             // the link's current tutor pre-selected, so leaving it alone is a no-op.
             ->add('tutor', InternshipTutorFieldsType::class)
+            // The optional second tutor, opened on the one already named so a save keeps them.
+            ->add('secondaryTutor', InternshipTutorFieldsType::class, [
+                'optional' => true,
+                'initial_mode' => $editedLink instanceof InternshipTutorLink && null !== $editedLink->getSecondaryTutor() ? 'existing' : 'none',
+            ])
             // Picking an existing Enterprise here takes priority; the two fields below are only
             // consulted (and only shown, via enterprise_picker_controller.js) when this is left
             // blank - reconciled into InternshipTutorLink::$enterprise by the SUBMIT listener
@@ -104,6 +109,7 @@ class InternshipTutorLinkType extends AbstractType
             $tutorLink = $event->getData();
 
             $carriedEnterprise = $this->tutorResolver->resolve($event->getForm()->get('tutor'), $tutorLink);
+            $this->tutorResolver->resolveSecondary($event->getForm()->get('secondaryTutor'), $tutorLink);
 
             if (null === $tutorLink->getEnterprise() && null !== $carriedEnterprise) {
                 $tutorLink->setEnterprise($carriedEnterprise);
@@ -134,7 +140,7 @@ class InternshipTutorLinkType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver
-            ->setDefaults(['data_class' => InternshipTutorLink::class])
+            ->setDefaults(['data_class' => InternshipTutorLink::class, 'error_mapping' => ['secondaryTutor' => 'secondaryTutor']])
             ->setRequired('program')
             ->setAllowedTypes('program', Program::class)
         ;

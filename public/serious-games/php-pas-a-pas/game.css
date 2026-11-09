@@ -354,4 +354,53 @@ table.vars td.none { color: var(--ink2); font-family: var(--fd); font-style: ita
 .bolt { color: var(--k-fla); }
 .seg.k-chal span { background: var(--top-line); }
 .seg.k-chal.done span { background: var(--ok); }
+
+/* ——— « Revoir »: the steps of a level done, the student's answer beside the solution ——— */
+.rv-list { display: grid; gap: 6px; }
+.rv-row { appearance: none; cursor: pointer; display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; text-align: left; padding: 10px 12px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--card-a); color: var(--ink); min-height: 52px; }
+.rv-n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 700 12px/1 var(--fm); border: 1px solid var(--rule); color: var(--ink2); }
+.rv-t { font: 500 14px/1.35 var(--fd); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rv-k { display: block; font: 700 10.5px/1.3 var(--fd); letter-spacing: .1em; text-transform: uppercase; color: var(--k); }
+.rv-m { color: var(--ok); font-weight: 700; }
+.rv-sol { margin: 0; padding: 10px 12px; border-radius: var(--r); background: var(--ok-soft); border: 1px solid var(--ok); font: 600 14px/1.4 var(--fm); white-space: pre-wrap; }
+.rv-opts { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.rv-opts li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--rule); background: var(--card-a); font-size: 14.5px; }
+.rv-opts li.ok { border-color: var(--ok); background: var(--ok-soft); }
+.rv-opts li.ko { color: var(--ink2); }
+.rv-opts .mk { font-weight: 700; color: var(--ko); }
+.rv-opts li.ok .mk { color: var(--ok); }
+.rv-opts .why { display: block; margin-top: 4px; font-size: 13.5px; color: var(--ink2); }
+.rv-prog { display: grid; gap: 10px; padding-top: 6px; }
+table.follow td.sol { font: 600 14px/1.3 var(--fm); color: var(--ok); text-align: center; }
+
+/* ——— Replaying a chapter or the whole game ——— */
+.rerun { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; padding: 12px 14px; border: 1px solid var(--accent); border-radius: var(--r2); background: var(--card-a); }
+.rerun > div:first-child { display: grid; gap: 3px; }
+.rerun b { font: 700 16px/1.2 var(--fd); }
+.rerun-acts { display: flex; gap: 8px; }
+.chap-rerun { margin-top: -4px; }
+
+/* ——— « Mon carnet » ——— */
+#sheet [hidden] { display: none !important; } /* the search hides rows whose own display is grid */
+button.vit-item { appearance: none; cursor: pointer; text-align: left; color: inherit; font: inherit; width: 100%; }
+.vit-item .again { color: var(--miss); }
+.cn-tabs { display: flex; gap: 6px; }
+.cn-tab { appearance: none; cursor: pointer; flex: 1; min-height: 40px; border-radius: 99px; border: 1px solid var(--rule); background: var(--card); color: var(--ink2); font: 700 13.5px/1 var(--fd); }
+.cn-tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.cn-q { width: 100%; margin: 10px 0; min-height: 44px; padding: 8px 14px; font: 500 15px/1.3 var(--fd); }
+.cn-back { appearance: none; cursor: pointer; justify-self: start; border: 0; background: none; color: var(--accent); font: 700 14px/1 var(--fd); padding: 4px 0; }
+.fn-item { appearance: none; cursor: pointer; display: grid; gap: 3px; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--card-a); color: var(--ink); font-size: 13.5px; }
+.fn-item code { justify-self: start; color: var(--kw); }
+.fiche { display: grid; gap: 12px; }
+.fi-h { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: center; }
+.fi-h .glyph { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font: 700 14px/1 var(--fm); border: 2px solid var(--accent); color: var(--accent); }
+.fi-h b { font: 700 18px/1.2 var(--fm); display: block; }
+.fi-h .st { font: 700 10.5px/1.3 var(--fd); letter-spacing: .08em; text-transform: uppercase; color: var(--ink2); }
+.fi-rule { margin: 0; padding: 10px 12px; border-radius: var(--r); background: var(--code-bg); border: 1px solid var(--rule); font: 500 14px/1.5 var(--fm); white-space: pre-wrap; overflow-x: auto; }
+.fi-points, .fi-traps { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14.5px; }
+.fi-traps li::marker { content: '⚠ '; color: var(--miss); }
+.fi-points code, .fi-traps code, .fn-item code { white-space: normal; }
+.fi-fns { display: flex; flex-wrap: wrap; gap: 6px; }
+.lessons-list .opt small { color: var(--ink2); font-weight: 500; }
+
 @media (prefers-reduced-motion: reduce) { .sheet-panel { transition: none; } }

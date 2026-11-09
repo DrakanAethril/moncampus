@@ -1,0 +1,6 @@
+{# The formations a batch was launched on, in one line: « Toutes les formations (7) », or their names. #}
+{%- if batch.allPrograms -%}
+    {{ 'reminderBatchAllProgramsCountText'|trans({'%count%': batch.programs|length}) }}
+{%- else -%}
+    {{ batch.programs|map(p => p.displayShortName)|join(', ') }}
+{%- endif -%}

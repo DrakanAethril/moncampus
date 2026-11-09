@@ -24,6 +24,7 @@ final readonly class Scenario
      * @param list<string>          $password       the pieces, in order
      * @param list<ScenarioTicket>  $tickets        in the scenario's order, which is the board's
      * @param array<string, string> $misconceptions misconception => label
+     * @param list<string>          $keptOnNewGame  keys of the display state a « Nouvelle partie » keeps
      */
     private function __construct(
         private int $version,
@@ -35,6 +36,8 @@ final readonly class Scenario
         private string $helper,
         private bool $restartAnytime,
         private bool $freeOrder,
+        private bool $replay = false,
+        private array $keptOnNewGame = [],
     ) {
     }
 
@@ -77,6 +80,8 @@ final readonly class Scenario
             \is_string($data['helper'] ?? null) && '' !== $data['helper'] ? $data['helper'] : 'ines',
             true === ($data['restart_anytime'] ?? null),
             true === ($data['free_order'] ?? null),
+            true === ($data['replay'] ?? null),
+            array_values(array_filter(\is_array($data['keep_on_new_game'] ?? null) ? $data['keep_on_new_game'] : [], is_string(...))),
         );
     }
 
@@ -109,6 +114,26 @@ final readonly class Scenario
     public function freeOrder(): bool
     {
         return $this->freeOrder;
+    }
+
+    /**
+     * Whether a closed ticket can be read again with its corrections and played again
+     * (SeriousGameSessionMode::Replay) - PHP pas à pas. Elsewhere a ticket closes once and for all.
+     */
+    public function replay(): bool
+    {
+        return $this->replay;
+    }
+
+    /**
+     * The keys of the game's display state a « Nouvelle partie » keeps besides the sound: PHP pas à
+     * pas' notebook and its archive of answers, which are the student's and not the game's progress.
+     *
+     * @return list<string>
+     */
+    public function keptOnNewGame(): array
+    {
+        return $this->keptOnNewGame;
     }
 
     public function capacity(): int

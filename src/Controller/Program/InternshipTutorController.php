@@ -157,7 +157,8 @@ class InternshipTutorController extends AbstractController
                         htmlspecialchars($this->generateUrl('app_ufa_alternance_show', ['id' => $tutorLink->getId()])),
                         htmlspecialchars($this->userLabel($tutorLink->getStudent())),
                     ),
-                    'tutorName' => $this->userLabel($tutorLink->getTutor()),
+                    // The principal tutor, then the secondary one when there is one.
+                    'tutorName' => $this->userLabel($tutorLink->getTutor()).(null !== $tutorLink->getSecondaryTutor() ? ' / '.$this->userLabel($tutorLink->getSecondaryTutor()) : ''),
                     'enterpriseName' => $tutorLink->getEnterprise()?->getName(),
                     'contractStartDate' => $tutorLink->getContractStartDate()?->format('d/m/Y') ?? '—',
                     'contractEndDate' => $tutorLink->getContractEndDate()?->format('d/m/Y') ?? '—',

@@ -22,4 +22,10 @@ enum SeriousGameSessionMode: string
      * answers are the steps, deliveries and guided questions; its score the stars at closing.
      */
     case Ticket = 'ticket';
+    /**
+     * A closed ticket played again, from its first step (`scenario.replay`, PHP pas à pas): the ticket
+     * stays closed whatever happens, the step and the hints in progress are the session's, and its
+     * score - the stars of this go - can only raise the ticket's.
+     */
+    case Replay = 'replay';
 }

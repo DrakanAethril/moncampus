@@ -194,7 +194,7 @@ class UserRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('u')
             ->select('u')
             ->distinct()
-            ->leftJoin(InternshipTutorLink::class, 'l', Join::WITH, 'l.tutor = u')
+            ->leftJoin(InternshipTutorLink::class, 'l', Join::WITH, 'l.tutor = u OR l.secondaryTutor = u')
             ->leftJoin('l.enterprise', 'e')
             ->where('u.inactiveDate IS NULL')
             ->orderBy('u.lastname', 'ASC')

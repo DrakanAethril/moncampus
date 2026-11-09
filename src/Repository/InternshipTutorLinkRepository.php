@@ -60,7 +60,8 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    // Powers the ROLE_TUTOR tutor landing page. A plain "this user is the tutor" match now that
+    // Powers the ROLE_TUTOR tutor landing page - principal or secondary tutor alike, both hold the
+    // booklet. A plain "this user is the tutor" match now that
     // the account exists from the moment the link is created (see
     // App\Service\InternshipTutorProvisioningService) - this used to also try a free-text e-mail
     // match and a match on the login the LDAP consumer script generated, because $tutor stayed
@@ -73,7 +74,7 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->leftJoin('l.student', 'st')
             ->leftJoin('l.program', 'p')
             ->where('l.inactiveDate IS NULL')
-            ->andWhere('l.tutor = :user')
+            ->andWhere('l.tutor = :user OR l.secondaryTutor = :user')
             ->setParameter('user', $user)
             ->getQuery()
             ->getResult();
@@ -196,7 +197,7 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
     {
         /** @var ?InternshipTutorLink $link */
         $link = $this->createQueryBuilder('l')
-            ->where('l.tutor = :tutor')
+            ->where('l.tutor = :tutor OR l.secondaryTutor = :tutor')
             ->setParameter('tutor', $tutor)
             ->orderBy('l.creationDate', 'DESC')
             ->setMaxResults(1)
@@ -226,10 +227,11 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         }
 
         $links = $this->createQueryBuilder('l')
-            ->addSelect('e', 'tu')
-            ->innerJoin('l.tutor', 'tu')
+            ->addSelect('e', 'tu', 'tu2')
+            ->leftJoin('l.tutor', 'tu')
+            ->leftJoin('l.secondaryTutor', 'tu2')
             ->leftJoin('l.enterprise', 'e')
-            ->where('l.tutor IN (:tutors)')
+            ->where('l.tutor IN (:tutors) OR l.secondaryTutor IN (:tutors)')
             ->setParameter('tutors', $tutors)
             // Ascending, so the most recent link is the last one to write its entreprise into the
             // map below - the cheap way to get "latest wins" without a per-tutor subquery.
@@ -240,9 +242,14 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         $enterprises = [];
         foreach ($links as $link) {
             $enterprise = $link->getEnterprise();
-            $tutorId = $link->getTutor()?->getId();
-            if (null !== $enterprise && null !== $tutorId) {
-                $enterprises[$tutorId] = $enterprise;
+            if (null === $enterprise) {
+                continue;
+            }
+            // A secondary tutor works at the alternance's employer just as much as the principal.
+            foreach ($link->getTutors() as $tutor) {
+                if (null !== $tutor->getId()) {
+                    $enterprises[$tutor->getId()] = $enterprise;
+                }
             }
         }
 
@@ -471,7 +478,9 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             return;
         }
 
-        $conditions = ['tu.firstname LIKE :search', 'tu.lastname LIKE :search', 'e.name LIKE :search'];
+        // The secondary tutor is found by name too - joined here, since no caller needs it otherwise.
+        $qb->leftJoin('l.secondaryTutor', 'stu');
+        $conditions = ['tu.firstname LIKE :search', 'tu.lastname LIKE :search', 'stu.firstname LIKE :search', 'stu.lastname LIKE :search', 'e.name LIKE :search'];
         if ($includeStudent) {
             array_push(
                 $conditions,

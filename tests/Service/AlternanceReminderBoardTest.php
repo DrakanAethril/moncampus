@@ -9,8 +9,10 @@ use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\User;
+use App\Enum\ReminderBatchStep;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
+use App\Repository\InternshipReminderBatchItemRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipSupervisorEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
@@ -19,14 +21,15 @@ use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceReminderBoard;
-use App\Service\AlternanceStepStatus;
+use App\Service\ReminderBatch\ReminderBatchTarget;
+use App\Service\ReminderBatch\ReminderWaiting;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * The board is what makes the dashboard banner and /ufa/reminders say the same thing, so what is
- * pinned here is the agreement itself: hasPendingReminders() is true exactly when build() has a
- * bilan, and a bilan is offered only when somebody on it is still to chase.
+ * The board is what the reminder batches take and what the dashboard banner announces, so what is
+ * pinned here is who waits, on which step, and for which bilan rank - and that the banner falls
+ * silent once a running batch holds them.
  */
 class AlternanceReminderBoardTest extends TestCase
 {
@@ -36,89 +39,134 @@ class AlternanceReminderBoardTest extends TestCase
     private array $signedStudentEvaluations = [];
     /** @var array<int, array<int, true>> */
     private array $closedSupervisorEvaluations = [];
-    /** @var array<int, true> */
-    private array $fullySignedEngagements = [];
+    /** @var array<int, array{tutor: bool, student: bool, center: bool}> */
+    private array $engagements = [];
     /** @var list<InternshipEvaluationPeriod> */
     private array $periods = [];
     /** @var list<InternshipTutorLink> */
     private array $tutorLinks = [];
+    /** @var array<string, true> */
+    private array $queued = [];
 
-    public function testABilanIsOfferedOnlyWhenSomebodyOnItIsStillToChase(): void
+    private const array SIGNED = ['tutor' => true, 'student' => true, 'center' => true];
+
+    public function testAnUnsignedEngagementWaitsOnTheTutorThenOnTheAlternant(): void
+    {
+        $this->periods = [$this->period(1)];
+        $this->tutorLinks = [$this->tutorLink(1, 10), $this->tutorLink(2, 20), $this->tutorLink(3, 30)];
+        $this->engagements = [
+            2 => ['tutor' => true, 'student' => false, 'center' => false],
+            // The centre's signature alone: nobody a reminder can reach.
+            3 => ['tutor' => true, 'student' => true, 'center' => false],
+        ];
+
+        self::assertSame(['engagement_tutor', 'engagement_student'], $this->keys($this->board()->waiting([$this->program()])));
+    }
+
+    public function testABilanIsNamedByItsRankInTheFormation(): void
     {
         $this->periods = [$this->period(1), $this->period(2)];
-        // Everything of bilan 1 is in, nothing of bilan 2 - so only bilan 2 is worth opening.
+        // Everything of bilan 1 is in, nothing of bilan 2.
         $this->tutorLinks = [$this->tutorLink(1, 10)];
-        $this->fullySignedEngagements = [1 => true];
+        $this->engagements = [1 => self::SIGNED];
         $this->signedTutorEvaluations = [1 => [1 => true]];
         $this->signedStudentEvaluations = [10 => [1 => true]];
         $this->closedSupervisorEvaluations = [1 => [1 => true]];
 
-        $bilans = $this->board()->build(null);
+        $waiting = $this->board()->waiting([$this->program()]);
 
-        $this->assertCount(1, $bilans);
-        $this->assertSame(2, $bilans[0]['period']->getId());
-        $this->assertSame(AlternanceStepStatus::STEP_TUTOR, $bilans[0]['rows'][0]['status']->step);
+        self::assertSame(['period_tutor:2'], $this->keys($waiting));
+        self::assertSame(2, $waiting[0]->period?->getId());
     }
 
-    public function testNothingIsOfferedWhileTheEngagementIsNotSigned(): void
+    public function testTheAlternantsTurnComesOnceTheTutorSigned(): void
     {
         $this->periods = [$this->period(1)];
         $this->tutorLinks = [$this->tutorLink(1, 10)];
-        $this->fullySignedEngagements = [];
+        $this->engagements = [1 => self::SIGNED];
+        $this->signedTutorEvaluations = [1 => [1 => true]];
 
-        $this->assertSame([], $this->board()->build(null));
-        $this->assertFalse($this->board()->hasPendingReminders(null));
+        self::assertSame(['period_student:1'], $this->keys($this->board()->waiting([$this->program()])));
     }
 
-    public function testABilanWaitingOnTheTeamSignatureAloneRaisesNoBanner(): void
+    public function testABilanWaitingOnTheTeamSignatureAloneWaitsOnNobody(): void
     {
-        // The step the relances screen cannot chase - no recipient for it - and therefore the one
-        // the banner must not announce either.
         $this->periods = [$this->period(1)];
         $this->tutorLinks = [$this->tutorLink(1, 10)];
-        $this->fullySignedEngagements = [1 => true];
+        $this->engagements = [1 => self::SIGNED];
         $this->signedTutorEvaluations = [1 => [1 => true]];
         $this->signedStudentEvaluations = [10 => [1 => true]];
 
-        $this->assertSame([], $this->board()->build(null));
-        $this->assertFalse($this->board()->hasPendingReminders(null));
+        self::assertSame([], $this->board()->waiting([$this->program()]));
+        self::assertFalse($this->board()->hasPendingReminders(null));
     }
 
     public function testABilanThatHasAlreadyClosedStillCountsAsSomethingToChase(): void
     {
-        // The divergence the board was written for: the banner used to look at the bilans running
-        // today only, so a late evaluation on a bilan that ended went unannounced.
         $this->periods = [$this->period(1, '2026-01-05', '2026-02-28')];
         $this->tutorLinks = [$this->tutorLink(1, 10)];
-        $this->fullySignedEngagements = [1 => true];
+        $this->engagements = [1 => self::SIGNED];
 
-        $this->assertTrue($this->board()->hasPendingReminders(null));
+        self::assertTrue($this->board()->hasPendingReminders(null));
     }
 
     public function testTerminatedAlternancesAreNeverChased(): void
     {
         $this->periods = [$this->period(1)];
         $this->tutorLinks = [$this->tutorLink(1, 10, terminated: true)];
-        $this->fullySignedEngagements = [1 => true];
 
-        $this->assertFalse($this->board()->hasPendingReminders(null));
+        self::assertSame([], $this->board()->waiting([$this->program()]));
     }
 
-    public function testEveryPendingBilanIsOfferedInStartDateOrder(): void
+    public function testATargetNarrowsTheBoardToItsOwnPeople(): void
     {
-        $this->periods = [$this->period(1), $this->period(2)];
-        // One alternance is stuck on bilan 1, the other has closed it and is stuck on bilan 2.
+        $this->periods = [$this->period(1)];
         $this->tutorLinks = [$this->tutorLink(1, 10), $this->tutorLink(2, 20)];
-        $this->fullySignedEngagements = [1 => true, 2 => true];
-        $this->signedTutorEvaluations = [2 => [1 => true]];
-        $this->signedStudentEvaluations = [20 => [1 => true]];
-        $this->closedSupervisorEvaluations = [2 => [1 => true]];
+        $this->engagements = [2 => self::SIGNED];
 
-        $bilans = $this->board()->build(null);
+        $waiting = $this->board()->waiting([$this->program()], new ReminderBatchTarget(ReminderBatchStep::PeriodTutor, 1));
 
-        $this->assertSame([1, 2], array_map(static fn (array $bilan): ?int => $bilan['period']->getId(), $bilans));
-        $this->assertCount(1, $bilans[0]['rows']);
-        $this->assertCount(1, $bilans[1]['rows']);
+        self::assertCount(1, $waiting);
+        self::assertSame(2, $waiting[0]->tutorLink->getId());
+    }
+
+    public function testTheBannerFallsSilentOnceARunningBatchHoldsEverybody(): void
+    {
+        $this->periods = [$this->period(1)];
+        $this->tutorLinks = [$this->tutorLink(1, 10)];
+        $this->queued = ['1|engagement_tutor' => true];
+
+        self::assertFalse($this->board()->hasPendingReminders(null));
+    }
+
+    public function testTheBannerOpensTheFormOnTheBusiestStep(): void
+    {
+        $this->periods = [$this->period(1)];
+        $this->tutorLinks = [$this->tutorLink(1, 10), $this->tutorLink(2, 20), $this->tutorLink(3, 30)];
+        $this->engagements = [2 => self::SIGNED, 3 => self::SIGNED];
+
+        $unqueued = $this->board()->unqueued(null);
+
+        self::assertSame(3, $unqueued['total']);
+        self::assertSame('period_tutor:1', $unqueued['busiest']?->key());
+    }
+
+    /**
+     * @param list<ReminderWaiting> $waiting
+     *
+     * @return list<string>
+     */
+    private function keys(array $waiting): array
+    {
+        return array_map(static fn (ReminderWaiting $entry): string => $entry->target->key(), $waiting);
+    }
+
+    private function program(): Program
+    {
+        $program = $this->createStub(Program::class);
+        $program->method('getId')->willReturn(100);
+
+        return $program;
     }
 
     private function board(): AlternanceReminderBoard
@@ -127,7 +175,7 @@ class AlternanceReminderBoardTest extends TestCase
         $schoolYearRepository->method('findCurrentOrMostRecent')->willReturn($this->createStub(SchoolYear::class));
 
         $programRepository = $this->createStub(ProgramRepository::class);
-        $programRepository->method('findAlternanceForSchoolYear')->willReturn([$this->createStub(Program::class)]);
+        $programRepository->method('findAlternanceForSchoolYear')->willReturn([$this->program()]);
 
         $periodRepository = $this->createStub(InternshipEvaluationPeriodRepository::class);
         $periodRepository->method('findAllActiveForProgram')->willReturn($this->periods);
@@ -136,7 +184,7 @@ class AlternanceReminderBoardTest extends TestCase
         $tutorLinkRepository->method('findAllActiveForProgram')->willReturn($this->tutorLinks);
 
         $engagementRepository = $this->createStub(InternshipLivretEngagementRepository::class);
-        $engagementRepository->method('findFullySignedTutorLinkIdsForProgram')->willReturn($this->fullySignedEngagements);
+        $engagementRepository->method('findSignatureStatesForProgram')->willReturn($this->engagements);
 
         $tutorEvaluationRepository = $this->createStub(InternshipTutorEvaluationRepository::class);
         $tutorEvaluationRepository->method('findSignedPairsForProgram')->willReturn($this->signedTutorEvaluations);
@@ -147,6 +195,9 @@ class AlternanceReminderBoardTest extends TestCase
         $supervisorEvaluationRepository = $this->createStub(InternshipSupervisorEvaluationRepository::class);
         $supervisorEvaluationRepository->method('findClosedPairsForProgram')->willReturn($this->closedSupervisorEvaluations);
 
+        $batchItemRepository = $this->createStub(InternshipReminderBatchItemRepository::class);
+        $batchItemRepository->method('findQueuedKeys')->willReturn($this->queued);
+
         return new AlternanceReminderBoard(
             $schoolYearRepository,
             $programRepository,
@@ -156,6 +207,7 @@ class AlternanceReminderBoardTest extends TestCase
             $tutorEvaluationRepository,
             $studentEvaluationRepository,
             $supervisorEvaluationRepository,
+            $batchItemRepository,
             $this->resolver(),
         );
     }

@@ -7,6 +7,10 @@
     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
 <div class="modal-body">
+    {% if queuedItem %}
+        <div class="alert alert-warning">{{ 'reminderBatchQueuedWarningText'|trans({'%batch%': queuedItem.batch.step.shortLabelKey|trans({'%rank%': queuedItem.batch.periodRank})}) }}
+            <a href="{{ path('app_ufa_reminder_batch_show', {id: queuedItem.batch.id}) }}">{{ 'reminderBatchNavLabel'|trans }}</a></div>
+    {% endif %}
     <div class="mb-3">
         <label class="form-label">{{ 'ufaAlternanceReminderRecipientLabel'|trans }}</label>
         <div class="form-control-plaintext">
@@ -26,8 +30,12 @@
         {% if step.value not in ['tutor', 'engagement_tutor'] %}
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="cc[]" value="tutor" id="cc-tutor" checked>
-                <label class="form-check-label" for="cc-tutor">{{ 'ufaAlternanceReminderCcTutorLabel'|trans }} — {{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}</label>
+                <label class="form-check-label" for="cc-tutor">{{ 'ufaAlternanceReminderCcTutorLabel'|trans }} — {{ tutorLink.tutors|map(t => t.displayName ?? t.username)|join(', ') }}</label>
             </div>
+        {% elseif tutorLink.secondaryTutor %}
+            {# Not a choice: on the tutors' own steps the secondary tutor is always in copy
+               (AlternanceReminderService::sendSingle()). #}
+            <div class="form-control-plaintext">{{ 'ufaAlternanceSecondaryTutorShortLabel'|trans }} — {{ tutorLink.secondaryTutor.displayName ?? tutorLink.secondaryTutor.username }} — {{ tutorLink.secondaryTutor.contactEmail ?? '—' }}</div>
         {% endif %}
         {% if tutorLink.supervisor %}
             <div class="form-check">
@@ -59,7 +67,14 @@
             <label class="form-label">{{ 'ufaAlternanceReminderHistoryLabel'|trans }}</label>
             <ul class="list-unstyled text-secondary small mb-0">
                 {% for reminder in reminders %}
-                    <li>{{ reminder.sentAt|date('d/m/Y') }} — {{ 'ufaAlternanceReminderHistoryEntryLabel'|trans({'%by%': reminder.sentBy.displayName ?? reminder.sentBy.username}) }}</li>
+                    {% set by = reminder.sentBy.displayName ?? reminder.sentBy.username %}
+                    <li>{{ reminder.sentAt|date('d/m/Y') }} —
+                        {% if reminder.batch %}
+                            <a href="{{ path('app_ufa_reminder_batch_show', {id: reminder.batch.id}) }}">{{ 'ufaAlternanceReminderHistoryBatchEntryLabel'|trans({'%batch%': reminder.batch.step.shortLabelKey|trans({'%rank%': reminder.batch.periodRank}), '%by%': by}) }}</a>
+                        {% else %}
+                            {{ 'ufaAlternanceReminderHistoryEntryLabel'|trans({'%by%': by}) }}
+                        {% endif %}
+                    </li>
                 {% endfor %}
             </ul>
         </div>

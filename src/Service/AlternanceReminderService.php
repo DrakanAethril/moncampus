@@ -6,22 +6,27 @@ namespace App\Service;
 
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipReminder;
+use App\Entity\InternshipReminderBatch;
 use App\Entity\InternshipTutorLink;
 use App\Entity\User;
 use App\Enum\AlternanceReminderStep;
 use App\Enum\UfaActivityType;
+use App\Service\ReminderBatch\ReminderDelivery;
+use App\Service\ReminderBatch\ReminderDeliveryException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mailer\Transport\TransportInterface;
+use Symfony\Component\Mime\Exception\RfcComplianceException;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Sends + logs an alternance follow-up reminder - generalizes
- * Program\InternshipReminderController::sendEvaluationReminders()'s loop-and-mailer->send() pattern to (a)
- * work across every alternance Program at once (26i, this feature's dashboard is cross-Program)
- * and (b) always persist an InternshipReminder row, which the older code never did. Every send
- * here is staff-triggered (decision #2 in the feature's plan doc) - $auto on the logged row is
- * always false, there is no scheduled/cron caller of this service.
+ * Sends + logs an alternance follow-up reminder - one at a time from the alternance's page, or a
+ * line of a reminder batch (InternshipReminderBatch) - and always persists an InternshipReminder
+ * row, which the older Program\InternshipReminderController never did. Every send is decided by a
+ * person (decision #2 in the feature's plan doc): a batch's lines are sent by the scheduled pass,
+ * but in the name of whoever launched the batch, so $auto on the logged row stays false.
  */
 class AlternanceReminderService
 {
@@ -29,8 +34,8 @@ class AlternanceReminderService
         private readonly MailerInterface $mailer,
         private readonly EntityManagerInterface $entityManager,
         private readonly TranslatorInterface $translator,
-        private readonly AlternancePeriodStatusResolver $statusResolver,
         private readonly UfaActivityRecorder $activityRecorder,
+        private readonly TransportInterface $transport,
     ) {
     }
 
@@ -44,11 +49,80 @@ class AlternanceReminderService
      */
     public function sendSingle(InternshipTutorLink $tutorLink, AlternanceReminderStep $step, ?InternshipEvaluationPeriod $period, array $ccRoles, User $sentBy): ?InternshipReminder
     {
-        $recipientEmail = $this->emailForStep($tutorLink, $step);
-        if (null === $recipientEmail) {
+        $recipients = $this->recipients($tutorLink, $step);
+        if (null === $recipients['to']) {
             return null;
         }
 
+        $this->mailer->send($this->buildEmail($tutorLink, $step, $period, $recipients, $ccRoles));
+
+        return $this->log($tutorLink, $step, $period, $sentBy, null);
+    }
+
+    /**
+     * One line of a reminder batch, sent by the scheduled pass (ReminderBatchSender) in the name of
+     * whoever launched the batch (R4). Through the transport rather than the mailer, to get SES's
+     * identifier back; and loud where sendSingle() is silent - a line has to say why it did not
+     * leave, and whether trying again could help.
+     *
+     * @throws ReminderDeliveryException
+     */
+    public function sendForBatch(InternshipReminderBatch $batch, InternshipTutorLink $tutorLink, ?InternshipEvaluationPeriod $period, User $sentBy): ReminderDelivery
+    {
+        $step = $batch->getStep()->reminderStep();
+        $recipients = $this->recipients($tutorLink, $step);
+        if (null === $recipients['to']) {
+            throw ReminderDeliveryException::noAddress();
+        }
+
+        try {
+            $email = $this->buildEmail($tutorLink, $step, $period, $recipients, []);
+            $sent = $this->transport->send($email);
+        } catch (TransportExceptionInterface $exception) {
+            throw ReminderDeliveryException::fromTransport($exception);
+        } catch (RfcComplianceException $exception) {
+            throw ReminderDeliveryException::invalidAddress($exception);
+        }
+
+        $providerId = $sent?->getMessageId();
+
+        return new ReminderDelivery(
+            $this->log($tutorLink, $step, $period, $sentBy, $batch),
+            $recipients['to'],
+            null !== $recipients['cc'],
+            null !== $providerId && '' !== $providerId ? trim($providerId, '<>') : null,
+        );
+    }
+
+    /**
+     * Who a step's reminder goes to. The tutors' steps are the principal's to receive, the
+     * secondary tutor in copy - who becomes the recipient when the principal has no address,
+     * rather than nobody. A null « to » means nobody can be written to.
+     *
+     * @return array{to: string|null, cc: string|null}
+     */
+    public function recipients(InternshipTutorLink $tutorLink, AlternanceReminderStep $step): array
+    {
+        $recipientEmail = $this->emailForStep($tutorLink, $step);
+        if (!\in_array($step, [AlternanceReminderStep::EngagementTutor, AlternanceReminderStep::Tutor], true)) {
+            return ['to' => $recipientEmail, 'cc' => null];
+        }
+
+        $secondaryTutorEmail = $tutorLink->getSecondaryTutor()?->getContactEmail();
+        if (null === $recipientEmail) {
+            return ['to' => $secondaryTutorEmail, 'cc' => null];
+        }
+
+        return ['to' => $recipientEmail, 'cc' => $secondaryTutorEmail !== $recipientEmail ? $secondaryTutorEmail : null];
+    }
+
+    /**
+     * @param array{to: string|null, cc: string|null} $recipients
+     * @param list<'tutor'|'supervisor'>               $ccRoles
+     */
+    private function buildEmail(InternshipTutorLink $tutorLink, AlternanceReminderStep $step, ?InternshipEvaluationPeriod $period, array $recipients, array $ccRoles): TemplatedEmail
+    {
+        $recipientEmail = (string) $recipients['to'];
         $email = (new TemplatedEmail())
             ->to($recipientEmail)
             ->subject($this->translator->trans('ufaAlternanceReminderEmailSubject'))
@@ -65,16 +139,23 @@ class AlternanceReminderService
                 'ctaRouteParams' => [],
             ]);
 
+        $ccEmails = [$recipients['cc']];
         foreach ($ccRoles as $ccRole) {
-            $ccEmail = 'tutor' === $ccRole ? $tutorLink->getTutor()?->getContactEmail() : $tutorLink->getSupervisor()?->getContactEmail();
-            if (null !== $ccEmail) {
-                $email->addCc($ccEmail);
-            }
+            // « Le tuteur » in copy is both tutors.
+            $ccEmails = 'tutor' === $ccRole
+                ? [...$ccEmails, ...array_map(static fn (User $tutor): ?string => $tutor->getContactEmail(), $tutorLink->getTutors())]
+                : [...$ccEmails, $tutorLink->getSupervisor()?->getContactEmail()];
+        }
+        foreach (array_unique(array_filter($ccEmails, static fn (?string $address): bool => null !== $address && $address !== $recipientEmail)) as $ccEmail) {
+            $email->addCc($ccEmail);
         }
 
-        $this->mailer->send($email);
+        return $email;
+    }
 
-        $reminder = new InternshipReminder($tutorLink, $step, $sentBy, $period);
+    private function log(InternshipTutorLink $tutorLink, AlternanceReminderStep $step, ?InternshipEvaluationPeriod $period, User $sentBy, ?InternshipReminderBatch $batch): InternshipReminder
+    {
+        $reminder = new InternshipReminder($tutorLink, $step, $sentBy, $period, $batch);
         $this->entityManager->persist($reminder);
         $this->entityManager->flush();
 
@@ -93,42 +174,9 @@ class AlternanceReminderService
         return $reminder;
     }
 
-    // Sends to every link among $tutorLinks whose current status for $period is genuinely the
-    // tutor's or the student's turn (the only two roles 26i's "non-soumis" list targets, per the
-    // spec - supervisor/engagement steps aren't part of the grouped relance screen).
-    /**
-     * @param list<InternshipTutorLink> $tutorLinks
-     */
-    public function sendBulkForPeriod(InternshipEvaluationPeriod $period, array $tutorLinks, User $sentBy): int
-    {
-        $sent = 0;
-
-        foreach ($tutorLinks as $tutorLink) {
-            $status = $this->statusResolver->resolveStepForPeriod($tutorLink, $period);
-            $step = match ($status->step) {
-                AlternanceStepStatus::STEP_TUTOR => AlternanceReminderStep::Tutor,
-                AlternanceStepStatus::STEP_STUDENT => AlternanceReminderStep::Student,
-                default => null,
-            };
-
-            if (null === $step) {
-                continue;
-            }
-
-            // Counts what actually went out, not what was attempted - a recipient with no contact
-            // e-mail is skipped by sendSingle() and must not inflate the "N relances envoyées"
-            // figure the staff member is shown.
-            if (null !== $this->sendSingle($tutorLink, $step, $period, [], $sentBy)) {
-                ++$sent;
-            }
-        }
-
-        return $sent;
-    }
-
     // Always User::$contactEmail, never $email: the latter is the annuaire's internal address and
     // not necessarily an inbox anyone reads. A null here means "this person has no contact e-mail"
-    // and the caller skips them - see sendSingle()/sendBulkForPeriod().
+    // - see recipients().
     private function emailForStep(InternshipTutorLink $tutorLink, AlternanceReminderStep $step): ?string
     {
         return match ($step) {

@@ -9,6 +9,7 @@ use App\Repository\InternshipTutorLinkRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * Links a student to their entreprise tutor and employer for one Program's Livret Alternant.
@@ -50,6 +51,15 @@ class InternshipTutorLink
     #[ORM\JoinColumn(name: 'tutor_id', nullable: false)]
     #[Assert\NotNull(message: 'internshipTutorLinkTutorRequiredMessage')]
     private ?User $tutor = null;
+
+    // The optional second tutor (never more than two). Same rights as $tutor - opens the booklet,
+    // fills and signs it, either signature standing for « le tuteur » - but whenever the platform
+    // needs ONE tutor (a recipient, a name in a list, the import's conflict check) it is $tutor
+    // that answers: getTutor() stays the principal, and only the places that must count both ask
+    // getTutors() / isTutor().
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'secondary_tutor_id', nullable: true)]
+    private ?User $secondaryTutor = null;
 
     // Set only when this link caused a brand new account_create request to be queued (see
     // InternshipTutorProvisioningService) - null when an existing tutor was picked instead, and
@@ -144,6 +154,52 @@ class InternshipTutorLink
         $this->tutor = $tutor;
 
         return $this;
+    }
+
+    public function getSecondaryTutor(): ?User
+    {
+        return $this->secondaryTutor;
+    }
+
+    public function setSecondaryTutor(?User $secondaryTutor): static
+    {
+        $this->secondaryTutor = $secondaryTutor;
+
+        return $this;
+    }
+
+    /**
+     * Both tutors, the principal first - what a screen listing « les tuteurs » reads.
+     *
+     * @return list<User>
+     */
+    public function getTutors(): array
+    {
+        return array_values(array_filter([$this->tutor, $this->secondaryTutor]));
+    }
+
+    // The access question: either tutor holds the booklet.
+    public function isTutor(User $user): bool
+    {
+        return $this->tutor === $user || $this->secondaryTutor === $user;
+    }
+
+    #[Assert\Callback]
+    public function validateSecondaryTutor(ExecutionContextInterface $context): void
+    {
+        if (null === $this->secondaryTutor) {
+            return;
+        }
+
+        if ($this->secondaryTutor === $this->tutor) {
+            $context->buildViolation('internshipTutorLinkSecondaryTutorSameAsTutorMessage')
+                ->atPath('secondaryTutor')
+                ->addViolation();
+        } elseif ($this->secondaryTutor === $this->student) {
+            $context->buildViolation('internshipTutorLinkSecondaryTutorIsStudentMessage')
+                ->atPath('secondaryTutor')
+                ->addViolation();
+        }
     }
 
     public function getLdapManageUser(): ?LdapManageUser

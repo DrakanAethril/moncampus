@@ -74,6 +74,14 @@ class SeriousGameSession
     #[ORM\Column(name: 'timed_out')]
     private bool $timedOut = false;
 
+    /** A replay's step in progress (Scenario::ALL_STEPS_DONE once all are answered); null otherwise. */
+    #[ORM\Column(name: 'replay_step_id', length: 40, nullable: true)]
+    private ?string $replayStepId = null;
+
+    /** The written hints asked during a replay. */
+    #[ORM\Column(name: 'replay_hints', type: Types::SMALLINT, nullable: true)]
+    private ?int $replayHints = null;
+
     /** @var Collection<int, SeriousGameAnswer> */
     #[ORM\OneToMany(targetEntity: SeriousGameAnswer::class, mappedBy: 'session')]
     #[ORM\OrderBy(['position' => 'ASC'])]
@@ -225,6 +233,49 @@ class SeriousGameSession
     public function getDeadline(): ?\DateTimeImmutable
     {
         return null === $this->timeLimitSeconds ? null : $this->startedAt->modify('+'.$this->timeLimitSeconds.' seconds');
+    }
+
+    /**
+     * A replay of a closed ticket: its own run of the steps, from the first, kept on the session -
+     * the ticket's state stays closed and untouched.
+     */
+    public static function replay(User $player, SeriousGame $game, string $ticket, string $firstStepId): self
+    {
+        $session = new self($player, $game, SeriousGameSessionMode::Replay, []);
+        $session->unitCode = $ticket;
+        $session->replayStepId = $firstStepId;
+        $session->replayHints = 0;
+
+        return $session;
+    }
+
+    public function isReplay(): bool
+    {
+        return SeriousGameSessionMode::Replay === $this->mode;
+    }
+
+    public function getReplayStepId(): ?string
+    {
+        return $this->replayStepId;
+    }
+
+    public function moveReplayTo(string $stepId): static
+    {
+        $this->replayStepId = $stepId;
+
+        return $this;
+    }
+
+    public function getReplayHints(): int
+    {
+        return $this->replayHints ?? 0;
+    }
+
+    public function askReplayHint(): static
+    {
+        $this->replayHints = $this->getReplayHints() + 1;
+
+        return $this;
     }
 
     /** @return Collection<int, SeriousGameAnswer> */

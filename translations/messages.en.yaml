@@ -108,8 +108,8 @@ homeTeacherNoUpcomingSessionsMessage: 'No upcoming session.'
 homeTeacherStudentCountLabel: '%count% students'
 homeTeacherNextSessionTodayLabel: 'Today'
 homeTeacherQuickLinksLabel: 'Quick links'
-homeStaffBannerEvaluationsTitle: 'One or more evaluations have not been submitted; use the button to see them and send reminders if needed.'
-homeStaffBannerEvaluationsAction: 'Send reminders'
+homeStaffBannerEvaluationsTitle: 'Some tutors or apprentices have a booklet step waiting, and no reminder batch covers them.'
+homeStaffBannerEvaluationsAction: 'Create a reminder'
 homeStaffMatrixCardTitle: 'Timetable'
 homeStaffMatrixCloseLabel: 'Close'
 homeStaffMatrixPreviousDayLabel: 'Previous day with classes'
@@ -11104,3 +11104,10 @@ quizLivePlayerNumberHint: 'Pick the value, then submit'
 quizLivePlayerTextHint: 'Type your answer, then submit'
 quizLivePlayerVoteHint: 'Vote for one proposition'
 quizLiveAnswerRetryLabel: 'Answer not sent: the connection dropped. Answer again.'
+internshipTutorLinkSecondaryTutorSameAsTutorMessage: "The secondary tutor must be someone other than the principal tutor."
+internshipTutorLinkSecondaryTutorIsStudentMessage: "The apprentice cannot be their own secondary tutor."
+internshipTutorLinkSecondaryTutorIncompleteMessage: "Enter the new secondary tutor's first name, last name and e-mail, or choose « None »."
+ufaAlternanceSecondaryTutorNoneLabel: "None"
+ufaAlternanceSecondaryTutorSectionLabel: "Secondary tutor (optional)"
+ufaAlternanceSecondaryTutorSectionHelp: "They open, fill in and sign the booklet like the principal tutor. Reminders go to the principal tutor, with the secondary tutor in copy."
+ufaAlternanceSecondaryTutorShortLabel: "Secondary tutor"

@@ -386,6 +386,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/ufa/configuration/emails' => 403,
+            '/ufa/reminder-batches' => 403,
+            '/ufa/reminder-batches/new' => 403,
             '/eco/parcours' => 403,
             '/eco/pwa-probe' => 403,
             // Dossiers documentaires. The two sides of the tool are two sets of routes, and this is
@@ -575,6 +577,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/ufa/configuration/emails' => 403,
+            '/ufa/reminder-batches' => 403,
+            '/ufa/reminder-batches/new' => 403,
             '/eco/parcours' => 403,
             '/eco/pwa-probe' => 403,
             // Dossiers documentaires: a teacher composes one, and reads « Mes dossiers » as an
@@ -639,7 +643,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises' => 200,
             // The SIRET queue hands over to the first employer « à confirmer », or back to the list.
             '/ufa/enterprises/siret-review' => 302,
-            '/ufa/reminders' => 200,
+            // The grouped screen became the reminder batches; its address leads there.
+            '/ufa/reminders' => 301,
+            '/ufa/reminder-batches' => 200,
+            '/ufa/reminder-batches/new' => 200,
             '/ufa/configuration/contract-import' => 200,
             '/ufa/configuration/emails' => 200,
             '/ufa/teacher-dossiers' => 200,
@@ -942,6 +949,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/ufa/configuration/emails' => 403,
+            '/ufa/reminder-batches' => 403,
+            '/ufa/reminder-batches/new' => 403,
             '/eco/parcours' => 403,
             '/eco/pwa-probe' => 403,
         ]);

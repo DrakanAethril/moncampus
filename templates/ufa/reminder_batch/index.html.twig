@@ -1,0 +1,58 @@
+{# UFA › Relances - the reminder batches, the whole team's (design/validated/ufa-reminder-batches.md,
+   E1). Each batch shows its bar and its figures; nothing here sends anything. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'reminderBatchNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'ufa/reminder_batch/_breadcrumb.html.twig' only %}
+{% endblock %}
+
+{% block page_title %}{{ 'reminderBatchNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page">
+        {% if unqueued.total > 0 %}
+            <div class="cm-rb-callout">
+                <span>{{ 'reminderBatchUnqueuedText'|trans({'%count%': unqueued.total}) }}</span>
+                <twig:Cm:Button variant="gold" size="sm" href="{{ path('app_ufa_reminder_batch_new', {target: unqueued.busiest.key}) }}">{{ 'reminderBatchCreateAction'|trans }}</twig:Cm:Button>
+            </div>
+        {% endif %}
+
+        <div>
+            <twig:Cm:Tabs :tabs="[
+                {url: path('app_ufa_reminder_batches'), label: 'reminderBatchTabActiveLabel'|trans, active: tab == 'active', count: tabCounts.active},
+                {url: path('app_ufa_reminder_batches', {tab: 'finished'}), label: 'reminderBatchTabFinishedLabel'|trans, active: tab == 'finished', count: tabCounts.finished},
+                {url: path('app_ufa_reminder_batches', {tab: 'cancelled'}), label: 'reminderBatchTabCancelledLabel'|trans, active: tab == 'cancelled', count: tabCounts.cancelled},
+            ]">
+                <twig:block name="action">
+                    <twig:Cm:Button variant="primary" size="sm" href="{{ path('app_ufa_reminder_batch_new') }}"><twig:ux:icon name="plus" width="14" height="14"/> {{ 'reminderBatchNewAction'|trans }}</twig:Cm:Button>
+                </twig:block>
+            </twig:Cm:Tabs>
+            <div class="cm-dd-card cm-card--tabbed">
+                {% for batch in batches %}
+                    {% set f = figures[batch.id] %}
+                    <a class="cm-rb-row" href="{{ path('app_ufa_reminder_batch_show', {id: batch.id}) }}">
+                        <span class="cm-rb-row__main">
+                            <span class="cm-rb-row__title">{{ batch.step.labelKey|trans({'%rank%': batch.periodRank}) }}</span>
+                            <span class="cm-dd-meta">
+                                {% include 'ufa/reminder_batch/_programs.html.twig' with {batch: batch} only %}
+                                · {{ 'reminderBatchLaunchedByText'|trans({'%date%': batch.createdAt|date('d/m à H:i'), '%name%': batch.createdBy.displayName ?? batch.createdBy.username}) }}
+                            </span>
+                        </span>
+                        <span class="cm-rb-row__progress">
+                            {% include 'ufa/reminder_batch/_bar.html.twig' with {figures: f} only %}
+                            <span class="cm-dd-meta">{% include 'ufa/reminder_batch/_figures_line.html.twig' with {figures: f} only %}</span>
+                        </span>
+                        <span class="cm-rb-row__state">
+                            <twig:Cm:Badge :of="batch.status"/>
+                            <span class="cm-dd-meta">{% include 'ufa/reminder_batch/_schedule.html.twig' with {batch: batch, schedule: schedules[batch.id]} only %}</span>
+                        </span>
+                    </a>
+                {% else %}
+                    <p class="cm-rb-empty">{{ ('reminderBatchEmpty' ~ (tab|capitalize) ~ 'Text')|trans }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

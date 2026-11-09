@@ -1,0 +1,13 @@
+{# The count under the creation form - rendered on the server, for the first display and for every
+   change (ReminderBatchController::preview()). #}
+{% if not hasPrograms %}
+    <p class="cm-rb-summary__line">{{ 'reminderBatchNewPickProgramsText'|trans }}</p>
+{% elseif plan.waitingCount == 0 %}
+    <p class="cm-rb-summary__line">{{ 'reminderBatchNewNobodyText'|trans }}</p>
+{% else %}
+    <p class="cm-rb-summary__line">
+        {{ 'reminderBatchNewWaitingText'|trans({'%count%': plan.waitingCount}) }}
+        <strong>{{ 'reminderBatchNewToSendText'|trans({'%count%': plan.toSendCount}) }}</strong>{% if plan.excludedCount > 0 %}, {{ 'reminderBatchNewExcludedText'|trans({'%count%': plan.excludedCount}) }}{% endif %}.
+        {% if endsAt %}{{ 'reminderBatchNewEndsAtText'|trans({'%date%': endsAt|localized_date('EEEE d MMMM à HH:mm')}) }}{% endif %}
+    </p>
+{% endif %}
