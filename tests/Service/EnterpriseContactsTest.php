@@ -60,6 +60,19 @@ class EnterpriseContactsTest extends TestCase
         );
     }
 
+    public function testTheSecondaryTutorIsAContactOfTheEmployerToo(): void
+    {
+        $principal = $this->user('Claude', 'Ferrand');
+        $secondary = $this->user('Bel', 'Bonnet');
+        $link = $this->link($principal);
+        $link->setSecondaryTutor($secondary);
+
+        $contacts = (new EnterpriseContacts())->fromLinks([$link]);
+
+        $this->assertSame([$secondary, $principal], array_map(static fn (array $contact): User => $contact['tutor'], $contacts));
+        $this->assertSame([$link], $contacts[0]['alternances']);
+    }
+
     public function testALinkWithNoTutorIsNotAContact(): void
     {
         $this->assertSame([], (new EnterpriseContacts())->fromLinks([$this->link(null)]));

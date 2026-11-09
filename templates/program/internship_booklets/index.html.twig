@@ -34,7 +34,10 @@
                                     <div class="text-secondary small">{{ tutorLink.contractType.labelKey|trans }} · {{ tutorLink.contractStartDate|date('d/m/Y') }} - {{ tutorLink.contractEndDate|date('d/m/Y') }}</div>
                                 </td>
                                 <td>{{ tutorLink.enterprise.name ?? '—' }}</td>
-                                <td>{{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}</td>
+                                <td>
+                                    {{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}
+                                    {% if tutorLink.secondaryTutor %}<div class="text-secondary small">{{ 'ufaAlternanceSecondaryTutorShortLabel'|trans }} : {{ tutorLink.secondaryTutor.displayName ?? tutorLink.secondaryTutor.username }}</div>{% endif %}
+                                </td>
                                 <td class="text-end">
                                     <twig:Cm:Button :href="path('app_program_internship_booklets_show', {id: program.id, tutorLinkId: tutorLink.id})" variant="outline" size="sm">{{ 'programInternshipBookletsReadAction'|trans }}</twig:Cm:Button>
                                 </td>

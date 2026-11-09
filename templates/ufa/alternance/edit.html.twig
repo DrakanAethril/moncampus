@@ -36,6 +36,9 @@
                 <div class="mb-3">
                     <h3 class="h4">{{ 'ufaAlternanceNewSection2Label'|trans }}</h3>
                     {% include 'ufa/alternance/_tutor_fields.html.twig' with {tutorField: form.tutor, currentTutor: tutorLink.tutor} %}
+                    <h4 class="mt-3 mb-2">{{ 'ufaAlternanceSecondaryTutorSectionLabel'|trans }}</h4>
+                    <p class="text-secondary small mb-2">{{ 'ufaAlternanceSecondaryTutorSectionHelp'|trans }}</p>
+                    {% include 'ufa/alternance/_tutor_fields.html.twig' with {tutorField: form.secondaryTutor, searchId: 'secondary-tutor-search', carryEnterprise: false, currentTutor: tutorLink.secondaryTutor} %}
                 </div>
                 <div data-controller="enterprise-picker">
                     {{ form_row(form.enterprise, {attr: {'data-enterprise-picker-target': 'select', 'data-action': 'change->enterprise-picker#toggle'}}) }}

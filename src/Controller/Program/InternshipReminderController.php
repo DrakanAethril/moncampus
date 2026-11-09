@@ -91,16 +91,25 @@ class InternshipReminderController extends AbstractController
 
         $tutorSubject = $translator->trans('internshipTutorEvaluationReminderEmailSubject');
         foreach ($pending['tutorLinks'] as $tutorLink) {
-            $tutorEmail = $tutorLink->getTutor()?->getContactEmail();
-            if (null === $tutorEmail) {
+            // The principal tutor receives it, the secondary one in copy - or as the recipient
+            // when the principal has no address. Same rule as AlternanceReminderService.
+            $tutorEmails = array_values(array_unique(array_filter(array_map(
+                static fn (User $tutor): ?string => $tutor->getContactEmail(),
+                $tutorLink->getTutors(),
+            ))));
+            if ([] === $tutorEmails) {
                 continue;
             }
 
-            $mailer->send((new TemplatedEmail())
-                ->to($tutorEmail)
+            $email = (new TemplatedEmail())
+                ->to($tutorEmails[0])
                 ->subject($tutorSubject)
                 ->htmlTemplate('emails/internship_tutor_evaluation_reminder.html.twig')
-                ->context(['program' => $program, 'period' => $period, 'tutorLink' => $tutorLink]));
+                ->context(['program' => $program, 'period' => $period, 'tutorLink' => $tutorLink]);
+            if (isset($tutorEmails[1])) {
+                $email->cc($tutorEmails[1]);
+            }
+            $mailer->send($email);
             ++$sent;
         }
 

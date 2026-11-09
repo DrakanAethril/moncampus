@@ -34,25 +34,22 @@ class EnterpriseContacts
         /** @var array<int, EnterpriseContact> $contacts */
         $contacts = [];
 
+        // Both tutors of an alternance are people of this employer: the secondary one is listed
+        // like the principal. getTutors() skips a missing tutor - not reachable through the forms,
+        // which resolve one before validation runs, but the column has been nullable in PHP since
+        // that mechanism existed, and a contact with no name is not a contact.
         foreach ($links as $link) {
-            $tutor = $link->getTutor();
+            foreach ($link->getTutors() as $tutor) {
+                // Grouped on the instance rather than on the id: the links all come out of one
+                // query, so Doctrine's identity map already hands back a single object per tutor
+                // row, and an entity that has not been persisted yet has no id to group on.
+                $key = spl_object_id($tutor);
+                $contacts[$key] ??= ['tutor' => $tutor, 'alternances' => [], 'activeCount' => 0];
+                $contacts[$key]['alternances'][] = $link;
 
-            // A link with no tutor is not reachable through the forms, which resolve one before
-            // validation runs - but the column has been nullable in PHP since that mechanism
-            // existed, and a contact with no name is not a contact.
-            if (!$tutor instanceof User) {
-                continue;
-            }
-
-            // Grouped on the instance rather than on the id: the links all come out of one query,
-            // so Doctrine's identity map already hands back a single object per tutor row, and an
-            // entity that has not been persisted yet has no id to group on.
-            $key = spl_object_id($tutor);
-            $contacts[$key] ??= ['tutor' => $tutor, 'alternances' => [], 'activeCount' => 0];
-            $contacts[$key]['alternances'][] = $link;
-
-            if (!$link->isTerminated()) {
-                ++$contacts[$key]['activeCount'];
+                if (!$link->isTerminated()) {
+                    ++$contacts[$key]['activeCount'];
+                }
             }
         }
 

@@ -106,7 +106,11 @@ class AlternanceEngagementService
     // afterward is what the reminder flow is for.
     public function sendEngagementInvites(InternshipTutorLink $tutorLink): void
     {
-        $this->invite($tutorLink->getTutor(), 'tutor');
+        // Both tutors, each their own mail: the secondary one learns this way that they hold the
+        // booklet too, and either signature stands for « le tuteur ».
+        foreach ($tutorLink->getTutors() as $tutor) {
+            $this->invite($tutor, 'tutor');
+        }
         $this->invite($tutorLink->getStudent(), 'student');
     }
 

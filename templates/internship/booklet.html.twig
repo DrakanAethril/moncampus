@@ -222,6 +222,12 @@
           <tr><td class="lv-td-label">Adresse&nbsp;:</td><td class="lv-td-value" style="white-space: pre-line;">{{ tutorLink.enterprise.address }}</td></tr>
           <tr><td class="lv-td-label">Nom du tuteur&nbsp;:</td><td class="lv-td-value">{{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}</td></tr>
           <tr><td class="lv-td-label">&#9742; / Mail&nbsp;:</td><td class="lv-td-value">{{ tutorLink.tutor.phoneNumber ?? '' }} &mdash; {{ tutorLink.tutor.contactEmail ?? '' }}</td></tr>
+          {# The optional second tutor, who holds the booklet like the principal - printed only
+             when there is one. #}
+          {% if tutorLink.secondaryTutor %}
+            <tr><td class="lv-td-label">Tuteur secondaire&nbsp;:</td><td class="lv-td-value">{{ tutorLink.secondaryTutor.displayName ?? tutorLink.secondaryTutor.username }}</td></tr>
+            <tr><td class="lv-td-label">&#9742; / Mail&nbsp;:</td><td class="lv-td-value">{{ tutorLink.secondaryTutor.phoneNumber ?? '' }} &mdash; {{ tutorLink.secondaryTutor.contactEmail ?? '' }}</td></tr>
+          {% endif %}
           <tr><td class="lv-td-label">Dates du contrat&nbsp;:</td><td class="lv-td-value">{{ tutorLink.contractStartDate|date('d/m/Y') }} au {{ tutorLink.contractEndDate|date('d/m/Y') }}</td></tr>
         </tbody>
       </table>

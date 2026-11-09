@@ -89,4 +89,62 @@ class InternshipTutorFormResolver
 
         return null;
     }
+
+    /**
+     * Resolves the optional « Tuteur secondaire » block onto $tutorLink's $secondaryTutor: « Aucun »
+     * (or an existing-tutor search left empty) takes them off, a pick names them, new contact
+     * details provision their account the way resolve() does the principal's. Nothing is carried
+     * over to the employer - the alternance's enterprise is the principal tutor's business.
+     *
+     * Unlike the principal, half-typed new details cannot be left to an entity constraint (the
+     * secondary tutor may legitimately be null), so this reports them on the block itself.
+     */
+    public function resolveSecondary(FormInterface $tutorForm, InternshipTutorLink $tutorLink): void
+    {
+        $mode = $tutorForm->get('mode')->getData();
+
+        if ('existing' === $mode) {
+            $tutorId = $tutorForm->get('existingTutorId')->getData();
+            $tutorLink->setSecondaryTutor(is_numeric($tutorId) ? $this->userRepository->find((int) $tutorId) : null);
+
+            return;
+        }
+
+        if ('new' !== $mode) {
+            $tutorLink->setSecondaryTutor(null);
+
+            return;
+        }
+
+        $email = FormValue::trimmed($tutorForm, 'email');
+        $firstname = FormValue::trimmed($tutorForm, 'firstname');
+        $lastname = FormValue::trimmed($tutorForm, 'lastname');
+
+        if ('' === $email || '' === $firstname || '' === $lastname) {
+            $tutorForm->addError(new FormError($this->translator->trans('internshipTutorLinkSecondaryTutorIncompleteMessage')));
+
+            return;
+        }
+
+        // The principal may have been provisioned by this very submission, not flushed yet - the
+        // database cannot see their address, so it is compared here.
+        $principalEmail = $tutorLink->getTutor()?->getContactEmail();
+        if (!$this->provisioningService->isEmailAvailable($email) || (null !== $principalEmail && 0 === strcasecmp($principalEmail, $email))) {
+            $tutorForm->get('email')->addError(new FormError($this->translator->trans('internshipTutorLinkTutorEmailAlreadyUsedMessage')));
+
+            return;
+        }
+
+        /** @var User $currentUser */
+        $currentUser = $this->security->getUser();
+        $this->provisioningService->provisionSecondary(
+            $tutorLink,
+            $firstname,
+            $lastname,
+            $email,
+            FormValue::trimmed($tutorForm, 'phone'),
+            $tutorLink->isTestAlternance(),
+            $currentUser,
+        );
+    }
 }

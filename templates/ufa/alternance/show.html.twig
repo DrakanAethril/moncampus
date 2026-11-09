@@ -22,6 +22,7 @@
         {{ tutorLink.program.displayShortName }}
         {%- if tutorLink.enterprise %} · {{ tutorLink.enterprise.name }}{% endif %}
         · {{ 'ufaAlternanceRoleTutorLabel'|trans|lower }} {{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}
+        {%- if tutorLink.secondaryTutor %} · {{ 'ufaAlternanceSecondaryTutorShortLabel'|trans|lower }} {{ tutorLink.secondaryTutor.displayName ?? tutorLink.secondaryTutor.username }}{% endif %}
         {%- if tutorLink.supervisor %} · {{ 'ufaAlternanceRoleSupervisorLabel'|trans|lower }} {{ tutorLink.supervisor.displayName ?? tutorLink.supervisor.username }}{% endif %}
     </div>
     {% set currentActorName = currentStatus.pendingActor
