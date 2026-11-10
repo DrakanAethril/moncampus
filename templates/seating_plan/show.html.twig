@@ -1,0 +1,436 @@
+{% extends 'layout/app.html.twig' %}
+
+{# One seating plan (design/validated/plans-de-classe.md, §3 to §8; prototype
+   design/validated/plans-de-classe-prototype.dc.html): the room, the rules, the plan - three
+   steps of one page, so that nothing is lost going from one to another. seating_plan_controller.js
+   keeps the document in hand, draws the room and sends the document whole to the server, which
+   checks, proposes and saves. Nothing is saved but by « Enregistrer ». #}
+
+{% block title %}{{ plan.name }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/seating_plan.css') }}">
+{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'seatingPlanNavLabel'|trans, url: path('app_seating_plan_index')},
+        {label: plan.name, url: path('app_seating_plan_show', {id: plan.id})},
+    ]}) }}
+{% endblock %}
+
+{# The author renames the plan in its title: the field is the page's heading, read by
+   seating_plan_controller.js (which finds it by id - the heading sits outside its element). #}
+{% block page_title %}
+    {%- if canManage -%}
+        <label class="visually-hidden" for="sp-name">{{ 'seatingPlanNameFieldLabel'|trans }}</label>
+        <input class="cm-sp-title-input" id="sp-name" type="text" maxlength="255" value="{{ plan.name }}" autocomplete="off">
+    {%- else -%}
+        {{ plan.name }}
+    {%- endif -%}
+{% endblock %}
+
+{% block main %}
+    {% set csrf = csrf_token('seating_plan') %}
+    {% set studentCount = config.roster|length %}
+    <div class="cm-sp cm-sp-editor"
+         data-controller="seating-plan"
+         data-seating-plan-config-value="{{ config|json_encode }}"
+         data-seating-plan-csrf-value="{{ csrf }}"
+         data-seating-plan-name-value="{{ plan.name }}"
+         data-seating-plan-urls-value="{{ {
+             save: path('app_seating_plan_save', {id: plan.id}),
+             propose: path('app_seating_plan_propose', {id: plan.id}),
+             check: path('app_seating_plan_check', {id: plan.id}),
+             roomLayout: path('app_seating_plan_room_layout', {id: plan.id}),
+             print: path('app_seating_plan_print', {id: plan.id}),
+         }|json_encode }}"
+         data-seating-plan-labels-value="{{ {
+             saved: 'seatingPlanSavedToast'|trans,
+             stale: 'seatingPlanStaleError'|trans,
+             failed: 'seatingPlanRequestFailed'|trans,
+             occupied: 'seatingPlanOccupiedToast'|trans,
+             noRotate: 'seatingPlanNoRotateToast'|trans,
+             noRoomToRotate: 'seatingPlanNoRoomToRotateToast'|trans,
+             roomFull: 'seatingPlanRoomFullToast'|trans,
+             tablesOutside: 'seatingPlanTablesOutsideToast'|trans,
+             layoutApplied: 'seatingPlanLayoutAppliedToast'|trans,
+             roomLayoutSaved: 'seatingPlanRoomLayoutSavedToast'|trans,
+             locked: 'seatingPlanLockedToast'|trans,
+             lockedOn: 'seatingPlanLockOnToast'|trans,
+             lockedOff: 'seatingPlanLockOffToast'|trans,
+             proposed: 'seatingPlanProposedToast'|trans,
+             proposedKept: 'seatingPlanProposedKeptToast'|trans,
+             ruleAdded: 'seatingPlanRuleAddedToast'|trans,
+             emptyName: 'seatingPlanEmptyNameError'|trans,
+             seats: 'seatingPlanSeatsCount'|trans,
+             meterOk: 'seatingPlanMeterOk'|trans,
+             meterFree: 'seatingPlanMeterFree'|trans,
+             meterShort: 'seatingPlanMeterShort'|trans,
+             scoreNone: 'seatingPlanScoreNoRule'|trans,
+             scoreOk: 'seatingPlanScoreOk'|trans,
+             scoreKo: 'seatingPlanScoreKo'|trans,
+             staleEmpty: 'seatingPlanNothingSeatedText'|trans,
+             staleChanged: 'seatingPlanChangedSinceText'|trans,
+             propose: 'seatingPlanProposeAction'|trans,
+             proposeAgain: 'seatingPlanProposeAgainAction'|trans,
+             free: 'seatingPlanFreeSeat'|trans,
+             noSeatCount: 'seatingPlanWithoutSeatCount'|trans,
+             lock: 'seatingPlanLockAction'|trans,
+             unlock: 'seatingPlanUnlockAction'|trans,
+             rank: 'seatingPlanRankInfo'|trans,
+             withoutSeat: 'seatingPlanWithoutSeatInfo'|trans,
+             front: 'seatingPlanFrontAccommodationInfo'|trans,
+             frontSuggestion: 'seatingPlanFrontSuggestionTitle'|trans,
+             removeRule: 'seatingPlanRemoveRuleAction'|trans,
+             removeStudent: 'seatingPlanRemoveStudentAction'|trans,
+             tableAt: 'seatingPlanTablePosition'|trans,
+             rotated: 'seatingPlanRotatedSuffix'|trans,
+             desk: 'seatingFurnitureDeskShort'|trans,
+             board: 'seatingPlanBoardLabel'|trans,
+             leave: 'seatingPlanLeaveWarning'|trans,
+         }|json_encode }}">
+
+        <div class="cm-sp-top">
+            <div class="cm-sp-top__main">
+                <div class="cm-sp-meta">
+                    <twig:Cm:Badge tone="blue">{{ plan.program.displayShortName }} · {{ plan.program.displayName }}</twig:Cm:Badge>
+                    <twig:Cm:Badge tone="gray">{{ 'seatingPlanRoomBadge'|trans({'%room%': plan.roomName}) }}</twig:Cm:Badge>
+                    <span class="cm-sp-muted" data-seating-plan-target="counts">{{ 'seatingPlanStudentCount'|trans({'%count%': studentCount}) }}</span>
+                    <span class="cm-sp-dirty" data-seating-plan-target="dirty" hidden><i></i>{{ 'seatingPlanUnsavedLabel'|trans }}</span>
+                </div>
+            </div>
+            <div class="cm-sp-top__buttons">
+                <twig:Cm:Button variant="outline" href="{{ path('app_seating_plan_print', {id: plan.id}) }}" target="_blank" rel="noopener" data-seating-plan-target="printLink">
+                    <twig:ux:icon name="printer" width="16" height="16"/>{{ 'seatingPlanPrintAction'|trans }}
+                </twig:Cm:Button>
+                {% if canManage %}
+                    <twig:Cm:Button variant="outline" data-action="seating-plan#openShare">
+                        <twig:ux:icon name="share" width="16" height="16"/>{{ 'seatingPlanShareAction'|trans }}
+                    </twig:Cm:Button>
+                {% endif %}
+                {% if canEdit %}
+                    <twig:Cm:Button variant="primary" data-action="seating-plan#save" data-seating-plan-target="saveButton">
+                        <twig:ux:icon name="device-floppy" width="16" height="16"/>{{ 'seatingPlanSaveAction'|trans }}
+                    </twig:Cm:Button>
+                {% else %}
+                    <form method="post" action="{{ path('app_seating_plan_duplicate', {id: plan.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf }}">
+                        <twig:Cm:Button variant="primary" type="submit">
+                            <twig:ux:icon name="copy" width="16" height="16"/>{{ 'seatingPlanDuplicateIntoMineAction'|trans }}
+                        </twig:Cm:Button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if not canManage %}
+            <p class="cm-sp-banner cm-sp-banner--shared">
+                {{ (canEdit ? 'seatingPlanSharedEditBanner' : 'seatingPlanSharedReadBanner')|trans({'%name%': plan.owner.displayName ?? plan.owner.username}) }}
+            </p>
+        {% endif %}
+
+        {% if canEdit %}
+            <nav class="cm-sp-steps" aria-label="{{ 'seatingPlanStepsLabel'|trans }}">
+                {% for key, label in {room: 'seatingPlanStepRoom', rules: 'seatingPlanStepRules', plan: 'seatingPlanStepPlan'} %}
+                    <button type="button" class="cm-sp-step {{ step == key ? 'is-current' }}" aria-current="{{ step == key ? 'step' : 'false' }}"
+                            data-seating-plan-target="stepButton" data-step="{{ key }}" data-action="seating-plan#goStep">
+                        <span class="cm-sp-step__num">{{ loop.index }}</span>{{ label|trans }}<span class="cm-sp-step__count" data-step-count="{{ key }}"></span>
+                    </button>
+                {% endfor %}
+            </nav>
+        {% endif %}
+
+        {# ---------------- 1. The room ---------------- #}
+        {% if canEdit %}
+        <section class="cm-sp-cols" data-seating-plan-target="section" data-step="room" {{ step != 'room' ? 'hidden' }}>
+            <div class="cm-sp-side">
+                <div class="cm-sp-card">
+                    <h2 class="cm-sp-label">{{ 'seatingPlanFurnitureHeading'|trans }}</h2>
+                    <div class="cm-sp-palette">
+                        {% for item in config.furniture %}
+                            <button type="button" class="cm-sp-palette__item" draggable="true" data-type="{{ item.type }}" aria-pressed="false"
+                                    data-seating-plan-target="paletteItem"
+                                    data-action="click->seating-plan#arm dragstart->seating-plan#paletteDragStart dragend->seating-plan#dragEnd">
+                                <span class="cm-sp-palette__icon cm-sp-palette__icon--{{ item.type }}" aria-hidden="true">{% for i in 1..max(1, item.seats) %}<i></i>{% endfor %}</span>
+                                <span>{{ item.label }}</span>
+                                <small>{{ item.seats ? 'seatingPlanSeatsCount'|trans({'%count%': item.seats}) : 'seatingFurnitureDeskHint'|trans }}</small>
+                            </button>
+                        {% endfor %}
+                    </div>
+                    <div class="cm-sp-armed" data-seating-plan-target="armedNote" hidden>
+                        <span data-seating-plan-target="armedLabel"></span>
+                        <twig:Cm:Button variant="outline" size="sm" data-action="seating-plan#disarm">{{ 'seatingPlanDoneAction'|trans }}</twig:Cm:Button>
+                    </div>
+                    <p class="cm-sp-hint" data-seating-plan-target="paletteHint">{{ 'seatingPlanPaletteHint'|trans }}</p>
+                </div>
+
+                <div class="cm-sp-inspector" data-seating-plan-target="inspector" hidden>
+                    <h2 class="cm-sp-label">{{ 'seatingPlanSelectionHeading'|trans }}</h2>
+                    <p class="cm-sp-inspector__name" data-seating-plan-target="inspectorName"></p>
+                    <p class="cm-sp-muted" data-seating-plan-target="inspectorPosition"></p>
+                    <div class="cm-sp-inline-buttons">
+                        <twig:Cm:Button variant="outline" size="sm" data-action="seating-plan#rotateSelected" data-seating-plan-target="rotateButton"><twig:ux:icon name="rotate" width="15" height="15"/>{{ 'seatingPlanRotateAction'|trans }}</twig:Cm:Button>
+                        <twig:Cm:Button variant="outline" size="sm" data-action="seating-plan#duplicateSelected"><twig:ux:icon name="copy" width="15" height="15"/>{{ 'seatingPlanDuplicateTableAction'|trans }}</twig:Cm:Button>
+                        <twig:Cm:Button variant="danger" size="sm" data-action="seating-plan#removeSelected"><twig:ux:icon name="trash" width="15" height="15"/>{{ 'seatingPlanRemoveTableAction'|trans }}</twig:Cm:Button>
+                    </div>
+                    <p class="cm-sp-hint">{{ 'seatingPlanKeyboardHint'|trans|raw }}</p>
+                </div>
+
+                <div class="cm-sp-card">
+                    {% if config.roomLayouts is not empty %}
+                        <h2 class="cm-sp-label">{{ 'seatingPlanFromRoomHeading'|trans }}</h2>
+                        <div class="cm-sp-layouts">
+                            {% for layout in config.roomLayouts %}
+                                <button type="button" class="cm-sp-layout" data-source="roomLayouts" data-index="{{ loop.index0 }}" data-action="seating-plan#applyLayout">
+                                    <span><b>{{ layout.label }}</b><span>{{ layout.description }}</span></span>
+                                    <em>{{ 'seatingPlanSeatsCount'|trans({'%count%': layout.seats}) }}</em>
+                                </button>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <h2 class="cm-sp-label {{ config.roomLayouts is not empty ? 'cm-sp-label--spaced' }}">{{ 'seatingPlanTemplatesHeading'|trans }}</h2>
+                    <div class="cm-sp-layouts">
+                        {% for template in config.templates %}
+                            <button type="button" class="cm-sp-layout" data-source="templates" data-index="{{ loop.index0 }}" data-action="seating-plan#applyLayout">
+                                <span><b>{{ template.label }}</b><span>{{ template.description }}</span></span>
+                                <em>{{ 'seatingPlanSeatsCount'|trans({'%count%': template.seats}) }}</em>
+                            </button>
+                        {% endfor %}
+                        <button type="button" class="cm-sp-layout" data-action="seating-plan#clearRoom">
+                            <span><b>{{ 'seatingPlanEmptyRoomLabel'|trans }}</b><span>{{ 'seatingPlanEmptyRoomDescription'|trans }}</span></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="cm-sp-card">
+                    <h2 class="cm-sp-label">{{ 'seatingPlanDimensionsHeading'|trans }}</h2>
+                    <div class="cm-sp-dims">
+                        <div>
+                            <span class="cm-sp-muted">{{ 'seatingPlanWidthLabel'|trans }}</span>
+                            <div class="cm-sp-stepper">
+                                <button type="button" data-action="seating-plan#resize" data-columns="-1" aria-label="{{ 'seatingPlanColumnRemoveAction'|trans }}">−</button>
+                                <b data-seating-plan-target="columns"></b>
+                                <button type="button" data-action="seating-plan#resize" data-columns="1" aria-label="{{ 'seatingPlanColumnAddAction'|trans }}">+</button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="cm-sp-muted">{{ 'seatingPlanDepthLabel'|trans }}</span>
+                            <div class="cm-sp-stepper">
+                                <button type="button" data-action="seating-plan#resize" data-rows="-1" aria-label="{{ 'seatingPlanRowRemoveAction'|trans }}">−</button>
+                                <b data-seating-plan-target="rows"></b>
+                                <button type="button" data-action="seating-plan#resize" data-rows="1" aria-label="{{ 'seatingPlanRowAddAction'|trans }}">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="cm-sp-hint">{{ 'seatingPlanDimensionsHint'|trans }}</p>
+                </div>
+            </div>
+
+            <div class="cm-sp-main">
+                <div class="cm-sp-card">
+                    <div class="cm-sp-card__row">
+                        <h2 class="cm-sp-label">{{ 'seatingPlanRoomViewHeading'|trans({'%room%': plan.roomName}) }}</h2>
+                        {% if plan.room %}
+                            <twig:Cm:Button variant="outline" size="sm" data-action="seating-plan#saveRoomLayout">{{ 'seatingPlanSaveRoomLayoutAction'|trans({'%room%': plan.roomName}) }}</twig:Cm:Button>
+                        {% endif %}
+                    </div>
+                    <div class="cm-sp-room-box" data-seating-plan-target="roomEditor"></div>
+                    {{ include('seating_plan/_legend.html.twig', {withOptions: false}) }}
+                </div>
+                <div class="cm-sp-footer">
+                    <div class="cm-sp-meter" data-seating-plan-target="meter"></div>
+                    <twig:Cm:Button variant="primary" data-action="seating-plan#goStep" data-step="rules">{{ 'seatingPlanToRulesAction'|trans }}</twig:Cm:Button>
+                </div>
+            </div>
+        </section>
+
+        {# ---------------- 2. The rules ---------------- #}
+        <section class="cm-sp-cols" data-seating-plan-target="section" data-step="rules" {{ step != 'rules' ? 'hidden' }}>
+            <div class="cm-sp-side">
+                <div class="cm-sp-card">
+                    <h2 class="cm-sp-label">{{ 'seatingPlanNewRuleHeading'|trans }}</h2>
+                    <div class="cm-sp-radios" role="radiogroup" aria-label="{{ 'seatingPlanRuleTypeLabel'|trans }}">
+                        {% for type in config.ruleTypes %}
+                            <label class="cm-sp-radio {{ loop.first ? 'is-checked' }}">
+                                <input type="radio" name="sp-rule-type" value="{{ type.type }}" {{ loop.first ? 'checked' }} data-action="seating-plan#pickRuleType" data-seating-plan-target="ruleType">
+                                <span><b>{{ type.label }}</b><span>{{ type.description }}</span></span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <div class="cm-sp-field">
+                        <label class="cm-sp-field__label" for="sp-rule-students">{{ 'seatingPlanRuleStudentsLabel'|trans }}</label>
+                        <select id="sp-rule-students" multiple data-controller="tom-select" data-tom-select-placeholder-value="{{ 'seatingPlanSearchStudentPlaceholder'|trans }}"
+                                data-seating-plan-target="ruleStudents" data-action="change->seating-plan#ruleStudentsChanged">
+                            {% for student in config.roster %}
+                                <option value="{{ student.id }}">{{ student.firstName }} {{ student.lastName }}{{ student.option ? ' · ' ~ student.option }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="cm-sp-hint" data-seating-plan-target="ruleNeed"></p>
+                    </div>
+                    <twig:Cm:Button variant="primary" class="cm-sp-wide" data-action="seating-plan#addRule" data-seating-plan-target="addRuleButton" disabled>{{ 'seatingPlanAddRuleAction'|trans }}</twig:Cm:Button>
+                </div>
+
+                <div class="cm-sp-card">
+                    <h2 class="cm-sp-label">{{ 'seatingPlanPreferencesHeading'|trans }}</h2>
+                    <label class="cm-sp-switch">
+                        <input type="checkbox" data-seating-plan-target="mixOptions" data-action="seating-plan#togglePreference" data-preference="mixOptions">
+                        <span><b>{{ 'seatingPreferenceMixLabel'|trans }}</b><span>{{ options|length > 1 ? 'seatingPreferenceMixDescription'|trans({'%options%': options|join(', ')}) : 'seatingPreferenceMixNoOptions'|trans }}</span></span>
+                    </label>
+                    <label class="cm-sp-switch">
+                        <input type="checkbox" data-seating-plan-target="frontFirst" data-action="seating-plan#togglePreference" data-preference="frontFirst">
+                        <span><b>{{ 'seatingPreferenceFrontLabel'|trans }}</b><span>{{ 'seatingPreferenceFrontDescription'|trans }}</span></span>
+                    </label>
+                    <p class="cm-sp-hint">{{ 'seatingPlanPreferencesHint'|trans }}</p>
+                </div>
+            </div>
+
+            <div class="cm-sp-main">
+                <div class="cm-sp-suggestion" data-seating-plan-target="suggestion" hidden>
+                    <div>
+                        <b data-seating-plan-target="suggestionTitle"></b>
+                        <p class="cm-sp-muted" data-seating-plan-target="suggestionNames"></p>
+                    </div>
+                    <twig:Cm:Button variant="outline" size="sm" data-action="seating-plan#addFrontRule">{{ 'seatingPlanAddRuleAction'|trans }}</twig:Cm:Button>
+                </div>
+                <div class="cm-sp-card">
+                    <div class="cm-sp-card__row">
+                        <h2 class="cm-sp-label">{{ 'seatingPlanRulesHeading'|trans }}</h2>
+                    </div>
+                    <p class="cm-sp-empty-box" data-seating-plan-target="noRules" hidden>{{ 'seatingPlanNoRulesText'|trans }}</p>
+                    <div data-seating-plan-target="ruleList"></div>
+                </div>
+                <div class="cm-sp-footer">
+                    <twig:Cm:Button variant="outline" data-action="seating-plan#goStep" data-step="room">{{ 'seatingPlanBackToRoomAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" data-action="seating-plan#goStep" data-step="plan" data-propose="1">{{ 'seatingPlanToPlanAction'|trans }}</twig:Cm:Button>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        {# ---------------- 3. The plan ---------------- #}
+        <section class="cm-sp-cols" data-seating-plan-target="section" data-step="plan" {{ step != 'plan' ? 'hidden' }}>
+            <div class="cm-sp-main">
+                <div class="cm-sp-card">
+                    <div class="cm-sp-card__row">
+                        <h2 class="cm-sp-label" data-seating-plan-target="planHeading">{{ 'seatingPlanStudentsViewHeading'|trans({'%room%': plan.roomName}) }}</h2>
+                        <div class="cm-sp-seg" role="group" aria-label="{{ 'seatingPlanOrientationLabel'|trans }}">
+                            <button type="button" class="is-on" aria-pressed="true" data-seating-plan-target="flipButton" data-flip="0" data-action="seating-plan#flip">{{ 'seatingPlanStudentsView'|trans }}</button>
+                            <button type="button" aria-pressed="false" data-seating-plan-target="flipButton" data-flip="1" data-action="seating-plan#flip">{{ 'seatingPlanDeskView'|trans }}</button>
+                        </div>
+                    </div>
+                    <div class="cm-sp-room-box" data-seating-plan-target="planRoom"></div>
+                    {{ include('seating_plan/_legend.html.twig', {withOptions: true, options: options}) }}
+                </div>
+                {% if canEdit %}
+                    <p class="cm-sp-hint">{{ 'seatingPlanMoveHint'|trans }}</p>
+                {% endif %}
+            </div>
+
+            <div class="cm-sp-side">
+                {% if canEdit %}
+                    <div class="cm-sp-card cm-sp-stack">
+                        <p class="cm-sp-banner cm-sp-banner--info" data-seating-plan-target="staleBanner" hidden></p>
+                        <p class="cm-sp-banner" data-seating-plan-target="scoreBanner" hidden></p>
+                        <twig:Cm:Button variant="primary" class="cm-sp-wide" data-action="seating-plan#propose" data-seating-plan-target="proposeButton">
+                            <twig:ux:icon name="shuffle" width="17" height="17"/><span data-seating-plan-target="proposeLabel">{{ 'seatingPlanProposeAction'|trans }}</span>
+                        </twig:Cm:Button>
+                    </div>
+
+                    <div class="cm-sp-selection" data-seating-plan-target="selection" hidden>
+                        <h2 class="cm-sp-label">{{ 'seatingPlanSelectedStudentHeading'|trans }}</h2>
+                        <p class="cm-sp-selection__name" data-seating-plan-target="selectionName"></p>
+                        <p class="cm-sp-muted" data-seating-plan-target="selectionInfo"></p>
+                        <div class="cm-sp-inline-buttons">
+                            <twig:Cm:Button variant="outline" size="sm" data-action="seating-plan#togglePin" data-seating-plan-target="pinButton"><twig:ux:icon name="lock" width="14" height="14"/><span data-seating-plan-target="pinLabel"></span></twig:Cm:Button>
+                            <twig:Cm:Button variant="outline" size="sm" data-action="seating-plan#unseat" data-seating-plan-target="unseatButton">{{ 'seatingPlanUnseatAction'|trans }}</twig:Cm:Button>
+                            <twig:Cm:Button variant="outline" size="sm" data-action="seating-plan#cancelPick">{{ 'seatingPlanCancelAction'|trans }}</twig:Cm:Button>
+                        </div>
+                        <p class="cm-sp-hint">{{ 'seatingPlanPickHint'|trans }}</p>
+                    </div>
+                {% endif %}
+
+                <div class="cm-sp-card">
+                    <div class="cm-sp-card__row">
+                        <h2 class="cm-sp-label">{{ 'seatingPlanChecksHeading'|trans }}</h2>
+                        {% if canEdit %}<twig:Cm:Button variant="outline" size="sm" data-action="seating-plan#goStep" data-step="rules">{{ 'seatingPlanEditRulesAction'|trans }}</twig:Cm:Button>{% endif %}
+                    </div>
+                    <p class="cm-sp-hint" data-seating-plan-target="noChecks" hidden>{{ 'seatingPlanNoChecksText'|trans }}</p>
+                    <ul class="cm-sp-checks" data-seating-plan-target="checks"></ul>
+                </div>
+
+                <div class="cm-sp-card">
+                    <div class="cm-sp-card__row">
+                        <h2 class="cm-sp-label">{{ 'seatingPlanPoolHeading'|trans }}</h2>
+                        <span class="cm-sp-muted" data-seating-plan-target="poolCount"></span>
+                    </div>
+                    <div class="cm-sp-pool" data-seating-plan-target="pool"
+                         data-action="dragover->seating-plan#poolOver dragleave->seating-plan#poolLeave drop->seating-plan#poolDrop">
+                    </div>
+                    <p class="cm-sp-hint" data-seating-plan-target="poolEmpty" hidden>{{ canEdit ? 'seatingPlanPoolEmptyText'|trans : 'seatingPlanPoolEmptyReadText'|trans }}</p>
+                </div>
+            </div>
+        </section>
+
+        {% if canManage %}
+            {% set sharedIds = plan.sharedTeachers|map(teacher => teacher.id) %}
+            <dialog class="cm-sp-dialog" data-seating-plan-target="shareDialog" aria-labelledby="sp-share-title">
+                <form method="post" action="{{ path('app_seating_plan_share', {id: plan.id}) }}" data-action="submit->seating-plan#beforeShare">
+                    <input type="hidden" name="_token" value="{{ csrf }}">
+                    <header class="cm-sp-dialog__head">
+                        <h2 class="cm-sp-dialog__title" id="sp-share-title">{{ 'seatingPlanShareHeading'|trans({'%name%': plan.name}) }}</h2>
+                        <button type="button" class="cm-sp-icon" data-action="seating-plan#closeShare" aria-label="{{ 'seatingPlanCloseAction'|trans }}"><twig:ux:icon name="x" width="16" height="16"/></button>
+                    </header>
+                    <div class="cm-sp-dialog__body">
+                        <div class="cm-sp-field">
+                            <label class="cm-sp-field__label" for="sp-share-teachers">{{ 'seatingPlanShareTeachersLabel'|trans }}</label>
+                            <select id="sp-share-teachers" name="teachers[]" multiple data-controller="tom-select"
+                                    data-tom-select-url-value="{{ path('app_seating_plan_colleagues') }}"
+                                    data-tom-select-placeholder-value="{{ 'seatingPlanSearchTeacherPlaceholder'|trans }}"
+                                    data-seating-plan-target="shareSelect">
+                                {% for teacher in plan.sharedTeachers %}
+                                    <option value="{{ teacher.id }}" selected>{{ teacher.displayName ?? teacher.username }}</option>
+                                {% endfor %}
+                            </select>
+                            {% set classTeachers = plan.program.teachers|filter(teacher => teacher.id != app.user.id and teacher.id not in sharedIds) %}
+                            {% if classTeachers is not empty %}
+                                <div class="cm-sp-quick">
+                                    <span class="cm-sp-muted">{{ 'seatingPlanClassTeachersLabel'|trans({'%class%': plan.program.displayShortName}) }}</span>
+                                    {% for teacher in classTeachers %}
+                                        <button type="button" class="cm-sp-quick__add" data-id="{{ teacher.id }}" data-name="{{ teacher.displayName ?? teacher.username }}" data-action="seating-plan#quickShare">+ {{ teacher.displayName ?? teacher.username }}</button>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="cm-sp-field">
+                            <span class="cm-sp-field__label">{{ 'seatingPlanShareRightLabel'|trans }}</span>
+                            <div class="cm-sp-radios">
+                                <label class="cm-sp-radio"><input type="radio" name="right" value="read" {{ not plan.sharedCanEdit ? 'checked' }}><span><b>{{ 'seatingPlanRightRead'|trans }}</b><span>{{ 'seatingPlanRightReadDescription'|trans }}</span></span></label>
+                                <label class="cm-sp-radio"><input type="radio" name="right" value="edit" {{ plan.sharedCanEdit ? 'checked' }}><span><b>{{ 'seatingPlanRightEdit'|trans }}</b><span>{{ 'seatingPlanRightEditDescription'|trans }}</span></span></label>
+                            </div>
+                        </div>
+                        <p class="cm-sp-hint">{{ 'seatingPlanShareHint'|trans }}</p>
+                    </div>
+                    <footer class="cm-sp-dialog__foot">
+                        <twig:Cm:Button variant="outline" data-action="seating-plan#closeShare">{{ 'seatingPlanCancelAction'|trans }}</twig:Cm:Button>
+                        <twig:Cm:Button variant="primary" type="submit">{{ 'seatingPlanShareSubmitAction'|trans }}</twig:Cm:Button>
+                    </footer>
+                </form>
+            </dialog>
+        {% endif %}
+
+        <dialog class="cm-sp-dialog" data-seating-plan-target="leaveDialog" aria-labelledby="sp-leave-title">
+            <header class="cm-sp-dialog__head">
+                <h2 class="cm-sp-dialog__title" id="sp-leave-title">{{ 'seatingPlanLeaveHeading'|trans }}</h2>
+            </header>
+            <div class="cm-sp-dialog__body"><p>{{ 'seatingPlanLeaveText'|trans }}</p></div>
+            <footer class="cm-sp-dialog__foot">
+                <twig:Cm:Button variant="outline" data-action="seating-plan#leaveWithoutSaving">{{ 'seatingPlanLeaveWithoutSavingAction'|trans }}</twig:Cm:Button>
+                <twig:Cm:Button variant="primary" data-action="seating-plan#saveAndLeave">{{ 'seatingPlanSaveAndLeaveAction'|trans }}</twig:Cm:Button>
+            </footer>
+        </dialog>
+
+        <div class="cm-sp-toast" role="status" aria-live="polite" data-seating-plan-target="toast" hidden></div>
+    </div>
+{% endblock %}

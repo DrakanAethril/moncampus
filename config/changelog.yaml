@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.10'
+      date: '2026-11-10'
+      summary: "Les plans de classe, un nouvel outil pour décider où s'assoient les élèves, entrent en essai auprès de l'administration. Les aménagements peuvent désormais demander une place devant."
+      entries:
+          - type: nouveaute
+            title: "Plans de classe, en essai par l'administration avant leur ouverture : dessiner la salle, poser des règles de placement et obtenir un plan à ajuster à la main"
+            detail: "Séparer, associer, placer devant ou au fond, isoler ; le plan s'enregistre, se partage entre collègues et s'imprime vu des élèves ou du bureau."
+          - type: nouveaute
+            title: "Aménagements : un nouveau critère « placer devant », proposé lors de la préparation d'un plan de classe"
     - version: '2026.11.09'
       date: '2026-11-09'
       summary: "Dans le serious game PHP pas à pas, un niveau réussi se relit étape par étape et se rejoue, et un carnet garde la synthèse des notions vues. Côté UFA, les relances partent désormais par lots, et une alternance peut avoir un second tuteur."

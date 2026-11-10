@@ -1,0 +1,14 @@
+{# What the room's marks mean, under the room in both steps and on the printed sheet. The option
+   dots follow the order of `options` - seating_plan_controller.js and print.html.twig colour them
+   by their rank in that list. #}
+<p class="cm-sp-legend">
+    {% if withOptions %}
+        {% for option in options|default([]) %}
+            <span><i class="cm-sp-dot cm-sp-dot--{{ loop.index0 % 4 }}"></i>{{ option }}</span>
+        {% endfor %}
+    {% else %}
+        <span><i class="cm-sp-chair"></i>{{ 'seatingPlanLegendSeat'|trans }}</span>
+    {% endif %}
+    <span><i class="cm-sp-legend__window"></i>{{ 'seatingPlanLegendWindows'|trans }}</span>
+    <span><i class="cm-sp-legend__door"></i>{{ 'seatingPlanLegendDoor'|trans }}</span>
+</p>

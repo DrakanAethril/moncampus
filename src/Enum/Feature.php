@@ -51,6 +51,7 @@ enum Feature: string
     case ClassTools = 'class_tools';
     case WordCloud = 'word_cloud';
     case Walls = 'walls';
+    case SeatingPlans = 'seating_plans';
     case TsfReferential = 'tsf_referential';
     case Game = 'game';
     case Portfolio = 'portfolio';
@@ -142,7 +143,7 @@ enum Feature: string
             self::Progression, self::SequenceLibrary, self::SequenceImport, self::CourseSpace,
             self::Video, self::Audio, self::FileLibrary, self::SharedDocuments,
             self::ContentSharing, self::Wiki, self::Documentation, self::Surveys,
-            self::ClassTools, self::WordCloud, self::Walls, self::TsfReferential, self::Game,
+            self::ClassTools, self::WordCloud, self::Walls, self::SeatingPlans, self::TsfReferential, self::Game,
             self::Dossiers, self::Portfolio, self::OnlineCourses, self::LearningPaths, self::SeriousGames, self::QuizTournaments => FeatureFamily::Pedagogy,
 
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
@@ -217,6 +218,7 @@ enum Feature: string
             self::ClassTools => 'featureClassToolsLabel',
             self::WordCloud => 'featureWordCloudLabel',
             self::Walls => 'featureWallsLabel',
+            self::SeatingPlans => 'featureSeatingPlansLabel',
             self::TsfReferential => 'featureTsfReferentialLabel',
             self::Game => 'featureGameLabel',
             self::Portfolio => 'featurePortfolioLabel',
@@ -373,6 +375,12 @@ enum Feature: string
             // it ships visible to the administrator alone. It is one line for both sides of the
             // room, like the word cloud: a wall is shared with a class, and students open walls of
             // their own - lighting it for teachers alone would hand them walls nobody can join.
+
+            // « Plans de classe » (design/validated/plans-de-classe.md) is named by no role either: it
+            // ships visible to the administrator alone, who tries it before Gestion > Fonctionnalités
+            // opens it to the teachers. It is a line of its own rather than part of class_tools: a
+            // plan names where each student sits, and an establishment decides for itself whether
+            // its teachers keep that on the platform.
 
             // The machines are handed out in class, so the two roles that sit in one.
             self::MyVms => ['ROLE_STUDENT', 'ROLE_TEACHER'],

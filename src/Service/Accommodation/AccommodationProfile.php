@@ -23,6 +23,8 @@ final class AccommodationProfile
     private function __construct(
         /** The largest « ajout de temps » granted, as a percentage. 0.0 when none is. */
         public readonly float $quizExtraTimePercent,
+        /** Whether any of them asks for a seat at the front - one is enough. */
+        public readonly bool $seatInFront = false,
     ) {
     }
 
@@ -39,15 +41,17 @@ final class AccommodationProfile
     public static function fromAccommodations(iterable $accommodations): self
     {
         $extraTime = 0.0;
+        $front = false;
 
         foreach ($accommodations as $accommodation) {
             $percent = $accommodation->getQuizExtraTimePercent();
             if (null !== $percent) {
                 $extraTime = max($extraTime, (float) $percent);
             }
+            $front = $front || $accommodation->isSeatInFront();
         }
 
-        return new self($extraTime);
+        return new self($extraTime, $front);
     }
 
     public function hasQuizExtraTime(): bool

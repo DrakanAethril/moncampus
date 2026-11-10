@@ -60,6 +60,14 @@ class Accommodation
     #[Assert\LessThanOrEqual(500)]
     private ?string $quizExtraTimePercent = null;
 
+    /**
+     * Whether this accommodation asks for a seat at the front of the room. Read by the seating plans
+     * (design/validated/plans-de-classe.md, §4), which propose the « placer devant » rule for the
+     * students it applies to - a proposal, never a rule set on the teacher's behalf.
+     */
+    #[ORM\Column(name: 'seat_in_front', options: ['default' => false])]
+    private bool $seatInFront = false;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -97,6 +105,18 @@ class Accommodation
     public function setQuizExtraTimePercent(?string $quizExtraTimePercent): static
     {
         $this->quizExtraTimePercent = $quizExtraTimePercent;
+
+        return $this;
+    }
+
+    public function isSeatInFront(): bool
+    {
+        return $this->seatInFront;
+    }
+
+    public function setSeatInFront(bool $seatInFront): static
+    {
+        $this->seatInFront = $seatInFront;
 
         return $this;
     }

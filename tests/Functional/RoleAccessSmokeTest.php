@@ -23,6 +23,7 @@ use App\Entity\QuizTemplate;
 use App\Entity\QuizTournament;
 use App\Entity\QuizTournamentDuel;
 use App\Entity\QuizTournamentRound;
+use App\Entity\SeatingPlan;
 use App\Entity\SeriousGame;
 use App\Entity\SeriousGameRoleSetting;
 use App\Entity\Topic;
@@ -39,6 +40,8 @@ use App\Enum\QuizMode;
 use App\Enum\QuizTournamentDuelOrigin;
 use App\Enum\QuizTournamentPalette;
 use App\Enum\WallFormat;
+use App\Service\SeatingPlan\SeatingPlanDocument;
+use App\Service\SeatingPlan\SeatingRoomTemplates;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -1433,6 +1436,37 @@ class RoleAccessSmokeTest extends FunctionalTestCase
 
         $this->assertScreens($this->teacher, [$path => 200]);
         $this->assertScreens($this->admin, [$path => 404]);
+        $this->assertScreens($this->student, [$path => 404]);
+    }
+
+    /**
+     * « Plans de classe » (design/validated/plans-de-classe.md): a teacher's tool - the
+     * administration has the list too, students and tutors have no screen at all. A plan is its
+     * author's: an administrator asking for a teacher's plan gets the 404 of a plan that does not
+     * exist. The feature ships off for every role, the administrator alone keeping the list.
+     */
+    public function testSeatingPlansAreATeachersTool(): void
+    {
+        $this->assertScreens($this->teacher, ['/tools/seating-plans' => 200]);
+        $this->assertScreens($this->admin, ['/tools/seating-plans' => 200]);
+        $this->assertScreens($this->student, ['/tools/seating-plans' => 404]);
+        $this->assertScreens($this->tutor, ['/tools/seating-plans' => 404]);
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $plan = new SeatingPlan(
+            $entityManager->getReference(User::class, $this->teacher->getId()),
+            $entityManager->getReference(Program::class, $this->program->getId()),
+            'Plan du smoke test',
+            null,
+            'B204',
+            SeatingPlanDocument::forRoom((new SeatingRoomTemplates())->rows())->toArray(),
+        );
+        $entityManager->persist($plan);
+        $entityManager->flush();
+        $path = '/tools/seating-plans/'.$plan->getId();
+
+        $this->assertScreens($this->teacher, [$path => 200, $path.'/print' => 200]);
+        $this->assertScreens($this->admin, [$path => 404, $path.'/print' => 404]);
         $this->assertScreens($this->student, [$path => 404]);
     }
 
