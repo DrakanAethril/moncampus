@@ -425,7 +425,7 @@
                            tournament targets a class they teach - where « Lancer une ronde » is - and an
                            administrator, who reads every tournament, once one exists. #}
                         {% set tools_tournaments = (is_granted('ROLE_TEACHER') or is_granted('ROLE_ADMIN')) and quiz_tournaments_followed() %}
-                        {% set tools_run = feature('class_tools') or feature('word_cloud') or feature('quiz_live') or feature('walls') or tools_tournaments %}
+                        {% set tools_run = feature('class_tools') or feature('seating_plans') or feature('word_cloud') or feature('quiz_live') or feature('walls') or tools_tournaments %}
                         {# École Directe is tried by administrators only for now, so the entry asks for
                            the role its controllers do (App\Controller\EcoleDirecte\EcoleDirecteControllerTrait). #}
                         {% set tools_ecole_directe = feature('ecole_directe') and is_granted('ROLE_ADMIN') %}
@@ -451,6 +451,7 @@
                         {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow or tools_beyond) %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_program_word_cloud'
+                                or current_route starts with 'app_seating_plan'
                                 or (current_route starts with 'app_wall' and not (current_route starts with 'app_wall_students') and not app.request.attributes.get('wall_supervised'))
                                 or current_route starts with 'app_audio_recording'
                                 or current_route starts with 'app_progression'
@@ -504,6 +505,14 @@
                                     {% if feature('class_tools') %}
                                         <a class="dropdown-item {{ current_route == 'app_tools_random_draw' ? 'active' }}" href="{{ path('app_tools_random_draw') }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
                                         <a class="dropdown-item {{ current_route == 'app_tools_group_creation' ? 'active' }}" href="{{ path('app_tools_group_creation') }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
+                                    {% endif %}
+                                    {# Right after « Création de groupes », where the prototype put it, and on a
+                                       feature of its own (design/validated/plans-de-classe.md):
+                                       several classes by nature, so it goes straight to the list. #}
+                                    {% if feature('seating_plans') %}
+                                        <a class="dropdown-item {{ current_route starts with 'app_seating_plan' ? 'active' }}" href="{{ path('app_seating_plan_index') }}">{{ 'seatingPlanNavLabel'|trans }}</a>
+                                    {% endif %}
+                                    {% if feature('class_tools') %}
                                         {# Multi-class by nature - a board may be linked to a class
                                            or to none - so it goes straight to the list, never
                                            through the class picker. #}

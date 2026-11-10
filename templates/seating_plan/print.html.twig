@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+
+{# The printed seating plan (design/validated/plans-de-classe.md, §8): one A4 landscape sheet, laid
+   out on the server (App\Service\SeatingPlan\SeatingPlanPrintView). It extends base.html.twig
+   rather than the app shell, like the board's projection: the sheet is the page, and the bar above
+   it - orientation, names, « Imprimer » - is not printed. #}
+
+{% block title %}{{ plan.name }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/seating_plan.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="cm-sp cm-sp-print" data-controller="seating-plan-print">
+        <div class="cm-sp-print__bar">
+            <a class="cm-sp-print__back" href="{{ path('app_seating_plan_show', {id: plan.id}) }}"><twig:ux:icon name="arrow-left" width="15" height="15"/>{{ 'seatingPlanBackToPlanAction'|trans }}</a>
+            <div class="cm-sp-seg" role="group" aria-label="{{ 'seatingPlanOrientationLabel'|trans }}">
+                <a class="{{ not fromDesk ? 'is-on' }}" href="{{ studentsViewUrl }}" aria-current="{{ not fromDesk ? 'true' : 'false' }}">{{ 'seatingPlanStudentsView'|trans }}</a>
+                <a class="{{ fromDesk ? 'is-on' }}" href="{{ deskViewUrl }}" aria-current="{{ fromDesk ? 'true' : 'false' }}">{{ 'seatingPlanDeskView'|trans }}</a>
+            </div>
+            <a class="cm-sp-print__toggle" href="{{ namesToggleUrl }}" aria-pressed="{{ fullNames ? 'true' : 'false' }}">
+                <span class="cm-sp-print__check{{ fullNames ? ' is-on' }}" aria-hidden="true"></span>{{ 'seatingPlanFullNamesLabel'|trans }}
+            </a>
+            <twig:Cm:Button variant="primary" data-action="seating-plan-print#print"><twig:ux:icon name="printer" width="16" height="16"/>{{ 'seatingPlanPrintAction'|trans }}</twig:Cm:Button>
+        </div>
+
+        <article class="cm-sp-sheet">
+            <header class="cm-sp-sheet__head">
+                <div>
+                    <h1 class="cm-sp-sheet__title">{{ plan.name }}</h1>
+                    <p class="cm-sp-muted">{{ plan.program.displayShortName }} · {{ plan.program.displayName }} · {{ 'seatingPlanRoomBadge'|trans({'%room%': plan.roomName}) }} · {{ 'seatingPlanSeatedCount'|trans({'%count%': layout.seated}) }}</p>
+                </div>
+                <p class="cm-sp-muted">{{ (fromDesk ? 'seatingPlanPrintedFromDesk' : 'seatingPlanPrintedFromStudents')|trans }}</p>
+            </header>
+            <div class="cm-sp-room">
+                {% if not fromDesk %}<div class="cm-sp-board">{{ 'seatingPlanBoardLabel'|trans }}</div>{% endif %}
+                <div class="cm-sp-floor cm-sp-floor--plan" style="width: {{ layout.width }}px; height: {{ layout.height }}px">
+                    <span class="cm-sp-window {{ fromDesk ? 'cm-sp-window--left' : 'cm-sp-window--right' }}"></span>
+                    <span class="cm-sp-door {{ fromDesk ? 'cm-sp-door--top-right' : 'cm-sp-door--bottom-left' }}"></span>
+                    {% for table in layout.tables %}
+                        <div class="cm-sp-table-shape {{ table.desk ? 'cm-sp-table-shape--desk' }}" style="left: {{ table.left }}px; top: {{ table.top }}px; width: {{ table.width }}px; height: {{ table.height }}px">{% if table.desk %}{{ 'seatingFurnitureDeskShort'|trans }}{% endif %}</div>
+                    {% endfor %}
+                    {% for seat in layout.seats %}
+                        <div class="cm-sp-seat cm-sp-seat--print {{ seat.firstName is empty ? 'is-empty' }}" style="left: {{ seat.left }}px; top: {{ seat.top }}px; width: {{ seat.size }}px; height: {{ seat.size }}px">
+                            {% if seat.firstName is not empty or seat.lastName is not empty %}
+                                <span class="cm-sp-seat__first">{{ seat.firstName }}</span>
+                                <span class="cm-sp-seat__last {{ fullNames ? 'cm-sp-seat__last--full' }}">{{ seat.lastName }}</span>
+                                {% if seat.optionIndex is not null %}<span class="cm-sp-dot cm-sp-dot--{{ seat.optionIndex }}"></span>{% endif %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if fromDesk %}<div class="cm-sp-board cm-sp-board--bottom">{{ 'seatingPlanBoardLabel'|trans }}</div>{% endif %}
+            </div>
+            {{ include('seating_plan/_legend.html.twig', {withOptions: true, options: layout.options}) }}
+            <footer class="cm-sp-sheet__foot">
+                <span>Formatool</span>
+                <span>{{ 'seatingPlanPrintedOn'|trans({'%date%': 'now'|date('d/m/Y'), '%name%': app.user.displayName ?? app.user.userIdentifier}) }}</span>
+            </footer>
+        </article>
+    </div>
+{% endblock %}

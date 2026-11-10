@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Paramètres > Configuration, onglet « Aménagements ».
@@ -81,7 +82,7 @@ class AccommodationController extends AbstractController
     }
 
     #[Route(path: '/settings/structure/accommodations/data', name: 'app_settings_structure_accommodations_data')]
-    public function accommodationsData(Request $request, AccommodationRepository $repository): JsonResponse
+    public function accommodationsData(Request $request, AccommodationRepository $repository, TranslatorInterface $translator): JsonResponse
     {
         [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
 
@@ -101,6 +102,7 @@ class AccommodationController extends AbstractController
                     'quizExtraTimePercent' => null === $accommodation->getQuizExtraTimePercent()
                         ? '—'
                         : ExtraTime::percentLabel((float) $accommodation->getQuizExtraTimePercent()),
+                    'seatInFront' => $accommodation->isSeatInFront() ? $translator->trans('yesLabel') : '—',
                 ],
                 $rows,
             ),

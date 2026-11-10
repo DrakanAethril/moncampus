@@ -22,6 +22,7 @@
                     <div class="col-md-6">{{ form_row(form.name) }}</div>
                     <div class="col-md-6">{{ form_row(form.quizExtraTimePercent) }}</div>
                 </div>
+                {{ form_row(form.seatInFront) }}
                 <div class="d-flex justify-content-between">
                     <a href="{{ path('app_settings_structure_accommodations') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                     {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}

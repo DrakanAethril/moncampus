@@ -197,6 +197,29 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   absentees or the pairs. Every widget's head carries three sizes (whole surface, half, quarter):
   they only write `x`/`y`/`w`/`h`, and the widget in hand (`.is-front`) is drawn over the two bars
   so that a head taken to the top edge stays in reach.
+- **Plans de classe** (Outils › Animer la classe) — `SeatingPlan`, `SeatingRoomLayout`,
+  `App\Controller\SeatingPlan\*`, `src/Service/SeatingPlan/`, spec `design/validated/plans-de-classe.md`.
+  **`Feature::SeatingPlans` is off for every role: administrators only, until Gestion ›
+  Fonctionnalités opens it.** Three steps on one page - the room, the rules, the plan. Rules the code holds:
+  - **The room, the rules, the preferences, who sits where, the locked seats and the seed are one JSON
+    document**, read through `SeatingPlanDocument::fromArray()` alone and refused whole at the first
+    fault of shape; a student who left the class is dropped silently (seats, locks, rules). `revision`
+    refuses a save from a stale tab (409).
+  - **The rules mean what `SeatingRuleChecker` says**, the one reading for the checklist, the red
+    seats and the solver: « séparer » is never near (one cell sideways, **two** front/back - the chairs'
+    row - diagonals included), « devant » the first two ranks *that hold a seat*. A broken rule always
+    costs more than every preference.
+  - **The server proposes and checks; the page knows no rule.** `SeatingPlanSolver` is a seeded
+    simulated annealing (same document + seed, same plan; « Proposer un autre plan » is seed + 1),
+    locked seats never dealt. The page asks `…/check` again after each move.
+  - **A room is drawn once per timetable `Room`** (`SeatingRoomLayout`, the establishment's, last
+    author named) and **copied** into a plan: redrawing it moves no saved plan.
+  - **`SeatingPlanVoter`**: the author does everything; a colleague it is shared with views, prints and
+    duplicates, and edits too when shared « en modification »; renaming, sharing and deleting stay the
+    author's; nobody else, administrators included (404). Shares go to `ROLE_TEACHER` only.
+  - The accommodation criterion `Accommodation::$seatInFront` (`AccommodationProfile::$seatInFront`)
+    makes the rules step *propose* « placer devant », never set it.
+  - Printing is a server-laid page (`SeatingPlanPrintView`), students' view or the desk's (half a turn).
 - **Murs collaboratifs** (Outils › Animer la classe; « Ressources » for a student) — `Wall` →
   `WallList` → `WallCard` → `WallComment`, `App\Controller\Wall\*`, `src/Service/Wall/`, handoff
   `design/design_handoff_murs_collaboratifs/` (no spec in `design/validated/`: the handoff is the
@@ -1240,10 +1263,10 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 36 of them: Assignment, AudienceTargetable, ClassBoard,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 37 of them: Assignment, AudienceTargetable, ClassBoard,
 DocumentationArticle, Dossier, EcfBooklet, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
 GuestConsole, InternshipTutorLink, LearningPath, LessonLog, MessageThread, OnlineCourse, Portfolio, Progression, ProxmoxHost, QuizFolder,
-QuizTemplate, QuizTournament, SequenceFolder, SequenceInstance, SequenceTemplate, SeriousGame, SignupList, Survey, SurveyFolder, TeacherDossier, Ticket,
+QuizTemplate, QuizTournament, SeatingPlan, SequenceFolder, SequenceInstance, SequenceTemplate, SeriousGame, SignupList, Survey, SurveyFolder, TeacherDossier, Ticket,
 Wall, Wiki, WordCloud).
 New per-object rules belong in a Voter, not inline in a controller.
 
