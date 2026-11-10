@@ -6,6 +6,7 @@ namespace App\Form;
 
 use App\Entity\Accommodation;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -33,6 +34,11 @@ class AccommodationType extends AbstractType
                 'required' => false,
                 'html5' => false,
                 'scale' => 2,
+            ])
+            ->add('seatInFront', CheckboxType::class, [
+                'label' => 'accommodationSeatInFrontFieldLabel',
+                'help' => 'accommodationSeatInFrontFieldHelpText',
+                'required' => false,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitCreateAction',
