@@ -51,10 +51,11 @@
                 </div>
                 <div class="collapse navbar-collapse" id="navbar-menu">
                     {# Per-role bars, design_handoff_dashboards §3: étudiant = Accueil · Emploi du
-                       temps · Travail à faire · Outils ▾ · Agenda · Support · (Mon alternance);
-                       enseignant = Accueil · Campus ▾ · Support · Agenda; staff = Campus ▾ · UFA ▾ ·
-                       Support · Agenda · Gestion ▾ · Configuration ▾; admin = barre complète sans
-                       Support (tickets via Gestion), avec e-CO/Ressources/messagerie.
+                       temps · Travail à faire · Outils ▾ · Support · (Mon alternance);
+                       enseignant = Accueil · Campus ▾ · Support; staff = Campus ▾ · UFA ▾ ·
+                       Support · Gestion ▾ · Configuration ▾; admin = barre complète sans
+                       Support (tickets via Gestion), avec e-CO/Ressources/messagerie. Agenda left
+                       the bar on 2026-11-11 for Outils › « Au-delà d'un diplôme ».
 
                        Text labels only, no icons: the rule already held for the dropdowns (see
                        "Outils" further down), and the few flat entries that still carried one fell
@@ -425,7 +426,13 @@
                            tournament targets a class they teach - where « Lancer une ronde » is - and an
                            administrator, who reads every tournament, once one exists. #}
                         {% set tools_tournaments = (is_granted('ROLE_TEACHER') or is_granted('ROLE_ADMIN')) and quiz_tournaments_followed() %}
-                        {% set tools_run = feature('class_tools') or feature('seating_plans') or feature('word_cloud') or feature('quiz_live') or feature('walls') or tools_tournaments %}
+                        {# « Serious games » to play, for the adults a game is lit for
+                           (design/validated/serious-games.md §3.3) - moved here from Ressources on
+                           2026-11-11, right above « Tournois ». A pure student never reaches this
+                           menu: their door is « Jouer » in their bar. The results stay under
+                           « Suivre les étudiants ». #}
+                        {% set tools_serious_games = feature('serious_games') and serious_games_playable() %}
+                        {% set tools_run = feature('class_tools') or feature('seating_plans') or feature('word_cloud') or feature('quiz_live') or feature('walls') or tools_serious_games or tools_tournaments %}
                         {# École Directe is tried by administrators only for now, so the entry asks for
                            the role its controllers do (App\Controller\EcoleDirecte\EcoleDirecteControllerTrait). #}
                         {% set tools_ecole_directe = feature('ecole_directe') and is_granted('ROLE_ADMIN') %}
@@ -447,7 +454,11 @@
                         {# « Trouver une entreprise » sits with the Jobboard: both look outward, at the
                            companies a class could join (design/validated/vivier-entreprises.md). #}
                         {% set tools_company_search = feature('company_search') %}
-                        {% set tools_beyond = tools_jobboard or tools_company_search %}
+                        {# « Agenda », first of the group since 2026-11-11, when it left the main bar.
+                           This menu is the teachers' and the staff's: a student or a tutor the
+                           feature is lit for has no entry any more. #}
+                        {% set tools_agenda = feature('agenda') %}
+                        {% set tools_beyond = tools_agenda or tools_jobboard or tools_company_search %}
                         {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow or tools_beyond) %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_program_word_cloud'
@@ -461,6 +472,8 @@
                                 or current_route starts with 'app_online_courses'
                                 or current_route starts with 'app_survey'
                                 or (tools_tournaments and (current_route == 'app_quiz_tournaments' or current_route starts with 'app_quiz_tournament_'))
+                                or (tools_serious_games and current_route in ['app_serious_games', 'app_serious_games_me', 'app_serious_games_play'])
+                                or current_route starts with 'app_agenda'
                                 or current_route starts with 'app_jobboard'
                                 or current_route starts with 'app_dossier'
                                 or current_route starts with 'app_portfolios'
@@ -539,6 +552,9 @@
                                     {# After the live quiz, its cousin: the list of the tournaments one follows,
                                        each opening its standings and, for a teacher of a targeted class,
                                        « Lancer une ronde ». #}
+                                    {% if tools_serious_games %}
+                                        <a class="dropdown-item {{ current_route in ['app_serious_games', 'app_serious_games_me', 'app_serious_games_play'] ? 'active' }}" href="{{ path('app_serious_games') }}">{{ 'seriousGamesNavLabel'|trans }}</a>
+                                    {% endif %}
                                     {% if tools_tournaments %}
                                         <a class="dropdown-item {{ current_route == 'app_quiz_tournaments' or current_route starts with 'app_quiz_tournament_' ? 'active' }}" href="{{ path('app_quiz_tournaments') }}">{{ 'quizTournamentsToolsNavLabel'|trans }}</a>
                                     {% endif %}
@@ -617,6 +633,7 @@
                                     {% if tools_beyond %}
                                     <div class="cm-toolsmenu__col" role="group" aria-labelledby="tools-group-beyond">
                                     <h6 class="dropdown-header" id="tools-group-beyond">{{ 'toolsGroupBeyondDiplomaLabel'|trans }}</h6>
+                                    {% if tools_agenda %}<a class="dropdown-item {{ current_route starts with 'app_agenda' ? 'active' }}" href="{{ path('app_agenda') }}">{{ 'agendaNavLabel'|trans }}</a>{% endif %}
                                     {% if tools_jobboard %}<a class="dropdown-item {{ current_route starts with 'app_jobboard' ? 'active' }}" href="{{ path('app_jobboard') }}">{{ 'jobboardNavLabel'|trans }}</a>{% endif %}
                                     {% if tools_company_search %}<a class="dropdown-item {{ current_route starts with 'app_company_search' or current_route starts with 'app_enterprise_pool' ? 'active' }}" href="{{ path('app_company_search') }}">{{ 'companySearchPageHeading'|trans }}</a>{% endif %}
                                     </div>
@@ -633,12 +650,12 @@
                         {% endif %}
                         {# "Support mène à la vue utilisateur des tickets, pas à la console" (§3) -
                            top-level for étudiant/enseignant/staff; the admin bar has no Support tab
-                           (tickets stay reachable via Gestion). Before Agenda for enseignant/staff,
-                           after it for the étudiant, matching the per-profile bar order. #}
+                           (tickets stay reachable via Gestion). Before Ressources for the
+                           étudiant, after it for everybody else. #}
                         {% set support_is_active = current_route starts with 'app_tickets' and current_route != 'app_tickets_queue' and current_route != 'app_tickets_queue_categories' %}
                         {# The student reads "Ressources" here, right after « Travail à faire »: the
-                           dropdown is the whole of their navigation now, so it comes before Agenda
-                           and Support rather than at the far end of the bar. Every other role keeps
+                           dropdown is the whole of their navigation now, so it comes before
+                           Support rather than at the far end of the bar. Every other role keeps
                            it where it has always been, further down - see the second include. #}
                         {% if is_pure_student %}
                             {% include 'layout/_nav_resources.html.twig' with {current_route: current_route, is_pure_student: is_pure_student} only %}
@@ -647,13 +664,6 @@
                             <li class="nav-item {{ support_is_active ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_tickets') }}"{{ support_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'supportNavLabel'|trans }}</span>
-                                </a>
-                            </li>
-                        {% endif %}
-                        {% if feature('agenda') %}
-                            <li class="nav-item {{ current_route starts with 'app_agenda' ? 'active' }}">
-                                <a class="nav-link" href="{{ path('app_agenda') }}"{{ current_route starts with 'app_agenda' ? ' aria-current="page"' }}>
-                                    <span class="nav-link-title">{{ 'agendaNavLabel'|trans }}</span>
                                 </a>
                             </li>
                         {% endif %}

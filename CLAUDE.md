@@ -482,7 +482,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   their **active** classes (history included - asked now, not at the time of play, and never
   through `isProgramTeacher()`, which lets staff in) and by administrators; staff read figures
   without names; tutors and externals nothing. **A student's door is « Jouer »** in their bar (the
-  tournaments' page too, see « Tournois de quiz »), the adults' Ressources (play) and Outils
+  tournaments' page too, see « Tournois de quiz »), the adults' Outils › Animer la classe (play) and Outils
   (results). Rules the code holds:
   - **The server generates and corrects.** Questions come from declarative JSON templates
     (`moncampus-gabarit/1`, `App\SeriousGame\Template\TemplateInterpreter`, ExpressionLanguage
@@ -1098,7 +1098,7 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
   runs **as a PWA at `/eco-app/`** (`public/eco-app/`, a build output of the e-CO repo's
   `tool/build_pwa.sh` - never edited here; its README says what the web build changes): same
   origin as the API, offline queue in IndexedDB, and its own service worker, which also sends that
-  queue by background sync when the page is frozen. The Ressources page offers it next to the APK.
+  queue by background sync when the page is frozen. The profile menu offers it (« Installer e-CO », administrators) under « Installer Formatool ».
 - **Annuaire / Paramètres** — LDAP directory browsing, structure
   (`Section > Track > Cohort`, `Option`/`Modality`, `SchoolYear`, `Program`), student mail aliases.
 - **Support** — `Ticket`/`TicketComment`/`TicketCategory`, with Discord notification.
