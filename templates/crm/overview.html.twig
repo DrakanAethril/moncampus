@@ -1,0 +1,100 @@
+{% extends 'crm/_layout.html.twig' %}
+
+{# A year's overview: one line per formation followed, grouped by section, an option's own lines
+   under a formation that asks for it, and the year's totals - never two years added up. #}
+
+{% block title %}{{ 'crmOverviewHeading'|trans({'%year%': year|crm_year}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'crmNavLabel'|trans, url: path('app_crm_home')},
+        {label: year|crm_year, url: path('app_crm_overview', {id: year.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'crmOverviewHeading'|trans({'%year%': year|crm_year}) }}{% endblock %}
+
+{% block page_actions %}
+    <twig:Cm:Button variant="primary" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_new') }}"><twig:ux:icon name="plus" width="14" height="14"/>{{ 'crmNewDossierAction'|trans }}</twig:Cm:Button>
+    <twig:Cm:Button variant="outline" href="{{ path('app_crm_history', {id: year.id}) }}"><twig:ux:icon name="clock" width="14" height="14"/>{{ 'crmHistoryAction'|trans }}</twig:Cm:Button>
+    <twig:Cm:Button variant="outline" href="{{ path('app_crm_settings') }}"><twig:ux:icon name="settings" width="14" height="14"/>{{ 'crmSettingsAction'|trans }}</twig:Cm:Button>
+{% endblock %}
+
+{% macro line(href, label, title, stats, class) %}
+    <tr class="is-link {{ class }}">
+        <td><a class="cm-crm-rowlink" href="{{ href }}"{% if title %} title="{{ title }}"{% endif %}>{{ label }}</a></td>
+        <td class="n">{{ stats.active }}</td>
+        <td>{% include 'crm/_bar.html.twig' with {stats: stats} only %}</td>
+        <td class="n">{{ stats.steps.complete }}</td>
+        <td class="n">{{ stats.initial }}</td>
+        <td class="n">{{ stats.apprenticeship }}</td>
+        <td class="n">{{ stats.other }}</td>
+        <td class="n">{% if stats.visaPending %}{{ stats.visaPending }}{% else %}<span class="cm-crm-faint">0</span>{% endif %}</td>
+        <td class="n">{{ stats.low }}</td>
+        <td class="n">{{ stats.waiting }}</td>
+        <td class="n">{{ stats.closed }}</td>
+    </tr>
+{% endmacro %}
+
+{% block crm_content %}
+    {% if not hasPrograms %}
+        <div class="cm-crm-card cm-crm-empty">{{ 'crmNoProgramFollowedText'|trans({'%year%': year|crm_year}) }} <a href="{{ path('app_crm_settings') }}">{{ 'crmOpenSettingsLink'|trans }}</a></div>
+    {% else %}
+        <div class="cm-crm-kpis">
+            <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ total.active }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiActiveLabel'|trans }}</span></div>
+            <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ total.steps.complete }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiCompleteLabel'|trans }}</span></div>
+            <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ total.apprenticeship }} / {{ total.initial }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiModalitiesLabel'|trans }}</span></div>
+            <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ total.visaPending }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiVisaLabel'|trans }}</span></div>
+        </div>
+        <section class="cm-crm-card">
+            <div class="cm-crm-subhead">
+                <h2 class="cm-crm-subhead__title">{{ 'crmProgressByProgramHeading'|trans }}</h2>
+                {% include 'crm/_legend.html.twig' %}
+            </div>
+            <div class="cm-crm-tablewrap">
+                <table class="cm-crm-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'crmProgramColumn'|trans }}</th>
+                            <th class="n">{{ 'crmActiveColumn'|trans }}</th>
+                            <th>{{ 'crmProgressColumn'|trans }}</th>
+                            <th class="n">{{ 'crmCompleteColumn'|trans }}</th>
+                            <th class="n">{{ 'crmInitialColumn'|trans }}</th>
+                            <th class="n">{{ 'crmModalityApprenticeshipLabel'|trans }}</th>
+                            <th class="n">{{ 'crmModalityOtherLabel'|trans }}</th>
+                            <th class="n">{{ 'crmVisaColumn'|trans }}</th>
+                            <th class="n" title="{{ 'crmLowHint'|trans }}">{{ 'crmLowColumn'|trans }}</th>
+                            <th class="n">{{ 'crmWaitingColumn'|trans }}</th>
+                            <th class="n">{{ 'crmClosedColumn'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for section, lines in sections %}
+                            <tr class="is-section"><td colspan="11">{{ section }}</td></tr>
+                            {% for line in lines %}
+                                {% set href = path('app_crm_program', {id: line.program.id}) %}
+                                {{ _self.line(href, line.program.shortName, line.program.name, line.stats, '') }}
+                                {% for sub in line.options %}
+                                    {{ _self.line(path('app_crm_program', {id: line.program.id, option: sub.key}), sub.option ? sub.option.shortName : 'crmOptionToSpecifyLabel'|trans, sub.option ? sub.option.name : '', sub.stats, sub.option ? 'is-sub' : 'is-sub is-warn') }}
+                                {% endfor %}
+                            {% endfor %}
+                        {% endfor %}
+                        <tr class="is-total">
+                            <td>{{ 'crmTotalLabel'|trans }}</td>
+                            <td class="n">{{ total.active }}</td>
+                            <td></td>
+                            <td class="n">{{ total.steps.complete }}</td>
+                            <td class="n">{{ total.initial }}</td>
+                            <td class="n">{{ total.apprenticeship }}</td>
+                            <td class="n">{{ total.other }}</td>
+                            <td class="n">{{ total.visaPending }}</td>
+                            <td class="n">{{ total.low }}</td>
+                            <td class="n">{{ total.waiting }}</td>
+                            <td class="n">{{ total.closed }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}

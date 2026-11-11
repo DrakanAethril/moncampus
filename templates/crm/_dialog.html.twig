@@ -1,0 +1,24 @@
+{# The frame of every CRM dialog, embedded: a form posting to `action`, its head, the reasons of a
+   refusal (`errors`), then the `body` and `foot` blocks. Fetched into the page's <dialog> by
+   crm_dialog_controller.js; `wide` widens it, `stimulus` names a controller of the form. #}
+<form method="post" action="{{ action }}" novalidate{% if wide ?? false %} data-crm-wide{% endif %}{% block form_attributes %}{% endblock %}>
+    <input type="hidden" name="_token" value="{{ csrf_token('crm') }}">
+    <header class="cm-crm-dialog__head">
+        <div>
+            <h2 class="cm-crm-dialog__title">{{ title }}</h2>
+            {% if sub ?? '' %}<div class="cm-crm-dialog__sub">{{ sub }}</div>{% endif %}
+        </div>
+        <button type="button" class="cm-crm-dialog__close" data-action="crm-dialog#close" aria-label="{{ 'crmCloseLabel'|trans }}"><twig:ux:icon name="x" width="16" height="16"/></button>
+    </header>
+    <div class="cm-crm-dialog__body">
+        {% if errors ?? [] is not empty %}
+            <ul class="cm-crm-dialog__errors" role="alert">
+                {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+        {% block body %}{% endblock %}
+    </div>
+    <footer class="cm-crm-dialog__foot">
+        {% block foot %}{% endblock %}
+    </footer>
+</form>

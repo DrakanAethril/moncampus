@@ -1,0 +1,61 @@
+{# Entering a piece: the value its kind asks for, the date (a date to come where the piece allows
+   one), the payment mode of the deposit; « Retirer la saisie » when it is entered. #}
+{% set kind = piece.kind.value %}
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_piece', {id: dossier.id, code: piece.code}), title: piece.label, sub: dossier.candidate.fullName ~ ' · ' ~ crm_program_name(dossier) ~ (optional ? ' · ' ~ 'crmOptionalPieceSuffix'|trans : '')} %}
+    {% block body %}
+        <input type="hidden" name="back" value="{{ back }}">
+        {% set current = entry ? entry.value : null %}
+        {% if kind == 'list' %}
+            <div class="cm-crm-field">
+                <label for="crm-value">{{ piece.label }}</label>
+                <select class="cm-select" id="crm-value" name="value">
+                    {% for choice in piece.choices %}<option{% if current == choice or (current is null and loop.first) %} selected{% endif %}>{{ choice }}</option>{% endfor %}
+                </select>
+                {% if piece.lastValueCompletes %}<span class="cm-crm-hint">{{ 'crmLastValueHint'|trans({'%value%': piece.lastChoice}) }}</span>{% endif %}
+            </div>
+        {% elseif kind == 'choice' %}
+            <div class="cm-crm-field">
+                <span class="cm-crm-label">{{ piece.label }}</span>
+                <div class="cm-crm-radios">
+                    {% for choice in piece.choices %}<label><input type="radio" name="value" value="{{ choice }}"{% if current == choice or (current is null and loop.first) %} checked{% endif %}>{{ choice }}</label>{% endfor %}
+                </div>
+            </div>
+        {% elseif kind == 'text' %}
+            <div class="cm-crm-field"><label for="crm-value">{{ piece.label }} <span class="cm-crm-req">*</span></label><input class="cm-input" id="crm-value" name="value" value="{{ current }}" autofocus></div>
+        {% elseif kind == 'period' %}
+            <div class="cm-crm-grid2">
+                <div class="cm-crm-field"><label for="crm-start">{{ 'crmStartLabel'|trans }} <span class="cm-crm-req">*</span></label><input class="cm-input" id="crm-start" name="start" type="date" value="{{ current.start ?? '' }}"></div>
+                <div class="cm-crm-field"><label for="crm-end">{{ 'crmEndLabel'|trans }} <span class="cm-crm-req">*</span></label><input class="cm-input" id="crm-end" name="end" type="date" value="{{ current.end ?? '' }}"></div>
+            </div>
+        {% elseif kind == 'amount' %}
+            <div class="cm-crm-field">
+                <label for="crm-value">{{ 'crmAmountLabel'|trans }} <span class="cm-crm-req">*</span></label>
+                <input class="cm-input" id="crm-value" name="value" type="number" min="0" step="1" inputmode="numeric" value="{{ current ?? amountDefault }}" autofocus>
+                <span class="cm-crm-hint">{{ entry is null and amountDefault is not null ? 'crmAmountDefaultHint'|trans : 'crmAmountZeroHint'|trans }}</span>
+            </div>
+            {% if piece.asksPaymentMode %}
+                <div class="cm-crm-field">
+                    <label for="crm-mode">{{ 'crmPaymentModeLabel'|trans }}</label>
+                    <select class="cm-select" id="crm-mode" name="paymentMode">
+                        <option value="">{{ 'crmPaymentModeNone'|trans }}</option>
+                        {% for mode in paymentModes %}<option{% if entry and entry.paymentMode == mode %} selected{% endif %}>{{ mode }}</option>{% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+        {% endif %}
+        <div class="cm-crm-field">
+            <label for="crm-date">{{ piece.futureDateAllowed or kind == 'list' ? 'crmDateLabel'|trans : 'crmDoneOnLabel'|trans }}</label>
+            <input class="cm-input" id="crm-date" name="date" type="date" value="{{ entry ? (entry.doneOn ? entry.doneOn|date('Y-m-d') : '') : today|date('Y-m-d') }}"{% if not piece.futureDateAllowed %} max="{{ today|date('Y-m-d') }}"{% endif %}>
+            <span class="cm-crm-hint">
+                {% if entry and not entry.doneOn %}{{ 'crmDateUnknownKeptHint'|trans }}{% elseif entry %}{{ 'crmEnteredByHint'|trans({'%name%': entry.enteredByName}) }}{% elseif piece.futureDateAllowed %}{{ 'crmFutureDateHint'|trans }}{% else %}{{ 'crmTodayDefaultHint'|trans }}{% endif %}
+            </span>
+        </div>
+    {% endblock %}
+    {% block foot %}
+        {% if entry %}
+            <button type="submit" class="cm-btn cm-btn--danger is-left" formaction="{{ path('app_crm_piece_clear', {id: dossier.id, code: piece.code}) }}">{{ 'crmClearEntryAction'|trans }}</button>
+        {% endif %}
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ entry ? 'crmSaveAction'|trans : (kind == 'list' ? 'crmSaveAction'|trans : 'crmMarkDoneAction'|trans) }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

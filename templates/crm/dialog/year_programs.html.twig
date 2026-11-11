@@ -1,0 +1,29 @@
+{# « Formations suivies en … »: the year's Formatool formations (test ones apart), by section. #}
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_settings_year_programs', {id: year.id}), title: 'crmYearProgramsTitle'|trans({'%year%': year|crm_year}), sub: opening ? 'crmYearJustOpenedSub'|trans({'%year%': year|crm_year}) : 'crmYearProgramsSub'|trans, wide: true} %}
+    {% block body %}
+        {% if source %}
+            <div class="cm-crm-callout cm-crm-callout--row">
+                <span>{{ opening ? 'crmYearProgramsImportOpening'|trans : 'crmYearProgramsImport'|trans }}</span>
+                <twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_copy', {to: year.id, import: 1}) }}">{{ 'crmImportFromAction'|trans({'%year%': source|crm_year}) }}</twig:Cm:Button>
+            </div>
+        {% endif %}
+        {% if programs is empty %}
+            <p class="cm-crm-faint">{{ 'crmYearNoProgramText'|trans }}</p>
+        {% else %}
+            <div class="cm-crm-cplist">
+                {% set section = null %}
+                {% for program in programs %}
+                    {% set name = settings.sectionName(program) %}
+                    {% if name != section %}<div class="cm-crm-cplist__group">{{ name }}</div>{% set section = name %}{% endif %}
+                    {% set n = counts[program.id] ?? 0 %}
+                    <label class="cm-crm-check"><input type="checkbox" name="programs[]" value="{{ program.id }}"{% if settings.isFollowed(program) %} checked{% endif %}><span><b>{{ program.shortName }}</b> <span class="cm-crm-faint">· {{ program.name }}{% if n %} · {{ 'crmDossierCount'|trans({'%count%': n}) }}{% endif %}</span></span></label>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <span class="cm-crm-hint">{{ 'crmYearProgramsHint'|trans }}</span>
+    {% endblock %}
+    {% block foot %}
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ 'crmSaveAction'|trans }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

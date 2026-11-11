@@ -1,0 +1,20 @@
+{# A board's cell: a piece of a dossier, done (green), in progress (a status not at its last value),
+   or to do - a box ticks in one click (done today), anything else opens its dialog. #}
+{% set entry = progress.entry(piece) %}
+{% set url = path('app_crm_piece', {id: progress.dossier.id, code: piece.code, back: back}) %}
+{% if entry and not progress.isDone(piece) %}
+    <button type="button" class="cm-crm-cell is-progress" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ url }}" title="{{ piece.label }} : {{ crm_value(piece, entry.value) }}"><small>{{ crm_value(piece, entry.value) }}</small></button>
+{% elseif entry %}
+    <button type="button" class="cm-crm-cell is-done" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ url }}" title="{{ piece.label }} : {{ entry.doneOn ? 'crmDoneOnText'|trans({'%date%': entry.doneOn|date('d/m/Y')}) : 'crmDoneDateUnknownText'|trans }}">
+        <twig:ux:icon name="check" width="13" height="13"/>
+        <small>{% if piece.kind.value == 'check' %}{{ entry.doneOn ? entry.doneOn|date('d/m') : 'crmTakenOverShort'|trans }}{% else %}{{ crm_short_value(piece, entry.value) }}{% endif %}</small>
+    </button>
+{% elseif piece.kind.value == 'check' %}
+    <form method="post" action="{{ path('app_crm_piece_tick', {id: progress.dossier.id, code: piece.code}) }}" class="cm-crm-cellform" data-turbo-scroll="preserve">
+        <input type="hidden" name="_token" value="{{ csrf }}">
+        <input type="hidden" name="back" value="{{ back }}">
+        <button type="submit" class="cm-crm-cell is-todo" aria-label="{{ piece.label }} : {{ 'crmToDoLabel'|trans }}" title="{{ 'crmTickTodayHint'|trans({'%piece%': piece.label}) }}"><twig:ux:icon name="plus" width="13" height="13"/></button>
+    </form>
+{% else %}
+    <button type="button" class="cm-crm-cell is-todo" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ url }}" aria-label="{{ piece.label }} : {{ 'crmToDoLabel'|trans }}" title="{{ piece.label }} : {{ 'crmToEnterHint'|trans }}"><twig:ux:icon name="plus" width="13" height="13"/></button>
+{% endif %}

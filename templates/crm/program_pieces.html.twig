@@ -1,0 +1,59 @@
+{% extends 'crm/_layout.html.twig' %}
+
+{# « Pièces de MCO 1 2026-2027 »: each piece with what this formation makes of it - required,
+   optional or hidden - when it differs from the establishment's default. #}
+
+{% set adapted = crmProgram ? crmProgram.pieceConstraints|length : 0 %}
+
+{% block title %}{{ 'crmProgramPiecesHeading'|trans({'%program%': program.shortName, '%year%': year|crm_year}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'crmNavLabel'|trans, url: path('app_crm_home')},
+        {label: 'crmSettingsAction'|trans, url: path('app_crm_settings', {tab: 'programs'})},
+        {label: 'crmProgramPiecesHeading'|trans({'%program%': program.shortName, '%year%': year|crm_year}), url: path('app_crm_settings_program_pieces', {id: program.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'crmProgramPiecesHeading'|trans({'%program%': program.shortName, '%year%': year|crm_year}) }}{% endblock %}
+
+{% block page_actions %}
+    <twig:Cm:Button variant="outline" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_copy', {from: program.id}) }}">{{ 'crmCopyTheseAction'|trans }}</twig:Cm:Button>
+    {% if adapted %}
+        <form method="post" action="{{ path('app_crm_settings_program_pieces_reset', {id: program.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('crm') }}">
+            <twig:Cm:Button variant="outline" type="submit">{{ 'crmResetPiecesAction'|trans }}</twig:Cm:Button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block crm_content %}
+    <div class="cm-crm-callout">{{ 'crmProgramPiecesCallout'|trans }}</div>
+    <div class="cm-crm-tablewrap">
+        <table class="cm-crm-table">
+            <thead><tr><th>{{ 'crmPieceColumn'|trans }}</th><th>{{ 'crmModalitiesLabel'|trans }}</th><th>{{ 'crmInThisProgramColumn'|trans }}</th><th></th></tr></thead>
+            <tbody>
+                {% for phase in phases %}
+                    <tr class="is-section"><td colspan="4">{{ phase.labelKey|trans }}</td></tr>
+                    {% for piece in catalogue|filter(p => p.phase == phase) %}
+                        {% set own = crmProgram ? crmProgram.pieceConstraint(piece.code) : null %}
+                        {% set current = own ?? piece.defaultConstraint %}
+                        <tr id="piece-{{ piece.code }}"{% if own %} class="is-adapted"{% endif %}>
+                            <td><b style="color: var(--cm-ink)">{{ piece.label }}</b>{% if piece.foreignOnly %}<div class="cm-crm-faint" style="font-size: 11.5px">{{ 'crmForeignOnlyLabel'|trans }}</div>{% endif %}</td>
+                            <td class="cm-crm-faint" style="font-size: 12px">{{ piece.modalities|map(m => m.labelKey|trans)|join(', ') }}</td>
+                            <td>
+                                <form method="post" action="{{ path('app_crm_settings_program_piece', {id: program.id, code: piece.code}) }}" class="cm-crm-seg" role="group" aria-label="{{ piece.label }}">
+                                    <input type="hidden" name="_token" value="{{ crm_csrf }}">
+                                    {% for constraint in constraints %}
+                                        <button type="submit" name="constraint" value="{{ constraint.value }}" aria-pressed="{{ constraint == current ? 'true' : 'false' }}"{% if constraint.value == 'hidden' %} class="is-hidden"{% endif %}>{{ constraint.labelKey|trans }}</button>
+                                    {% endfor %}
+                                </form>
+                            </td>
+                            <td class="cm-crm-faint" style="font-size: 12px">{% if own %}{{ 'crmByDefaultText'|trans({'%constraint%': piece.defaultConstraint.labelKey|trans|lower}) }}{% else %}{{ 'crmAsByDefaultText'|trans }}{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
