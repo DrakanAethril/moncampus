@@ -934,7 +934,39 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     (`app:purge-platform-activity`). Connector tools `path_list`, `path_get`, `path_create`,
     `path_set_steps` (a whole list, kept steps kept, refused if it would drop a step people worked
     on) and `path_publish`.
-- **Accès aux fonctionnalités** — `App\Enum\Feature` (62 cases) + `#[RequiresFeature]` +
+- **CRM des inscriptions** (main bar « CRM ») — `Crm*` entities, `App\Controller\Crm\*`,
+  `src/Service/Crm/`, prototype `design/validated/crm-prototype.html` (no spec). A candidate's dossier
+  in one formation of one year, from the pre-enrolment to a complete file, typed by the team (no
+  public form) - it replaced the team's spreadsheet. **`Feature::Crm` is off for every role:
+  administrators only, until Gestion › Fonctionnalités opens it** (to a role, or to the named people
+  of the team by derogation); the feature alone decides, no voter. Rules the code holds:
+  - **The CRM creates neither years nor formations**: it *opens* Formatool's `SchoolYear`s
+    (`CrmSchoolYear`, one default, never closed while default) and *follows* Formatool's
+    `Program`s (`CrmProgram`: followed, default modality, option asked, deposit / NPEC and an
+    option's own, per-piece constraints). Settings are a class's of one year, never a filière's,
+    copied year to year by Formatool cohort (`CrmConfigurationCopier`). **No figure adds two years.**
+  - **Where a dossier stands is read, never stored**: `CrmDossierProgress` (pure) - a piece applies
+    by path, modality, foreign student and the formation's constraint (required / optional /
+    hidden, the piece's own default otherwise); done once entered, a status list only at its last
+    value; the step is the first stage with a required piece undone; what no longer applies is
+    « Saisies conservées ». Modalities are the CRM's own enum (`CrmModality`), not `Modality`.
+  - **`CrmDossierWriter` is the one door of every write** (screens, connector, import) and keeps
+    the journal (`CrmJournalEntry`, never rewritten). **A student mail serves one dossier per
+    formation**; nothing is ever attached to an existing candidate by mail or name. A piece takes a
+    date to come only if it allows one; a date unknown exists only for what the spreadsheet gave.
+  - **The piece catalogue** (`CrmPiece`, shipped by `Version20261111172800`, codes stable) is edited
+    whole until it has a history; then its kind is frozen and its chosen values stay
+    (`CrmPieceEditor`). `deposit`, `npec` and `visa` are read by the CRM and keep their kind.
+  - **The connector adds and modifies dossiers, never the configuration** (`crm_reference`,
+    `crm_dossier_search`, `crm_dossier_get`, `crm_dossier_create`, `crm_dossier_update`,
+    `crm_pieces_set`, `crm_journal_add`, `crm_import`; `App\Mcp\McpCrm`). **The spreadsheet's
+    import is not a screen**: it is `crm_import`, line by line, through `CrmDossierImport` - each
+    line checked whole, a refused line writes nothing and comes back with its `ref` and every
+    reason, a candidate already in the formation (same name) is ignored, never updated, a line
+    without modality takes the formation's, a piece without date is « date inconnue ».
+  - Dialogs are server fragments fetched into one `<dialog>` and posted back through fetch
+    (`crm_dialog_controller.js`): a refusal is the fragment again with a 422, a success a redirect.
+- **Accès aux fonctionnalités** — `App\Enum\Feature` (63 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
   exceptions named in `Feature::defaultRoles()` (`student_work`, `shared_documents`, `wiki` for

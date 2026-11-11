@@ -1,0 +1,8 @@
+{# « Fait le 12/03/2026 par Claire Martin », « Le 04/09/2026 » for a date to come or a list,
+   « Fait, date inconnue · repris du classeur » for what the spreadsheet gave without a date. #}
+{%- if entry.doneOn -%}
+    {{ (piece.kind.value == 'list' or entry.doneOn > today) ? 'crmOnDateText'|trans({'%date%': entry.doneOn|date('d/m/Y')}) : 'crmDoneOnText'|trans({'%date%': entry.doneOn|date('d/m/Y')}) }}
+    {{- entry.imported ? ' · ' ~ 'crmTakenOverText'|trans : ' ' ~ 'crmByText'|trans({'%name%': entry.enteredByName}) -}}
+{%- else -%}
+    {{ piece.kind.value == 'list' ? 'crmDateUnknownText'|trans : 'crmDoneDateUnknownText'|trans }} · {{ 'crmTakenOverText'|trans }}
+{%- endif -%}

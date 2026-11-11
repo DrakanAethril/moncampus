@@ -1,0 +1,31 @@
+{% extends 'crm/_layout.html.twig' %}
+
+{# Réglages du CRM: the school years, the formations followed, the pieces of a dossier, the origins.
+   The import of the team's spreadsheet is not a screen: it goes through the Claude connector
+   (crm_import), line by line, so that the lines that do not pass can be talked over. #}
+
+{% block title %}{{ 'crmSettingsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'crmNavLabel'|trans, url: path('app_crm_home')},
+        {label: 'crmSettingsAction'|trans, url: path('app_crm_settings')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'crmSettingsHeading'|trans }}{% endblock %}
+
+{% block crm_content %}
+    <p class="cm-crm-sub">{{ 'crmSettingsSub'|trans }}</p>
+    <div>
+        {{ component('Cm:Tabs', {tabs: [
+            {url: path('app_crm_settings', {tab: 'years'}), label: 'crmTabYears'|trans, active: tab == 'years'},
+            {url: path('app_crm_settings', {tab: 'programs'}), label: 'crmTabPrograms'|trans, active: tab == 'programs'},
+            {url: path('app_crm_settings', {tab: 'pieces'}), label: 'crmTabPieces'|trans, active: tab == 'pieces'},
+            {url: path('app_crm_settings', {tab: 'origins'}), label: 'crmTabOrigins'|trans, active: tab == 'origins'},
+        ]}) }}
+        <div class="cm-crm-card cm-crm-card--tabbed">
+            {% include 'crm/settings/_' ~ tab ~ '.html.twig' %}
+        </div>
+    </div>
+{% endblock %}

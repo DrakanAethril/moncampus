@@ -1,0 +1,45 @@
+{# Réglages › Années scolaires: Formatool's years, opened in the CRM or not, the default one, and the
+   formations followed in each. Opening a year with nothing followed opens the choice at once. #}
+{% set choose = app.request.query.get('choose') %}
+<div class="cm-crm-callout">{{ 'crmYearsCallout'|trans|raw }}</div>
+<div class="cm-crm-tablewrap" style="margin-top: 14px">
+    <table class="cm-crm-table">
+        <thead><tr><th>{{ 'crmSchoolYearLabel'|trans }}</th><th>{{ 'crmFollowedProgramsColumn'|trans }}</th><th class="n">{{ 'crmDossiersColumn'|trans }}</th><th>{{ 'crmCrmColumn'|trans }}</th><th>{{ 'crmDefaultColumn'|trans }}</th><th></th></tr></thead>
+        <tbody>
+            {% for year in years %}
+                {% set row = settings.yearRow(year) %}
+                {% set opened = row and row.opened %}
+                {% set isDefault = row and row.default %}
+                {% set followed = followedCounts[year.id] %}
+                <tr>
+                    <td><b style="color: var(--cm-ink)">{{ year|crm_year }}</b></td>
+                    <td>
+                        {% if followed[0] %}<b style="color: var(--cm-ink)">{{ followed[0] }}</b> {{ 'crmOutOf'|trans({'%count%': followed[1]}) }}{% else %}<span class="cm-crm-faint">{{ 'crmNone'|trans }}</span>{% endif %}
+                        <button type="button" class="cm-crm-inline" style="margin-left: 6px" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_year_programs', {id: year.id}) }}"{% if choose == year.id ~ '' %} data-crm-autoopen{% endif %}><twig:ux:icon name="pencil" width="12" height="12"/>{{ 'crmChooseAction'|trans }}</button>
+                    </td>
+                    <td class="n">{{ yearCounts[year.id] ?? 0 }}</td>
+                    <td>
+                        <form method="post" action="{{ path('app_crm_settings_year_opened', {id: year.id}) }}">
+                            <input type="hidden" name="_token" value="{{ crm_csrf }}">
+                            <input type="hidden" name="opened" value="0">
+                            <label class="cm-crm-switch"><input type="checkbox" name="opened" value="1"{% if opened %} checked{% endif %} data-controller="auto-submit" data-action="change->auto-submit#submit"><span class="cm-crm-switch__track"></span><span>{{ opened ? 'crmYearOpenedLabel'|trans : 'crmYearClosedLabel'|trans }}</span></label>
+                        </form>
+                    </td>
+                    <td>
+                        {% if isDefault %}
+                            <twig:Cm:Badge tone="blue">{{ 'crmDefaultYearBadge'|trans }}</twig:Cm:Badge>
+                        {% elseif opened %}
+                            <form method="post" action="{{ path('app_crm_settings_year_default', {id: year.id}) }}">
+                                <input type="hidden" name="_token" value="{{ crm_csrf }}">
+                                <button type="submit" class="cm-crm-inline">{{ 'crmMakeDefaultAction'|trans }}</button>
+                            </form>
+                        {% else %}
+                            <span class="cm-crm-faint" title="{{ 'crmOpenYearFirstHint'|trans }}">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right"><twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_copy', {to: year.id, import: 1}) }}">{{ 'crmImportConfigAction'|trans }}</twig:Cm:Button></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

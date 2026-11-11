@@ -1,0 +1,22 @@
+{# A piece in a dossier's stage: its state, when and by whom, its value, and its button. #}
+{% set entry = progress.entry(piece) %}
+{% set done = progress.isDone(piece) %}
+{% set inProgress = entry and not done %}
+{% set value = entry ? crm_value(piece, entry.value) ~ (entry.paymentMode ? ' · ' ~ entry.paymentMode|lower : '') : '' %}
+<div class="cm-crm-item {{ done ? 'is-done' : (inProgress ? 'is-progress' : 'is-todo') }}">
+    <span class="cm-crm-item__state">{% if done %}<twig:ux:icon name="check" width="12" height="12"/>{% endif %}</span>
+    <div>
+        <div class="cm-crm-item__label">{{ piece.label }}{% if progress.isOptional(piece) %}<span class="cm-crm-opt">{{ 'crmOptionalLabel'|trans }}</span>{% endif %}</div>
+        <div class="cm-crm-item__meta">
+            {% if inProgress %}
+                {{ entry.doneOn ? 'crmSinceText'|trans({'%date%': entry.doneOn|date('d/m/Y')}) : 'crmDateUnknownTakenOverText'|trans }} · {{ 'crmDoneAtLastText'|trans({'%value%': piece.lastChoice}) }}
+            {% elseif entry %}
+                {% include 'crm/_done_meta.html.twig' with {piece: piece, entry: entry, today: today} only %}
+            {% else %}
+                {{ piece.foreignOnly ? 'crmForeignStudentsText'|trans : 'crmToDoLabel'|trans }}
+            {% endif %}
+        </div>
+    </div>
+    <div class="cm-crm-item__value">{{ value }}</div>
+    <twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_piece', {id: progress.dossier.id, code: piece.code}) }}">{{ entry ? 'crmEditAction'|trans : (piece.kind.value == 'list' ? 'crmChooseAction'|trans : 'crmMarkDoneAction'|trans) }}</twig:Cm:Button>
+</div>

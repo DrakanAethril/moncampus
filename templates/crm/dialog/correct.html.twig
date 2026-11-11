@@ -1,0 +1,21 @@
+{# « Corriger le dossier »: the formation, its option, the path, the origins, the prior schooling -
+   and deleting it (two clicks). The modality and the situation change in their own cards. #}
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_dossier_correct', {id: dossier.id}), title: 'crmCorrectAction'|trans, sub: dossier.candidate.fullName ~ ' · ' ~ (dossier.program.schoolYear|crm_year), wide: true} %}
+    {% block form_attributes %} data-controller="crm-new-dossier" data-crm-new-dossier-programs-value="{{ settings.formData(programs)|json_encode }}" data-crm-new-dossier-current-value="{{ dossier.program.id }}"{% endblock %}
+    {% block body %}
+        {% include 'crm/dialog/_program_select.html.twig' with {programs: programs, settings: settings, selected: dossier.program.id, selectedOption: dossier.option ? dossier.option.id : '', placeholder: false} only %}
+        {% include 'crm/dialog/_origins.html.twig' with {origins: origins, checked: dossier.origins|map(o => o.id), prior: dossier.priorSchooling} only %}
+        <div class="cm-crm-field">
+            <span class="cm-crm-label">{{ 'crmPathLabel'|trans }}</span>
+            <div class="cm-crm-radios">
+                {% for path in paths %}<label><input type="radio" name="path" value="{{ path.value }}"{% if dossier.path == path %} checked{% endif %}>{{ path.labelKey|trans }}</label>{% endfor %}
+            </div>
+        </div>
+        <div class="cm-crm-callout">{{ 'crmCorrectHint'|trans }}</div>
+    {% endblock %}
+    {% block foot %}
+        <button type="submit" class="cm-btn cm-btn--danger is-left" formaction="{{ path('app_crm_dossier_delete', {id: dossier.id}) }}" data-controller="confirm-click" data-confirm-click-label-value="{{ 'crmConfirmDeleteAction'|trans }}" data-action="click->confirm-click#arm">{{ 'crmDeleteDossierAction'|trans }}</button>
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ 'crmSaveAction'|trans }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

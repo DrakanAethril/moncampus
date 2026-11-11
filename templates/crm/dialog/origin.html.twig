@@ -1,0 +1,9 @@
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_dossier_origin', {id: dossier.id}), title: 'crmOriginDialogTitle'|trans, sub: dossier.candidate.fullName ~ ' · ' ~ crm_program_name(dossier), wide: true} %}
+    {% block body %}
+        {% include 'crm/dialog/_origins.html.twig' with {origins: origins, checked: dossier.origins|map(o => o.id), prior: dossier.priorSchooling} only %}
+    {% endblock %}
+    {% block foot %}
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ 'crmSaveAction'|trans }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

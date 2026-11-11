@@ -67,5 +67,12 @@ final class McpInstructions
         - Les questions d'un serious game ne sont jamais écrites une à une : un gabarit par unité les génère, avec une graine par élève. Avant d'en modifier un, lis-le avec `serious_game_template_get` et appelle `format_guide` avec « gabarit_serious_game ».
         - `serious_game_template_propose` crée un brouillon et le passe au banc : il ne sert aucun élève. Corrige ce que le banc signale et propose une nouvelle version ; ne valide (`serious_game_template_validate`) qu'avec l'accord de l'administrateur et un banc au vert.
         - Garde les identifiants des erreurs typiques : ils nomment les erreurs dans les résultats des élèves. Rien n'est supprimé ; les résultats des élèves ne passent pas par ce connecteur.
+
+        CRM des inscriptions (si les outils `crm_*` sont proposés) :
+        - Le connecteur ouvre et modifie des dossiers de candidats ; il ne touche jamais à la configuration (années ouvertes, formations suivies, pièces, origines), qui se règle dans Réglages du CRM. Commence par `crm_reference` : les `programId`, `optionId`, codes de pièce et origines viennent de là.
+        - Un dossier n'est jamais rattaché à un candidat existant ; un mail d'étudiant ne sert qu'à un dossier par formation. Avant d'ouvrir un dossier, cherche le nom avec `crm_dossier_search` et signale un homonyme.
+        - L'import du classeur de l'équipe passe par `crm_import`, une ligne par dossier avec sa référence (`ref` : feuille et numéro de ligne). Lance toujours d'abord `dryRun: true`, montre à l'enseignant les lignes en erreur avec leurs raisons et ce qui sera importé, décide avec lui de chaque cas, et n'importe pour de bon qu'avec son accord. Une ligne refusée n'écrit rien ; une ligne d'un candidat déjà dans la formation est ignorée, jamais mise à jour : renvoyer les mêmes lignes est sans danger.
+        - Règles de l'import décidées avec l'équipe : une pièce sans date est faite, date inconnue (n'invente pas de date) ; une ligne sans modalité prend celle de la formation (laisse `modality` vide) ; une origine inconnue devient « Inconnue » et le texte d'origine va en note ; un mail que le classeur donne à plusieurs personnes n'est pas repris (dossier sans mail, adresse en note) ; les lignes de total et de suite ne sont pas des élèves.
+        - Les noms, mails et téléphones des candidats sont des données personnelles : n'en fais rien d'autre que ce que l'enseignant demande.
         TXT;
 }

@@ -1471,6 +1471,24 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     }
 
     /**
+     * The CRM des inscriptions: the feature alone decides who has it, whatever the role. It ships off
+     * for every role - the administrator, who has everything, keeping the screens - and an unlit
+     * CRM does not exist for anybody else.
+     */
+    public function testTheCrmBelongsToWhoeverTheFeatureIsLitFor(): void
+    {
+        $screens = ['/crm' => 200, '/crm/settings' => 200, '/crm/settings?tab=pieces' => 200];
+        $this->assertScreens($this->admin, $screens);
+        $this->assertScreens($this->teacher, $screens);
+
+        $this->switchOffEveryRole(Feature::Crm);
+        $this->assertScreens($this->admin, $screens);
+        $this->assertScreens($this->teacher, ['/crm' => 404, '/crm/settings' => 404]);
+        $this->assertScreens($this->student, ['/crm' => 404]);
+        $this->assertScreens($this->tutor, ['/crm' => 404]);
+    }
+
+    /**
      * « Murs collaboratifs » (design/design_handoff_murs_collaboratifs): both sides of the room have
      * walls of their own - a tutor has none, the screen does not exist for them. A wall is opened
      * by its owner and by whoever it was shared with: an administrator asking for a teacher's wall

@@ -1,0 +1,13 @@
+{# The origins, several possible, in the list's order - and the prior schooling. #}
+<div class="cm-crm-field">
+    <span class="cm-crm-label">{{ 'crmOriginLabel'|trans }} <span class="cm-crm-faint" style="font-weight: 400">{{ 'crmSeveralPossible'|trans }}</span></span>
+    <div class="cm-crm-checks" role="group" aria-label="{{ 'crmOriginLabel'|trans }}">
+        {% for origin in origins %}
+            <label><input type="checkbox" name="origins[]" value="{{ origin.id }}"{% if origin.id in checked %} checked{% endif %}>{{ origin.label }}</label>
+        {% endfor %}
+    </div>
+</div>
+<div class="cm-crm-field">
+    <label for="crm-prior">{{ 'crmPriorLabel'|trans }} <span class="cm-crm-faint" style="font-weight: 400">{{ 'crmOptionalLower'|trans }}</span></label>
+    <input class="cm-input" id="crm-prior" name="prior" value="{{ prior }}" placeholder="{{ 'crmPriorPlaceholder'|trans }}" autocomplete="off">
+</div>

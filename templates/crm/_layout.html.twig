@@ -1,0 +1,21 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The CRM des inscriptions' screens (design/validated/crm-prototype.html): Formatool's shell, the
+   CRM's own stylesheet, and one <dialog> every « Changer », « Modifier », « Nouveau dossier » opens -
+   its content fetched from the server (crm_dialog_controller.js). No side rail: the breadcrumb and
+   the overview lead everywhere. #}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/crm.css') }}">
+{% endblock %}
+
+{% block main %}
+    {% set crm_csrf = csrf_token('crm') %}
+    <div class="cm-crm" data-controller="crm-dialog crm-board">
+        {% block crm_content %}{% endblock %}
+        <dialog class="cm-crm-dialog" data-crm-dialog-target="dialog" data-action="click->crm-dialog#backdrop close->crm-dialog#closed" aria-label="{{ 'crmDialogLabel'|trans }}">
+            <div data-crm-dialog-target="content"></div>
+        </dialog>
+    </div>
+{% endblock %}

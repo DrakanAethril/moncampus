@@ -1,0 +1,19 @@
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_dossier_modality', {id: dossier.id}), title: 'crmChangeModalityAction'|trans, sub: 'crmModalityDialogSub'|trans({'%name%': dossier.candidate.fullName, '%modality%': dossier.modality.labelKey|trans})} %}
+    {% block body %}
+        <div class="cm-crm-field">
+            <span class="cm-crm-label">{{ 'crmNewModalityLabel'|trans }}</span>
+            <div class="cm-crm-radios is-column">
+                {% for choice in choices %}
+                    <label><input type="radio" name="modality" value="{{ choice.modality.value }}"{% if loop.first %} checked{% endif %}><span><b>{{ choice.modality.labelKey|trans }}</b> <span class="cm-crm-faint">· {{ 'crmDocumentsExpected'|trans({'%count%': choice.expected}) }}{% if choice.already %}{{ 'crmDocumentsAlready'|trans({'%count%': choice.already}) }}{% endif %}</span></span></label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="cm-crm-field"><label for="crm-mod-date">{{ 'crmFromDateLabel'|trans }}</label><input class="cm-input" id="crm-mod-date" name="date" type="date" value="{{ today|date('Y-m-d') }}"></div>
+        <div class="cm-crm-field"><label for="crm-mod-reason">{{ 'crmReasonLabel'|trans }}</label><input class="cm-input" id="crm-mod-reason" name="reason" placeholder="{{ 'crmModalityReasonPlaceholder'|trans }}"></div>
+        {% if kept > 0 %}<div class="cm-crm-callout">{{ 'crmModalityKeptText'|trans({'%count%': kept, '%modality%': dossier.modality.labelKey|trans}) }}</div>{% endif %}
+    {% endblock %}
+    {% block foot %}
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ 'crmChangeModalityAction'|trans }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

@@ -1,0 +1,30 @@
+{# The home search's list (app_crm_search): up to eight dossiers, the work year's first. #}
+{% if query != '' %}
+    {% if hits is empty %}
+        <li class="cm-crm-hits__empty" role="presentation">
+            <span>{{ 'crmNoHitText'|trans }}</span>
+            {% set typed = query|split(' ') %}
+            <twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_new', {last: typed|first, first: typed|slice(1)|join(' ')}) }}"><twig:ux:icon name="plus" width="14" height="14"/>{{ 'crmNewForQueryAction'|trans({'%query%': query}) }}</twig:Cm:Button>
+        </li>
+    {% else %}
+        {% for dossier in hits %}
+            {% set candidate = dossier.candidate %}
+            {% set year = dossier.program.schoolYear %}
+            {% if year != workYear and (loop.first or hits[loop.index0 - 1].program.schoolYear == workYear) %}
+                <li class="cm-crm-hits__sep" role="presentation">{% if loop.first %}{{ 'crmNoHitInYearText'|trans({'%year%': workYear|crm_year}) }} · {% endif %}{{ 'crmOtherYearsLabel'|trans }}</li>
+            {% endif %}
+            {% set progress = settings.progress(dossier) %}
+            <li class="cm-crm-hit" role="option" id="crm-hit-{{ loop.index0 }}" aria-selected="false">
+                <a href="{{ path('app_crm_dossier', {id: dossier.id}) }}" tabindex="-1">
+                    <span class="cm-crm-hit__av" aria-hidden="true">{{ candidate.initials }}</span>
+                    <span class="cm-crm-hit__main">
+                        <span class="cm-crm-hit__name">{{ crm_mark(candidate.lastName, words) }} {{ crm_mark(candidate.firstName, words) }}</span>
+                        <span class="cm-crm-hit__meta">{{ crm_program_name(dossier) }} · {{ year|crm_year }} · {{ dossier.path.labelKey|trans }} · {{ dossier.modality.labelKey|trans }}</span>
+                    </span>
+                    {% if dossier.situation.value == 'active' %}<twig:Cm:Badge :of="progress.step"/>{% else %}<twig:Cm:Badge :of="dossier.situation"/>{% endif %}
+                </a>
+            </li>
+        {% endfor %}
+        {% if more > 0 %}<li class="cm-crm-hits__note" role="presentation">{{ 'crmMoreHitsText'|trans({'%count%': more}) }}</li>{% endif %}
+    {% endif %}
+{% endif %}

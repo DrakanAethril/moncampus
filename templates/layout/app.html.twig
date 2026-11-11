@@ -400,6 +400,15 @@
                                 </div>
                             </li>
                         {% endif %}
+                        {# CRM des inscriptions: the switch alone decides - to a role, or to the named people of the
+                           enrolment team through their individual derogation. #}
+                        {% if feature('crm') %}
+                            <li class="nav-item {{ current_route starts with 'app_crm' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_crm_home') }}"{{ current_route starts with 'app_crm' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'crmNavLabel'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         {# The teacher's tool menu (handoff design_handoff_menu_outils): ONE flat panel,
                            no submenu, split into three named groups - what one runs live in class,
                            what one prepares beforehand, what one follows up afterwards. Text labels

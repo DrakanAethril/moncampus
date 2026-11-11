@@ -74,6 +74,7 @@ enum Feature: string
     case ProgramFinancial = 'program_financial';
     case Directory = 'directory';
     case EcoleDirecte = 'ecole_directe';
+    case Crm = 'crm';
 
     // --- Vie scolaire et communication -------------------------------------------------------
 
@@ -149,7 +150,7 @@ enum Feature: string
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
             self::ProgramReporting, self::ProgramExports, self::ClassListExports,
-            self::ProgramFinancial, self::Directory, self::EcoleDirecte => FeatureFamily::Schooling,
+            self::ProgramFinancial, self::Directory, self::EcoleDirecte, self::Crm => FeatureFamily::Schooling,
 
             self::Agenda, self::Announcements, self::Messaging, self::SchoolMail,
             self::SchoolMailSupervision, self::SignupLists, self::Support,
@@ -238,6 +239,7 @@ enum Feature: string
             self::ProgramFinancial => 'featureProgramFinancialLabel',
             self::Directory => 'featureDirectoryLabel',
             self::EcoleDirecte => 'featureEcoleDirecteLabel',
+            self::Crm => 'featureCrmLabel',
             self::Agenda => 'featureAgendaLabel',
             self::Announcements => 'featureAnnouncementsLabel',
             self::Messaging => 'featureMessagingLabel',
@@ -382,6 +384,9 @@ enum Feature: string
             // plan names where each student sits, and an establishment decides for itself whether
             // its teachers keep that on the platform.
 
+            // The CRM des inscriptions is named by no role either: it ships visible to the
+            // administrator alone, and Gestion > Fonctionnalités opens it - to a role, or to the named
+            // people of the enrolment team through their individual derogation - once tried.
             // The machines are handed out in class, so the two roles that sit in one.
             self::MyVms => ['ROLE_STUDENT', 'ROLE_TEACHER'],
 

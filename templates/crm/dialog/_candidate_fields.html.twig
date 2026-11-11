@@ -1,0 +1,33 @@
+{# A candidate's details: the name (required), the mail and the phone, up to two guardians, and
+   « étudiant étranger ». `values` holds what was posted when the form comes back refused. #}
+{% set v = values ?? {} %}
+{% set guardians = v.guardians ?? (candidate ? candidate.guardians : []) %}
+<div class="cm-crm-grid2">
+    <div class="cm-crm-field"><label for="crm-last">{{ 'crmLastNameLabel'|trans }} <span class="cm-crm-req">*</span></label><input class="cm-input" id="crm-last" name="lastName" value="{{ v.lastName ?? (candidate ? candidate.lastName : '') }}" autocomplete="off" data-crm-new-dossier-target="last" data-action="input->crm-new-dossier#check"></div>
+    <div class="cm-crm-field"><label for="crm-first">{{ 'crmFirstNameLabel'|trans }} <span class="cm-crm-req">*</span></label><input class="cm-input" id="crm-first" name="firstName" value="{{ v.firstName ?? (candidate ? candidate.firstName : '') }}" autocomplete="off" data-crm-new-dossier-target="first" data-action="input->crm-new-dossier#check"></div>
+    <div class="cm-crm-field"><label for="crm-mail">{{ 'crmMailLabel'|trans }}</label><input class="cm-input" id="crm-mail" name="email" type="email" value="{{ v.email ?? (candidate ? candidate.email : '') }}" autocomplete="off" data-crm-new-dossier-target="mail" data-action="input->crm-new-dossier#check"></div>
+    <div class="cm-crm-field"><label for="crm-phone">{{ 'crmPhoneLabel'|trans }}</label><input class="cm-input" id="crm-phone" name="phone" type="tel" value="{{ v.phone ?? (candidate ? candidate.phone : '') }}"></div>
+</div>
+{% for index in [0, 1] %}
+    {% set g = guardians[index] ?? {} %}
+    {% set filled = (g.lastName ?? '') ~ (g.firstName ?? '') ~ (g.email ?? '') ~ (g.phone ?? '') != '' %}
+    {% if index == 1 %}
+        <div data-guardian-add{% if filled %} hidden{% endif %}><twig:Cm:Button variant="outline" size="sm" data-action="crm-new-dossier#addGuardian"><twig:ux:icon name="plus" width="14" height="14"/>{{ 'crmAddGuardian2Action'|trans }}</twig:Cm:Button></div>
+    {% endif %}
+    <div class="cm-crm-guardian" data-guardian="{{ index + 1 }}"{% if index == 1 and not filled %} hidden{% endif %}>
+        <div class="cm-crm-guardian__head">
+            <span>{{ 'crmGuardianNumber'|trans({'%number%': index + 1}) }}</span>
+            {% if index == 1 %}<twig:Cm:Button variant="outline" size="sm" data-action="crm-new-dossier#removeGuardian">{{ 'crmRemoveGuardian2Action'|trans }}</twig:Cm:Button>{% endif %}
+        </div>
+        <div class="cm-crm-grid2">
+            <div class="cm-crm-field"><label for="crm-g{{ index }}-last">{{ 'crmLastNameLabel'|trans }}</label><input class="cm-input" id="crm-g{{ index }}-last" name="guardians[{{ index }}][lastName]" value="{{ g.lastName ?? '' }}" autocomplete="off"></div>
+            <div class="cm-crm-field"><label for="crm-g{{ index }}-first">{{ 'crmFirstNameLabel'|trans }}</label><input class="cm-input" id="crm-g{{ index }}-first" name="guardians[{{ index }}][firstName]" value="{{ g.firstName ?? '' }}" autocomplete="off"></div>
+            <div class="cm-crm-field"><label for="crm-g{{ index }}-mail">{{ 'crmMailLabel'|trans }}</label><input class="cm-input" id="crm-g{{ index }}-mail" name="guardians[{{ index }}][email]" type="email" value="{{ g.email ?? '' }}" autocomplete="off"></div>
+            <div class="cm-crm-field"><label for="crm-g{{ index }}-phone">{{ 'crmPhoneLabel'|trans }}</label><input class="cm-input" id="crm-g{{ index }}-phone" name="guardians[{{ index }}][phone]" type="tel" value="{{ g.phone ?? '' }}"></div>
+        </div>
+    </div>
+{% endfor %}
+<label class="cm-crm-check">
+    <input type="checkbox" name="foreign" value="1"{% if (v.foreign ?? (candidate ? candidate.foreignStudent : false)) %} checked{% endif %}>
+    <span>{{ 'crmForeignCheckLabel'|trans }}<br><span class="cm-crm-faint">{{ 'crmForeignCheckHint'|trans }}</span></span>
+</label>

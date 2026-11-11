@@ -1,0 +1,22 @@
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_dossier_situation', {id: dossier.id}), title: 'crmSituationDialogTitle'|trans, sub: dossier.candidate.fullName ~ ' · ' ~ crm_program_name(dossier)} %}
+    {% block body %}
+        <div class="cm-crm-field">
+            <span class="cm-crm-label">{{ 'crmNewSituationLabel'|trans }}</span>
+            <div class="cm-crm-radios is-column">
+                {% for situation in situations %}<label><input type="radio" name="situation" value="{{ situation.value }}"{% if situation == dossier.situation %} checked{% endif %}>{{ situation.labelKey|trans }}</label>{% endfor %}
+            </div>
+        </div>
+        <div class="cm-crm-field">
+            <label for="crm-reason">{{ 'crmReasonLabel'|trans }}</label>
+            <textarea class="cm-input" id="crm-reason" name="reason" placeholder="{{ 'crmSituationReasonPlaceholder'|trans }}"></textarea>
+            <span class="cm-crm-hint">{{ 'crmReasonHint'|trans }}</span>
+        </div>
+        {% if deposit and not dossier.refund %}
+            <label class="cm-crm-check"><input type="checkbox" name="refund" value="1"><span>{{ 'crmRefundCheckLabel'|trans({'%amount%': crm_value(deposit.piece, deposit.value)}) }}</span></label>
+        {% endif %}
+    {% endblock %}
+    {% block foot %}
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ 'crmSaveAction'|trans }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

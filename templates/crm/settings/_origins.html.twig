@@ -1,0 +1,44 @@
+{# Réglages › Origines: the list a dossier's origins are ticked in, in this order. #}
+<div class="cm-crm-callout">{{ 'crmOriginsCallout'|trans }}</div>
+<div class="cm-crm-tablewrap" style="margin-top: 14px">
+    <table class="cm-crm-table">
+        <thead><tr><th>{{ 'crmOriginLabel'|trans }}</th><th class="n">{{ 'crmDossiersColumn'|trans }}</th><th>{{ 'crmOrderColumn'|trans }}</th><th></th></tr></thead>
+        <tbody>
+            {% for origin in origins %}
+                {% set n = usage[origin.id] ?? 0 %}
+                <tr>
+                    <td><b style="color: var(--cm-ink)">{{ origin.label }}</b></td>
+                    <td class="n">{{ n }}</td>
+                    <td>
+                        <div class="cm-crm-actions" style="justify-content: flex-start">
+                            {% for direction in [-1, 1] %}
+                                <form method="post" action="{{ path('app_crm_settings_origin_move', {id: origin.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ crm_csrf }}">
+                                    <input type="hidden" name="direction" value="{{ direction }}">
+                                    <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline"{% if (direction < 0 and loop.parent.loop.first) or (direction > 0 and loop.parent.loop.last) %} disabled{% endif %} aria-label="{{ (direction < 0 ? 'crmMoveUp' : 'crmMoveDown')|trans({'%origin%': origin.label}) }}">{{ direction < 0 ? '↑' : '↓' }}</button>
+                                </form>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cm-crm-actions">
+                            <twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_origin', {id: origin.id}) }}"><twig:ux:icon name="pencil" width="12" height="12"/>{{ 'crmRenameAction'|trans }}</twig:Cm:Button>
+                            <form method="post" action="{{ path('app_crm_settings_origin_delete', {id: origin.id}) }}">
+                                <input type="hidden" name="_token" value="{{ crm_csrf }}">
+                                <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline"{% if n %} disabled title="{{ 'crmOriginUsedHint'|trans({'%count%': n}) }}"{% endif %}>{{ 'crmDeleteAction'|trans }}</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<form class="cm-crm-card" method="post" action="{{ path('app_crm_settings_origin_add') }}" style="margin-top: 16px">
+    <input type="hidden" name="_token" value="{{ crm_csrf }}">
+    <div class="cm-crm-subhead"><h2 class="cm-crm-subhead__title">{{ 'crmAddOriginHeading'|trans }}</h2></div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end">
+        <div class="cm-crm-field" style="flex: 1; min-width: 220px"><label for="crm-origin-new">{{ 'crmLabelLabel'|trans }} <span class="cm-crm-req">*</span></label><input class="cm-input" id="crm-origin-new" name="label" required placeholder="{{ 'crmOriginPlaceholder'|trans }}"></div>
+        <twig:Cm:Button variant="primary" type="submit"><twig:ux:icon name="plus" width="14" height="14"/>{{ 'crmAddAction'|trans }}</twig:Cm:Button>
+    </div>
+</form>
