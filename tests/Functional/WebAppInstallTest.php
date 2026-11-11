@@ -9,9 +9,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DomCrawler\Crawler;
 
 /**
- * Formatool installable as an app, « beaup-app » (design/validated/quiz-tournament.md, §13): the manifest and its
+ * Formatool installable as an app, « Formatool » (design/validated/quiz-tournament.md, §13): the manifest and its
  * icons, which are static files under public/ that Caddy serves and no route touches, the head of
- * every page, and the « Installer beaup-app » screen.
+ * every page, and the « Installer Formatool » screen.
  */
 class WebAppInstallTest extends FunctionalTestCase
 {
@@ -20,8 +20,8 @@ class WebAppInstallTest extends FunctionalTestCase
         $manifest = $this->manifest();
 
         self::assertSame('/', $manifest['id'] ?? null);
-        self::assertSame('beaup-app', $manifest['name'] ?? null);
-        self::assertSame('beaup-app', $manifest['short_name'] ?? null);
+        self::assertSame('Formatool', $manifest['name'] ?? null);
+        self::assertSame('Formatool', $manifest['short_name'] ?? null);
         self::assertSame('/', $manifest['start_url'] ?? null);
         self::assertSame('/', $manifest['scope'] ?? null);
         self::assertSame('standalone', $manifest['display'] ?? null);
@@ -106,8 +106,8 @@ class WebAppInstallTest extends FunctionalTestCase
             self::assertResponseIsSuccessful(implode('/', $roles));
             $this->assertWebAppHead($crawler);
             self::assertCount(1, $crawler->filter('.cm-user__menu a[href="/install"]'));
-            // Accueil › Installer beaup-app.
-            self::assertSame(['Accueil', 'Installer beaup-app'], $crawler->filter('.cm-breadcrumb a')->each(static fn (Crawler $a): string => trim($a->text())));
+            // Accueil › Installer Formatool.
+            self::assertSame(['Accueil', 'Installer Formatool'], $crawler->filter('.cm-breadcrumb a')->each(static fn (Crawler $a): string => trim($a->text())));
             self::assertCount(1, $crawler->filter('[data-controller="web-app-install"] [data-web-app-install-target="button"]'));
             self::assertCount(3, $crawler->filter('[data-web-app-install-target="iosCard"] .cm-app-card__step'));
         }
@@ -186,7 +186,7 @@ class WebAppInstallTest extends FunctionalTestCase
     private function assertWebAppHead(Crawler $crawler): void
     {
         self::assertSame(['/manifest.webmanifest'], $crawler->filter('link[rel="manifest"]')->each(static fn (Crawler $link): string => (string) $link->attr('href')));
-        self::assertSame('beaup-app', $crawler->filter('meta[name="apple-mobile-web-app-title"]')->attr('content'));
+        self::assertSame('Formatool', $crawler->filter('meta[name="apple-mobile-web-app-title"]')->attr('content'));
         self::assertSame('yes', $crawler->filter('meta[name="apple-mobile-web-app-capable"]')->attr('content'));
         self::assertCount(1, $crawler->filter('meta[name="theme-color"]'));
         self::assertSame('/beaup-app/apple-touch-icon.png', $crawler->filter('link[rel="apple-touch-icon"]')->attr('href'));

@@ -25,8 +25,8 @@ as a description of this app.
 Companion repositories (separate git repos, same staging workflow):
 - `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app (APK and
   IPA). Its **web build at `/campus-app/` is retired** (2026-11-04): the site itself is the
-  installable app, « beaup-app » (see « Installer beaup-app » below), and only two PWAs come from
-  this server, beaup-app (scope `/`) and e-CO (`/eco-app/`). `public/campus-app/` now holds one
+  installable app, « Formatool » (see « Installer Formatool » below), and only two PWAs come from
+  this server, Formatool (scope `/`) and e-CO (`/eco-app/`). `public/campus-app/` now holds one
   file, the kill-switch service worker `campus_sw.js` at the old worker's address (it clears the
   old `campus-app-*` caches, unregisters itself and sends its windows to `/`); every other
   `/campus-app/…` address is a 301 to `/` (`CampusAppRetiredController`). Chrome does not check
@@ -289,7 +289,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   by shape, numérique on a slider (`numericConfig.range`), réponse courte, vrai/faux and the
   **`vote`** type - propositions with no right one, played live only (`QuestionType::
   isAvailableOutsideLive()` keeps it out of every other launch). Texte à trous, zones, apparier and
-  calculée are left out at launch and named. **Students play from the web page - beaup-app on a
+  calculée are left out at launch and named. **Students play from the web page - the installed Formatool on a
   phone**: the Flutter app is no longer modified (the user's decision of 2026-11-05), so the player
   page carries what the app used to - it asks for its phase again (`…/play/state`, the projector's
   `…/projector/state`) when it comes back from the background, the network or a reconnected stream
@@ -1110,10 +1110,10 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
   `config/tech_profile.yaml` avec leur date, `.git/` et `tests/` étant exclus de l'image de
   production ; `/beaup-deploy` les remesure à chaque livraison. Aucun chiffre écrit en dur : la page
   doit rester vraie sans être maintenue.
-- **Installer beaup-app** — `/install` (`InstallController`, profile menu, every role, outside the
-  feature catalogue): the site installable as a web app named **« beaup-app »**,
+- **Installer Formatool** — `/install` (`InstallController`, profile menu, every role, outside the
+  feature catalogue): the site installable as a web app named **« Formatool »** (« beaup-app » until 2026-11-11; the icons keep their `/beaup-app/` address),
   design/validated/quiz-tournament.md §13. It replaced the Flutter web build at `/campus-app/`
-  (retired, see the companion-repos paragraph): two PWAs only, beaup-app and e-CO.
+  (retired, see the companion-repos paragraph): two PWAs only, Formatool and e-CO.
   `public/manifest.webmanifest` (`id`/`scope` `/`, standalone) and the icons under
   `public/beaup-app/` sit **outside AssetMapper** - an installed app keeps asking the addresses it
   was installed from; `icon.svg`/`icon-maskable.svg` are the sources, the PNGs are rendered from

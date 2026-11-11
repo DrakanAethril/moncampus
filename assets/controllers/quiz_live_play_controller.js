@@ -12,7 +12,7 @@ import { confetti, countUp } from '../quiz_live/effects.js';
  * a choice or a vote; several are ticked, or tapped in order, then « Valider »; a number is slid or
  * typed; a word is typed. The server checks the shape of every answer anyway.
  *
- * Built to be played from a phone, in beaup-app above all: the screen is kept awake while the game
+ * Built to be played from a phone, in the installed Formatool above all: the screen is kept awake while the game
  * runs (Screen Wake Lock), and the phase is asked again from the server whenever the page comes back
  * - from the background, from a lost network, from a stream that reconnected - since the hub replays
  * none of the events published meanwhile. An answer the network lost is offered again.

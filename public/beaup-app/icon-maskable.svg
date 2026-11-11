@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <title>beaup-app</title>
+  <title>Formatool</title>
   <!-- The maskable variant of icon.svg: full-bleed blue (the launcher draws its own shape). The ring's
        outer edge, radius 187, already sits inside the safe zone - the central circle of radius
        0.4 × 512 that every mask keeps - so the drawing is the same. Also the source of the 180 px

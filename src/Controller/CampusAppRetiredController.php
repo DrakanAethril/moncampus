@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Attribute\Route;
 /**
  * The retired Campus web app (design/validated/quiz-tournament.md, §13). /campus-app/ served the
  * moncampus-mobile Flutter app compiled for the browser; the site itself is now the installable
- * app (« beaup-app », App\Controller\InstallController), and two PWAs remain: beaup-app and e-CO.
+ * app (« Formatool », App\Controller\InstallController), and two PWAs remain: Formatool and e-CO.
  *
  * Every old address - the app's start page, a bookmark, a `?login=` link from an old mail - lands
  * on the site's home, permanently. Caddy never sends here the one file left in public/campus-app/,

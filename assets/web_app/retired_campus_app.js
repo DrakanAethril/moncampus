@@ -2,7 +2,7 @@
  * Clears what the retired Campus web app left in this browser (design/validated/quiz-tournament.md,
  * §13): /campus-app/ was the Flutter app compiled for the browser, with its own service worker
  * (scope /campus-app/) and its own caches (`campus-app-<build>`). The site is the installable app
- * now (« beaup-app »), and every /campus-app/ address answers a 301 to /.
+ * now (« Formatool »), and every /campus-app/ address answers a 301 to /.
  *
  * The kill-switch worker left at /campus-app/campus_sw.js only runs once the browser checks the old
  * worker for an update - and Chrome does not check on a navigation that a redirect takes out of the

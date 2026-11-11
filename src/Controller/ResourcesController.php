@@ -33,7 +33,7 @@ class ResourcesController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function mobileApp(Request $request): Response
     {
-        // No web build of this app any more: the site itself is the installable app (« beaup-app »,
+        // No web build of this app any more: the site itself is the installable app (« Formatool »,
         // App\Controller\InstallController), which the page links to - see the template.
         return $this->render('resources/application_mobile.html.twig', [
             'resourceApp' => $this->appViewData('moncampus', $request),

@@ -2,7 +2,7 @@ import { Controller } from '@hotwired/stimulus';
 import { canPromptInstall, onInstallPromptChange, promptInstall, wasInstalledNow } from '../web_app/install_prompt.js';
 
 /**
- * « Installer beaup-app » (templates/install/index.html.twig, App\Controller\InstallController).
+ * « Installer Formatool » (templates/install/index.html.twig, App\Controller\InstallController).
  *
  * Every state is decided here, in the browser, because only the browser knows it:
  * - running standalone (launched from its icon) - « déjà installée », and nothing else to do;

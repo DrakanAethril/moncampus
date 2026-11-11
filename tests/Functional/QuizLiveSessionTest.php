@@ -186,7 +186,7 @@ class QuizLiveSessionTest extends FunctionalTestCase
     }
 
     /**
-     * A phone back from the background asks for the phase again - beaup-app above all, whose stream
+     * A phone back from the background asks for the phase again - the installed Formatool above all, whose stream
      * misses what was published while it slept. It is told whether it already answered, and a
      * classmate's answer tells it nothing.
      */

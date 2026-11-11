@@ -285,7 +285,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
-            // « Installer beaup-app » (§13 of quiz-tournament.md): every role, outside the catalogue.
+            // « Installer Formatool » (§13 of quiz-tournament.md): every role, outside the catalogue.
             '/install' => 200,
             // Jobboard. This base class opens the whole catalogue, so what is pinned here is the
             // role axis: a student may read the board (their own filière's offers, which is

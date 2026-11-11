@@ -56,7 +56,7 @@ class FeatureCoverageTest extends KernelTestCase
                 'app_password_renewal',
                 'app_home',
                 'app_resources',
-                // « Installer beaup-app » (design/validated/quiz-tournament.md §13): putting the
+                // « Installer Formatool » (design/validated/quiz-tournament.md §13): putting the
                 // platform on one's home screen is how somebody uses their own account, for every
                 // role, and switching it off would only hide the iPhone sign-in advice it carries.
                 'app_install',
