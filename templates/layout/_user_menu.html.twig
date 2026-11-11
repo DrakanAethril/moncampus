@@ -75,6 +75,12 @@
            own account. Shown even inside the installed app, where the screen says « déjà
            installée » and repeats how to sign in there. #}
         <a href="{{ path('app_install') }}" class="dropdown-item">{{ 'webAppInstallNavLabel'|trans }}</a>
+        {# « Installer e-CO », moved here from Ressources on 2026-11-11 with the ROLE_ADMIN gate it had
+           there. It opens the e-CO PWA itself (public/eco-app/), which the browser offers to install -
+           never the APK/IPA download page. #}
+        {% if is_granted('ROLE_ADMIN') %}
+            <a href="/eco-app/" class="dropdown-item">{{ 'ecoAppInstallNavLabel'|trans }}</a>
+        {% endif %}
         <div class="dropdown-divider"></div>
         <div class="cm-usermenu__theme"
              data-controller="theme"
