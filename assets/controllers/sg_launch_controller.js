@@ -16,7 +16,7 @@ const SMALLEST_SCREEN = 1100;
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     // A game played on a computer only needs 1 100 px (.cm-sg-card--desktop). What decides is the
-    // screen the game will fill, not this window: an installed app (beaup-app) often opens narrower
+    // screen the game will fill, not this window: an installed app (Formatool) often opens narrower
     // than its screen, and the game goes full screen anyway.
     connect() {
         const largest = Math.max(window.screen?.width ?? 0, window.screen?.height ?? 0);

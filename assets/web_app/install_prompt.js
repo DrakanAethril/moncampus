@@ -3,7 +3,7 @@
  *
  * Chrome and Edge announce that a page can be installed with a `beforeinstallprompt` event, once,
  * early - often before any Stimulus controller of the page has connected, and long before
- * somebody walks to « Installer beaup-app ». So it is caught here, by a module app.js imports on
+ * somebody walks to « Installer Formatool ». So it is caught here, by a module app.js imports on
  * every page, and kept in this module's memory: a Turbo visit keeps the window, and with it the
  * event, until the install screen asks for it (web_app_install_controller.js).
  *
