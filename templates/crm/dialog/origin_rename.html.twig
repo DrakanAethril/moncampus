@@ -1,0 +1,9 @@
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_settings_origin', {id: origin.id}), title: 'crmRenameOriginTitle'|trans, sub: origin.label} %}
+    {% block body %}
+        <div class="cm-crm-field"><label for="crm-origin-label">{{ 'crmLabelLabel'|trans }} <span class="cm-crm-req">*</span></label><input class="cm-input" id="crm-origin-label" name="label" value="{{ origin.label }}"></div>
+    {% endblock %}
+    {% block foot %}
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ 'crmRenameAction'|trans }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

@@ -1,0 +1,12 @@
+{# What the year already holds of the mail and the name typed in « Nouveau dossier ». #}
+{% if taken %}
+    <div class="cm-crm-callout cm-crm-callout--red">{{ 'crmCheckMailTaken'|trans({'%name%': taken.candidate.fullName, '%program%': crm_program_name(taken)})|raw }} <a href="{{ path('app_crm_dossier', {id: taken.id}) }}">{{ 'crmOpenThisDossier'|trans }}</a></div>
+{% elseif elsewhere is not empty %}
+    <div class="cm-crm-callout cm-crm-callout--gold">{{ 'crmCheckMailElsewhere'|trans }}
+        {% for dossier in elsewhere %}<a href="{{ path('app_crm_dossier', {id: dossier.id}) }}">{{ dossier.candidate.fullName }} ({{ crm_program_name(dossier) }})</a>{{ loop.last ? '.' : ', ' }}{% endfor %}
+    </div>
+{% elseif homonyms is not empty %}
+    <div class="cm-crm-callout cm-crm-callout--gold">{{ 'crmCheckHomonym'|trans }}
+        {% for dossier in homonyms %}<a href="{{ path('app_crm_dossier', {id: dossier.id}) }}">{{ crm_program_name(dossier) }}</a>{{ loop.last ? '.' : ', ' }}{% endfor %}
+    </div>
+{% endif %}

@@ -1,0 +1,29 @@
+{# The formations of the year, grouped by section, and the option field when the chosen one asks
+   for it - driven by crm_new_dossier_controller.js from the `programs` value. #}
+<div class="cm-crm-grid2">
+    <div class="cm-crm-field">
+        <label for="crm-program">{{ 'crmProgramLabel'|trans }} <span class="cm-crm-req">*</span></label>
+        <select class="cm-select" id="crm-program" name="program" data-crm-new-dossier-target="program" data-action="change->crm-new-dossier#changeProgram">
+            {% if placeholder ?? true %}<option value="">{{ 'crmChooseProgramPlaceholder'|trans }}</option>{% endif %}
+            {% set section = null %}
+            {% for program in programs %}
+                {% set name = settings.sectionName(program) %}
+                {% if name != section %}{% if section is not null %}</optgroup>{% endif %}<optgroup label="{{ name }}">{% set section = name %}{% endif %}
+                <option value="{{ program.id }}"{% if program.id == selected %} selected{% endif %}>{{ program.shortName }}</option>
+                {% if loop.last %}</optgroup>{% endif %}
+            {% endfor %}
+        </select>
+    </div>
+    <div class="cm-crm-field" data-crm-new-dossier-target="optionField" hidden>
+        <label for="crm-option">{{ 'crmOptionLabel'|trans }} <span class="cm-crm-req">*</span></label>
+        <select class="cm-select" id="crm-option" name="option" data-crm-new-dossier-target="option" data-placeholder="{{ 'crmChooseOptionPlaceholder'|trans }}" data-current="{{ selectedOption }}">
+            <option value="">{{ 'crmChooseOptionPlaceholder'|trans }}</option>
+            {% set current = programs|filter(p => p.id == selected)|first %}
+            {% if current %}
+                {% for option in settings.optionsOf(current) %}
+                    <option value="{{ option.id }}"{% if option.id == selectedOption %} selected{% endif %}>{{ option.shortName }} · {{ option.name }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+    </div>
+</div>

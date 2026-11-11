@@ -1,0 +1,206 @@
+{% extends 'crm/_layout.html.twig' %}
+
+{# A dossier: the stepper, one card per stage (the complete ones folded but the last), what was
+   entered under another modality, then the situation, the modality and its history, the candidate,
+   and the journal. #}
+
+{% set candidate = dossier.candidate %}
+{% set step = progress.step %}
+{% set asksOption = settings.asksOption(program) %}
+
+{% block title %}{{ candidate.fullName }} · {{ 'crmNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'crmNavLabel'|trans, url: path('app_crm_home')},
+        {label: year|crm_year, url: path('app_crm_overview', {id: year.id})},
+        {label: program.shortName, url: path('app_crm_program', {id: program.id}|merge(asksOption and dossier.option ? {option: dossier.option.id} : {}))},
+        {label: candidate.fullName, url: path('app_crm_dossier', {id: dossier.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}
+    <span class="cm-crm-titlerow">
+        {{ candidate.fullName }}
+        <twig:Cm:Badge :of="dossier.situation"/>
+        <twig:Cm:Badge :of="dossier.modality"/>
+        {% if dossier.sfp and dossier.modality.value == 'apprenticeship' %}<twig:Cm:Badge tone="gold">SFP</twig:Cm:Badge>{% endif %}
+        {% if candidate.foreignStudent %}<twig:Cm:Badge tone="teal">{{ progress.visaPending ? 'crmVisaPendingLabel'|trans : 'crmForeignLabel'|trans }}</twig:Cm:Badge>{% endif %}
+    </span>
+{% endblock %}
+
+{% block page_actions %}
+    <twig:Cm:Button variant="outline" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_dossier_correct', {id: dossier.id}) }}"><twig:ux:icon name="pencil" width="14" height="14"/>{{ 'crmCorrectAction'|trans }}</twig:Cm:Button>
+{% endblock %}
+
+{% block crm_content %}
+    <div class="cm-crm-sub">
+        {{ program.shortName }} {{ year|crm_year }}
+        {% if asksOption %} ·
+            {% if dossier.option %}{{ 'crmOptionNamed'|trans({'%option%': dossier.option.shortName}) }}{% else %}<button type="button" class="cm-crm-inline is-warn" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_dossier_correct', {id: dossier.id}) }}">{{ 'crmOptionToSpecifyLower'|trans }}<twig:ux:icon name="pencil" width="12" height="12"/></button>{% endif %}
+        {% endif %}
+        · {{ dossier.path.labelKey|trans }}
+        · {{ 'crmOriginLower'|trans }} <button type="button" class="cm-crm-inline" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_dossier_origin', {id: dossier.id}) }}">{{ dossier.originText ?: 'crmNotFilledFem'|trans }}<twig:ux:icon name="pencil" width="12" height="12"/></button>
+        · {{ 'crmPriorLower'|trans }} <button type="button" class="cm-crm-inline" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_dossier_origin', {id: dossier.id}) }}">{{ dossier.priorSchooling ?: 'crmNotFilledMasc'|trans }}<twig:ux:icon name="pencil" width="12" height="12"/></button>
+        · {{ 'crmOpenedOnText'|trans({'%date%': dossier.openedOn|date('d/m/Y')}) }}
+    </div>
+
+    <section class="cm-crm-card">
+        <div class="cm-crm-stepper">
+            {% for phase in enum('App\\Enum\\CrmPhase').cases() %}
+                {% set count = progress.phaseCount(phase) %}
+                <div class="cm-crm-step {{ count.total == 0 ? 'is-skipped' : (count.done == count.total ? 'is-ok' : (step == phase.step ? 'is-current' : '')) }}">
+                    <b>{{ phase.labelKey|trans }}</b>
+                    <span>{{ count.total == 0 ? 'crmNotApplicableShort'|trans : 'crmCountOfText'|trans({'%done%': count.done, '%total%': count.total}) }}</span>
+                </div>
+            {% endfor %}
+            <div class="cm-crm-step {{ step.value == 'complete' ? 'is-ok' }}"><b>{{ 'crmStepCompleteLabel'|trans }}</b><span>{{ step.value == 'complete' ? 'crmAllRequiredText'|trans : 'crmNotYetText'|trans }}</span></div>
+        </div>
+        {% if dossier.situation.value != 'active' %}
+            <div class="cm-crm-callout" style="margin-top: 12px">{{ 'crmNotActiveText'|trans({'%situation%': dossier.situation.labelKey|trans}) }}</div>
+        {% endif %}
+    </section>
+
+    <div class="cm-crm-dossier">
+        <div class="cm-crm-col">
+            {% set shownPhases = enum('App\\Enum\\CrmPhase').cases()|filter(phase => progress.applicableIn(phase) is not empty) %}
+            {% for phase in shownPhases %}
+                {% set count = progress.phaseCount(phase) %}
+                {% set complete = count.done == count.total %}
+                <details class="cm-crm-acc"{% if not complete or loop.last %} open{% endif %}>
+                    <summary>
+                        <twig:ux:icon name="caret-right" width="13" height="13"/>
+                        <span class="cm-crm-acc__title">{{ phase.value == 'documents' ? 'crmDocumentsOf'|trans({'%modality%': dossier.modality.labelKey|trans}) : phase.labelKey|trans }}</span>
+                        {% if complete %}<twig:Cm:Badge tone="green">{{ 'crmPhaseCompleteBadge'|trans }}</twig:Cm:Badge>{% endif %}
+                        <span class="cm-crm-acc__sum">{{ 'crmRequiredCount'|trans({'%done%': count.done, '%count%': count.total}) }}</span>
+                    </summary>
+                    <div class="cm-crm-acc__body" style="gap: 0">
+                        {% for piece in progress.applicableIn(phase) %}
+                            {% include 'crm/_item.html.twig' with {progress: progress, piece: piece, today: today} only %}
+                        {% endfor %}
+                    </div>
+                </details>
+            {% endfor %}
+
+            {% set kept = progress.kept %}
+            {% if kept is not empty %}
+                <section class="cm-crm-card">
+                    <div class="cm-crm-subhead"><h2 class="cm-crm-subhead__title">{{ 'crmKeptHeading'|trans }}</h2><span class="cm-crm-subhead__hint">{{ 'crmKeptHint'|trans }}</span></div>
+                    {% for entry in kept %}
+                        <div class="cm-crm-item is-done">
+                            <span class="cm-crm-item__state"><twig:ux:icon name="check" width="12" height="12"/></span>
+                            <div>
+                                <div class="cm-crm-item__label">{{ entry.piece.label }} <span class="cm-crm-opt">{{ entry.piece.modalities|map(m => m.labelKey|trans)|join(', ') }}</span></div>
+                                <div class="cm-crm-item__meta">{% include 'crm/_done_meta.html.twig' with {piece: entry.piece, entry: entry, today: today} only %}</div>
+                            </div>
+                            <div class="cm-crm-item__value">{{ crm_value(entry.piece, entry.value) }}</div>
+                            <span></span>
+                        </div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        </div>
+
+        <div class="cm-crm-col">
+            <section class="cm-crm-card">
+                <div class="cm-crm-subhead">
+                    <h2 class="cm-crm-subhead__title">{{ 'crmSituationHeading'|trans }}</h2>
+                    <twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_dossier_situation', {id: dossier.id}) }}">{{ 'crmChangeAction'|trans }}</twig:Cm:Button>
+                </div>
+                <twig:Cm:Badge :of="dossier.situation"/>
+                {% if dossier.refund and dossier.refund.value == 'due' %}
+                    {% set deposit = dossier.pieces|filter(e => e.piece.code == 'deposit')|first %}
+                    <div class="cm-crm-callout cm-crm-callout--gold cm-crm-callout--row" style="margin-top: 10px">
+                        <span>{{ 'crmRefundDueText'|trans({'%amount%': deposit ? crm_value(deposit.piece, deposit.value) : '0 €'}) }}</span>
+                        <form method="post" action="{{ path('app_crm_dossier_refund', {id: dossier.id}) }}">
+                            <input type="hidden" name="_token" value="{{ crm_csrf }}">
+                            <twig:Cm:Button variant="outline" size="sm" type="submit">{{ 'crmRefundDoneAction'|trans }}</twig:Cm:Button>
+                        </form>
+                    </div>
+                {% elseif dossier.refund and dossier.refund.value == 'done' %}
+                    <div class="cm-crm-faint" style="margin-top: 8px; font-size: 12.5px">{{ 'crmRefundedText'|trans }}</div>
+                {% endif %}
+            </section>
+
+            <section class="cm-crm-card">
+                <div class="cm-crm-subhead">
+                    <h2 class="cm-crm-subhead__title">{{ 'crmModalityHeading'|trans }}</h2>
+                    <twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_dossier_modality', {id: dossier.id}) }}">{{ 'crmChangeModalityAction'|trans }}</twig:Cm:Button>
+                </div>
+                {% if dossier.modality.value == 'apprenticeship' %}
+                    <form method="post" action="{{ path('app_crm_dossier_sfp', {id: dossier.id}) }}">
+                        <input type="hidden" name="_token" value="{{ crm_csrf }}">
+                        <label class="cm-crm-check">
+                            <input type="checkbox" name="sfp" value="1"{% if dossier.sfp %} checked{% endif %} data-controller="auto-submit" data-action="change->auto-submit#submit">
+                            <span>{{ 'crmSfpLabel'|trans }}<br><span class="cm-crm-faint">{{ 'crmSfpHint'|trans }}</span></span>
+                        </label>
+                    </form>
+                {% endif %}
+                <ul class="cm-crm-modhist">
+                    {% for change in dossier.modalityChanges|reverse %}
+                        <li{% if loop.first %} class="is-current"{% endif %}>
+                            <b>{{ change.modality.labelKey|trans }}</b> {{ 'crmSinceLower'|trans({'%date%': change.effectiveOn|date('d/m/Y')}) }}
+                            <div class="cm-crm-faint">{{ change.authorName }}{% if change.reason %} · {{ change.reason }}{% endif %}</div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+
+            <section class="cm-crm-card">
+                <div class="cm-crm-subhead">
+                    <h2 class="cm-crm-subhead__title">{{ 'crmCandidateHeading'|trans }}</h2>
+                    <twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_dossier_candidate', {id: dossier.id}) }}">{{ 'crmEditAction'|trans }}</twig:Cm:Button>
+                </div>
+                <dl class="cm-crm-kv">
+                    <dt>{{ 'crmMailLabel'|trans }}</dt><dd>{{ candidate.email ?? '—' }}</dd>
+                    <dt>{{ 'crmPhoneLabel'|trans }}</dt><dd>{{ candidate.phone ?? '—' }}</dd>
+                    {% for guardian in candidate.guardians %}
+                        <dt>{{ 'crmGuardianNumber'|trans({'%number%': loop.index}) }}</dt>
+                        <dd>
+                            {% set name = (guardian.lastName ~ ' ' ~ guardian.firstName)|trim %}
+                            {% if name %}<b>{{ name }}</b><br>{% endif %}
+                            {% if guardian.email %}{{ guardian.email }}<br>{% endif %}
+                            {{ guardian.phone }}
+                        </dd>
+                    {% else %}
+                        <dt>{{ 'crmGuardianNumber'|trans({'%number%': 1}) }}</dt><dd><span class="cm-crm-faint">—</span></dd>
+                    {% endfor %}
+                    <dt>{{ 'crmForeignShortLabel'|trans }}</dt><dd>{{ candidate.foreignStudent ? 'crmForeignYes'|trans : 'crmNo'|trans }}</dd>
+                </dl>
+                {% if others is not empty %}
+                    <div class="cm-crm-subhead" style="margin: 14px 0 8px"><h3 class="cm-crm-subhead__title" style="font-size: 14px">{{ 'crmOtherDossiersHeading'|trans }}</h3></div>
+                    <ul class="cm-crm-others">
+                        {% for other in others %}
+                            <li><a href="{{ path('app_crm_dossier', {id: other.id}) }}">{{ crm_program_name(other) }} {{ other.program.schoolYear|crm_year }}</a><twig:Cm:Badge :of="other.situation"/></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+
+            <section class="cm-crm-card" id="journal">
+                <div class="cm-crm-subhead">
+                    <h2 class="cm-crm-subhead__title">{{ 'crmJournalHeading'|trans }}</h2>
+                    <label class="cm-crm-check" style="font-size: 12px"><input type="checkbox" data-action="crm-board#entries"><span>{{ 'crmShowEntriesLabel'|trans }}</span></label>
+                </div>
+                <form method="post" action="{{ path('app_crm_dossier_journal', {id: dossier.id}) }}" class="cm-crm-composer">
+                    <input type="hidden" name="_token" value="{{ crm_csrf }}">
+                    <textarea class="cm-input" name="text" required placeholder="{{ 'crmJournalPlaceholder'|trans }}" aria-label="{{ 'crmJournalTextLabel'|trans }}"></textarea>
+                    <div class="cm-crm-composer__row">
+                        <select class="cm-select" name="kind" aria-label="{{ 'crmJournalKindLabel'|trans }}">
+                            {% for kind in teamKinds %}<option value="{{ kind.value }}">{{ kind.labelKey|trans }}</option>{% endfor %}
+                        </select>
+                        <twig:Cm:Button variant="primary" size="sm" type="submit">{{ 'crmJournalAddAction'|trans }}</twig:Cm:Button>
+                    </div>
+                </form>
+                <ul class="cm-crm-journal">
+                    {% for line in dossier.journal|reverse %}
+                        <li class="{{ line.kind.value == 'system' ? 'is-system' : (line.kind.value == 'entry' ? 'is-system is-entry' : '') }}">
+                            <div class="cm-crm-journal__meta"><twig:Cm:Badge :of="line.kind"/><span>{{ line.occurredOn|date('d/m/Y') }} · {{ line.authorName }}</span></div>
+                            <div class="cm-crm-journal__text">{{ line.text }}</div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </div>
+    </div>
+{% endblock %}

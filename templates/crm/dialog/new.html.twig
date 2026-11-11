@@ -1,0 +1,33 @@
+{# « Nouveau dossier », typed by the team (no public form): the candidate, the formation (and its
+   option when asked), the origins, the prior schooling, the path and the modality foreseen. #}
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_new'), title: 'crmNewDossierAction'|trans, sub: 'crmNewDossierSub'|trans({'%year%': year|crm_year}), wide: true} %}
+    {% block form_attributes %} data-controller="crm-new-dossier" data-crm-new-dossier-programs-value="{{ settings.formData(programs)|json_encode }}" data-crm-new-dossier-check-url-value="{{ path('app_crm_new_check') }}"{% endblock %}
+    {% block body %}
+        {% if programs is empty %}
+            <div class="cm-crm-callout">{{ 'crmNoProgramFollowedText'|trans({'%year%': year|crm_year}) }}</div>
+        {% endif %}
+        {% include 'crm/dialog/_candidate_fields.html.twig' with {candidate: null, values: values} only %}
+        <div data-crm-new-dossier-target="check" aria-live="polite"></div>
+        {% include 'crm/dialog/_program_select.html.twig' with {programs: programs, settings: settings, selected: values.program ?? null, selectedOption: values.option ?? ''} only %}
+        {% include 'crm/dialog/_origins.html.twig' with {origins: origins, checked: (values.origins ?? [])|map(id => id + 0), prior: values.prior ?? ''} only %}
+        <div class="cm-crm-grid2">
+            <div class="cm-crm-field">
+                <span class="cm-crm-label">{{ 'crmPathLabel'|trans }}</span>
+                <div class="cm-crm-radios">
+                    {% for path in paths %}<label><input type="radio" name="path" value="{{ path.value }}"{% if (values.path ?? 'enrolment') == path.value %} checked{% endif %}>{{ path.labelKey|trans }}</label>{% endfor %}
+                </div>
+            </div>
+            <div class="cm-crm-field">
+                <label for="crm-modality">{{ 'crmModalityForeseenLabel'|trans }}</label>
+                <select class="cm-select" id="crm-modality" name="modality" data-crm-new-dossier-target="modality">
+                    {% for modality in modalities %}<option value="{{ modality.value }}"{% if (values.modality ?? 'initial') == modality.value %} selected{% endif %}>{{ modality.labelKey|trans }}</option>{% endfor %}
+                </select>
+                <span class="cm-crm-hint" data-crm-new-dossier-target="modalityHint" data-pattern="{{ 'crmModalityDefaultOf'|trans({'%program%': '__PROGRAM__'}) }}" data-none="{{ 'crmModalityDefaultNone'|trans }}"></span>
+            </div>
+        </div>
+    {% endblock %}
+    {% block foot %}
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ 'crmCreateDossierAction'|trans }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

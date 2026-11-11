@@ -1,0 +1,60 @@
+{# « Modifier la pièce »: everything of it, its kind frozen once it has a history (or when the CRM
+   reads it), its values already chosen kept in its list. #}
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_settings_piece', {id: piece.id}), title: 'crmEditPieceTitle'|trans, sub: piece.label ~ ' · ' ~ piece.phase.labelKey|trans, wide: true} %}
+    {% block form_attributes %} data-controller="crm-piece-form"{% endblock %}
+    {% block body %}
+        {% set pathsValue = piece.paths|length > 1 ? 'both' : piece.paths[0].value %}
+        <div class="cm-crm-grid2">
+            <div class="cm-crm-field"><label for="crm-pe-label">{{ 'crmLabelLabel'|trans }} <span class="cm-crm-req">*</span></label><input class="cm-input" id="crm-pe-label" name="label" value="{{ piece.label }}"></div>
+            <div class="cm-crm-field"><label for="crm-pe-short">{{ 'crmShortLabelLabel'|trans }}</label><input class="cm-input" id="crm-pe-short" name="shortLabel" maxlength="30" value="{{ piece.shortLabel }}"><span class="cm-crm-hint">{{ 'crmShortLabelHint'|trans }}</span></div>
+            <div class="cm-crm-field">
+                <label for="crm-pe-phase">{{ 'crmPhaseLabel'|trans }}</label>
+                <select class="cm-select" id="crm-pe-phase" name="phase">{% for phase in phases %}<option value="{{ phase.value }}"{% if phase == piece.phase %} selected{% endif %}>{{ phase.labelKey|trans }}</option>{% endfor %}</select>
+            </div>
+            <div class="cm-crm-field">
+                <label for="crm-pe-kind">{{ 'crmKindLabel'|trans }}</label>
+                <select class="cm-select" id="crm-pe-kind" name="kind" data-crm-piece-form-target="kind" data-action="change->crm-piece-form#sync"{% if frozen %} disabled{% endif %}>
+                    {% for kind in kinds|filter(k => k.value != 'choice' or piece.kind.value == 'choice') %}<option value="{{ kind.value }}"{% if kind == piece.kind %} selected{% endif %}>{{ kind.labelKey|trans }}</option>{% endfor %}
+                </select>
+                {% if frozen %}<input type="hidden" name="kind" value="{{ piece.kind.value }}"><span class="cm-crm-hint"><twig:ux:icon name="lock" width="11" height="11"/> {{ piece.system ? 'crmKindFrozenSystem'|trans : 'crmKindFrozenHistory'|trans({'%count%': history}) }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="cm-crm-field" data-crm-piece-form-target="choices">
+            <label for="crm-pe-choices">{{ 'crmChoicesLabel'|trans }} <span class="cm-crm-req">*</span></label>
+            <textarea class="cm-input" id="crm-pe-choices" name="choices" rows="5">{{ piece.choices|join("\n") }}</textarea>
+            {% if used is not empty %}<span class="cm-crm-hint">{{ 'crmChoicesUsedHint'|trans({'%values%': used|join(', ')}) }}</span>{% endif %}
+            <label class="cm-crm-check" data-crm-piece-form-target="last" style="margin-top: 6px"><input type="checkbox" name="lastValueCompletes" value="1"{% if piece.lastValueCompletes %} checked{% endif %}><span>{{ 'crmLastValueCompletesLabel'|trans }} <span class="cm-crm-faint">{{ 'crmLastValueCompletesHint'|trans }}</span></span></label>
+        </div>
+        <label class="cm-crm-check" data-crm-piece-form-target="payment"><input type="checkbox" name="asksPaymentMode" value="1"{% if piece.asksPaymentMode %} checked{% endif %}><span>{{ 'crmAsksPaymentModeLabel'|trans }}</span></label>
+        <div class="cm-crm-grid2">
+            <div class="cm-crm-field">
+                <label for="crm-pe-paths">{{ 'crmPathLabel'|trans }}</label>
+                <select class="cm-select" id="crm-pe-paths" name="paths">
+                    <option value="both"{% if pathsValue == 'both' %} selected{% endif %}>{{ 'crmPathsBoth'|trans }}</option>
+                    <option value="enrolment"{% if pathsValue == 'enrolment' %} selected{% endif %}>{{ 'crmPathsEnrolmentOnly'|trans }}</option>
+                    <option value="reenrolment"{% if pathsValue == 'reenrolment' %} selected{% endif %}>{{ 'crmPathsReenrolmentOnly'|trans }}</option>
+                </select>
+            </div>
+            <div class="cm-crm-field">
+                <span class="cm-crm-label">{{ 'crmModalitiesLabel'|trans }}</span>
+                <div class="cm-crm-checks">{% for modality in modalities %}<label><input type="checkbox" name="modalities[]" value="{{ modality.value }}"{% if piece.isFor(modality) %} checked{% endif %}>{{ modality.labelKey|trans }}</label>{% endfor %}</div>
+            </div>
+            <div class="cm-crm-field">
+                <label for="crm-pe-constraint">{{ 'crmDefaultConstraintLabel'|trans }}</label>
+                <select class="cm-select" id="crm-pe-constraint" name="defaultConstraint">{% for constraint in constraints %}<option value="{{ constraint.value }}"{% if constraint == piece.defaultConstraint %} selected{% endif %}>{{ constraint.labelKey|trans }}</option>{% endfor %}</select>
+            </div>
+            <div class="cm-crm-field">
+                <span class="cm-crm-label">{{ 'crmOptionsLabel'|trans }}</span>
+                <div class="cm-crm-checks">
+                    <label><input type="checkbox" name="foreignOnly" value="1"{% if piece.foreignOnly %} checked{% endif %}>{{ 'crmForeignOnlyLabel'|trans }}</label>
+                    <label><input type="checkbox" name="future" value="1"{% if piece.futureDateAllowed %} checked{% endif %}>{{ 'crmFutureAllowedLabel'|trans }}</label>
+                </div>
+            </div>
+        </div>
+        {% if history > 0 %}<div class="cm-crm-callout">{{ 'crmPieceHistoryCallout'|trans({'%count%': history}) }}</div>{% endif %}
+    {% endblock %}
+    {% block foot %}
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ 'crmSaveAction'|trans }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

@@ -1,0 +1,78 @@
+{# Réglages › Pièces du dossier: every piece by stage - its kind, its path, the modalities it is asked
+   for, its default constraint, a date to come - and adding one. #}
+<div class="cm-crm-callout">{{ 'crmPiecesCallout'|trans }}</div>
+<div class="cm-crm-tablewrap" style="margin-top: 14px">
+    <table class="cm-crm-table">
+        <thead><tr><th>{{ 'crmPieceColumn'|trans }}</th><th>{{ 'crmKindLabel'|trans }}</th><th>{{ 'crmPathLabel'|trans }}</th>{% for modality in modalities %}<th class="c">{{ modality.labelKey|trans }}</th>{% endfor %}<th>{{ 'crmDefaultConstraintLabel'|trans }}</th><th class="c">{{ 'crmFutureColumn'|trans }}</th><th>{{ 'crmConditionColumn'|trans }}</th><th></th></tr></thead>
+        <tbody>
+            {% for phase in phases %}
+                <tr class="is-section"><td colspan="{{ 7 + modalities|length }}">{{ phase.labelKey|trans }}</td></tr>
+                {% for piece in settings.catalogue|filter(p => p.phase == phase) %}
+                    {% set formId = 'crm-piece-' ~ piece.id %}
+                    {% set n = history[piece.id] ?? 0 %}
+                    <tr id="piece-{{ piece.code }}">
+                        <td>
+                            <form id="{{ formId }}" method="post" action="{{ path('app_crm_settings_piece_inline', {id: piece.id}) }}" hidden><input type="hidden" name="_token" value="{{ crm_csrf }}"></form>
+                            <b style="color: var(--cm-ink)">{{ piece.label }}</b>
+                        </td>
+                        <td>
+                            {{ piece.kind.labelKey|trans }}
+                            {% if piece.kind.value == 'list' %}
+                                <ol class="cm-crm-status{% if piece.lastValueCompletes %} is-last{% endif %}">{% for choice in piece.choices %}<li>{{ choice }}</li>{% endfor %}</ol>
+                                {% if piece.lastValueCompletes %}<div class="cm-crm-faint" style="font-size: 11.5px">{{ 'crmDoneOnLastValue'|trans }}</div>{% endif %}
+                            {% elseif piece.choices is not empty %}
+                                <div class="cm-crm-faint" style="font-size: 11.5px">{{ piece.choices|join(' / ') }}</div>
+                            {% endif %}
+                            {% if piece.asksPaymentMode %}<div class="cm-crm-faint" style="font-size: 11.5px">{{ 'crmWithPaymentMode'|trans }}</div>{% endif %}
+                        </td>
+                        <td>{{ piece.paths|map(p => p.labelKey|trans)|join(', ') }}</td>
+                        {% for modality in modalities %}
+                            <td class="c"><input type="checkbox" form="{{ formId }}" name="modalities[]" value="{{ modality.value }}"{% if piece.isFor(modality) %} checked{% endif %} aria-label="{{ piece.label }} : {{ modality.labelKey|trans }}" data-controller="auto-submit" data-action="change->auto-submit#submit"></td>
+                        {% endfor %}
+                        <td>
+                            <select class="cm-select" form="{{ formId }}" name="defaultConstraint" aria-label="{{ 'crmDefaultConstraintOf'|trans({'%piece%': piece.label}) }}" data-controller="auto-submit" data-action="change->auto-submit#submit">
+                                {% for constraint in enum('App\\Enum\\CrmPieceConstraint').cases() %}<option value="{{ constraint.value }}"{% if constraint == piece.defaultConstraint %} selected{% endif %}>{{ constraint.labelKey|trans }}</option>{% endfor %}
+                            </select>
+                        </td>
+                        <td class="c"><input type="checkbox" form="{{ formId }}" name="future" value="1"{% if piece.futureDateAllowed %} checked{% endif %} aria-label="{{ piece.label }} : {{ 'crmFutureColumn'|trans }}" data-controller="auto-submit" data-action="change->auto-submit#submit"></td>
+                        <td class="cm-crm-faint" style="font-size: 12px">
+                            {{ [piece.foreignOnly ? 'crmForeignOnlyLabel'|trans : '', (adapted[piece.code] ?? 0) ? 'crmAdaptedIn'|trans({'%count%': adapted[piece.code]}) : '']|filter(t => t)|join(' · ') }}
+                        </td>
+                        <td>
+                            <div class="cm-crm-actions">
+                                <twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_piece', {id: piece.id}) }}"><twig:ux:icon name="pencil" width="12" height="12"/>{{ 'crmEditAction'|trans }}</twig:Cm:Button>
+                                {% if n == 0 and not piece.system %}
+                                    <form method="post" action="{{ path('app_crm_settings_piece_delete', {id: piece.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ crm_csrf }}">
+                                        <button type="submit" class="cm-btn cm-btn--sm cm-btn--danger" data-controller="confirm-click" data-confirm-click-label-value="{{ 'crmConfirmDeleteShort'|trans }}" data-action="click->confirm-click#arm"><twig:ux:icon name="trash" width="12" height="12"/></button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<form class="cm-crm-card" method="post" action="{{ path('app_crm_settings_piece_add') }}" style="margin-top: 16px" data-controller="crm-piece-form">
+    <input type="hidden" name="_token" value="{{ crm_csrf }}">
+    <div class="cm-crm-subhead"><h2 class="cm-crm-subhead__title">{{ 'crmAddPieceHeading'|trans }}</h2></div>
+    <div class="cm-crm-addform">
+        <div class="cm-crm-field"><label for="crm-pa-label">{{ 'crmLabelLabel'|trans }} <span class="cm-crm-req">*</span></label><input class="cm-input" id="crm-pa-label" name="label" required placeholder="{{ 'crmPieceLabelPlaceholder'|trans }}"></div>
+        <div class="cm-crm-field"><label for="crm-pa-phase">{{ 'crmPhaseLabel'|trans }}</label><select class="cm-select" id="crm-pa-phase" name="phase">{% for phase in phases %}<option value="{{ phase.value }}"{% if phase.value == 'documents' %} selected{% endif %}>{{ phase.labelKey|trans }}</option>{% endfor %}</select></div>
+        <div class="cm-crm-field"><label for="crm-pa-kind">{{ 'crmKindLabel'|trans }}</label><select class="cm-select" id="crm-pa-kind" name="kind" data-crm-piece-form-target="kind" data-action="change->crm-piece-form#sync">{% for kind in enum('App\\Enum\\CrmPieceKind').cases()|filter(k => k.value != 'choice') %}<option value="{{ kind.value }}">{{ kind.labelKey|trans }}</option>{% endfor %}</select></div>
+        <div class="cm-crm-field" data-crm-piece-form-target="choices" style="grid-column: 1 / -1">
+            <label for="crm-pa-choices">{{ 'crmChoicesLabel'|trans }} <span class="cm-crm-req">*</span></label>
+            <textarea class="cm-input" id="crm-pa-choices" name="choices" rows="4" placeholder="{{ 'crmChoicesPlaceholder'|trans }}"></textarea>
+            <label class="cm-crm-check" data-crm-piece-form-target="last" style="margin-top: 6px"><input type="checkbox" name="lastValueCompletes" value="1"><span>{{ 'crmLastValueCompletesLabel'|trans }} <span class="cm-crm-faint">{{ 'crmLastValueCompletesHintAdd'|trans }}</span></span></label>
+        </div>
+        <label class="cm-crm-check" data-crm-piece-form-target="payment"><input type="checkbox" name="asksPaymentMode" value="1"><span>{{ 'crmAsksPaymentModeLabel'|trans }}</span></label>
+        <div class="cm-crm-field"><label for="crm-pa-paths">{{ 'crmPathLabel'|trans }}</label><select class="cm-select" id="crm-pa-paths" name="paths"><option value="both">{{ 'crmPathsBoth'|trans }}</option><option value="enrolment">{{ 'crmPathsEnrolmentOnly'|trans }}</option><option value="reenrolment">{{ 'crmPathsReenrolmentOnly'|trans }}</option></select></div>
+        <div class="cm-crm-field"><span class="cm-crm-label">{{ 'crmModalitiesLabel'|trans }}</span><div class="cm-crm-checks">{% for modality in modalities %}<label><input type="checkbox" name="modalities[]" value="{{ modality.value }}" checked>{{ modality.labelKey|trans }}</label>{% endfor %}</div></div>
+        <div class="cm-crm-field"><label for="crm-pa-constraint">{{ 'crmDefaultConstraintLabel'|trans }}</label><select class="cm-select" id="crm-pa-constraint" name="defaultConstraint">{% for constraint in enum('App\\Enum\\CrmPieceConstraint').cases() %}<option value="{{ constraint.value }}">{{ constraint.labelKey|trans }}</option>{% endfor %}</select></div>
+        <div class="cm-crm-field"><span class="cm-crm-label">{{ 'crmOptionsLabel'|trans }}</span><div class="cm-crm-checks"><label><input type="checkbox" name="foreignOnly" value="1">{{ 'crmForeignOnlyLabel'|trans }}</label><label><input type="checkbox" name="future" value="1">{{ 'crmFutureAllowedLabel'|trans }}</label></div></div>
+    </div>
+    <div class="cm-crm-actions" style="margin-top: 14px"><twig:Cm:Button variant="primary" type="submit"><twig:ux:icon name="plus" width="14" height="14"/>{{ 'crmAddPieceAction'|trans }}</twig:Cm:Button></div>
+</form>

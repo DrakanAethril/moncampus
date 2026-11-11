@@ -1,0 +1,81 @@
+{# « Importer une configuration » into a year, or « Copier des réglages » from a year or a formation.
+   « Aperçu » posts the form back with `preview` to redraw what would be copied. #}
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_settings_copy'), title: importing ? 'crmImportConfigTitle'|trans : 'crmCopySettingsTitle'|trans, sub: importing and toYear ? 'crmIntoYear'|trans({'%year%': toYear|crm_year}) : 'crmCopySettingsSub'|trans, wide: true} %}
+    {% block body %}
+        <input type="hidden" name="importing" value="{{ importing ? 1 : 0 }}">
+        {% if not importing %}
+            <div class="cm-crm-field">
+                <span class="cm-crm-label">{{ 'crmCopyWhatLabel'|trans }}</span>
+                <div class="cm-crm-radios">
+                    <label><input type="radio" name="mode" value="year"{% if mode == 'year' %} checked{% endif %}>{{ 'crmCopyWholeYear'|trans }}</label>
+                    <label><input type="radio" name="mode" value="program"{% if mode == 'program' %} checked{% endif %}>{{ 'crmCopyOneProgram'|trans }}</label>
+                </div>
+            </div>
+        {% else %}
+            <input type="hidden" name="mode" value="year">
+        {% endif %}
+        {% if mode == 'year' %}
+            <div class="cm-crm-grid2">
+                <div class="cm-crm-field">
+                    <label for="crm-from-year">{{ importing ? 'crmFromYearLabel'|trans : 'crmCopyFromYearLabel'|trans }}</label>
+                    <select class="cm-select" id="crm-from-year" name="fromYear">{% for year in years %}<option value="{{ year.id }}"{% if year == fromYear %} selected{% endif %}>{{ year|crm_year }}</option>{% endfor %}</select>
+                </div>
+                {% if importing %}
+                    <input type="hidden" name="toYear" value="{{ toYear.id }}">
+                {% else %}
+                    <div class="cm-crm-field">
+                        <label for="crm-to-year">{{ 'crmCopyToYearLabel'|trans }}</label>
+                        <select class="cm-select" id="crm-to-year" name="toYear">{% for year in years %}<option value="{{ year.id }}"{% if year == toYear %} selected{% endif %}>{{ year|crm_year }}</option>{% endfor %}</select>
+                    </div>
+                {% endif %}
+            </div>
+            <span class="cm-crm-hint">{{ 'crmCopyPairingHint'|trans }}</span>
+        {% else %}
+            <div class="cm-crm-field">
+                <label for="crm-from-program">{{ 'crmCopyFromProgramLabel'|trans }}</label>
+                <select class="cm-select" id="crm-from-program" name="fromProgram">
+                    {% for year in years %}
+                        <optgroup label="{{ year|crm_year }}">{% for program in settings.programsOf(year) %}<option value="{{ program.id }}"{% if program == fromProgram %} selected{% endif %}>{{ program.shortName }} {{ year|crm_year }}</option>{% endfor %}</optgroup>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="cm-crm-field">
+                <span class="cm-crm-label">{{ 'crmCopyToProgramsLabel'|trans }}</span>
+                <div class="cm-crm-cplist">
+                    {% for year in years %}
+                        {% set programs = settings.programsOf(year)|filter(p => p != fromProgram) %}
+                        {% if programs is not empty %}
+                            <div class="cm-crm-cplist__group">{{ year|crm_year }}</div>
+                            {% for program in programs %}
+                                <label class="cm-crm-check"><input type="checkbox" name="toPrograms[]" value="{{ program.id }}"{% if pairs|filter(p => p.to == program) is not empty %} checked{% endif %}><span>{{ program.shortName }}{% if not settings.isFollowed(program) %} <span class="cm-crm-faint">· {{ 'crmNotFollowedLower'|trans }}</span>{% endif %}</span></label>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+        <div class="cm-crm-field">
+            <span class="cm-crm-label">{{ importing ? 'crmImportedPartsLabel'|trans : 'crmCopiedPartsLabel'|trans }}</span>
+            <div class="cm-crm-checks">
+                {% for part in parts %}<label><input type="checkbox" name="parts[]" value="{{ part }}"{% if part in checkedParts %} checked{% endif %}>{{ ('crmCopyPart' ~ part|capitalize)|trans }}</label>{% endfor %}
+            </div>
+        </div>
+        <div class="cm-crm-callout" aria-live="polite">
+            {% if pairs is empty %}
+                {{ mode == 'program' ? 'crmCopyChooseTargets'|trans : (fromYear == toYear ? 'crmCopyTwoYears'|trans : 'crmCopyNothingText'|trans) }}
+            {% else %}
+                {{ 'crmCopyPreviewText'|trans({'%count%': pairs|length})|raw }}
+                <ul style="margin: 6px 0 0">
+                    {% for pair in pairs|slice(0, 8) %}<li>{{ pair.from.shortName }} {{ pair.from.schoolYear|crm_year }} → <b>{{ pair.to.shortName }} {{ pair.to.schoolYear|crm_year }}</b></li>{% endfor %}
+                    {% if pairs|length > 8 %}<li>{{ 'crmAndOthers'|trans({'%count%': pairs|length - 8}) }}</li>{% endif %}
+                </ul>
+                {% if missing is not empty %}<div style="margin-top: 6px">{{ 'crmCopyMissingText'|trans({'%programs%': missing|map(p => p.shortName)|join(', ')}) }}</div>{% endif %}
+            {% endif %}
+        </div>
+    {% endblock %}
+    {% block foot %}
+        <button type="submit" class="cm-btn cm-btn--outline is-left" name="preview" value="1">{{ 'crmPreviewAction'|trans }}</button>
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ importing ? 'crmImportAction'|trans : 'crmCopyAction'|trans }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

@@ -2,7 +2,7 @@
 
    It is a partial because the entry sits in **two different places in the bar**: a pure student
    reads it right after « Travail à faire », the dropdown being the whole of their navigation since
-   2026-08-17, while every other role keeps it after Agenda/Support where it has always been. Two
+   2026-08-17, while every other role keeps it after Support where it has always been. Two
    positions, one menu - duplicating the block would let the two drift, and the drift would only
    show for the role that navigates least.
 
@@ -17,8 +17,7 @@
     or (is_pure_student and (current_route starts with 'app_company_search' or current_route starts with 'app_enterprise_pool'))
     or (is_pure_student and current_route starts with 'app_program_quiz_')
     or (is_pure_student and current_route starts with 'app_wall')
-    or current_route starts with 'app_wall_students' or app.request.attributes.get('wall_supervised')
-    or (not is_pure_student and current_route in ['app_serious_games', 'app_serious_games_me', 'app_serious_games_play']) %}
+    or current_route starts with 'app_wall_students' or app.request.attributes.get('wall_supervised') %}
 {# Each entry's condition is read once into a variable, and the same variables decide both whether
    the entry renders and whether the dropdown renders at all. Written the other way round - a
    summary boolean beside the conditions it summarises - the two drift the first time an entry is
@@ -48,11 +47,9 @@
    too, which is where a correction is read back. #}
 {% set resources_quiz_programs = is_pure_student ? student_nav_quiz_programs() : [] %}
 {% set resources_documentation = feature('documentation') %}
-{# « Serious games » for the adults a game is lit for (design/validated/serious-games.md §3.3):
-   **never for a pure student**, whose door is « Jouer » in their bar (design/validated/quiz-tournament.md
-   §15, the games beside the tournaments) - the access rule is the same, only the entry differs. #}
-{% set resources_serious_games = not is_pure_student and feature('serious_games') and serious_games_playable() %}
-{% set resources_apps = is_granted('ROLE_ADMIN') %}
+{# « Serious games » for the adults moved to Outils › « Animer la classe » on 2026-11-11, and the two
+   app-download entries left this menu the same day: the mobile app's is gone, e-CO's is « Installer
+   e-CO » in the profile menu, under « Installer Formatool », and opens the PWA. #}
 {# « Jobboard », student-only here: every other profile reads it from Outils >
    « Au-delà d'un diplôme ». Two doors rather than one because they are two different gestures - a
    student looks for a contract, a teacher looks at what the market is asking of their class.
@@ -69,8 +66,8 @@
    « aucun dossier ». #}
 {% set resources_dossiers = is_granted('ROLE_STUDENT') and not is_staff() and feature('dossiers') and has_dossiers(app.user) %}
 {% if resources_shared_documents or resources_dossiers or resources_my_vms or resources_school_mail or resources_job_applications
-    or resources_wiki or resources_walls or resources_student_walls or resources_course_space or resources_quiz_programs is not empty or resources_documentation or resources_apps
-    or resources_jobboard or resources_company_search or resources_serious_games %}
+    or resources_wiki or resources_walls or resources_student_walls or resources_course_space or resources_quiz_programs is not empty or resources_documentation
+    or resources_jobboard or resources_company_search %}
 <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
     <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
         <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
@@ -156,15 +153,6 @@
         {% endif %}
         {% if resources_documentation %}
             <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>
-        {% endif %}
-        {% if resources_serious_games %}
-            <a class="dropdown-item {{ current_route in ['app_serious_games', 'app_serious_games_me', 'app_serious_games_play'] ? 'active' }}" href="{{ path('app_serious_games') }}">{{ 'seriousGamesNavLabel'|trans }}</a>
-        {% endif %}
-        {# The two app-download entries keep the ROLE_ADMIN gate they were given by explicit product
-           request. #}
-        {% if resources_apps %}
-            <a class="dropdown-item {{ current_route == 'app_resources_mobile' ? 'active' }}" href="{{ path('app_resources_mobile') }}">{{ 'resourcesMobileAppNavLabel'|trans }}</a>
-            <a class="dropdown-item {{ current_route == 'app_resources_eco' ? 'active' }}" href="{{ path('app_resources_eco') }}">{{ 'resourcesEcoAppNavLabel'|trans }}</a>
         {% endif %}
         {% if resources_jobboard %}
             <a class="dropdown-item {{ current_route starts with 'app_jobboard' ? 'active' }}" href="{{ path('app_jobboard') }}">{{ 'jobboardNavLabel'|trans }}</a>

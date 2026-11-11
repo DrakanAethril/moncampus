@@ -1,0 +1,62 @@
+{# Réglages › Formations: the formations followed, by year, each with its default modality, its
+   option asked or not, its deposit and NPEC (and an option's own), and its pieces. One form per
+   formation, its fields spread over the formation's rows through `form=`. #}
+<div class="cm-crm-actions" style="margin-bottom: 12px"><twig:Cm:Button variant="outline" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_copy') }}">{{ 'crmCopySettingsAction'|trans }}</twig:Cm:Button></div>
+<div class="cm-crm-callout">{{ 'crmProgramsCallout'|trans }}</div>
+<div class="cm-crm-tablewrap" style="margin-top: 14px">
+    <table class="cm-crm-table">
+        <thead><tr><th>{{ 'crmProgramColumn'|trans }}</th><th class="n">{{ 'crmDossiersColumn'|trans }}</th><th>{{ 'crmDefaultModalityColumn'|trans }}</th><th>{{ 'crmDepositColumn'|trans }}</th><th>{{ 'crmNpecColumn'|trans }}</th><th>{{ 'crmPiecesColumn'|trans }}</th><th></th></tr></thead>
+        <tbody>
+            {% for year in openedYears %}
+                {% set programs = followed[year.id] %}
+                <tr class="is-year"><td colspan="7">{{ year|crm_year }} <span class="cm-crm-yearmeta">{{ 'crmFollowedCount'|trans({'%count%': programs|length, '%total%': allCounts[year.id]}) }} · <button type="button" class="cm-crm-inline" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_year_programs', {id: year.id}) }}"><twig:ux:icon name="pencil" width="12" height="12"/>{{ 'crmChooseAction'|trans }}</button></span></td></tr>
+                {% if programs is empty %}
+                    <tr><td colspan="7" class="cm-crm-faint">{{ 'crmNoFollowedText'|trans }}</td></tr>
+                {% endif %}
+                {% set section = null %}
+                {% for program in programs %}
+                    {% set crm = settings.settingsOf(program) %}
+                    {% set formId = 'crm-program-' ~ program.id %}
+                    {% set name = settings.sectionName(program) %}
+                    {% if name != section %}<tr class="is-section"><td colspan="7">{{ name }}</td></tr>{% set section = name %}{% endif %}
+                    {% set options = settings.optionsOf(program) %}
+                    {% set adapted = crm ? crm.pieceConstraints|length : 0 %}
+                    <tr id="program-{{ program.id }}">
+                        <td>
+                            <form id="{{ formId }}" method="post" action="{{ path('app_crm_settings_program', {id: program.id}) }}" hidden><input type="hidden" name="_token" value="{{ crm_csrf }}"></form>
+                            <b style="color: var(--cm-ink)">{{ program.shortName }}</b>
+                            <div class="cm-crm-faint" style="font-size: 12px">{{ program.name }}</div>
+                            {% if options is not empty %}
+                                <label class="cm-crm-optreq"><input type="checkbox" form="{{ formId }}" name="optionRequired" value="1"{% if crm and crm.optionRequired %} checked{% endif %} data-controller="auto-submit" data-action="change->auto-submit#submit"><span>{{ 'crmOptionRequiredLabel'|trans }} <span class="cm-crm-faint">· {{ options|map(o => o.shortName)|join(', ') }}</span></span></label>
+                            {% endif %}
+                        </td>
+                        <td class="n">{{ counts.programs[program.id] ?? 0 }}</td>
+                        <td>
+                            <select class="cm-select" form="{{ formId }}" name="modality" aria-label="{{ 'crmDefaultModalityOf'|trans({'%program%': program.shortName}) }}" data-controller="auto-submit" data-action="change->auto-submit#submit">
+                                {% for modality in modalities %}<option value="{{ modality.value }}"{% if settings.defaultModality(program) == modality %} selected{% endif %}>{{ modality.labelKey|trans }}</option>{% endfor %}
+                            </select>
+                        </td>
+                        <td><input class="cm-input cm-crm-amount" form="{{ formId }}" type="number" min="0" step="1" inputmode="numeric" name="deposit" value="{{ crm ? crm.depositAmount : '' }}" placeholder="—" aria-label="{{ 'crmDepositOf'|trans({'%program%': program.shortName}) }}" data-controller="auto-submit" data-action="change->auto-submit#submit"></td>
+                        <td><input class="cm-input cm-crm-amount" form="{{ formId }}" type="number" min="0" step="1" inputmode="numeric" name="npec" value="{{ crm ? crm.npecAmount : '' }}" placeholder="—" aria-label="{{ 'crmNpecOf'|trans({'%program%': program.shortName}) }}" data-controller="auto-submit" data-action="change->auto-submit#submit"></td>
+                        <td style="white-space: nowrap"><a href="{{ path('app_crm_settings_program_pieces', {id: program.id}) }}">{{ 'crmPiecesColumn'|trans }}</a>{% if adapted %} <span class="cm-crm-faint" style="font-size: 12px">({{ 'crmAdaptedCount'|trans({'%count%': adapted}) }})</span>{% endif %}</td>
+                        <td><twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_copy', {from: program.id}) }}">{{ 'crmCopyAction'|trans }}</twig:Cm:Button></td>
+                    </tr>
+                    {% if crm and crm.optionRequired %}
+                        {% for option in options %}
+                            <tr class="is-sub">
+                                <td><span title="{{ option.name }}">{{ option.shortName }}</span> <span class="cm-crm-faint" style="font-size: 12px">{{ option.name }}</span></td>
+                                <td class="n">{{ counts.options[program.id][option.id] ?? 0 }}</td>
+                                <td></td>
+                                <td><input class="cm-input cm-crm-amount" form="{{ formId }}" type="number" min="0" step="1" inputmode="numeric" name="options[{{ option.id }}][deposit]" value="{{ crm.optionAmount(option.id, 'deposit') }}" placeholder="{{ crm.depositAmount ?? '—' }}" title="{{ 'crmOptionAmountHint'|trans }}" data-controller="auto-submit" data-action="change->auto-submit#submit"></td>
+                                <td><input class="cm-input cm-crm-amount" form="{{ formId }}" type="number" min="0" step="1" inputmode="numeric" name="options[{{ option.id }}][npec]" value="{{ crm.optionAmount(option.id, 'npec') }}" placeholder="{{ crm.npecAmount ?? '—' }}" title="{{ 'crmOptionAmountHint'|trans }}" data-controller="auto-submit" data-action="change->auto-submit#submit"></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <tr><td colspan="7" class="cm-crm-faint">{{ 'crmNoYearOpenedText'|trans }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

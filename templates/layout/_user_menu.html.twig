@@ -70,11 +70,17 @@
            "Migration depuis la section Profil") and are deliberately NOT left
            behind here as well: one entry point per tool, and this menu is about
            the account, not about teaching. #}
-        {# « Installer beaup-app » (design/validated/quiz-tournament.md, §13): every role, outside
+        {# « Installer Formatool » (design/validated/quiz-tournament.md, §13): every role, outside
            the feature catalogue - putting the platform on one's home screen is a way of using one's
            own account. Shown even inside the installed app, where the screen says « déjà
            installée » and repeats how to sign in there. #}
         <a href="{{ path('app_install') }}" class="dropdown-item">{{ 'webAppInstallNavLabel'|trans }}</a>
+        {# « Installer e-CO », moved here from Ressources on 2026-11-11 with the ROLE_ADMIN gate it had
+           there. It opens the e-CO PWA itself (public/eco-app/), which the browser offers to install -
+           never the APK/IPA download page. #}
+        {% if is_granted('ROLE_ADMIN') %}
+            <a href="/eco-app/" class="dropdown-item">{{ 'ecoAppInstallNavLabel'|trans }}</a>
+        {% endif %}
         <div class="dropdown-divider"></div>
         <div class="cm-usermenu__theme"
              data-controller="theme"

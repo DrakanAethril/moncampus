@@ -1,6 +1,6 @@
 import './stimulus_bootstrap.js';
 // Catches the browser's « install this app » offer on every page, before any controller connects -
-// see the header of that module and « Installer beaup-app » (App\Controller\InstallController).
+// see the header of that module and « Installer Formatool » (App\Controller\InstallController).
 import './web_app/install_prompt.js';
 // Unregisters the retired /campus-app/ web app's service worker and its caches, wherever it still
 // lingers - see the header of that module.

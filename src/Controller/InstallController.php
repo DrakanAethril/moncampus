@@ -10,7 +10,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * « Installer beaup-app » (design/validated/quiz-tournament.md, §13): how to put the site - Formatool, installed under the name « beaup-app » - on the
+ * « Installer Formatool » (design/validated/quiz-tournament.md, §13): how to put the site - Formatool, under that name since 2026-11-11 (« beaup-app » before) - on the
  * home screen of a phone, a tablet or a computer, where it opens full screen with no address bar -
  * which is what the live quiz and the tournament's duel want (no accidental back gesture, no
  * scrolled-away bar).

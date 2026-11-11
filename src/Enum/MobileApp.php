@@ -12,7 +12,7 @@ enum MobileApp: string
 {
     case Campus = 'moncampus';
     // The same app compiled for the browser, once served at /campus-app/ and retired since the
-    // site itself became the installable app (« beaup-app », design/validated/quiz-tournament.md
+    // site itself became the installable app (« Formatool », design/validated/quiz-tournament.md
     // §13). Kept so that its last sessions stay listed apart in « Mon profil » until they expire,
     // and so that a browser still running it is sent the site's own sign-in link
     // (Api\MagicLoginController).

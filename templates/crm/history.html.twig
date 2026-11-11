@@ -1,0 +1,85 @@
+{% extends 'crm/_layout.html.twig' %}
+
+{# « Historique »: every journal line of the year's formations, the latest first, by day; the entries
+   of pieces only when asked. #}
+
+{% block title %}{{ 'crmHistoryHeading'|trans({'%year%': year|crm_year}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'crmNavLabel'|trans, url: path('app_crm_home')},
+        {label: year|crm_year, url: path('app_crm_overview', {id: year.id})},
+        {label: 'crmHistoryAction'|trans, url: path('app_crm_history', {id: year.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'crmHistoryHeading'|trans({'%year%': year|crm_year}) }}{% endblock %}
+
+{% block crm_content %}
+    <section class="cm-crm-card">
+        <form method="get" action="{{ path('app_crm_history', {id: year.id}) }}" class="cm-crm-filters" data-controller="auto-submit">
+            <input class="cm-input" type="search" name="q" value="{{ filters.q }}" placeholder="{{ 'crmStudentPlaceholder'|trans }}" aria-label="{{ 'crmStudentPlaceholder'|trans }}" data-action="change->auto-submit#submit">
+            <label>{{ 'crmKindColumn'|trans }}
+                <select class="cm-select" name="kind" data-action="change->auto-submit#submit">
+                    <option value="">{{ 'crmAllFem'|trans }}</option>
+                    {% for kind in enum('App\\Enum\\CrmJournalKind').cases()|filter(k => k.value != 'entry' or filters.entries) %}<option value="{{ kind.value }}"{% if filters.kind == kind.value %} selected{% endif %}>{{ kind.labelKey|trans }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>{{ 'crmProgramLabel'|trans }}
+                <select class="cm-select" name="program" data-action="change->auto-submit#submit">
+                    <option value="">{{ 'crmAllFem'|trans }}</option>
+                    {% for program in programs %}<option value="{{ program.id }}"{% if filters.program == program.id %} selected{% endif %}>{{ program.shortName }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>{{ 'crmByLabel'|trans }}
+                <select class="cm-select" name="by" data-action="change->auto-submit#submit">
+                    <option value="">{{ 'crmEverybody'|trans }}</option>
+                    {% for author in authors %}<option{% if filters.by == author %} selected{% endif %}>{{ author }}</option>{% endfor %}
+                </select>
+            </label>
+            <label class="cm-crm-check" style="font-size: 12.5px"><input type="checkbox" name="entries" value="1"{% if filters.entries %} checked{% endif %} data-action="change->auto-submit#submit"><span>{{ 'crmShowPieceEntriesLabel'|trans }}</span></label>
+            <span class="cm-crm-faint" style="margin-left: auto; font-size: 12.5px">{{ 'crmMovesCount'|trans({'%count%': total}) }}</span>
+        </form>
+        {% if rows is empty %}
+            <p class="cm-crm-faint" style="margin: 0">{{ 'crmNoMoveText'|trans }}</p>
+        {% else %}
+            <div class="cm-crm-tablewrap">
+                <table class="cm-crm-table cm-crm-history">
+                    <thead><tr><th>{{ 'crmKindColumn'|trans }}</th><th>{{ 'crmStudentColumn'|trans }}</th><th>{{ 'crmProgramColumn'|trans }}</th><th>{{ 'crmMoveColumn'|trans }}</th><th>{{ 'crmByLabel'|trans }}</th></tr></thead>
+                    <tbody>
+                        {% set day = null %}
+                        {% for line in rows %}
+                            {% if line.occurredOn|date('Y-m-d') != day %}
+                                {% set day = line.occurredOn|date('Y-m-d') %}
+                                <tr class="is-section"><td colspan="5">{{ line.occurredOn|localized_date('EEEE d MMMM y') }}</td></tr>
+                            {% endif %}
+                            {% set candidate = line.dossier.candidate %}
+                            <tr class="{{ line.kind.writtenByTheCrm ? 'is-system' }}">
+                                <td><twig:Cm:Badge :of="line.kind"/></td>
+                                <td><a href="{{ path('app_crm_dossier', {id: line.dossier.id}) }}">{{ crm_mark(candidate.lastName, words) }} {{ crm_mark(candidate.firstName, words) }}</a></td>
+                                <td>{{ crm_program_name(line.dossier) }}</td>
+                                <td class="is-text">{{ line.text }}</td>
+                                <td class="is-by">{{ line.authorName }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if pages > 1 %}
+                {% set from = (page - 1) * perPage + 1 %}
+                <div class="cm-crm-pager">
+                    <span>{{ 'crmPagerText'|trans({'%from%': from, '%to%': from + rows|length - 1, '%total%': total}) }}</span>
+                    <nav aria-label="{{ 'crmPagesLabel'|trans }}">
+                        {% set numbers = [1, page - 1, page, page + 1, pages]|filter(n => n >= 1 and n <= pages)|reduce((carry, n) => n in carry ? carry : carry|merge([n]), [])|sort %}
+                        {% set previous = 0 %}
+                        {% for n in numbers %}
+                            {% if n - previous > 1 and previous > 0 %}<span>…</span>{% endif %}
+                            {% if n == page %}<span class="is-current" aria-current="page">{{ n }}</span>{% else %}<a href="{{ path('app_crm_history', {id: year.id}|merge(filters|filter(v => v))|merge({page: n})) }}">{{ n }}</a>{% endif %}
+                            {% set previous = n %}
+                        {% endfor %}
+                    </nav>
+                </div>
+            {% endif %}
+        {% endif %}
+    </section>
+{% endblock %}

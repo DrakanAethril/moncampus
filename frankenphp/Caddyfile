@@ -76,7 +76,7 @@
 	@hugerte path /hugerte/*
 	header @hugerte ?Cache-Control "public, max-age=86400"
 
-	# Formatool installable as an app, « beaup-app » (design/validated/quiz-tournament.md, §13): its manifest and
+	# Formatool installable as an app (design/validated/quiz-tournament.md, §13): its manifest and
 	# icons sit unhashed under public/, at the addresses an installed app keeps asking. The type is
 	# said here because the production image (debian:13-slim) carries no /etc/mime.types, and Caddy's
 	# built-in table does not know .webmanifest - it would go out as application/octet-stream.

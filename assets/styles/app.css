@@ -2815,7 +2815,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     display: grid; place-items: center; font: 700 11px var(--cm-font-ui);
 }
 
-/* ---------- « Installer beaup-app » (templates/install/index.html.twig) ----------
+/* ---------- « Installer Formatool » (templates/install/index.html.twig) ----------
    The Ressources cards above, without QR nor download: the card that applies to this device is
    marked by web_app_install_controller.js, and comes first on a phone. Its iPhone card's steps are
    the install section with no rule above it - it is the whole card. */

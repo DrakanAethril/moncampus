@@ -1,0 +1,10 @@
+{% embed 'crm/_dialog.html.twig' with {action: path('app_crm_dossier_candidate', {id: dossier.id}), title: 'crmEditCandidateTitle'|trans, sub: 'crmEditCandidateSub'|trans, wide: true} %}
+    {% block form_attributes %} data-controller="crm-new-dossier"{% endblock %}
+    {% block body %}
+        {% include 'crm/dialog/_candidate_fields.html.twig' with {candidate: candidate, values: values ?? null} only %}
+    {% endblock %}
+    {% block foot %}
+        <twig:Cm:Button variant="outline" data-action="crm-dialog#close">{{ 'crmCancelAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" type="submit">{{ 'crmSaveAction'|trans }}</twig:Cm:Button>
+    {% endblock %}
+{% endembed %}

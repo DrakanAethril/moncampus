@@ -1,0 +1,13 @@
+{# A dossier's tags on the board: its option, a re-enrolment, a foreign student, SFP, a refund due. #}
+{% set candidate = progress.dossier.candidate %}
+{% set dossier = progress.dossier %}
+{% set tags = [] %}
+<div class="cm-crm-tags">
+    {% if asksOption %}
+        {% if dossier.option %}<twig:Cm:Badge tone="blue">{{ dossier.option.shortName }}</twig:Cm:Badge>{% else %}<twig:Cm:Badge tone="gold">{{ 'crmOptionToSpecifyLabel'|trans }}</twig:Cm:Badge>{% endif %}
+    {% endif %}
+    {% if dossier.path.value == 'reenrolment' %}<twig:Cm:Badge tone="gray">{{ 'crmPathReenrolmentLabel'|trans }}</twig:Cm:Badge>{% endif %}
+    {% if candidate.foreignStudent %}<twig:Cm:Badge tone="teal">{{ progress.visaPending ? 'crmVisaPendingLabel'|trans : 'crmForeignLabel'|trans }}</twig:Cm:Badge>{% endif %}
+    {% if dossier.sfp and dossier.modality.value == 'apprenticeship' %}<twig:Cm:Badge tone="gold">SFP</twig:Cm:Badge>{% endif %}
+    {% if dossier.refund and dossier.refund.value == 'due' %}<twig:Cm:Badge tone="red">{{ 'crmRefundDueLabel'|trans }}</twig:Cm:Badge>{% endif %}
+</div>

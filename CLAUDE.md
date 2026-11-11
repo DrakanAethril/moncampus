@@ -25,8 +25,8 @@ as a description of this app.
 Companion repositories (separate git repos, same staging workflow):
 - `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app (APK and
   IPA). Its **web build at `/campus-app/` is retired** (2026-11-04): the site itself is the
-  installable app, « beaup-app » (see « Installer beaup-app » below), and only two PWAs come from
-  this server, beaup-app (scope `/`) and e-CO (`/eco-app/`). `public/campus-app/` now holds one
+  installable app, « Formatool » (see « Installer Formatool » below), and only two PWAs come from
+  this server, Formatool (scope `/`) and e-CO (`/eco-app/`). `public/campus-app/` now holds one
   file, the kill-switch service worker `campus_sw.js` at the old worker's address (it clears the
   old `campus-app-*` caches, unregisters itself and sends its windows to `/`); every other
   `/campus-app/…` address is a 301 to `/` (`CampusAppRetiredController`). Chrome does not check
@@ -289,7 +289,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   by shape, numérique on a slider (`numericConfig.range`), réponse courte, vrai/faux and the
   **`vote`** type - propositions with no right one, played live only (`QuestionType::
   isAvailableOutsideLive()` keeps it out of every other launch). Texte à trous, zones, apparier and
-  calculée are left out at launch and named. **Students play from the web page - beaup-app on a
+  calculée are left out at launch and named. **Students play from the web page - the installed Formatool on a
   phone**: the Flutter app is no longer modified (the user's decision of 2026-11-05), so the player
   page carries what the app used to - it asks for its phase again (`…/play/state`, the projector's
   `…/projector/state`) when it comes back from the background, the network or a reconnected stream
@@ -482,7 +482,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   their **active** classes (history included - asked now, not at the time of play, and never
   through `isProgramTeacher()`, which lets staff in) and by administrators; staff read figures
   without names; tutors and externals nothing. **A student's door is « Jouer »** in their bar (the
-  tournaments' page too, see « Tournois de quiz »), the adults' Ressources (play) and Outils
+  tournaments' page too, see « Tournois de quiz »), the adults' Outils › Animer la classe (play) and Outils
   (results). Rules the code holds:
   - **The server generates and corrects.** Questions come from declarative JSON templates
     (`moncampus-gabarit/1`, `App\SeriousGame\Template\TemplateInterpreter`, ExpressionLanguage
@@ -934,7 +934,39 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     (`app:purge-platform-activity`). Connector tools `path_list`, `path_get`, `path_create`,
     `path_set_steps` (a whole list, kept steps kept, refused if it would drop a step people worked
     on) and `path_publish`.
-- **Accès aux fonctionnalités** — `App\Enum\Feature` (62 cases) + `#[RequiresFeature]` +
+- **CRM des inscriptions** (main bar « CRM ») — `Crm*` entities, `App\Controller\Crm\*`,
+  `src/Service/Crm/`, prototype `design/validated/crm-prototype.html` (no spec). A candidate's dossier
+  in one formation of one year, from the pre-enrolment to a complete file, typed by the team (no
+  public form) - it replaced the team's spreadsheet. **`Feature::Crm` is off for every role:
+  administrators only, until Gestion › Fonctionnalités opens it** (to a role, or to the named people
+  of the team by derogation); the feature alone decides, no voter. Rules the code holds:
+  - **The CRM creates neither years nor formations**: it *opens* Formatool's `SchoolYear`s
+    (`CrmSchoolYear`, one default, never closed while default) and *follows* Formatool's
+    `Program`s (`CrmProgram`: followed, default modality, option asked, deposit / NPEC and an
+    option's own, per-piece constraints). Settings are a class's of one year, never a filière's,
+    copied year to year by Formatool cohort (`CrmConfigurationCopier`). **No figure adds two years.**
+  - **Where a dossier stands is read, never stored**: `CrmDossierProgress` (pure) - a piece applies
+    by path, modality, foreign student and the formation's constraint (required / optional /
+    hidden, the piece's own default otherwise); done once entered, a status list only at its last
+    value; the step is the first stage with a required piece undone; what no longer applies is
+    « Saisies conservées ». Modalities are the CRM's own enum (`CrmModality`), not `Modality`.
+  - **`CrmDossierWriter` is the one door of every write** (screens, connector, import) and keeps
+    the journal (`CrmJournalEntry`, never rewritten). **A student mail serves one dossier per
+    formation**; nothing is ever attached to an existing candidate by mail or name. A piece takes a
+    date to come only if it allows one; a date unknown exists only for what the spreadsheet gave.
+  - **The piece catalogue** (`CrmPiece`, shipped by `Version20261111172800`, codes stable) is edited
+    whole until it has a history; then its kind is frozen and its chosen values stay
+    (`CrmPieceEditor`). `deposit`, `npec` and `visa` are read by the CRM and keep their kind.
+  - **The connector adds and modifies dossiers, never the configuration** (`crm_reference`,
+    `crm_dossier_search`, `crm_dossier_get`, `crm_dossier_create`, `crm_dossier_update`,
+    `crm_pieces_set`, `crm_journal_add`, `crm_import`; `App\Mcp\McpCrm`). **The spreadsheet's
+    import is not a screen**: it is `crm_import`, line by line, through `CrmDossierImport` - each
+    line checked whole, a refused line writes nothing and comes back with its `ref` and every
+    reason, a candidate already in the formation (same name) is ignored, never updated, a line
+    without modality takes the formation's, a piece without date is « date inconnue ».
+  - Dialogs are server fragments fetched into one `<dialog>` and posted back through fetch
+    (`crm_dialog_controller.js`): a refusal is the fragment again with a 422, a success a redirect.
+- **Accès aux fonctionnalités** — `App\Enum\Feature` (63 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
   exceptions named in `Feature::defaultRoles()` (`student_work`, `shared_documents`, `wiki` for
@@ -1098,7 +1130,7 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
   runs **as a PWA at `/eco-app/`** (`public/eco-app/`, a build output of the e-CO repo's
   `tool/build_pwa.sh` - never edited here; its README says what the web build changes): same
   origin as the API, offline queue in IndexedDB, and its own service worker, which also sends that
-  queue by background sync when the page is frozen. The Ressources page offers it next to the APK.
+  queue by background sync when the page is frozen. The profile menu offers it (« Installer e-CO », administrators) under « Installer Formatool ».
 - **Annuaire / Paramètres** — LDAP directory browsing, structure
   (`Section > Track > Cohort`, `Option`/`Modality`, `SchoolYear`, `Program`), student mail aliases.
 - **Support** — `Ticket`/`TicketComment`/`TicketCategory`, with Discord notification.
@@ -1110,10 +1142,10 @@ the PWA's join screen reads (a race under way on that phone still wins). The sam
   `config/tech_profile.yaml` avec leur date, `.git/` et `tests/` étant exclus de l'image de
   production ; `/beaup-deploy` les remesure à chaque livraison. Aucun chiffre écrit en dur : la page
   doit rester vraie sans être maintenue.
-- **Installer beaup-app** — `/install` (`InstallController`, profile menu, every role, outside the
-  feature catalogue): the site installable as a web app named **« beaup-app »**,
+- **Installer Formatool** — `/install` (`InstallController`, profile menu, every role, outside the
+  feature catalogue): the site installable as a web app named **« Formatool »** (« beaup-app » until 2026-11-11; the icons keep their `/beaup-app/` address),
   design/validated/quiz-tournament.md §13. It replaced the Flutter web build at `/campus-app/`
-  (retired, see the companion-repos paragraph): two PWAs only, beaup-app and e-CO.
+  (retired, see the companion-repos paragraph): two PWAs only, Formatool and e-CO.
   `public/manifest.webmanifest` (`id`/`scope` `/`, standalone) and the icons under
   `public/beaup-app/` sit **outside AssetMapper** - an installed app keeps asking the addresses it
   was installed from; `icon.svg`/`icon-maskable.svg` are the sources, the PNGs are rendered from

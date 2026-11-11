@@ -63,7 +63,7 @@ class MagicLoginService
      *
      * The phone apps get their deep link (requestMobileLink()). The Flutter app compiled for the
      * browser (MobileApp::CampusWeb, once at /campus-app/) is retired: the site itself is the web
-     * app now (« beaup-app », design/validated/quiz-tournament.md §13), so a browser still running
+     * app now (« Formatool », design/validated/quiz-tournament.md §13), so a browser still running
      * it is sent the site's own link (requestLink()) - which signs that browser in on the site, the
      * only thing a link opened in a browser can do.
      */

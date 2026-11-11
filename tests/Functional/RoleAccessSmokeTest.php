@@ -285,7 +285,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
-            // « Installer beaup-app » (§13 of quiz-tournament.md): every role, outside the catalogue.
+            // « Installer Formatool » (§13 of quiz-tournament.md): every role, outside the catalogue.
             '/install' => 200,
             // Jobboard. This base class opens the whole catalogue, so what is pinned here is the
             // role axis: a student may read the board (their own filière's offers, which is
@@ -1468,6 +1468,24 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->teacher, [$path => 200, $path.'/print' => 200]);
         $this->assertScreens($this->admin, [$path => 404, $path.'/print' => 404]);
         $this->assertScreens($this->student, [$path => 404]);
+    }
+
+    /**
+     * The CRM des inscriptions: the feature alone decides who has it, whatever the role. It ships off
+     * for every role - the administrator, who has everything, keeping the screens - and an unlit
+     * CRM does not exist for anybody else.
+     */
+    public function testTheCrmBelongsToWhoeverTheFeatureIsLitFor(): void
+    {
+        $screens = ['/crm' => 200, '/crm/settings' => 200, '/crm/settings?tab=pieces' => 200];
+        $this->assertScreens($this->admin, $screens);
+        $this->assertScreens($this->teacher, $screens);
+
+        $this->switchOffEveryRole(Feature::Crm);
+        $this->assertScreens($this->admin, $screens);
+        $this->assertScreens($this->teacher, ['/crm' => 404, '/crm/settings' => 404]);
+        $this->assertScreens($this->student, ['/crm' => 404]);
+        $this->assertScreens($this->tutor, ['/crm' => 404]);
     }
 
     /**
