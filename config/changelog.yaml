@@ -26,6 +26,17 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.11'
+      date: '2026-11-11'
+      summary: "Le CRM des inscriptions, qui suivra chaque candidat de la pré-inscription au dossier complet à la place du classeur de l'équipe, entre en essai auprès de l'administration. L'application installée s'appelle désormais Formatool, et quelques entrées de menu changent de place."
+      entries:
+          - type: nouveaute
+            title: "CRM des inscriptions, en essai par l'administration avant son ouverture : un dossier par candidat et par formation, de la pré-inscription au dossier complet"
+            detail: "Vue d'ensemble par formation, pièces attendues selon la modalité, situation et journal des échanges ; les dossiers s'ouvrent et se complètent aussi avec le connecteur Claude, qui reprend le classeur de l'équipe ligne par ligne."
+          - type: modification
+            title: "L'application à installer sur son téléphone ou son ordinateur s'appelle désormais Formatool"
+          - type: modification
+            title: "Menus : l'agenda rejoint Outils, les serious games à jouer passent dans « Animer la classe », et l'installation des applications se trouve dans le menu du profil"
     - version: '2026.11.10'
       date: '2026-11-10'
       summary: "Les plans de classe, un nouvel outil pour décider où s'assoient les élèves, entrent en essai auprès de l'administration. Les aménagements peuvent désormais demander une place devant."
