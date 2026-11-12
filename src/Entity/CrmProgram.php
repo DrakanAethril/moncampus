@@ -40,9 +40,15 @@ class CrmProgram
     #[ORM\Column(length: 20, enumType: CrmModality::class)]
     private CrmModality $defaultModality = CrmModality::Initial;
 
-    /** Whether the option (Formatool's options of the formation) is asked at pre-enrolment. */
-    #[ORM\Column]
-    private bool $optionRequired = false;
+    /**
+     * The ids of the formation's Formatool options the CRM follows apart: a dossier then names one
+     * of them at pre-enrolment and the overview counts each on its own line. Empty, the formation
+     * is followed as one and asks for no option.
+     *
+     * @var list<int>
+     */
+    #[ORM\Column(type: Types::JSON)]
+    private array $trackedOptionIds = [];
 
     /** The deposit pre-filled when it is entered, in whole euros; null when there is none. */
     #[ORM\Column(nullable: true)]
@@ -104,14 +110,24 @@ class CrmProgram
         $this->defaultModality = $defaultModality;
     }
 
-    public function isOptionRequired(): bool
+    /** @return list<int> */
+    public function getTrackedOptionIds(): array
     {
-        return $this->optionRequired;
+        return $this->trackedOptionIds;
     }
 
-    public function setOptionRequired(bool $optionRequired): void
+    /** @param array<array-key, int|string|null> $trackedOptionIds */
+    public function setTrackedOptionIds(array $trackedOptionIds): void
     {
-        $this->optionRequired = $optionRequired;
+        $ids = array_filter(array_map(intval(...), $trackedOptionIds), static fn (int $id): bool => $id > 0);
+        $ids = array_values(array_unique($ids));
+        sort($ids);
+        $this->trackedOptionIds = $ids;
+    }
+
+    public function tracksOption(int $optionId): bool
+    {
+        return \in_array($optionId, $this->trackedOptionIds, true);
     }
 
     public function getDepositAmount(): ?int

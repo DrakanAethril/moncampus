@@ -20,7 +20,9 @@
             <option value="">{{ 'crmChooseOptionPlaceholder'|trans }}</option>
             {% set current = programs|filter(p => p.id == selected)|first %}
             {% if current %}
-                {% for option in settings.optionsOf(current) %}
+                {% set offered = settings.optionsOf(current) %}
+                {% set carried = current.options|filter(o => o.id == selectedOption and o not in offered) %}
+                {% for option in offered|merge(carried) %}
                     <option value="{{ option.id }}"{% if option.id == selectedOption %} selected{% endif %}>{{ option.shortName }} · {{ option.name }}</option>
                 {% endfor %}
             {% endif %}

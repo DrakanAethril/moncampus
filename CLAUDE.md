@@ -958,8 +958,11 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   of the team by derogation); the feature alone decides, no voter. Rules the code holds:
   - **The CRM creates neither years nor formations**: it *opens* Formatool's `SchoolYear`s
     (`CrmSchoolYear`, one default, never closed while default) and *follows* Formatool's
-    `Program`s (`CrmProgram`: followed, default modality, option asked, deposit / NPEC and an
-    option's own, per-piece constraints). Settings are a class's of one year, never a filière's,
+    `Program`s (`CrmProgram`: followed, default modality, the options followed apart, deposit / NPEC
+    and an option's own, per-piece constraints). **A formation asks for an option once one of its
+    options is ticked** (`CrmProgram::$trackedOptionIds`, `CrmSettings::optionsOf()`): only a ticked
+    option is given to a dossier, and unticking one moves no dossier - its dossiers keep their line
+    (`CrmSettings::optionLines()`). Settings are a class's of one year, never a filière's,
     copied year to year by Formatool cohort (`CrmConfigurationCopier`). **No figure adds two years.**
   - **Where a dossier stands is read, never stored**: `CrmDossierProgress` (pure) - a piece applies
     by path, modality, foreign student and the formation's constraint (required / optional /

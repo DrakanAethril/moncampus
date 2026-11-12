@@ -93,12 +93,41 @@ class CrmDossierWriterTest extends FunctionalTestCase
 
     public function testAFormationThatAsksForAnOptionRefusesADossierWithoutOne(): void
     {
-        $this->crmOption($this->program, 'CDA', $this->admin);
+        $cda = $this->crmOption($this->program, 'CDA', $this->admin);
         $this->crmOption($this->program, 'AIS', $this->admin);
-        static::getContainer()->get(\App\Service\Crm\CrmSettings::class)->settingsFor($this->program)->setOptionRequired(true);
+        static::getContainer()->get(\App\Service\Crm\CrmSettings::class)->settingsFor($this->program)->setTrackedOptionIds([$cda->getId()]);
 
         $this->expectException(CrmRefusal::class);
         $this->open('DUPONT', 'Léa');
+    }
+
+    public function testOnlyAFollowedOptionIsGivenToADossierAndAnUntickedOneStaysWhereItIs(): void
+    {
+        $settings = static::getContainer()->get(\App\Service\Crm\CrmSettings::class);
+        $cda = $this->crmOption($this->program, 'CDA', $this->admin);
+        $ais = $this->crmOption($this->program, 'AIS', $this->admin);
+        $settings->settingsFor($this->program)->setTrackedOptionIds([$cda->getId(), $ais->getId()]);
+        $this->crmEntityManager()->flush();
+
+        $input = fn (\App\Entity\Option $option): CrmDossierInput => new CrmDossierInput($this->program, $option, CrmPath::Enrolment, null);
+        $dossier = $this->writer->open(CrmCandidateInput::of('DUPONT', 'Léa', null, null, false, []), $input($ais), $this->admin);
+        $this->crmEntityManager()->flush();
+
+        $settings->settingsFor($this->program)->setTrackedOptionIds([$cda->getId()]);
+        $this->crmEntityManager()->flush();
+        self::assertSame([$cda], $settings->optionsOf($this->program), 'Only the ticked option is offered');
+        self::assertSame($ais, $dossier->getOption(), 'Unticking an option moves no dossier');
+        self::assertSame([$cda, $ais], $settings->optionLines($this->program, [$settings->progress($dossier)]), 'and its dossiers keep a line');
+
+        $this->writer->correct($dossier, new CrmDossierInput($this->program, $ais, CrmPath::Reenrolment, null), $this->admin);
+        self::assertSame($ais, $dossier->getOption(), 'A correction that leaves the option alone is accepted');
+
+        try {
+            $this->writer->open(CrmCandidateInput::of('MARTIN', 'Zoé', null, null, false, []), $input($ais), $this->admin);
+            self::fail('An option no longer followed is given to no new dossier');
+        } catch (CrmRefusal $refusal) {
+            self::assertSame('crmRefusalOptionUntracked', $refusal->reasons[0]->getMessage());
+        }
     }
 
     public function testACorrectionMovesTheDossierAndSaysSoInTheJournal(): void

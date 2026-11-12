@@ -40,7 +40,13 @@ class SettingsProgramController extends AbstractController
         $this->assertCsrf($request);
         $settings = $this->settings->settingsFor($program);
         $settings->setDefaultModality(CrmModality::tryFrom($request->request->getString('modality')) ?? $settings->getDefaultModality());
-        $settings->setOptionRequired($request->request->getBoolean('optionRequired'));
+        // Only an option of the formation is followed: an id from elsewhere is dropped.
+        $ticked = $request->request->all()['tracked'] ?? [];
+        $ticked = \is_array($ticked) ? array_map(static fn (mixed $id): int => \is_scalar($id) ? (int) $id : 0, $ticked) : [];
+        $settings->setTrackedOptionIds(array_filter(
+            array_map(static fn ($option): int => (int) $option->getId(), $program->getOptions()->toArray()),
+            static fn (int $id): bool => \in_array($id, $ticked, true),
+        ));
 
         $invalid = false;
         $amount = static function (mixed $raw) use (&$invalid): ?int {

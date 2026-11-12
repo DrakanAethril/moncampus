@@ -202,19 +202,59 @@ final class CrmSettings implements ResetInterface
         return $this->settingsOf($program)?->getDefaultModality() ?? CrmModality::Initial;
     }
 
-    /** @return list<Option> the formation's Formatool options, by short name */
-    public function optionsOf(Program $program): array
+    /** @return list<Option> every Formatool option of the formation, by short name */
+    public function programOptions(Program $program): array
     {
-        $options = $program->getOptions()->toArray();
+        $options = array_values($program->getOptions()->toArray());
         usort($options, static fn (Option $a, Option $b): int => $a->getShortName() <=> $b->getShortName());
 
         return $options;
     }
 
+    /**
+     * The options the CRM follows apart in the formation - the ones a dossier chooses among. An
+     * option taken off the formation in Formatool is no longer one, whatever was ticked.
+     *
+     * @return list<Option> by short name
+     */
+    public function optionsOf(Program $program): array
+    {
+        $settings = $this->settingsOf($program);
+        if (null === $settings) {
+            return [];
+        }
+
+        return array_values(array_filter($this->programOptions($program), static fn (Option $o): bool => $settings->tracksOption((int) $o->getId())));
+    }
+
     /** Whether a dossier of the formation must name one of its options. */
     public function asksOption(Program $program): bool
     {
-        return true === $this->settingsOf($program)?->isOptionRequired() && [] !== $this->optionsOf($program);
+        return [] !== $this->optionsOf($program);
+    }
+
+    /**
+     * The option lines of a formation that asks for one: the options followed, then the options
+     * dossiers still carry although they are no longer followed - unticking an option moves no
+     * dossier, so its dossiers keep a line to be counted and found on.
+     *
+     * @param iterable<CrmDossierProgress> $progresses
+     *
+     * @return list<Option>
+     */
+    public function optionLines(Program $program, iterable $progresses): array
+    {
+        $lines = $this->optionsOf($program);
+        $carried = [];
+        foreach ($progresses as $progress) {
+            $option = $progress->dossier()->getOption();
+            if (null !== $option && !\in_array($option, $lines, true) && !\in_array($option, $carried, true)) {
+                $carried[] = $option;
+            }
+        }
+        usort($carried, static fn (Option $a, Option $b): int => $a->getShortName() <=> $b->getShortName());
+
+        return [...$lines, ...$carried];
     }
 
     /** The amount pre-filled for the deposit or the NPEC: the option's, else the formation's. */

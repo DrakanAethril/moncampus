@@ -111,7 +111,7 @@ final readonly class CrmBoard
         if ($asksOption) {
             $countActive = static fn (callable $filter): int => \count(array_filter($all, static fn (CrmDossierProgress $p): bool => CrmSituation::Active === $p->dossier()->getSituation() && $filter($p)));
             $optionLinks[] = ['key' => null, 'label' => null, 'count' => $countActive(static fn (): bool => true)];
-            foreach ($this->settings->optionsOf($program) as $programOption) {
+            foreach ($this->settings->optionLines($program, $all) as $programOption) {
                 $optionLinks[] = ['key' => (string) $programOption->getId(), 'label' => $programOption->getShortName(), 'count' => $countActive(static fn (CrmDossierProgress $p): bool => $p->dossier()->getOption() === $programOption)];
             }
             if ([] !== array_filter($all, static fn (CrmDossierProgress $p): bool => null === $p->dossier()->getOption())) {

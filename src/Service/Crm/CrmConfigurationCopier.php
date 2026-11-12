@@ -87,7 +87,13 @@ final readonly class CrmConfigurationCopier
             // the same short name.
             $sameOptions = $this->sameOptions($from, $to);
             if (\in_array(self::PART_OPTION, $parts, true) && [] !== $sameOptions) {
-                $target->setOptionRequired(true === $source?->isOptionRequired());
+                $tracked = [];
+                foreach ($sameOptions as $fromId => $toId) {
+                    if (true === $source?->tracksOption($fromId)) {
+                        $tracked[] = $toId;
+                    }
+                }
+                $target->setTrackedOptionIds($tracked);
             }
             if (\in_array(self::PART_AMOUNTS, $parts, true)) {
                 $target->setDepositAmount($source?->getDepositAmount());
