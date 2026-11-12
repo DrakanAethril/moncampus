@@ -53,7 +53,7 @@ class BoardController extends AbstractController
             $all[] = $stats;
             $line = ['program' => $program, 'stats' => $stats, 'options' => []];
             if ($settings->asksOption($program)) {
-                foreach ($settings->optionsOf($program) as $option) {
+                foreach ($settings->optionLines($program, $progresses) as $option) {
                     $line['options'][] = ['option' => $option, 'key' => (string) $option->getId(), 'stats' => CrmProgramStats::of(array_values(array_filter($progresses, static fn ($p): bool => $p->dossier()->getOption() === $option)))];
                 }
                 $none = array_values(array_filter($progresses, static fn ($p): bool => null === $p->dossier()->getOption()));

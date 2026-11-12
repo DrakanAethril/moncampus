@@ -10,11 +10,22 @@
     {{ component('Cm:Breadcrumb', {segments: [{label: 'crmNavLabel'|trans, url: path('app_crm_home')}]}) }}
 {% endblock %}
 
-{% block page_title %}{{ 'crmHomeHeading'|trans }}{% endblock %}
+{# The prototype centres the title over the search, with the year under it: the shell's header
+   keeps the trail alone, and the title is drawn in the page. #}
+{% block page_header %}
+    <div class="page-header d-print-none">
+        <div class="container-xl">
+            {{ block('page_breadcrumb') }}
+        </div>
+    </div>
+{% endblock %}
 
 {% block crm_content %}
     <div class="cm-crm-home">
+        <div class="cm-crm-home__head">
+        <h1 class="cm-crm-home__title">{{ 'crmHomeHeading'|trans }}</h1>
         {% if workYear is null %}
+        </div>
             <div class="cm-crm-callout">
                 {{ 'crmNoYearText'|trans }} <a href="{{ path('app_crm_settings') }}">{{ 'crmOpenSettingsLink'|trans }}</a>
             </div>
@@ -45,6 +56,7 @@
                     {% if openedYears|length > 1 %}<a href="{{ path('app_crm_home', {pick: 1}) }}">{{ 'crmChangeAction'|trans }}</a>{% endif %}
                 </div>
             {% endif %}
+        </div>
 
             <div class="cm-crm-search" data-controller="crm-search" data-crm-search-url-value="{{ path('app_crm_search') }}">
                 <twig:ux:icon name="search" width="18" height="18"/>

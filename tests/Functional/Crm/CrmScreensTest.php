@@ -163,7 +163,10 @@ class CrmScreensTest extends FunctionalTestCase
             return $this->csrfToken('crm');
         })();
 
-        $this->client->request('POST', '/crm/settings/programs/'.$this->program->getId(), ['_token' => $token, 'modality' => 'apprenticeship', 'deposit' => '250', 'npec' => '']);
+        $slam = $this->crmOption($this->program, 'SLAM', $this->admin);
+        $this->crmOption($this->program, 'SISR', $this->admin);
+        // An id that is not an option of the formation is dropped.
+        $this->client->request('POST', '/crm/settings/programs/'.$this->program->getId(), ['_token' => $token, 'modality' => 'apprenticeship', 'deposit' => '250', 'npec' => '', 'tracked' => [(string) $slam->getId(), '999999']]);
         self::assertResponseRedirects();
         $this->client->request('POST', '/crm/settings/programs/'.$this->program->getId().'/pieces/company', ['_token' => $token, 'constraint' => 'hidden']);
         self::assertResponseRedirects();
@@ -177,6 +180,7 @@ class CrmScreensTest extends FunctionalTestCase
         self::assertInstanceOf(CrmProgram::class, $settings);
         self::assertSame(CrmModality::Apprenticeship, $settings->getDefaultModality());
         self::assertSame(250, $settings->getDepositAmount());
+        self::assertSame([$slam->getId()], $settings->getTrackedOptionIds());
         self::assertSame(['company' => 'hidden'], $settings->getPieceConstraints());
         $cvec = $this->crmEntityManager()->getRepository(CrmPiece::class)->findOneBy(['code' => 'attestation_cvec']);
         self::assertSame(['Demandée', 'Reçue'], $cvec?->getChoices());

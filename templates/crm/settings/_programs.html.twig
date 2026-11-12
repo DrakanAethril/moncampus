@@ -1,5 +1,5 @@
 {# Réglages › Formations: the formations followed, by year, each with its default modality, its
-   option asked or not, its deposit and NPEC (and an option's own), and its pieces. One form per
+   options followed apart, its deposit and NPEC (and an option's own), and its pieces. One form per
    formation, its fields spread over the formation's rows through `form=`. #}
 <div class="cm-crm-actions" style="margin-bottom: 12px"><twig:Cm:Button variant="outline" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_copy') }}">{{ 'crmCopySettingsAction'|trans }}</twig:Cm:Button></div>
 <div class="cm-crm-callout">{{ 'crmProgramsCallout'|trans }}</div>
@@ -19,7 +19,7 @@
                     {% set formId = 'crm-program-' ~ program.id %}
                     {% set name = settings.sectionName(program) %}
                     {% if name != section %}<tr class="is-section"><td colspan="7">{{ name }}</td></tr>{% set section = name %}{% endif %}
-                    {% set options = settings.optionsOf(program) %}
+                    {% set options = settings.programOptions(program) %}
                     {% set adapted = crm ? crm.pieceConstraints|length : 0 %}
                     <tr id="program-{{ program.id }}">
                         <td>
@@ -27,7 +27,12 @@
                             <b style="color: var(--cm-ink)">{{ program.shortName }}</b>
                             <div class="cm-crm-faint" style="font-size: 12px">{{ program.name }}</div>
                             {% if options is not empty %}
-                                <label class="cm-crm-optreq"><input type="checkbox" form="{{ formId }}" name="optionRequired" value="1"{% if crm and crm.optionRequired %} checked{% endif %} data-controller="auto-submit" data-action="change->auto-submit#submit"><span>{{ 'crmOptionRequiredLabel'|trans }} <span class="cm-crm-faint">· {{ options|map(o => o.shortName)|join(', ') }}</span></span></label>
+                                <fieldset class="cm-crm-optreq">
+                                    <legend>{{ 'crmTrackedOptionsLabel'|trans }}</legend>
+                                    {% for option in options %}
+                                        <label title="{{ option.name }}"><input type="checkbox" form="{{ formId }}" name="tracked[]" value="{{ option.id }}"{% if crm and crm.tracksOption(option.id) %} checked{% endif %} data-controller="auto-submit" data-action="change->auto-submit#submit"><span>{{ option.shortName }}</span></label>
+                                    {% endfor %}
+                                </fieldset>
                             {% endif %}
                         </td>
                         <td class="n">{{ counts.programs[program.id] ?? 0 }}</td>
@@ -41,8 +46,8 @@
                         <td style="white-space: nowrap"><a href="{{ path('app_crm_settings_program_pieces', {id: program.id}) }}">{{ 'crmPiecesColumn'|trans }}</a>{% if adapted %} <span class="cm-crm-faint" style="font-size: 12px">({{ 'crmAdaptedCount'|trans({'%count%': adapted}) }})</span>{% endif %}</td>
                         <td><twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_settings_copy', {from: program.id}) }}">{{ 'crmCopyAction'|trans }}</twig:Cm:Button></td>
                     </tr>
-                    {% if crm and crm.optionRequired %}
-                        {% for option in options %}
+                    {% if crm %}
+                        {% for option in options|filter(o => crm.tracksOption(o.id)) %}
                             <tr class="is-sub">
                                 <td><span title="{{ option.name }}">{{ option.shortName }}</span> <span class="cm-crm-faint" style="font-size: 12px">{{ option.name }}</span></td>
                                 <td class="n">{{ counts.options[program.id][option.id] ?? 0 }}</td>
