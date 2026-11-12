@@ -12,10 +12,13 @@ use App\Entity\SchoolYear;
 use App\Enum\ContractTypeCode;
 use App\Enum\Feature;
 use App\Repository\EnterpriseRepository;
+use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SchoolYearRepository;
 use App\Repository\UfaActivityRepository;
+use App\Service\AlternanceListStep;
+use App\Service\AlternanceListSteps;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceStepStatus;
 use App\Service\QueryValue;
@@ -45,14 +48,21 @@ class DashboardController extends AbstractController
 
     #[Route(path: '/ufa', name: 'app_ufa')]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function dashboard(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipTutorLinkRepository $tutorLinkRepository, EnterpriseRepository $enterpriseRepository, UfaActivityRepository $activityRepository, AlternancePeriodStatusResolver $statusResolver, TranslatorInterface $translator): Response
+    public function dashboard(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipTutorLinkRepository $tutorLinkRepository, EnterpriseRepository $enterpriseRepository, UfaActivityRepository $activityRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceListSteps $listSteps, InternshipEvaluationPeriodRepository $periodRepository, TranslatorInterface $translator): Response
     {
         $filters = $this->readListFilters($request, $schoolYearRepository, $programRepository, $enterpriseRepository);
+        $listedPrograms = null !== $filters['selectedFormation'] ? [$filters['selectedFormation']] : $filters['formations'];
         $selectedYear = $filters['selectedYear'];
         $showTestData = $filters['showTestData'];
 
-        return $this->render('ufa/alternance/dashboard.html.twig', $filters + $this->buildListPage($request, $filters, $tutorLinkRepository, $statusResolver, $translator) + [
+        return $this->render('ufa/alternance/dashboard.html.twig', $filters + $this->buildListPage($request, $filters, $tutorLinkRepository, $statusResolver, $listSteps, $translator) + [
             'enterprises' => $enterpriseRepository->findAllActiveOrderedByName($this->currentUser()),
+            // As many « Bilan N » as the formations listed have bilans - and never fewer than the
+            // one chosen, which the home banner may name for a formation the picker has narrowed away.
+            'stepOptions' => AlternanceListStep::options(max(
+                $periodRepository->maxActiveCountForPrograms($listedPrograms),
+                $filters['selectedStep']->rank ?? 0,
+            )),
             'kpiTotal' => null !== $selectedYear ? $tutorLinkRepository->countActiveForSchoolYear($selectedYear) : 0,
             // Always the real world, like the other three cards - so when "Données de test" swaps
             // $formations to the test list this can't reuse it and asks for the real one itself.
@@ -78,11 +88,11 @@ class DashboardController extends AbstractController
     // readListFilters() and one partial.
     #[Route(path: '/ufa/list', name: 'app_ufa_list', methods: ['GET'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function list(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipTutorLinkRepository $tutorLinkRepository, EnterpriseRepository $enterpriseRepository, AlternancePeriodStatusResolver $statusResolver, TranslatorInterface $translator): Response
+    public function list(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipTutorLinkRepository $tutorLinkRepository, EnterpriseRepository $enterpriseRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceListSteps $listSteps, TranslatorInterface $translator): Response
     {
         $filters = $this->readListFilters($request, $schoolYearRepository, $programRepository, $enterpriseRepository);
 
-        return $this->render('ufa/alternance/_dashboard_list.html.twig', $filters + $this->buildListPage($request, $filters, $tutorLinkRepository, $statusResolver, $translator));
+        return $this->render('ufa/alternance/_dashboard_list.html.twig', $filters + $this->buildListPage($request, $filters, $tutorLinkRepository, $statusResolver, $listSteps, $translator));
     }
 
     /**
@@ -90,7 +100,7 @@ class DashboardController extends AbstractController
      * Actives/Toutes links can flip that one and keep the rest, and without "page" so a filter
      * change starts back on the first one).
      *
-     * @return array{schoolYears: list<SchoolYear>, selectedYear: ?SchoolYear, isPastYear: bool, formations: list<Program>, selectedFormation: ?Program, selectedEnterprise: ?Enterprise, showAll: bool, showTestData: bool, search: string, filters: array<string, int|string>}
+     * @return array{schoolYears: list<SchoolYear>, selectedYear: ?SchoolYear, isPastYear: bool, formations: list<Program>, selectedFormation: ?Program, selectedEnterprise: ?Enterprise, selectedStep: ?AlternanceListStep, showAll: bool, showTestData: bool, search: string, filters: array<string, int|string>}
      */
     private function readListFilters(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, EnterpriseRepository $enterpriseRepository): array
     {
@@ -121,6 +131,9 @@ class DashboardController extends AbstractController
         $selectedEnterpriseId = $this->queryId($request, 'enterprise');
         $selectedEnterprise = 0 !== $selectedEnterpriseId ? $enterpriseRepository->find($selectedEnterpriseId) : null;
 
+        // A key the filter does not know reads as « Toutes », like an unknown formation above.
+        $selectedStep = AlternanceListStep::fromKey(QueryValue::trimmed($request, 'step'));
+
         return [
             'schoolYears' => $schoolYears,
             'selectedYear' => $selectedYear,
@@ -128,6 +141,7 @@ class DashboardController extends AbstractController
             'formations' => $formations,
             'selectedFormation' => $selectedFormation,
             'selectedEnterprise' => $selectedEnterprise,
+            'selectedStep' => $selectedStep,
             'showAll' => $showAll,
             'showTestData' => $showTestData,
             'search' => $search,
@@ -135,6 +149,7 @@ class DashboardController extends AbstractController
                 'year' => $selectedYear?->getId(),
                 'formation' => $selectedFormation?->getId(),
                 'enterprise' => $selectedEnterprise?->getId(),
+                'step' => $selectedStep?->key(),
                 'search' => '' !== $search ? $search : null,
                 'test' => $showTestData ? 1 : null,
             ], static fn (int|string|null $value): bool => null !== $value),
@@ -145,17 +160,22 @@ class DashboardController extends AbstractController
      * One page of the list. « Toutes les formations » is every formation the picker offers - never
      * a wider set, so the viewer's own scoping and the test/real switch both still hold.
      *
-     * @param array{isPastYear: bool, formations: list<Program>, selectedFormation: ?Program, selectedEnterprise: ?Enterprise, showAll: bool, showTestData: bool, search: string} $filters
+     * The « Étape » filter is the one read in PHP: where an alternance stands is the status
+     * resolver's decision, not a column, so the alternances at that step are found first
+     * (AlternanceListSteps) and the query then narrowed to them - paging and order stay SQL's.
+     *
+     * @param array{isPastYear: bool, formations: list<Program>, selectedFormation: ?Program, selectedEnterprise: ?Enterprise, selectedStep: ?AlternanceListStep, showAll: bool, showTestData: bool, search: string} $filters
      *
      * @return array{rows: list<array{tutorLink: InternshipTutorLink, status: AlternanceStepStatus, badge: array{label: string, class: string}, isPastYear: bool}>, page: int, pageCount: int, total: int, offset: int}
      */
-    private function buildListPage(Request $request, array $filters, InternshipTutorLinkRepository $tutorLinkRepository, AlternancePeriodStatusResolver $statusResolver, TranslatorInterface $translator): array
+    private function buildListPage(Request $request, array $filters, InternshipTutorLinkRepository $tutorLinkRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceListSteps $listSteps, TranslatorInterface $translator): array
     {
         $programs = null !== $filters['selectedFormation'] ? [$filters['selectedFormation']] : $filters['formations'];
         $search = '' !== $filters['search'] ? $filters['search'] : null;
         $isPastYear = $filters['isPastYear'];
+        $ids = null !== $filters['selectedStep'] ? $listSteps->tutorLinkIdsAt($programs, $filters['selectedStep']) : null;
 
-        $total = $tutorLinkRepository->countForDashboard($programs, $filters['showAll'], $filters['selectedEnterprise'], $search, $filters['showTestData']);
+        $total = $tutorLinkRepository->countForDashboard($programs, $filters['showAll'], $filters['selectedEnterprise'], $search, $filters['showTestData'], $ids);
         $pageCount = max(1, (int) ceil($total / self::PAGE_SIZE));
         // Clamped rather than 404'd: a page that existed a moment ago stops existing as soon as an
         // alternance is terminated under "Actives".
@@ -163,7 +183,7 @@ class DashboardController extends AbstractController
         $offset = ($page - 1) * self::PAGE_SIZE;
 
         $rows = [];
-        foreach ($tutorLinkRepository->findDashboardPage($programs, $filters['showAll'], $filters['selectedEnterprise'], $search, $filters['showTestData'], $offset, self::PAGE_SIZE) as $tutorLink) {
+        foreach ($tutorLinkRepository->findDashboardPage($programs, $filters['showAll'], $filters['selectedEnterprise'], $search, $filters['showTestData'], $offset, self::PAGE_SIZE, $ids) as $tutorLink) {
             $status = $statusResolver->resolveCurrentStep($tutorLink);
             $rows[] = [
                 'tutorLink' => $tutorLink,

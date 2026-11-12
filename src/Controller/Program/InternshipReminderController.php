@@ -17,6 +17,7 @@ use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\StudentNameOrder;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -127,17 +128,17 @@ class InternshipReminderController extends AbstractController
         // The pending list is built from the Program's roster, so a terminated alternance would
         // otherwise still be chased here - nothing is asked of an alternant whose contract is over.
         $terminatedStudentIds = $tutorLinkRepository->findTerminatedStudentIdsForProgram($program);
-        $pendingStudents = array_values(array_filter(
+        $pendingStudents = StudentNameOrder::sortStudents(array_filter(
             $program->getStudents()->toArray(),
             static fn (User $student): bool => !\in_array($student->getId(), $submittedStudentIds, true)
                 && !isset($terminatedStudentIds[(int) $student->getId()]),
         ));
 
         $submittedTutorLinkIds = $tutorEvaluationRepository->findSubmittedTutorLinkIdsForProgramAndEvaluationPeriod($program, $evaluationPeriod);
-        $pendingTutorLinks = array_values(array_filter(
+        $pendingTutorLinks = StudentNameOrder::sort(array_filter(
             $tutorLinkRepository->findAllActiveForProgram($program),
             static fn (InternshipTutorLink $tutorLink): bool => !\in_array($tutorLink->getId(), $submittedTutorLinkIds, true),
-        ));
+        ), static fn (InternshipTutorLink $tutorLink): ?User => $tutorLink->getStudent());
 
         return ['students' => $pendingStudents, 'tutorLinks' => $pendingTutorLinks];
     }

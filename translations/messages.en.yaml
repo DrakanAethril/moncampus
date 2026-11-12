@@ -110,6 +110,7 @@ homeTeacherNextSessionTodayLabel: 'Today'
 homeTeacherQuickLinksLabel: 'Quick links'
 homeStaffBannerEvaluationsTitle: 'Some tutors or apprentices have a booklet step waiting, and no reminder batch covers them.'
 homeStaffBannerEvaluationsAction: 'Create a reminder'
+homeStaffBannerSeeAction: 'View'
 homeStaffMatrixCardTitle: 'Timetable'
 homeStaffMatrixCloseLabel: 'Close'
 homeStaffMatrixPreviousDayLabel: 'Previous day with classes'
@@ -11112,3 +11113,12 @@ ufaAlternanceSecondaryTutorNoneLabel: "None"
 ufaAlternanceSecondaryTutorSectionLabel: "Secondary tutor (optional)"
 ufaAlternanceSecondaryTutorSectionHelp: "They open, fill in and sign the booklet like the principal tutor. Reminders go to the principal tutor, with the secondary tutor in copy."
 ufaAlternanceSecondaryTutorShortLabel: "Secondary tutor"
+ufaAlternanceFilterStepLabel: 'Step'
+ufaAlternanceFilterStepAllLabel: 'All'
+ufaAlternanceStepEngagementTutorLabel: 'Commitment · tutor signature'
+ufaAlternanceStepEngagementStudentLabel: 'Commitment · apprentice signature'
+ufaAlternanceStepEngagementCenterLabel: 'Commitment · training centre signature'
+ufaAlternanceStepPeriodTutorLabel: 'Review %rank% · tutor evaluation'
+ufaAlternanceStepPeriodStudentLabel: 'Review %rank% · apprentice evaluation'
+ufaAlternanceStepPeriodSupervisorLabel: 'Review %rank% · supervisor closing'
+ufaAlternanceStepClosedLabel: 'Nothing pending'

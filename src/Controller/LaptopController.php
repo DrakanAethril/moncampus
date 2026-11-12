@@ -28,6 +28,7 @@ use App\Service\LaptopLoanDocumentExporter;
 use App\Service\LaptopLoanEligibility;
 use App\Service\LaptopStatusFormatter;
 use App\Service\QueryValue;
+use App\Service\StudentNameOrder;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -333,7 +334,8 @@ class LaptopController extends AbstractController
     public function loanStudentSearch(Request $request, UserRepository $userRepository, ProgramRepository $programRepository): JsonResponse
     {
         $limit = 20;
-        $candidates = $userRepository->findActiveMatchingRoles([], [], $request->query->get('q'));
+        // By surname, like every list of students in the UFA - the repository's own order is by first name.
+        $candidates = StudentNameOrder::sortStudents($userRepository->findActiveMatchingRoles([], [], $request->query->get('q')));
 
         return $this->json([
             'results' => array_map(static function (User $user) use ($programRepository): array {
