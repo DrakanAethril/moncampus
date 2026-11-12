@@ -1,0 +1,16 @@
+{# « À relire » (design/validated/school-year-import.md §6): dates this screen shows were moved by
+   the school-year import. Changing one clears its mark; « Confirmer ces dates » clears them all.
+   Expects count, confirmUrl (null: the reader may not confirm) and token. Never inside another
+   <form>: the caller places it outside its own. #}
+{% if count > 0 %}
+    <div class="cm-syi-shifted" role="status">
+        <twig:Cm:Badge tone="gold">{{ 'shiftedDatesBadge'|trans }}</twig:Cm:Badge>
+        <span class="cm-syi-shifted__text">{{ 'shiftedDatesNoticeText'|trans({'%count%': count}) }}</span>
+        {% if confirmUrl %}
+            <form method="post" action="{{ confirmUrl }}" class="cm-syi-shifted__form">
+                <input type="hidden" name="_token" value="{{ csrf_token(token) }}">
+                <twig:Cm:Button variant="outline" size="sm" type="submit">{{ 'shiftedDatesConfirmAction'|trans }}</twig:Cm:Button>
+            </form>
+        {% endif %}
+    </div>
+{% endif %}

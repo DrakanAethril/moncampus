@@ -16,6 +16,7 @@ use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ReferentialRepository;
 use App\Service\Portfolio\PortfolioContext;
 use App\Service\PostValue;
+use App\Service\SchoolYearImport\ShiftedDates;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -115,6 +116,22 @@ class SettingsPortfolioController extends AbstractController
         $program->setPortfolioE6Deadline(self::dateTime(PostValue::trimmed($request, 'e6Deadline')));
         $this->entityManager->flush();
         $this->addFlash('success', 'programPortfolioSavedFlashMessage');
+
+        return $this->redirectToRoute('app_program_settings_portfolio', ['id' => $program->getId()]);
+    }
+
+    // « Confirmer ces dates » (design/validated/school-year-import.md §6): the deadlines the
+    // school-year import moved are kept. A change of the settings, hence the administration's alone.
+    #[Route(path: '/programs/{id}/settings/portfolio/confirm-dates', name: 'app_program_settings_portfolio_confirm_dates', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function confirmShiftedDates(int $id, Request $request, ShiftedDates $shiftedDates): Response
+    {
+        $program = $this->findOrNotFound($id, $this->programs);
+        if (!$this->isCsrfTokenValid('shifted_dates', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+        $shiftedDates->confirmPortfolio($program);
+        $this->addFlash('success', 'shiftedDatesConfirmedFlashMessage');
 
         return $this->redirectToRoute('app_program_settings_portfolio', ['id' => $program->getId()]);
     }

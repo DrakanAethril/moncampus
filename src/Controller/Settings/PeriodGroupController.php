@@ -11,6 +11,7 @@ use App\Form\PeriodGroupType;
 use App\Form\PeriodType as PeriodFormType;
 use App\Repository\PeriodGroupRepository;
 use App\Repository\PeriodRepository;
+use App\Service\SchoolYearImport\ShiftedDates;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -111,13 +112,29 @@ class PeriodGroupController extends AbstractController
     }
 
     #[Route(path: '/settings/structure/period-groups/{groupId}/periods', name: 'app_settings_structure_period_groups_periods')]
-    public function periodGroupPeriodsList(int $groupId, PeriodGroupRepository $repository): Response
+    public function periodGroupPeriodsList(int $groupId, PeriodGroupRepository $repository, ShiftedDates $shiftedDates): Response
     {
         $periodGroup = $this->findOrNotFound($repository, $groupId);
 
         return $this->render('settings/period_group_periods.html.twig', [
             'periodGroup' => $periodGroup,
+            'shiftedCount' => $shiftedDates->countInPeriodGroup($periodGroup),
         ]);
+    }
+
+    // « Confirmer ces dates » (design/validated/school-year-import.md §6): the periods the
+    // school-year import moved have been read and are kept.
+    #[Route(path: '/settings/structure/period-groups/{groupId}/periods/confirm-dates', name: 'app_settings_structure_period_groups_periods_confirm_dates', methods: ['POST'])]
+    public function confirmShiftedPeriods(int $groupId, Request $request, PeriodGroupRepository $repository, ShiftedDates $shiftedDates): Response
+    {
+        $periodGroup = $this->findOrNotFound($repository, $groupId);
+        if (!$this->isCsrfTokenValid('shifted_dates', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+        $shiftedDates->confirmPeriodGroup($periodGroup);
+        $this->addFlash('success', 'shiftedDatesConfirmedFlashMessage');
+
+        return $this->redirectToRoute('app_settings_structure_period_groups_periods', ['groupId' => $groupId]);
     }
 
     #[Route(path: '/settings/structure/period-groups/{groupId}/periods/new', name: 'app_settings_structure_period_groups_periods_new')]
@@ -220,6 +237,7 @@ class PeriodGroupController extends AbstractController
                     'id' => $period->getId(),
                     'isInactive' => null !== $period->getInactiveDate(),
                     'name' => $period->getName(),
+                    'shifted' => $period->isShifted(),
                     'typeName' => $period->getType()?->getName() ?? '—',
                     'startDate' => $period->getStartDate()->format('d/m/Y'),
                     'endDate' => $period->getEndDate()->format('d/m/Y'),
