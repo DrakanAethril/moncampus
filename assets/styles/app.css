@@ -14405,3 +14405,12 @@ body.cm-sg-immersive { overflow: hidden; }
     .cm-syi-row { flex-direction: column; }
     .cm-syi-row__right { justify-content: flex-start; max-width: none; }
 }
+
+/* « À relire »: the notice above a list of dates moved by the school-year import. */
+.cm-syi-shifted {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    background: var(--cm-gold-bg-soft); color: var(--cm-gold-tx);
+    border-radius: var(--cm-radius); padding: 10px 14px; margin-bottom: 14px; font-size: 13.5px;
+}
+.cm-syi-shifted__text { flex: 1 1 260px; }
+.cm-syi-shifted__form { margin: 0; }

@@ -4,7 +4,10 @@
 
 {% macro periodRow(periodForm) %}
     <div class="row g-2 align-items-center mb-2" data-evaluation-period-group-form-target="periodRow">
-        <div class="col">{{ form_widget(periodForm.name, {'attr': {'class': 'form-control'}}) }}</div>
+        <div class="col">
+            {{ form_widget(periodForm.name, {'attr': {'class': 'form-control'}}) }}
+            {% if periodForm.vars.data and periodForm.vars.data.shifted %}<twig:Cm:Badge tone="gold" class="mt-1">{{ 'shiftedDatesBadge'|trans }}</twig:Cm:Badge>{% endif %}
+        </div>
         <div class="col">{{ form_widget(periodForm.startDate, {'attr': {'class': 'form-control', 'data-evaluation-period-group-form-target': 'startInput'}}) }}</div>
         <div class="col">{{ form_widget(periodForm.endDate, {'attr': {'class': 'form-control', 'data-evaluation-period-group-form-target': 'endInput'}}) }}</div>
         <div class="col-auto">
@@ -27,6 +30,13 @@
 {% block page_title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
 
 {% block main %}
+    {% if isEdit %}
+        {% include 'settings/school_year_import/_shifted_notice.html.twig' with {
+            count: form.vars.data.periods|filter(p => p.shifted)|length,
+            confirmUrl: path('app_settings_structure_evaluation_period_groups_confirm_dates', {id: form.vars.data.id}),
+            token: 'shifted_dates',
+        } only %}
+    {% endif %}
     <div class="card">
         <div class="card-body" data-controller="evaluation-period-group-form"
              data-evaluation-period-group-form-overlap-message-value="{{ 'evaluationPeriodOverlapMessage'|trans({'%a%': '__A__', '%b%': '__B__', '%bStart%': '__BSTART__', '%bEnd%': '__BEND__'})|e('html_attr') }}">

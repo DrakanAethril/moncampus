@@ -13303,3 +13303,7 @@ schoolYearImportNoteSyllabusMissing: "Le PDF du programme est introuvable : il n
 schoolYearImportRefusalSameYear: "L'année d'origine et l'année d'arrivée doivent être deux années différentes, avec leurs dates."
 schoolYearImportRefusalInactiveYear: "Une année désactivée ne s'importe pas et ne reçoit pas d'import."
 schoolYearImportRefusalEmptyName: "La formation « %program% » n'aurait plus de nom une fois l'année réécrite : renommez-la avant d'importer."
+shiftedDatesBadge: 'À relire'
+shiftedDatesNoticeText: "{1}Une date a été décalée par l'import d'année scolaire : relisez-la, puis modifiez-la ou confirmez-la.|]1,Inf[%count% dates ont été décalées par l'import d'année scolaire : relisez-les, puis modifiez-les ou confirmez-les."
+shiftedDatesConfirmAction: 'Confirmer ces dates'
+shiftedDatesConfirmedFlashMessage: 'Dates confirmées : elles ne sont plus à relire.'

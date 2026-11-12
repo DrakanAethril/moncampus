@@ -455,6 +455,17 @@ export default class extends Controller {
         // read from a row field - for a single value whose color doesn't vary row-to-row (e.g.
         // directory/users.html.twig's "Type" column, kept visually distinct from the "groupes"/
         // "groupes manuels" badge columns on the same row).
+        // A text with a gold badge when the row carries `column.flag` - « À relire » on the dates the
+        // school-year import moved (design/validated/school-year-import.md §6).
+        if (column.render === 'flaggedText') {
+            return {
+                data: column.data,
+                render: (data, type, row) => (type === 'display' && row[column.flag]
+                    ? `${escapeHtml(data)} <span class="cm-badge cm-badge--gold">${escapeHtml(column.flagLabel)}</span>`
+                    : data),
+            };
+        }
+
         if (column.render === 'staticBadge') {
             return {
                 data: column.data,

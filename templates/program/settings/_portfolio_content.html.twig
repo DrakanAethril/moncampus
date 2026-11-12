@@ -3,6 +3,11 @@
    the whole of who decides about a portfolio. #}
 {% set canEdit = is_granted('ROLE_ADMIN') %}
 <div class="card-body cm-pf-page">
+    {% include 'settings/school_year_import/_shifted_notice.html.twig' with {
+        count: program.portfolioDatesShiftedAt ? [program.portfolioE5Deadline, program.portfolioE6Deadline]|filter(d => d is not null)|length : 0,
+        confirmUrl: canEdit ? path('app_program_settings_portfolio_confirm_dates', {id: program.id}) : null,
+        token: 'shifted_dates',
+    } only %}
     <form method="post" action="{{ path('app_program_settings_portfolio_save', {id: program.id}) }}" class="cm-pf-page">
         <input type="hidden" name="_token" value="{{ csrf_token('program_portfolio') }}">
         <fieldset{{ canEdit ? '' : ' disabled' }} class="cm-pf-page">
@@ -36,11 +41,11 @@
                     <span class="cm-pf-hint">{{ 'programPortfolioSessionHint'|trans }}</span>
                 </div>
                 <div class="cm-pf-field">
-                    <label for="pf-e5">{{ 'programPortfolioE5DeadlineLabel'|trans }}</label>
+                    <label for="pf-e5">{{ 'programPortfolioE5DeadlineLabel'|trans }}{% if program.portfolioDatesShiftedAt and program.portfolioE5Deadline %} <twig:Cm:Badge tone="gold">{{ 'shiftedDatesBadge'|trans }}</twig:Cm:Badge>{% endif %}</label>
                     <input id="pf-e5" class="form-control" type="datetime-local" name="e5Deadline" value="{{ program.portfolioE5Deadline ? program.portfolioE5Deadline|date('Y-m-d\\TH:i') }}">
                 </div>
                 <div class="cm-pf-field">
-                    <label for="pf-e6">{{ 'programPortfolioE6DeadlineLabel'|trans }}</label>
+                    <label for="pf-e6">{{ 'programPortfolioE6DeadlineLabel'|trans }}{% if program.portfolioDatesShiftedAt and program.portfolioE6Deadline %} <twig:Cm:Badge tone="gold">{{ 'shiftedDatesBadge'|trans }}</twig:Cm:Badge>{% endif %}</label>
                     <input id="pf-e6" class="form-control" type="datetime-local" name="e6Deadline" value="{{ program.portfolioE6Deadline ? program.portfolioE6Deadline|date('Y-m-d\\TH:i') }}">
                     <span class="cm-pf-hint">{{ 'programPortfolioDeadlineHint'|trans }}</span>
                 </div>

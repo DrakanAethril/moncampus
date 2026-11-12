@@ -8,6 +8,7 @@ use App\Entity\EvaluationPeriodGroup;
 use App\Entity\PeriodGroup;
 use App\Form\EvaluationPeriodGroupType;
 use App\Repository\EvaluationPeriodGroupRepository;
+use App\Service\SchoolYearImport\ShiftedDates;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -70,6 +71,20 @@ class EvaluationPeriodGroupController extends AbstractController
             'form' => $form,
             'isEdit' => $isEdit,
         ]);
+    }
+
+    // « Confirmer ces dates » (design/validated/school-year-import.md §6).
+    #[Route(path: '/settings/structure/evaluation-period-groups/{id}/confirm-dates', name: 'app_settings_structure_evaluation_period_groups_confirm_dates', methods: ['POST'])]
+    public function confirmShiftedDates(int $id, Request $request, EvaluationPeriodGroupRepository $repository, ShiftedDates $shiftedDates): Response
+    {
+        $group = $this->findOrNotFound($repository, $id);
+        if (!$this->isCsrfTokenValid('shifted_dates', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+        $shiftedDates->confirmEvaluationGroup($group);
+        $this->addFlash('success', 'shiftedDatesConfirmedFlashMessage');
+
+        return $this->redirectToRoute('app_settings_structure_evaluation_period_groups_edit', ['id' => $id]);
     }
 
     #[Route(path: '/settings/structure/evaluation-period-groups/{id}/deactivate', name: 'app_settings_structure_evaluation_period_groups_deactivate', methods: ['POST'])]

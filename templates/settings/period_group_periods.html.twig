@@ -11,6 +11,11 @@
 {% block page_title %}{{ 'periodsPageHeading'|trans }} - {{ periodGroup.name }}{% endblock %}
 
 {% block main %}
+    {% include 'settings/school_year_import/_shifted_notice.html.twig' with {
+        count: shiftedCount,
+        confirmUrl: path('app_settings_structure_period_groups_periods_confirm_dates', {groupId: periodGroup.id}),
+        token: 'shifted_dates',
+    } only %}
     <div class="card">
         <div class="card-header d-flex align-items-center">
             <div class="ms-auto">
@@ -33,7 +38,7 @@
                  data-datatable-deactivate-error-message-value="{{ 'deactivateErrorMessage'|trans }}"
                  data-datatable-page-length-value="10"
                  data-datatable-columns-value="{{ [
-                     {data: 'name'},
+                     {data: 'name', render: 'flaggedText', flag: 'shifted', flagLabel: 'shiftedDatesBadge'|trans},
                      {data: 'typeName'},
                      {data: 'startDate'},
                      {data: 'endDate'},

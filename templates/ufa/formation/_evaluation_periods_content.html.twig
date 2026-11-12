@@ -4,6 +4,11 @@
    Désactiver per row), so no cm-actionbar on this tab; the "Ajouter" action lives on the tab
    row (see _evaluation_periods_button.html.twig). Create/edit happen in a cm-panel overlay on
    top of this list (rule 6), same treatment as ufa/_behavior_content.html.twig. #}
+{% include 'settings/school_year_import/_shifted_notice.html.twig' with {
+    count: evaluationPeriods|filter(p => p.shifted)|length,
+    confirmUrl: path('app_ufa_formation_evaluation_periods_confirm_dates', {id: program.id}),
+    token: 'shifted_dates',
+} only %}
 <div class="table-responsive">
     <table class="table table-vcenter card-table table-striped">
         <thead>
@@ -17,7 +22,7 @@
         <tbody>
             {% for period in evaluationPeriods %}
                 <tr>
-                    <td class="fw-medium">{{ period.name }}</td>
+                    <td class="fw-medium">{{ period.name }}{% if period.shifted %} <twig:Cm:Badge tone="gold">{{ 'shiftedDatesBadge'|trans }}</twig:Cm:Badge>{% endif %}</td>
                     <td>{{ period.startDate ? period.startDate|date('d/m/Y') : '—' }}</td>
                     <td>{{ period.endDate ? period.endDate|date('d/m/Y') : '—' }}</td>
                     <td class="cm-actions">
