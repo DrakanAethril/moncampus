@@ -1,0 +1,6 @@
+{# What one formation receives, from SchoolYearImportScreen::addedLines(): « 12 matières · 5 blocs ». #}
+{% set lines = [] %}
+{% for line in added %}
+    {% set lines = lines|merge([line.key|trans({'%count%': line.count})]) %}
+{% endfor %}
+{{ lines is empty ? 'schoolYearImportAddedNothing'|trans : lines|join(' · ') }}

@@ -19,6 +19,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 class Period
 {
     use AuditableTrait;
+    use ShiftedDatesTrait;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -102,7 +103,9 @@ class Period
 
     public function setStartDate(?\DateTimeImmutable $startDate): static
     {
+        $before = $this->startDate;
         $this->startDate = $startDate;
+        $this->clearShiftedMarkIfChanged($before, $this->startDate);
 
         return $this;
     }
@@ -114,7 +117,9 @@ class Period
 
     public function setEndDate(?\DateTimeImmutable $endDate): static
     {
+        $before = $this->endDate;
         $this->endDate = $endDate;
+        $this->clearShiftedMarkIfChanged($before, $this->endDate);
 
         return $this;
     }

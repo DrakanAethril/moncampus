@@ -14319,3 +14319,89 @@ body.cm-sg-immersive { overflow: hidden; }
     .cm-rb-programs__head > :nth-child(2), .cm-rb-programs__row > .cm-rb-bar { display: none; }
     .cm-rb-status__updated { margin-left: 0; }
 }
+
+/* ===================================================================================== */
+/* Import d'année scolaire (Paramètres › Pédagogique › Années scolaires › Importer)        */
+/* design/validated/school-year-import.md - screens 2, 3 and 4: a column of cards and a    */
+/* sticky summary on the right, folded under it below the large breakpoint.               */
+/* ===================================================================================== */
+.cm-syi { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.cm-syi__main { display: grid; gap: 16px; min-width: 0; }
+.cm-syi__summary {
+    position: sticky; top: 16px;
+    display: grid; gap: 9px;
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+    padding: 16px 18px;
+}
+.cm-syi-card {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+    padding: 14px 18px; min-width: 0;
+}
+.cm-syi-card--fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.cm-syi-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; }
+.cm-syi-card__title { font: 600 15px var(--cm-font-ui); color: var(--cm-ink); margin: 0; }
+.cm-syi-card__meta { font-size: 12.5px; color: var(--cm-muted); }
+.cm-syi-empty { color: var(--cm-muted); font-size: 13.5px; margin: 6px 0; }
+
+.cm-syi-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cm-syi-field__label { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; }
+.cm-syi-field__value { background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm); padding: 7px 10px; font-weight: 600; color: var(--cm-ink); }
+.cm-syi-field__hint { font-size: 12.5px; color: var(--cm-muted); }
+
+.cm-syi-check {
+    display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 10px; align-items: start;
+    padding: 10px 0; border-top: 1px solid var(--cm-border-soft); margin: 0; cursor: pointer;
+}
+.cm-syi-check .form-check-input { margin-top: 3px; }
+.cm-syi-check--child { padding-left: 28px; }
+.cm-syi-check.is-locked, .cm-syi-check.is-disabled { cursor: default; }
+.cm-syi-check.is-disabled .cm-syi-check__title, .cm-syi-check.is-disabled .cm-syi-check__hint { color: var(--cm-faint); }
+.cm-syi-check__title { display: block; font-weight: 600; color: var(--cm-ink); }
+.cm-syi-check__hint { display: block; font-size: 12.5px; color: var(--cm-muted); }
+.cm-syi-check__needs { display: block; font-size: 12px; color: var(--cm-gold-tx); margin-top: 2px; }
+.cm-syi-check__count { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); white-space: nowrap; }
+
+.cm-syi-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.cm-syi-table th { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--cm-border); }
+.cm-syi-table td { padding: 8px; border-bottom: 1px solid var(--cm-border-soft); vertical-align: top; color: var(--cm-text); }
+.cm-syi-table__check { width: 28px; }
+.cm-syi-table__num { text-align: right; white-space: nowrap; }
+.cm-syi-table__nowrap { white-space: nowrap; }
+.cm-syi-table__muted { color: var(--cm-muted); font-style: italic; }
+.cm-syi-table__name { font-weight: 600; color: var(--cm-ink); margin-right: 6px; cursor: pointer; }
+.cm-syi-table__sub { display: block; font-size: 12px; color: var(--cm-muted); }
+
+.cm-syi-sum__title { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; margin: 0; }
+.cm-syi-sum__big { font: 700 28px var(--cm-font-title); color: var(--cm-ink); line-height: 1.1; }
+.cm-syi-sum__big small { font: 500 13px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-syi-sum__row { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; color: var(--cm-text); }
+.cm-syi-sum__row b { color: var(--cm-ink); }
+.cm-syi-sum__warn { background: var(--cm-gold-bg-soft); color: var(--cm-gold-tx); border-radius: var(--cm-radius-sm); padding: 8px 10px; font-size: 12.5px; }
+.cm-syi-sum__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--cm-border-soft); padding-top: 12px; margin-top: 4px; }
+
+.cm-syi-rows { display: grid; }
+.cm-syi-row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-top: 1px solid var(--cm-border-soft); }
+.cm-syi-row:first-child { border-top: 0; }
+.cm-syi-row__title { font-weight: 600; color: var(--cm-ink); }
+.cm-syi-row__meta, .cm-syi-row__note { font-size: 12.5px; color: var(--cm-muted); }
+.cm-syi-row__note { color: var(--cm-gold-tx); }
+.cm-syi-row__right { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 6px; flex: none; max-width: 45%; }
+.cm-syi-row__link { font-size: 13px; white-space: nowrap; }
+
+.cm-syi-done { background: var(--cm-green-bg); color: var(--cm-green-tx); border-radius: var(--cm-radius); padding: 12px 16px; margin-bottom: 16px; font-weight: 600; }
+.cm-syi-todo { list-style: none; margin: 0; padding: 0; display: grid; }
+.cm-syi-todo li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--cm-border-soft); font-size: 13.5px; }
+.cm-syi-todo li:first-child { border-top: 0; }
+.cm-syi-todo__muted { color: var(--cm-muted); font-size: 12.5px; text-align: right; }
+
+/* Écran 1: the trace of the last import under the number of formations. */
+.cm-syi-trace { display: block; font-size: 12px; color: var(--cm-muted); }
+.cm-actions .cm-syi-import--first { background: var(--cm-gold-bg-soft); border-radius: var(--cm-radius-sm); padding: 1px 8px; font-weight: 600; }
+
+@media (max-width: 991.98px) {
+    .cm-syi { grid-template-columns: minmax(0, 1fr); }
+    .cm-syi__summary { position: static; }
+    .cm-syi-card--fields { grid-template-columns: minmax(0, 1fr); }
+    .cm-syi-row { flex-direction: column; }
+    .cm-syi-row__right { justify-content: flex-start; max-width: none; }
+}

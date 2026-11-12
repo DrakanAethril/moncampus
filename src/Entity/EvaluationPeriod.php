@@ -20,6 +20,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'evaluation_period')]
 class EvaluationPeriod
 {
+    use ShiftedDatesTrait;
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -68,7 +69,9 @@ class EvaluationPeriod
 
     public function setStartDate(?\DateTimeImmutable $startDate): static
     {
+        $before = $this->startDate;
         $this->startDate = $startDate?->setTime(0, 0, 0);
+        $this->clearShiftedMarkIfChanged($before, $this->startDate);
 
         return $this;
     }
@@ -80,7 +83,9 @@ class EvaluationPeriod
 
     public function setEndDate(?\DateTimeImmutable $endDate): static
     {
+        $before = $this->endDate;
         $this->endDate = $endDate?->setTime(23, 59, 59);
+        $this->clearShiftedMarkIfChanged($before, $this->endDate);
 
         return $this;
     }

@@ -1,0 +1,100 @@
+{# Screen 3 of the school-year import: the plan, written nowhere (SchoolYearImportPlanner). The POST
+   carries the choices only - the importer computes the plan again under its lock (R3). #}
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = 'schoolYearImportHeading'|trans({'%year%': targetLabel}) %}
+{% set completed = report.programs|filter(p => p.status == 'completed') %}
+{% set noted = report.programs|filter(p => p.status == 'created' and p.notes is not empty) %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'settings/school_year_import/_breadcrumb.html.twig' with {leaf: 'schoolYearImportBreadcrumb'|trans({'%year%': targetLabel})} only %}
+{% endblock %}
+
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    {% include 'settings/school_year_import/_steps.html.twig' with {step: 2} only %}
+
+    <div class="cm-syi">
+        <div class="cm-syi__main">
+            <section class="cm-syi-card">
+                <div class="cm-syi-card__head"><h3 class="cm-syi-card__title">{{ 'schoolYearImportCheckExistingTitle'|trans }}</h3></div>
+                <div class="cm-syi-rows">
+                    {% for entry in completed %}
+                        <div class="cm-syi-row">
+                            <div>
+                                <div class="cm-syi-row__title">{{ entry.name }}</div>
+                                <div class="cm-syi-row__meta">
+                                    {{ 'schoolYearImportCheckCompletedText'|trans({'%year%': targetLabel}) }}
+                                    {% include 'settings/school_year_import/_added.html.twig' with {added: added[entry.sourceId] ?? []} only %}
+                                </div>
+                                {% include 'settings/school_year_import/_notes.html.twig' with {notes: entry.notes} only %}
+                            </div>
+                            <div class="cm-syi-row__right"><twig:Cm:Badge tone="blue">{{ 'schoolYearImportCompletedBadge'|trans }}</twig:Cm:Badge></div>
+                        </div>
+                    {% endfor %}
+                    {% for entry in noted %}
+                        <div class="cm-syi-row">
+                            <div>
+                                <div class="cm-syi-row__title">{{ entry.name }}</div>
+                                {% include 'settings/school_year_import/_notes.html.twig' with {notes: entry.notes} only %}
+                            </div>
+                            <div class="cm-syi-row__right"><twig:Cm:Badge tone="green">{{ 'schoolYearImportCreatedBadge'|trans }}</twig:Cm:Badge></div>
+                        </div>
+                    {% endfor %}
+                    {% if report.skippedTeachers is not empty %}
+                        <div class="cm-syi-row">
+                            <div>
+                                <div class="cm-syi-row__title">{{ 'schoolYearImportSkippedTeachersTitle'|trans({'%count%': report.skippedTeachers|length}) }}</div>
+                                <div class="cm-syi-row__meta">
+                                    {{ report.skippedTeachers|map(t => t.name ~ ' (' ~ ('schoolYearImportTeacherRefusal_' ~ t.reason)|trans ~ ')')|join(' · ') }}.
+                                    {% if totals.withoutHolder > 0 %}{{ 'schoolYearImportWithoutHolderText'|trans({'%count%': totals.withoutHolder}) }}{% endif %}
+                                </div>
+                            </div>
+                            <div class="cm-syi-row__right"><twig:Cm:Badge tone="gold">{{ 'schoolYearImportToCompleteBadge'|trans }}</twig:Cm:Badge></div>
+                        </div>
+                    {% elseif totals.withoutHolder > 0 %}
+                        <div class="cm-syi-row">
+                            <div><div class="cm-syi-row__title">{{ 'schoolYearImportWithoutHolderText'|trans({'%count%': totals.withoutHolder}) }}</div></div>
+                            <div class="cm-syi-row__right"><twig:Cm:Badge tone="gold">{{ 'schoolYearImportToCompleteBadge'|trans }}</twig:Cm:Badge></div>
+                        </div>
+                    {% endif %}
+                    {% if completed is empty and noted is empty and report.skippedTeachers is empty and totals.withoutHolder == 0 %}
+                        <p class="cm-syi-empty">{{ 'schoolYearImportCheckNothingText'|trans }}</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="cm-syi-card">
+                <div class="cm-syi-card__head">
+                    <h3 class="cm-syi-card__title">{{ 'schoolYearImportShiftedTitle'|trans({'%count%': report.weeks|abs}) }}</h3>
+                    <span class="cm-syi-card__meta">{{ 'schoolYearImportShiftedMeta'|trans }}</span>
+                </div>
+                {% if report.shiftedDates is empty %}
+                    <p class="cm-syi-empty">{{ 'schoolYearImportShiftedNone'|trans }}</p>
+                {% else %}
+                    {% include 'settings/school_year_import/_shifted_table.html.twig' with {dates: report.shiftedDates, source: report.source, target: report.target, limit: 15} only %}
+                {% endif %}
+            </section>
+        </div>
+
+        <aside class="cm-syi__summary">
+            <h3 class="cm-syi-sum__title">{{ 'schoolYearImportSummaryPlainTitle'|trans }}</h3>
+            {% include 'settings/school_year_import/_summary.html.twig' with {totals: totals} only %}
+            <form method="post" action="{{ path('app_settings_structure_school_years_import_run', {id: target.id}) }}" class="cm-syi-sum__actions">
+                <input type="hidden" name="_token" value="{{ csrf_token(token) }}">
+                <input type="hidden" name="source" value="{{ source.id }}">
+                {% for block in choices.blocks %}<input type="hidden" name="blocks[]" value="{{ block.value }}">{% endfor %}
+                {% for id in choices.programIds %}<input type="hidden" name="programs[]" value="{{ id }}">{% endfor %}
+                <twig:Cm:Button variant="outline" href="{{ path('app_settings_structure_school_years_import', {id: target.id, source: source.id, submitted: 1, blocks: choices.blocks|map(b => b.value), programs: choices.programIds}) }}">{{ 'schoolYearImportBackAction'|trans }}</twig:Cm:Button>
+                {% if report.programs is empty and totals.periodCalendars == 0 and totals.evaluationCalendars == 0 %}
+                    <twig:Cm:Button variant="primary" type="submit" disabled>{{ 'schoolYearImportRunAction'|trans }}</twig:Cm:Button>
+                {% else %}
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'schoolYearImportRunAction'|trans }}</twig:Cm:Button>
+                {% endif %}
+            </form>
+        </aside>
+    </div>
+{% endblock %}
