@@ -27,6 +27,7 @@ use App\Repository\WordCloudRepository;
 use App\Security\ProgramTimetableAccess;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\AudienceTargetableVoter;
+use App\Service\AlternanceListStep;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceReminderBoard;
 use App\Service\NameColorGenerator;
@@ -525,11 +526,15 @@ class HomeController extends AbstractController
 
     private function buildStaffData(\DateTimeImmutable $today, ?User $user): array
     {
+        // Read from the very board the reminder batches are built on: the banner says there is
+        // somebody to chase whom no running batch holds, and opens the creation form on the
+        // step most of them wait on - which can therefore never say there is nobody.
+        $banner = $this->reminderBoard->unqueued($user)['busiest'];
+
         return [
-            // Read from the very board the reminder batches are built on: the banner says there is
-            // somebody to chase whom no running batch holds, and opens the creation form on the
-            // step most of them wait on - which can therefore never say there is nobody.
-            'banner' => $this->reminderBoard->unqueued($user)['busiest'],
+            'banner' => $banner,
+            // « Voir »: the UFA list filtered on that same step.
+            'bannerStep' => null !== $banner ? AlternanceListStep::forTarget($banner)?->key() : null,
             'engagementBanner' => $this->buildStaffEngagementBanner(),
             'timetable' => $this->buildStaffTimetable($today, null),
         ];

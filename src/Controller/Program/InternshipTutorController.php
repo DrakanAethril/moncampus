@@ -13,6 +13,7 @@ use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Service\AlternanceModalityAssigner;
 use App\Service\AlternanceTerminationService;
+use App\Service\StudentNameOrder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -97,7 +98,7 @@ class InternshipTutorController extends AbstractController
         $limit = 20;
         $query = mb_strtolower((string) $request->query->get('q', ''));
 
-        $candidates = array_values(array_filter(
+        $candidates = StudentNameOrder::sortStudents(array_filter(
             $program->getStudents()->toArray(),
             static fn (User $user): bool => '' === $query || str_contains(mb_strtolower($user->getDisplayName() ?? $user->getUsername()), $query),
         ));
@@ -139,7 +140,7 @@ class InternshipTutorController extends AbstractController
 
         $total = $tutorLinkRepository->countAllForProgram($program, null, $includeInactive);
         $filteredTotal = '' !== $search ? $tutorLinkRepository->countAllForProgram($program, $search, $includeInactive) : $total;
-        $rows = $tutorLinkRepository->findPageForProgramOrderedByMostRecent($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
+        $rows = $tutorLinkRepository->findPageForProgramByStudentName($program, $start, $length, '' !== $search ? $search : null, $includeInactive);
 
         return $this->json([
             'draw' => $draw,

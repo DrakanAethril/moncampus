@@ -4016,7 +4016,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-dash-banner__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cm-dash-banner__title { font: 600 15px var(--cm-font-title); }
 .cm-dash-banner__text { font-size: 13px; }
-.cm-dash-banner__action { margin-left: auto; flex: none; }
+.cm-dash-banner__action { margin-left: auto; flex: none; display: flex; gap: 8px; flex-wrap: wrap; }
 .cm-dash-banner--ok { background: #e7f4ee; border-color: #9ecdb4; color: #1f7a54; }
 .cm-dash-banner--danger { background: #fbeeea; border-color: #dfab9e; color: #b0553f; }
 [data-bs-theme=dark] .cm-dash-banner { background: #3c3117; border-color: #7a5417; color: #e0bc6d; }
