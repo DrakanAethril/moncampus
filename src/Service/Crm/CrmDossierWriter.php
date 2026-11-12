@@ -103,7 +103,7 @@ final readonly class CrmDossierWriter
      */
     public function correct(CrmDossier $dossier, CrmDossierInput $input, User $by): bool
     {
-        $problems = $this->placementProblems($input);
+        $problems = $this->placementProblems($input, $dossier);
         $mail = $dossier->getCandidate()->getEmail();
         if ($input->program !== $dossier->getProgram() && null !== $mail && null !== ($holder = $this->dossiers->findHoldingMail($input->program, $mail, $dossier->getCandidate()))) {
             $problems[] = $this->mailTaken($holder);
@@ -311,7 +311,7 @@ final readonly class CrmDossierWriter
     }
 
     /** @return list<TranslatableMessage> */
-    private function placementProblems(CrmDossierInput $input): array
+    private function placementProblems(CrmDossierInput $input, ?CrmDossier $dossier = null): array
     {
         $problems = [];
         if ($this->settings->asksOption($input->program) && null === $input->option) {
@@ -319,6 +319,13 @@ final readonly class CrmDossierWriter
         }
         if (null !== $input->option && !$input->program->getOptions()->contains($input->option)) {
             $problems[] = new TranslatableMessage('crmRefusalOptionForeign', ['%option%' => $input->option->getShortName(), '%program%' => $input->program->getShortName()]);
+        } elseif (null !== $input->option && $this->settings->asksOption($input->program) && !\in_array($input->option, $this->settings->optionsOf($input->program), true)) {
+            // An option no longer followed is kept by the dossier that already carries it, and
+            // given to no other.
+            $kept = null !== $dossier && $dossier->getProgram() === $input->program && $dossier->getOption() === $input->option;
+            if (!$kept) {
+                $problems[] = new TranslatableMessage('crmRefusalOptionUntracked', ['%option%' => $input->option->getShortName(), '%program%' => $input->program->getShortName(), '%options%' => implode(' ou ', array_map(static fn ($o): string => $o->getShortName(), $this->settings->optionsOf($input->program)))]);
+            }
         }
 
         return $problems;
