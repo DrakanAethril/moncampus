@@ -17,10 +17,15 @@ import { Controller } from '@hotwired/stimulus';
  * wizard's two deciding lists), or on the <form> of a whole filter bar whose every control submits
  * it. `this.element.form` reads undefined on a <form> - and on the wrapping <div> of a switch -
  * which silently disabled every filter bar on the platform, progressions included.
+ *
+ * A field's own `.form` is asked first all the same: a field tied to its form by the `form=`
+ * attribute sits outside it (the CRM's formation settings spread one form over table rows), and
+ * `closest` finds nothing there - every change on that screen was silently dropped.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     submit() {
-        this.element.closest('form')?.requestSubmit();
+        const own = this.element.form;
+        (own instanceof HTMLFormElement ? own : this.element.closest('form'))?.requestSubmit();
     }
 }
