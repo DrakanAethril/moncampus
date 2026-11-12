@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Entity\WordCloud;
 use App\Entity\WordCloudSubmission;
 use App\Enum\WordCloudModerationState;
+use App\Service\WordCloud\WordCloudAuthor;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -35,7 +36,8 @@ class WordCloudSubmissionRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('s')
             ->addSelect('u')
-            ->join('s.student', 'u')
+            // A left join: a guest's word has no account behind it.
+            ->leftJoin('s.student', 'u')
             ->andWhere('s.wordCloud = :cloud')
             ->setParameter('cloud', $cloud)
             ->orderBy('s.submittedAt', 'ASC')
@@ -52,6 +54,27 @@ class WordCloudSubmissionRepository extends ServiceEntityRepository
             ->andWhere('s.student = :student')
             ->setParameter('cloud', $cloud)
             ->setParameter('student', $student)
+            ->orderBy('s.submittedAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * What one person wrote in a cloud - an account, or a guest by its token.
+     *
+     * @return list<WordCloudSubmission>
+     */
+    public function findForCloudAndAuthor(WordCloud $cloud, WordCloudAuthor $author): array
+    {
+        if (null !== $author->user) {
+            return $this->findForCloudAndStudent($cloud, $author->user);
+        }
+
+        return $this->createQueryBuilder('s')
+            ->andWhere('s.wordCloud = :cloud')
+            ->andWhere('s.guestTokenHash = :hash')
+            ->setParameter('cloud', $cloud)
+            ->setParameter('hash', (string) $author->guestTokenHash)
             ->orderBy('s.submittedAt', 'ASC')
             ->getQuery()
             ->getResult();
@@ -76,7 +99,7 @@ class WordCloudSubmissionRepository extends ServiceEntityRepository
      *
      * @param list<WordCloud> $clouds
      *
-     * @return array<int, int> cloud id => distinct students who submitted
+     * @return array<int, int> cloud id => distinct people who submitted, accounts and guests
      */
     public function countParticipantsByCloud(array $clouds): array
     {
@@ -86,7 +109,7 @@ class WordCloudSubmissionRepository extends ServiceEntityRepository
 
         /** @var list<array{cloudId: int, participants: int}> $rows */
         $rows = $this->createQueryBuilder('s')
-            ->select('IDENTITY(s.wordCloud) AS cloudId', 'COUNT(DISTINCT s.student) AS participants')
+            ->select('IDENTITY(s.wordCloud) AS cloudId', 'COUNT(DISTINCT s.student) + COUNT(DISTINCT s.guestTokenHash) AS participants')
             ->andWhere('s.wordCloud IN (:clouds)')
             ->setParameter('clouds', $clouds)
             ->groupBy('s.wordCloud')

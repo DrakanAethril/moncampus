@@ -56,6 +56,9 @@ class WordCloudType extends AbstractType
                 'choice_label' => static fn (Program $program): string => $program->getDisplayShortName(),
                 'choice_attr' => static fn (Program $program): array => ['data-program' => (string) $program->getId()],
                 'label' => 'wordCloudProgramFieldLabel',
+                // A cloud of no class (design/validated/word-cloud-public.md): it is then public.
+                'required' => false,
+                'placeholder' => 'wordCloudNoProgramOption',
             ])
             // Checkbox group rather than a multiple select, per the repository's form convention;
             // the stylesheet turns each box into one of the créa's chips.
@@ -121,6 +124,12 @@ class WordCloudType extends AbstractType
             ])
             ->add('visibleToStudents', CheckboxType::class, [
                 'label' => 'wordCloudVisibleToStudentsFieldLabel',
+                'required' => false,
+            ])
+            // « Ouvert à tous, sans compte »: answered at /cloud/{code}, which a QR code opens. A
+            // cloud of no class is public whatever this says (ListController).
+            ->add('public', CheckboxType::class, [
+                'label' => 'wordCloudPublicFieldLabel',
                 'required' => false,
             ]);
     }

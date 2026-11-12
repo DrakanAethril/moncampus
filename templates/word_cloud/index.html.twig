@@ -1,15 +1,30 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'wordCloudNavLabel'|trans }} - {{ program.displayShortName }}{% endblock %}
+{# Outils › Nuage de mots. Since 2026-11-12 a cloud belongs to a class or to none
+   (design/validated/word-cloud-public.md): the list gathers the clouds of the classes one runs and
+   one's own clouds of no class, and the class is a filter of it, as for the live contests. #}
+{% block title %}{{ 'wordCloudNavLabel'|trans }}{% if filteredProgram %} - {{ filteredProgram.displayShortName }}{% endif %}{% endblock %}
 
-{% block page_breadcrumb %}{% include 'word_cloud/_breadcrumb.html.twig' %}{% endblock %}
-{% block page_title %}{{ 'wordCloudNavLabel'|trans }}{% endblock %}
+{% block page_breadcrumb %}{% include 'word_cloud/_breadcrumb.html.twig' with {cloud: null} %}{% endblock %}
+{% block page_title %}{{ 'wordCloudNavLabel'|trans }}{% if filteredProgram %} - {{ filteredProgram.displayShortName }}{% endif %}{% endblock %}
 
 {% block page_actions %}
-    <a class="cm-wc-btn cm-wc-btn--lead" href="{{ path('app_program_word_cloud_new', {id: program.id}) }}">{{ 'wordCloudNewAction'|trans }}</a>
+    <a class="cm-wc-btn cm-wc-btn--lead" href="{{ path('app_word_cloud_new', filteredProgram ? {program: filteredProgram.id} : {}) }}">{{ 'wordCloudNewAction'|trans }}</a>
 {% endblock %}
 
 {% block main %}
+    <form class="cm-filterbar mb-3" method="get" action="{{ path('app_word_clouds') }}" data-controller="auto-submit">
+        <label class="cm-filterbar__field">
+            <span class="cm-filterbar__label">{{ 'wordCloudColumnProgramLabel'|trans }}</span>
+            <select name="class" class="cm-filterbar__select" data-action="auto-submit#submit">
+                <option value="" {{ filter == '' ? 'selected' }}>{{ 'wordCloudAllClassesOption'|trans }}</option>
+                {% for program in programs %}
+                    <option value="{{ program.id }}" {{ filter == program.id ~ '' ? 'selected' }}>{{ program.displayShortName }}</option>
+                {% endfor %}
+                <option value="none" {{ filter == 'none' ? 'selected' }}>{{ 'wordCloudNoProgramLabel'|trans }}</option>
+            </select>
+        </label>
+    </form>
     <div class="cm-wc-card cm-wc-card--flush cm-wc-scroll">
         <div>
             <div class="cm-wc-list__head">
@@ -27,7 +42,7 @@
                         <b>{{ cloud.name }}</b>
                         <span>{{ cloud.question }}</span>
                     </span>
-                    <span class="cm-wc-list__cell">{{ cloud.program.displayShortName }}</span>
+                    <span class="cm-wc-list__cell">{% include 'word_cloud/_class_label.html.twig' with {cloud: cloud} only %}</span>
                     <span class="cm-wc-list__cell">{% include 'word_cloud/_availability.html.twig' with {cloud: cloud} only %}</span>
                     {# « ne pas afficher le nombre d'étudiants par classe »: a participation count,
                        never a fraction of the roster. A cloud nobody has answered yet shows a dash
@@ -41,11 +56,11 @@
                            stands: a closed one is read, a running one is steered, a scheduled one is
                            still being written. #}
                         {% if row.status.value == 'closed' %}
-                            <a class="cm-wc-btn cm-wc-btn--row" href="{{ path('app_program_word_cloud_follow_up', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudFollowUpAction'|trans }}</a>
+                            <a class="cm-wc-btn cm-wc-btn--row" href="{{ path('app_word_cloud_follow_up', {cloudId: cloud.id}) }}">{{ 'wordCloudFollowUpAction'|trans }}</a>
                         {% elseif row.status.value == 'open' %}
-                            <a class="cm-wc-btn cm-wc-btn--row" href="{{ path('app_program_word_cloud_pilot', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudPilotAction'|trans }}</a>
+                            <a class="cm-wc-btn cm-wc-btn--row" href="{{ path('app_word_cloud_pilot', {cloudId: cloud.id}) }}">{{ 'wordCloudPilotAction'|trans }}</a>
                         {% else %}
-                            <a class="cm-wc-btn cm-wc-btn--row" href="{{ path('app_program_word_cloud_edit', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudEditAction'|trans }}</a>
+                            <a class="cm-wc-btn cm-wc-btn--row" href="{{ path('app_word_cloud_edit', {cloudId: cloud.id}) }}">{{ 'wordCloudEditAction'|trans }}</a>
                         {% endif %}
                     </span>
                 </div>

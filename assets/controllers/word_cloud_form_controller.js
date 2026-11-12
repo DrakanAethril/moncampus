@@ -20,6 +20,7 @@ export default class extends Controller {
         'manual', 'manualChip', 'lessonShortcut',
         'stepper', 'words', 'wordsValue', 'unlimitedChip',
         'question', 'previewQuestion', 'previewBoxes',
+        'publicSwitch', 'publicHint',
     ];
 
     static values = { programOptions: Object, placeholder: String };
@@ -61,6 +62,15 @@ export default class extends Controller {
         }
 
         if (this.hasOptionsFieldTarget) this.optionsFieldTarget.hidden = visible === 0;
+
+        // A cloud of no class is public by definition: the switch is held on while no class is
+        // chosen (the server forces the same), and given back when one is.
+        if (this.hasPublicSwitchTarget) {
+            const classless = programId === '';
+            if (classless) this.publicSwitchTarget.checked = true;
+            this.publicSwitchTarget.disabled = classless;
+            this.publicSwitchTarget.closest('.cm-wc-switch')?.classList.toggle('is-locked', classless);
+        }
     }
 
     // -- Availability period ----------------------------------------------

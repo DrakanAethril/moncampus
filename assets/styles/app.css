@@ -10754,6 +10754,8 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-wc-tag--open { background: var(--cm-wc-ok-bg); color: var(--cm-wc-ok-tx); }
 .cm-wc-tag--scheduled { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
 .cm-wc-tag--closed { background: var(--cm-border-soft); color: var(--cm-muted); }
+/* « Public »: answered without an account at /cloud/{code}. */
+.cm-wc-tag--public { background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); margin-left: 6px; }
 /* « Sans réponse » on the follow-up: an alert shade rather than the neutral one, because the whole
    tab exists to make that line findable. */
 .cm-wc-tag--silent { background: var(--cm-wc-no-bg); color: var(--cm-red-tx); }
@@ -10896,6 +10898,9 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-wc-switch:has(input:checked) .cm-wc-switch__track {
   background: var(--cm-brand); justify-content: flex-end;
 }
+/* « Ouvert à tous » held on while no class is chosen: a cloud of no class is always public. */
+.cm-wc-switch.is-locked { cursor: default; opacity: .7; }
+.cm-wc-hint { margin: -4px 0 0 56px; font-size: 12.5px; color: var(--cm-muted); }
 
 /* -- Creation form -------------------------------------------------------- */
 .cm-wc-form { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
@@ -11117,6 +11122,34 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    correctly at a glance. */
 .cm-wc-wordchip--rejected { color: var(--cm-red-tx); border-color: var(--cm-wc-no-bd); text-decoration: line-through; }
 .cm-wc-dash { color: var(--cm-wc-dim); font-size: 12.5px; }
+
+/* -- Public access (pilot screen) ---------------------------------------- */
+.cm-wc-public { display: flex; flex-direction: column; gap: 12px; }
+.cm-wc-public__body { display: flex; gap: 14px; align-items: center; }
+.cm-wc-public__qr { width: 112px; height: 112px; flex: none; padding: 6px; background: #fff; border-radius: var(--cm-radius-sm); }
+.cm-wc-public__qr svg { width: 100%; height: 100%; display: block; }
+.cm-wc-public__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cm-wc-public__join { font-size: 12.5px; color: var(--cm-muted); }
+.cm-wc-public__code { font: 700 26px var(--cm-font-ui); letter-spacing: 4px; color: var(--cm-ink); }
+.cm-wc-public__link { font-size: 12px; overflow-wrap: anywhere; }
+
+/* -- Projected QR code --------------------------------------------------- */
+/* The board's own dark wall, one QR code wide: the room scans it from the back. */
+.cm-wc-qrwall { align-items: center; justify-content: center; text-align: center; gap: 22px; }
+.cm-wc-qrwall .cm-wc-board__question { margin: 0; max-width: 1100px; }
+.cm-wc-qrwall__qr { width: min(52vh, 520px); aspect-ratio: 1; padding: 22px; background: #fff; border-radius: 18px; box-sizing: border-box; }
+.cm-wc-qrwall__qr svg { width: 100%; height: 100%; display: block; }
+.cm-wc-qrwall__join { font: 600 22px var(--cm-font-ui); color: var(--cm-wc-board-dim); }
+.cm-wc-qrwall__code { font: 700 56px var(--cm-font-ui); letter-spacing: 10px; color: #fff; line-height: 1; }
+.cm-wc-qrwall__meta { font: 600 16px var(--cm-font-ui); color: var(--cm-wc-board-faint); }
+
+/* -- Public page (/cloud/{code}) ----------------------------------------- */
+.cm-wc-pubpage { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; padding: 8px 0 24px; }
+.cm-wc-pubpage__question { font: 600 24px var(--cm-font-title); color: var(--cm-ink); margin: 8px 0 14px; }
+.cm-wc-pubpage__note { margin: 10px 0 0; font-size: 12.5px; color: var(--cm-muted); }
+.cm-wc-pubjoin { display: flex; flex-direction: column; gap: 10px; }
+.cm-wc-pubjoin__code { font: 700 22px var(--cm-font-ui); letter-spacing: 4px; text-transform: uppercase; }
+.cm-wc-pubjoin__error { margin: 0; color: var(--cm-red-tx); font-size: 13px; }
 
 /* -- Projection board ----------------------------------------------------- */
 /* Dark in both themes on purpose: this is a wall at the back of a room, not a page. */

@@ -89,15 +89,25 @@ class WordCloudVoterTest extends VoterTestCase
         $this->assertDenied($voter, null, $this->cloud(), WordCloudVoter::SUBMIT);
     }
 
-    /** A cloud with no class attached decides nothing rather than defaulting to open. */
-    public function testACloudWithoutAProgramIsRefusedOutright(): void
+    /** A cloud of no class is its author's alone - staff and other teachers included out. */
+    public function testACloudWithoutAProgramIsPilotedByItsAuthorAlone(): void
     {
-        $voter = $this->voter(isProgramTeacher: true, inAudience: true, open: true);
-        $cloud = $this->createStub(WordCloud::class);
-        $cloud->method('getProgram')->willReturn(null);
-        $cloud->method('window')->willReturn(new WordCloudWindow(null, null));
+        $voter = $this->voter(isProgramTeacher: true, inAudience: false, open: true);
+        $author = $this->user(['ROLE_TEACHER'], 'author');
+        $cloud = (new WordCloud())->setTeacher($author);
 
-        $this->assertDenied($voter, $this->user(['ROLE_TEACHER'], 'teacher'), $cloud, WordCloudVoter::PILOT);
+        $this->assertGranted($voter, $author, $cloud, WordCloudVoter::PILOT);
+        $this->assertDenied($voter, $this->user(['ROLE_TEACHER'], 'colleague'), $cloud, WordCloudVoter::PILOT);
+        $this->assertDenied($voter, $this->user(['ROLE_ADMIN'], 'admin'), $cloud, WordCloudVoter::PILOT);
+    }
+
+    /** A public cloud takes a word from any account while it is open - its class or not. */
+    public function testAnyAccountWritesIntoAnOpenPublicCloud(): void
+    {
+        $outsider = $this->user(['ROLE_STUDENT'], 'outsider');
+
+        $this->assertGranted($this->voter(isProgramTeacher: false, inAudience: false, open: true), $outsider, (new WordCloud())->setTeacher($this->user(['ROLE_TEACHER'], 'author')), WordCloudVoter::SUBMIT);
+        $this->assertDenied($this->voter(isProgramTeacher: false, inAudience: false, open: false), $outsider, (new WordCloud())->setTeacher($this->user(['ROLE_TEACHER'], 'author')), WordCloudVoter::SUBMIT);
     }
 
     public function testItStaysOutOfOtherDecisions(): void

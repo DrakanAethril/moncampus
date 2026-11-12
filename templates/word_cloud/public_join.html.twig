@@ -1,0 +1,20 @@
+{% extends 'layout/public.html.twig' %}
+
+{# /cloud without its code (App\Controller\WordCloud\PublicController::join()): the projected QR
+   screen shows « …/cloud » with the code under it, for whoever cannot scan. #}
+{% block public_title %}{{ 'wordCloudJoinTitle'|trans }}{% endblock %}
+{% block public_home_url %}{{ path('app_word_cloud_public_join') }}{% endblock %}
+
+{% block public_main %}
+    <div class="cm-wc-pubpage">
+        <form class="cm-wc-card cm-wc-card--pad cm-wc-pubjoin" method="get" action="{{ path('app_word_cloud_public_join') }}" data-turbo="false">
+            <span class="cm-wc-label">{{ 'wordCloudNavLabel'|trans }}</span>
+            <h1 class="cm-wc-pubpage__question">{{ 'wordCloudJoinTitle'|trans }}</h1>
+            <label for="wc-code" class="cm-wc-label">{{ 'wordCloudJoinCodeLabel'|trans }}</label>
+            <input id="wc-code" name="code" class="cm-wc-preview__box cm-wc-pubjoin__code" value="{{ typed }}" required autofocus
+                   autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="40">
+            {% if error %}<p class="cm-wc-pubjoin__error" role="alert">{{ error|trans }}</p>{% endif %}
+            <button type="submit" class="cm-wc-btn cm-wc-btn--lead">{{ 'wordCloudJoinAction'|trans }}</button>
+        </form>
+    </div>
+{% endblock %}

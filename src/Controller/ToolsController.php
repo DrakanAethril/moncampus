@@ -51,11 +51,14 @@ class ToolsController extends AbstractController
         return $this->renderPicker($repository, 'app_program_tools_group_creation', 'programToolsGroupCreationNavLabel');
     }
 
+    // The word cloud no longer asks for a class first (2026-11-12): a cloud belongs to a class or to
+    // none, and its list filters by class (App\Controller\WordCloud\ListController). The old
+    // address is kept for bookmarks.
     #[RequiresFeature(Feature::WordCloud)]
     #[Route(path: '/tools/word-cloud', name: 'app_tools_word_cloud', methods: ['GET'])]
-    public function wordCloud(ProgramRepository $repository): Response
+    public function wordCloud(): Response
     {
-        return $this->renderPicker($repository, 'app_program_word_clouds', 'wordCloudNavLabel');
+        return $this->redirectToRoute('app_word_clouds');
     }
 
     // The live contest no longer asks for a class first (2026-11-07): a contest belongs to a class

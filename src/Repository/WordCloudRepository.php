@@ -41,6 +41,42 @@ class WordCloudRepository extends ServiceEntityRepository
     }
 
     /**
+     * Outils › Nuage de mots: the clouds of the classes one runs, and one's own clouds of no class -
+     * narrowed to one class, or to the clouds of no class, by the list's filter.
+     *
+     * @param list<Program> $programs the classes this person may pilot clouds in
+     *
+     * @return list<WordCloud>
+     */
+    public function findForPilot(User $user, array $programs, ?Program $only = null, bool $classless = false): array
+    {
+        $builder = $this->createQueryBuilder('c')
+            ->leftJoin('c.program', 'p')->addSelect('p')
+            ->orderBy('c.createdAt', 'DESC')
+            ->addOrderBy('c.id', 'DESC');
+
+        if ($classless) {
+            $builder->andWhere('c.program IS NULL')->andWhere('c.teacher = :user')->setParameter('user', $user);
+        } elseif (null !== $only) {
+            $builder->andWhere('c.program = :program')->setParameter('program', $only);
+        } elseif ([] === $programs) {
+            $builder->andWhere('c.program IS NULL')->andWhere('c.teacher = :user')->setParameter('user', $user);
+        } else {
+            $builder->andWhere('(c.program IS NULL AND c.teacher = :user) OR c.program IN (:programs)')
+                ->setParameter('user', $user)
+                ->setParameter('programs', $programs);
+        }
+
+        return $builder->getQuery()->getResult();
+    }
+
+    /** A public cloud by the code of its address (/cloud/{code}), whatever the case typed. */
+    public function findOneByPublicCode(string $code): ?WordCloud
+    {
+        return $this->findOneBy(['publicCode' => strtoupper(trim($code))]);
+    }
+
+    /**
      * The clouds taking words right now in any of these formations.
      *
      * The `Ouvert` rule of App\Service\WordCloud\WordCloudSchedule, written once more in DQL - and

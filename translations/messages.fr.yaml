@@ -8770,7 +8770,7 @@ checklistSheetPdfExportFailedFlashMessage: "La liste pour pointage n'a pas pu ê
 featureWordCloudLabel: 'Nuage de mots'
 wordCloudNavLabel: 'Nuage de mots'
 wordCloudNewAction: 'Lancer un nouveau nuage'
-wordCloudNewPageHeading: 'Nouveau nuage de mots — %program%'
+wordCloudNewPageHeading: 'Nouveau nuage de mots'
 wordCloudEditPageHeading: 'Modifier le nuage de mots'
 wordCloudNewBreadcrumbLabel: 'Nouveau nuage'
 wordCloudNoneYetMessage: "Aucun nuage de mots pour cette classe pour le moment."
@@ -8782,7 +8782,7 @@ wordCloudColumnStatusLabel: 'Statut'
 wordCloudColumnWordLabel: 'Mot'
 wordCloudColumnCitationsLabel: 'Citations'
 wordCloudColumnWeightLabel: 'Poids'
-wordCloudColumnStudentLabel: 'Étudiant'
+wordCloudColumnStudentLabel: 'Personne'
 wordCloudColumnWordsLabel: 'Mots'
 wordCloudColumnProposalsLabel: 'Propositions'
 wordCloudColumnLastSentLabel: 'Dernier envoi'
@@ -8858,7 +8858,7 @@ wordCloudStatSubmissionsLabel: 'Mots soumis'
 wordCloudStatDistinctLabel: 'Mots distincts'
 wordCloudStatMostCitedLabel: 'Mot le plus cité'
 wordCloudByWordTabLabel: 'Par mot'
-wordCloudByStudentTabLabel: 'Par étudiant'
+wordCloudByStudentTabLabel: 'Par personne'
 wordCloudSearchPlaceholder: 'Rechercher…'
 wordCloudParticipatedLabel: 'A participé'
 wordCloudNoAnswerLabel: 'Sans réponse'
@@ -8884,6 +8884,25 @@ wordCloudRefusalTooLongMessage: '30 caractères au maximum.'
 wordCloudRefusalTooManyWordsMessage: 'Ce nuage attend moins de mots que cela.'
 wordCloudRefusalAlreadyProposedMessage: 'Vous avez déjà proposé ce mot.'
 wordCloudRefusalQuotaReachedMessage: 'Vous avez envoyé tous vos mots.'
+wordCloudNoProgramOption: "Aucune classe (nuage public)"
+wordCloudNoProgramLabel: "Sans classe"
+wordCloudAllClassesOption: "Toutes les classes"
+wordCloudPublicFieldLabel: "Ouvert à tous, sans compte (QR code)"
+wordCloudPublicFieldHint: "Tout le monde répond à l'adresse du nuage ou en scannant son QR code, avec ou sans compte. Un nuage sans classe est toujours ouvert à tous ; la modération reste conseillée."
+wordCloudPublicBadge: "Public"
+wordCloudPublicAccessLabel: "Accès public"
+wordCloudProjectQrAction: "Projeter le QR code"
+wordCloudQrCodeLabel: "QR code"
+wordCloudShowCloudAction: "Voir le nuage"
+wordCloudGuestLabel: "Invité"
+wordCloudGuestsRowLabel: "{1} Sans compte : 1 personne|]1,Inf[ Sans compte : %count% personnes"
+wordCloudJoinTitle: "Rejoindre un nuage de mots"
+wordCloudJoinCodeLabel: "Code du nuage"
+wordCloudJoinAction: "Rejoindre"
+wordCloudJoinEmpty: "Saisissez le code affiché sous le QR code."
+wordCloudJoinUnknown: "Aucun nuage ouvert à tous ne porte ce code."
+wordCloudPublicAnonymousNote: "Vous répondez sans compte : votre nom n'est pas demandé."
+wordCloudPublicTooManyFlashMessage: "Trop de mots envoyés depuis ce réseau. Réessayez dans quelques minutes."
 homeStudentBannerWordCloudTitle: 'Un nuage de mots est ouvert'
 homeStudentBannerWordCloudAction: 'Répondre'
 

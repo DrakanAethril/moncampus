@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+
+{# A public cloud's QR code, projected (design/validated/word-cloud-public.md): the question, the
+   code a phone scans, the short address and the code for whoever cannot scan, and the participation
+   moving as people answer. The board's own dark wall and controls: « Voir le nuage » goes to the
+   cloud, the exit back to the pilot screen. #}
+{% block title %}{{ cloud.name }}{% endblock %}
+
+{% block body %}
+<div class="cm-wc-board cm-wc-qrwall"
+     data-controller="word-cloud-live word-cloud-projection"
+     data-word-cloud-live-mercure-url-value="{{ mercurePublicUrl }}"
+     data-word-cloud-live-topic-value="{{ topic }}"
+     data-word-cloud-live-meta-template-value="{{ 'wordCloudMetaLabel'|trans({'%words%': '%words%', '%submissions%': '%submissions%', '%participants%': '%participants%'}) }}">
+
+    <div class="cm-wc-board__controls">
+        <a href="{{ path('app_word_cloud_projection', {cloudId: cloud.id}) }}">{{ 'wordCloudShowCloudAction'|trans }}</a>
+        <a class="cm-wc-board__exit" href="{{ path('app_word_cloud_pilot', {cloudId: cloud.id}) }}"
+           data-action="word-cloud-projection#leave">⛶ {{ 'wordCloudExitFullscreenAction'|trans }}</a>
+    </div>
+
+    <span class="cm-wc-board__kicker">{% if cloud.program %}{{ cloud.program.displayShortName }} · {% endif %}{{ cloud.name }}</span>
+    <div class="cm-wc-board__question">{{ cloud.question }}</div>
+    <div class="cm-wc-qrwall__qr" role="img" aria-label="{{ 'wordCloudQrCodeLabel'|trans }}">{{ qrSvg|raw }}</div>
+    <span class="cm-wc-qrwall__join">{{ joinLabel }}</span>
+    <span class="cm-wc-qrwall__code">{{ cloud.publicCode }}</span>
+    <span class="cm-wc-qrwall__meta">
+        {% if status.value != 'open' %}{{ status.labelKey|trans }} · {% endif %}
+        <span data-word-cloud-live-target="meta">{{ 'wordCloudMetaLabel'|trans({
+            '%words%': board.distinctWords,
+            '%submissions%': board.submissionCount,
+            '%participants%': board.participantCount,
+        }) }}</span>
+    </span>
+</div>
+{% endblock %}

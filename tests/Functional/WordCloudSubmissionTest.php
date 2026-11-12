@@ -119,7 +119,7 @@ class WordCloudSubmissionTest extends FunctionalTestCase
         $cloud = $this->openCloud();
 
         $this->client->loginUser($this->teacher);
-        $this->client->request('GET', '/programs/'.$cloud->getProgram()->getId().'/tools/word-clouds/'.$cloud->getId());
+        $this->client->request('GET', '/word-clouds/'.$cloud->getId());
 
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
@@ -135,7 +135,7 @@ class WordCloudSubmissionTest extends FunctionalTestCase
     public function testThePilotScreenStillRendersWhenTheLiveFeedCannotBeSubscribedTo(): void
     {
         $cloud = $this->openCloud();
-        $path = '/programs/'.$cloud->getProgram()->getId().'/tools/word-clouds/'.$cloud->getId();
+        $path = '/word-clouds/'.$cloud->getId();
 
         $this->client->loginUser($this->teacher);
         // A hub on another domain: the cookie cannot be scoped, the board simply stays static.
@@ -151,7 +151,7 @@ class WordCloudSubmissionTest extends FunctionalTestCase
         $cloud = $this->openCloud();
 
         $this->client->loginUser($this->student);
-        $this->client->request('GET', '/programs/'.$cloud->getProgram()->getId().'/tools/word-clouds/'.$cloud->getId());
+        $this->client->request('GET', '/word-clouds/'.$cloud->getId());
 
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
     }
@@ -171,8 +171,8 @@ class WordCloudSubmissionTest extends FunctionalTestCase
         $this->submit($cloud, ['pare-feu']);
 
         $this->client->loginUser($this->teacher);
-        $this->client->request('GET', '/programs/'.$cloud->getProgram()->getId().'/tools/word-clouds/'.$cloud->getId());
-        $this->client->request('POST', '/programs/'.$cloud->getProgram()->getId().'/tools/word-clouds/'.$cloud->getId().'/remind', [
+        $this->client->request('GET', '/word-clouds/'.$cloud->getId());
+        $this->client->request('POST', '/word-clouds/'.$cloud->getId().'/remind', [
             '_token' => $this->csrfToken('word_cloud_pilot'),
         ]);
 
@@ -191,8 +191,8 @@ class WordCloudSubmissionTest extends FunctionalTestCase
         $this->submit($cloud, ['pare-feu']);
 
         $this->client->loginUser($this->teacher);
-        $this->client->request('GET', '/programs/'.$cloud->getProgram()->getId().'/tools/word-clouds/'.$cloud->getId());
-        $this->client->request('POST', '/programs/'.$cloud->getProgram()->getId().'/tools/word-clouds/'.$cloud->getId().'/remind', [
+        $this->client->request('GET', '/word-clouds/'.$cloud->getId());
+        $this->client->request('POST', '/word-clouds/'.$cloud->getId().'/remind', [
             '_token' => $this->csrfToken('word_cloud_pilot'),
         ]);
 

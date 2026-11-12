@@ -1,16 +1,16 @@
-{# The tool's trail, shared by its seven screens: Accueil › <classe> › Outils › Nuage de mots, then
-   the cloud's own name on the screens that are about one cloud.
+{# The tool's trail, shared by its screens: Accueil › Nuage de mots, then the cloud's own name on
+   the screens that are about one cloud.
 
-   Built here once and extended with |merge by the callers rather than written out on each screen -
-   the same pattern as templates/audio_recording/_breadcrumb.html.twig. Every segment stays a real
-   <a href>, the last one carrying .current, per the application-wide convention. #}
+   Since 2026-11-12 a cloud belongs to a class or to none (design/validated/word-cloud-public.md), and
+   the list is no longer reached through a class: the class is one of its filters, so the « Nuage
+   de mots » segment leads back to the list filtered on the cloud's class when it has one. Built here
+   once and extended with |merge by the callers, every segment a real <a href>. #}
+{% set listParams = cloud is defined and cloud is not null and cloud.program ? {class: cloud.program.id} : {} %}
 {% set segments = [
-    {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
-    {label: 'programToolsNavLabel'|trans, url: path('app_program_word_clouds', {id: program.id})},
-    {label: 'wordCloudNavLabel'|trans, url: path('app_program_word_clouds', {id: program.id})},
+    {label: 'wordCloudNavLabel'|trans, url: path('app_word_clouds', listParams)},
 ] %}
 {% if cloud is defined and cloud is not null and cloud.id %}
-    {% set segments = segments|merge([{label: cloud.name, url: path('app_program_word_cloud_pilot', {id: program.id, cloudId: cloud.id})}]) %}
+    {% set segments = segments|merge([{label: cloud.name, url: path('app_word_cloud_pilot', {cloudId: cloud.id})}]) %}
 {% elseif newLabel is defined %}
     {% set segments = segments|merge([{label: newLabel, url: app.request.requestUri}]) %}
 {% endif %}

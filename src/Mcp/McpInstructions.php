@@ -63,6 +63,10 @@ final class McpInstructions
         - Un parcours (`path_*`) enchaîne des cours de l'enseignant ; un quiz de validation se pose là où il le demande, jamais par défaut. Un parcours ne se suit qu'avec un compte. Un cours « réservé aux parcours » (`course_publish` avec `visibility: "path_only"`) n'apparaît pas sur la page publique.
         - Le suivi des personnes qui suivent un parcours n'est accessible qu'à l'écran : ne prétends pas le connaître.
 
+        Nuages de mots (si les outils `word_cloud_*` sont proposés) :
+        - `word_cloud_list` donne les nuages que l'enseignant pilote ; `word_cloud_get` en lit les résultats : les mots retenus, regroupés comme à l'écran, avec leurs occurrences, et la participation. Les mots en attente de modération et les mots refusés sont comptés, jamais listés.
+        - Aucun nom ne passe par ces outils : qui a écrit quoi se lit dans Formatool, sur l'écran de suivi du nuage. Ne prétends pas le savoir. Un nuage public a aussi reçu des réponses de personnes sans compte.
+
         Serious games (si les outils `serious_game_template_*` sont proposés — administrateurs seulement) :
         - Les questions d'un serious game ne sont jamais écrites une à une : un gabarit par unité les génère, avec une graine par élève. Avant d'en modifier un, lis-le avec `serious_game_template_get` et appelle `format_guide` avec « gabarit_serious_game ».
         - `serious_game_template_propose` crée un brouillon et le passe au banc : il ne sert aucun élève. Corrige ce que le banc signale et propose une nouvelle version ; ne valide (`serious_game_template_validate`) qu'avec l'accord de l'administrateur et un banc au vert.

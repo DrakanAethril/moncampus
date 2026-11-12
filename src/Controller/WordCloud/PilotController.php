@@ -9,14 +9,13 @@ use App\Entity\WordCloudSubmission;
 use App\Enum\Feature;
 use App\Enum\WordCloudModerationState;
 use App\Enum\WordCloudScale;
-use App\Repository\ProgramRepository;
 use App\Repository\WordCloudRepository;
 use App\Repository\WordCloudSubmissionRepository;
-use App\Security\StructureAccessChecker;
 use App\Service\WordCloud\WordCloudAudience;
 use App\Service\WordCloud\WordCloudBoard;
 use App\Service\WordCloud\WordCloudFollowUp;
 use App\Service\WordCloud\WordCloudLiveNotifier;
+use App\Service\WordCloud\WordCloudPublicAddress;
 use App\Service\WordCloud\WordCloudReminder;
 use App\Service\WordCloud\WordCloudSchedule;
 use App\Service\WordCloud\WordCloudWeighting;
@@ -51,25 +50,23 @@ class PilotController extends AbstractController
     private const int EXTENSION_MINUTES = 5;
 
     public function __construct(
-        private readonly ProgramRepository $programs,
         private readonly WordCloudRepository $clouds,
         private readonly WordCloudSubmissionRepository $submissions,
-        private readonly StructureAccessChecker $accessChecker,
         private readonly WordCloudBoard $board,
         private readonly WordCloudWeighting $weighting,
         private readonly WordCloudSchedule $schedule,
         private readonly WordCloudAudience $audience,
         private readonly WordCloudFollowUp $followUp,
         private readonly WordCloudLiveNotifier $liveNotifier,
+        private readonly WordCloudPublicAddress $publicAddress,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}', name: 'app_program_word_cloud_pilot', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['GET'])]
-    public function pilot(int $id, int $cloudId, Request $request, HubInterface $hub, Authorization $mercureAuthorization): Response
+    #[Route(path: '/word-clouds/{cloudId}', name: 'app_word_cloud_pilot', requirements: ['cloudId' => '\d+'], methods: ['GET'])]
+    public function pilot(int $cloudId, Request $request, HubInterface $hub, Authorization $mercureAuthorization): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
 
         $now = new \DateTimeImmutable();
         $rows = $this->submissions->findForCloud($cloud);
@@ -79,7 +76,7 @@ class PilotController extends AbstractController
         $live = $this->grantLiveSubscription($request, $mercureAuthorization, $this->liveNotifier, $cloud);
 
         return $this->render('word_cloud/pilot.html.twig', [
-            'program' => $program,
+            'program' => $cloud->getProgram(),
             'cloud' => $cloud,
             'board' => $board,
             'status' => $this->schedule->status($cloud->window(), $now),
@@ -96,6 +93,11 @@ class PilotController extends AbstractController
             // without mounting the live controller, rather than opening a stream that is refused.
             'mercurePublicUrl' => $live ? $hub->getPublicUrl() : '',
             'topic' => $live ? $this->liveNotifier->topic($cloud) : '',
+            // A public cloud's door: its address, its code and a small QR code on the screen the
+            // teacher holds; the projected one is ProjectionController::qr().
+            'publicUrl' => $this->publicAddress->url($cloud),
+            'publicQr' => $this->publicAddress->qrSvg($cloud, 140),
+            'joinLabel' => $this->publicAddress->joinLabel(),
         ]);
     }
 
@@ -105,25 +107,23 @@ class PilotController extends AbstractController
      * Clearing `closedAt` is what makes « Ouvrir » work on something already closed - otherwise the
      * hand-closed stamp would keep winning and the button would silently do nothing.
      */
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/open', name: 'app_program_word_cloud_open', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['POST'])]
-    public function open(int $id, int $cloudId, Request $request): Response
+    #[Route(path: '/word-clouds/{cloudId}/open', name: 'app_word_cloud_open', requirements: ['cloudId' => '\d+'], methods: ['POST'])]
+    public function open(int $cloudId, Request $request): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
         $this->assertCsrf(self::CSRF_TOKEN_ID, $request->request->getString('_token'));
 
         $cloud->setOpenedAt(new \DateTimeImmutable());
         $cloud->setClosedAt(null);
         $this->entityManager->flush();
 
-        return $this->redirectToRoute('app_program_word_cloud_pilot', ['id' => $program->getId(), 'cloudId' => $cloud->getId()]);
+        return $this->redirectToRoute('app_word_cloud_pilot', ['cloudId' => $cloud->getId()]);
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/extend', name: 'app_program_word_cloud_extend', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['POST'])]
-    public function extend(int $id, int $cloudId, Request $request): Response
+    #[Route(path: '/word-clouds/{cloudId}/extend', name: 'app_word_cloud_extend', requirements: ['cloudId' => '\d+'], methods: ['POST'])]
+    public function extend(int $cloudId, Request $request): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
         $this->assertCsrf(self::CSRF_TOKEN_ID, $request->request->getString('_token'));
 
         $extended = $this->schedule->extendedClosingTime($cloud->window(), new \DateTimeImmutable(), self::EXTENSION_MINUTES);
@@ -135,14 +135,13 @@ class PilotController extends AbstractController
             $this->entityManager->flush();
         }
 
-        return $this->redirectToRoute('app_program_word_cloud_pilot', ['id' => $program->getId(), 'cloudId' => $cloud->getId()]);
+        return $this->redirectToRoute('app_word_cloud_pilot', ['cloudId' => $cloud->getId()]);
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/close', name: 'app_program_word_cloud_close', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['POST'])]
-    public function close(int $id, int $cloudId, Request $request): Response
+    #[Route(path: '/word-clouds/{cloudId}/close', name: 'app_word_cloud_close', requirements: ['cloudId' => '\d+'], methods: ['POST'])]
+    public function close(int $cloudId, Request $request): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
         $this->assertCsrf(self::CSRF_TOKEN_ID, $request->request->getString('_token'));
 
         if (null === $cloud->getClosedAt()) {
@@ -150,18 +149,17 @@ class PilotController extends AbstractController
             $this->entityManager->flush();
         }
 
-        return $this->redirectToRoute('app_program_word_cloud_pilot', ['id' => $program->getId(), 'cloudId' => $cloud->getId()]);
+        return $this->redirectToRoute('app_word_cloud_pilot', ['cloudId' => $cloud->getId()]);
     }
 
     /**
      * One word validated or refused. Answers the new board rather than a bare ok, so the queue and
      * the cloud beside it move together.
      */
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/moderate/{submissionId}', name: 'app_program_word_cloud_moderate', requirements: ['id' => '\d+', 'cloudId' => '\d+', 'submissionId' => '\d+'], methods: ['POST'])]
-    public function moderate(int $id, int $cloudId, int $submissionId, Request $request): JsonResponse
+    #[Route(path: '/word-clouds/{cloudId}/moderate/{submissionId}', name: 'app_word_cloud_moderate', requirements: ['cloudId' => '\d+', 'submissionId' => '\d+'], methods: ['POST'])]
+    public function moderate(int $cloudId, int $submissionId, Request $request): JsonResponse
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
         $this->assertCsrf(self::CSRF_TOKEN_ID, $request->headers->get('X-CSRF-Token'));
 
         $submission = $this->submissions->find($submissionId);
@@ -182,11 +180,10 @@ class PilotController extends AbstractController
         return $this->json($this->liveNotifier->snapshot($cloud));
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/remind', name: 'app_program_word_cloud_remind', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['POST'])]
-    public function remind(int $id, int $cloudId, Request $request, WordCloudReminder $reminder): Response
+    #[Route(path: '/word-clouds/{cloudId}/remind', name: 'app_word_cloud_remind', requirements: ['cloudId' => '\d+'], methods: ['POST'])]
+    public function remind(int $cloudId, Request $request, WordCloudReminder $reminder): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
         $this->assertCsrf(self::CSRF_TOKEN_ID, $request->request->getString('_token'));
 
         $silent = $this->followUp->silentStudents(
@@ -205,11 +202,11 @@ class PilotController extends AbstractController
         // posts from the follow-up screen and must come back to it, and an open redirect is not
         // the price of that.
         $back = match ($request->request->getString('back')) {
-            'follow-up' => 'app_program_word_cloud_follow_up',
-            'students' => 'app_program_word_cloud_follow_up_students',
-            default => 'app_program_word_cloud_pilot',
+            'follow-up' => 'app_word_cloud_follow_up',
+            'students' => 'app_word_cloud_follow_up_students',
+            default => 'app_word_cloud_pilot',
         };
 
-        return $this->redirectToRoute($back, ['id' => $program->getId(), 'cloudId' => $cloud->getId()]);
+        return $this->redirectToRoute($back, ['cloudId' => $cloud->getId()]);
     }
 }

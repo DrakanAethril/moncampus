@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace App\Controller\WordCloud;
 
 use App\Attribute\RequiresFeature;
-use App\Entity\Program;
 use App\Entity\WordCloud;
 use App\Enum\Feature;
-use App\Repository\ProgramRepository;
 use App\Repository\WordCloudRepository;
 use App\Repository\WordCloudSubmissionRepository;
-use App\Security\StructureAccessChecker;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
 use App\Service\QueryValue;
@@ -46,10 +43,8 @@ class FollowUpController extends AbstractController
     use WordCloudControllerTrait;
 
     public function __construct(
-        private readonly ProgramRepository $programs,
         private readonly WordCloudRepository $clouds,
         private readonly WordCloudSubmissionRepository $submissions,
-        private readonly StructureAccessChecker $accessChecker,
         private readonly WordCloudBoard $board,
         private readonly WordCloudFollowUp $followUp,
         private readonly WordCloudAudience $audience,
@@ -57,45 +52,44 @@ class FollowUpController extends AbstractController
     ) {
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/follow-up', name: 'app_program_word_cloud_follow_up', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['GET'])]
-    public function byWord(int $id, int $cloudId, Request $request): Response
+    #[Route(path: '/word-clouds/{cloudId}/follow-up', name: 'app_word_cloud_follow_up', requirements: ['cloudId' => '\d+'], methods: ['GET'])]
+    public function byWord(int $cloudId, Request $request): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
 
         // Read through QueryValue: a search box that has just been emptied submits `?q=`, and
         // InputBag would answer a 400 to it.
         $query = QueryValue::trimmed($request, 'q');
         $rows = $this->submissions->findForCloud($cloud);
 
-        return $this->render('word_cloud/follow_up_words.html.twig', $this->shared($program, $cloud, $rows) + [
+        return $this->render('word_cloud/follow_up_words.html.twig', $this->shared($cloud, $rows) + [
             'query' => $query,
             'wordRows' => $this->followUp->byWord($cloud, $rows, $query),
         ]);
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/follow-up/students', name: 'app_program_word_cloud_follow_up_students', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['GET'])]
-    public function byStudent(int $id, int $cloudId, Request $request): Response
+    #[Route(path: '/word-clouds/{cloudId}/follow-up/students', name: 'app_word_cloud_follow_up_students', requirements: ['cloudId' => '\d+'], methods: ['GET'])]
+    public function byStudent(int $cloudId, Request $request): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
 
         $query = QueryValue::trimmed($request, 'q');
         $rows = $this->submissions->findForCloud($cloud);
         $roster = $this->audience->students($cloud);
 
-        return $this->render('word_cloud/follow_up_students.html.twig', $this->shared($program, $cloud, $rows) + [
+        return $this->render('word_cloud/follow_up_students.html.twig', $this->shared($cloud, $rows) + [
             'query' => $query,
             'studentRows' => $this->followUp->byStudent($cloud, $roster, $rows, $query),
+            // The visitors without an account of a public cloud, counted together on one line.
+            'guests' => $this->followUp->guestSummary($rows, $query),
             'silentCount' => \count($this->followUp->silentStudents($roster, $rows)),
         ]);
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/export.csv', name: 'app_program_word_cloud_export_csv', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['GET'])]
-    public function exportCsv(int $id, int $cloudId, WordCloudCsvExporter $exporter): Response
+    #[Route(path: '/word-clouds/{cloudId}/export.csv', name: 'app_word_cloud_export_csv', requirements: ['cloudId' => '\d+'], methods: ['GET'])]
+    public function exportCsv(int $cloudId, WordCloudCsvExporter $exporter): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
 
         $csv = $exporter->export(
             $cloud,
@@ -114,21 +108,21 @@ class FollowUpController extends AbstractController
         return $response;
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/export.pdf', name: 'app_program_word_cloud_export_pdf', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['GET'])]
-    public function exportPdf(int $id, int $cloudId, GotenbergClient $gotenberg): Response
+    #[Route(path: '/word-clouds/{cloudId}/export.pdf', name: 'app_word_cloud_export_pdf', requirements: ['cloudId' => '\d+'], methods: ['GET'])]
+    public function exportPdf(int $cloudId, GotenbergClient $gotenberg): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
 
         $rows = $this->submissions->findForCloud($cloud);
         $roster = $this->audience->students($cloud);
 
         $html = $this->renderView('word_cloud/export_pdf.html.twig', [
-            'program' => $program,
+            'program' => $cloud->getProgram(),
             'cloud' => $cloud,
             'board' => $this->board->buildFrom($cloud, $rows),
             'wordRows' => $this->followUp->byWord($cloud, $rows),
             'studentRows' => $this->followUp->byStudent($cloud, $roster, $rows),
+            'guests' => $this->followUp->guestSummary($rows),
             'rosterSize' => \count($roster),
             'date' => new \DateTimeImmutable(),
         ]);
@@ -138,7 +132,7 @@ class FollowUpController extends AbstractController
         } catch (GotenbergUnavailableException) {
             $this->addFlash('error', 'wordCloudPdfFailedFlashMessage');
 
-            return $this->redirectToRoute('app_program_word_cloud_follow_up', ['id' => $program->getId(), 'cloudId' => $cloud->getId()]);
+            return $this->redirectToRoute('app_word_cloud_follow_up', ['cloudId' => $cloud->getId()]);
         }
 
         $filename = (new AsciiSlugger())->slug((string) $cloud->getName())->lower()->toString();
@@ -157,10 +151,10 @@ class FollowUpController extends AbstractController
      *
      * @return array<string, mixed>
      */
-    private function shared(Program $program, WordCloud $cloud, array $rows): array
+    private function shared(WordCloud $cloud, array $rows): array
     {
         return [
-            'program' => $program,
+            'program' => $cloud->getProgram(),
             'cloud' => $cloud,
             'board' => $this->board->buildFrom($cloud, $rows),
             'status' => $this->schedule->status($cloud->window(), new \DateTimeImmutable()),

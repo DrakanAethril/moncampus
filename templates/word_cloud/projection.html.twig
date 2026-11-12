@@ -4,8 +4,9 @@
    is no navbar, no breadcrumb and no chrome of any kind on a wall at the back of a classroom -
    everything on it is either the question or an answer to it.
 
-   No access code and no QR code, deliberately: the design took both out, the students reach the
-   cloud from their own space and the class is already known. #}
+   A class cloud carries no access code: the students reach it from their own space. A public one
+   (design/validated/word-cloud-public.md) has its QR code on a screen of its own, one control away
+   (word_cloud/qr.html.twig) - the cloud stays the whole wall. #}
 {% block title %}{{ cloud.name }}{% endblock %}
 
 {% block body %}
@@ -19,17 +20,20 @@
        The mode stays switchable while projecting: a teacher who sees the room reading the wrong
        thing should not have to close the board to change it. #}
     <div class="cm-wc-board__controls">
-        <a href="{{ path('app_program_word_cloud_projection', {id: program.id, cloudId: cloud.id, mode: 'cloud_only'}) }}"
+        <a href="{{ path('app_word_cloud_projection', {cloudId: cloud.id, mode: 'cloud_only'}) }}"
            class="{{ mode.value == 'cloud_only' ? 'is-on' }}">{{ 'wordCloudProjectionCloudOnlyLabel'|trans }}</a>
-        <a href="{{ path('app_program_word_cloud_projection', {id: program.id, cloudId: cloud.id, mode: 'with_latest'}) }}"
+        <a href="{{ path('app_word_cloud_projection', {cloudId: cloud.id, mode: 'with_latest'}) }}"
            class="{{ mode.value == 'with_latest' ? 'is-on' }}">{{ 'wordCloudProjectionWithLatestLabel'|trans }}</a>
-        <a class="cm-wc-board__exit" href="{{ path('app_program_word_cloud_pilot', {id: program.id, cloudId: cloud.id}) }}"
+        {% if publicUrl %}
+            <a href="{{ path('app_word_cloud_qr', {cloudId: cloud.id}) }}">{{ 'wordCloudQrCodeLabel'|trans }}</a>
+        {% endif %}
+        <a class="cm-wc-board__exit" href="{{ path('app_word_cloud_pilot', {cloudId: cloud.id}) }}"
            data-action="word-cloud-projection#leave">⛶ {{ 'wordCloudExitFullscreenAction'|trans }}</a>
     </div>
 
     <div class="cm-wc-board__left">
         <div class="cm-wc-board__topline">
-            <span class="cm-wc-board__kicker">{{ program.displayShortName }} · {{ cloud.name }}</span>
+            <span class="cm-wc-board__kicker">{% if program %}{{ program.displayShortName }} · {% endif %}{{ cloud.name }}</span>
             <span class="cm-wc-board__meta" data-word-cloud-live-target="meta">{{ 'wordCloudMetaLabel'|trans({
                 '%words%': board.distinctWords,
                 '%submissions%': board.submissionCount,
