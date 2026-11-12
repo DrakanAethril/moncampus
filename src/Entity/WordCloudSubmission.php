@@ -10,7 +10,9 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * One word, from one student, at one moment.
+ * One word, from one person, at one moment - an account (`$student`, whatever its role: a public
+ * cloud is answered by any account as itself) or a visitor without one, known only by the hash of
+ * the token its browser keeps for this cloud (`$guestTokenHash`). Exactly one of the two is set.
  *
  * **This table is the whole of the tool's data.** The cloud on the board, the two follow-up views,
  * the participation count and the CSV are four readings of these rows and nothing else - « les deux
@@ -27,6 +29,8 @@ use Doctrine\ORM\Mapping as ORM;
 // person is the same person saying the same thing either way. Enforced in the database rather than
 // only in WordCloudSubmissionPolicy, because two tabs racing is exactly how a duplicate gets in.
 #[ORM\UniqueConstraint(name: 'uniq_word_cloud_student_word', columns: ['word_cloud_id', 'student_id', 'normalized_text'])]
+// The same rule for a guest, on its token: a NULL student_id never collides in the index above.
+#[ORM\UniqueConstraint(name: 'uniq_word_cloud_guest_word', columns: ['word_cloud_id', 'guest_token_hash', 'normalized_text'])]
 // The pilot screen and both projections read a cloud's words in arrival order at every refresh.
 #[ORM\Index(name: 'idx_word_cloud_submission_cloud_time', columns: ['word_cloud_id', 'submitted_at'])]
 class WordCloudSubmission
@@ -41,8 +45,12 @@ class WordCloudSubmission
     private ?WordCloud $wordCloud = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'student_id', nullable: false)]
+    #[ORM\JoinColumn(name: 'student_id', nullable: true)]
     private ?User $student = null;
+
+    // SHA-256 of a guest's token (App\Service\WordCloud\WordCloudGuestToken), never the token.
+    #[ORM\Column(name: 'guest_token_hash', length: 64, nullable: true)]
+    private ?string $guestTokenHash = null;
 
     // As typed, trimmed. This is what the board shows back - WordCloudAggregator picks the most
     // frequent spelling of a group, so the class reads its own words rather than a machine's.
@@ -60,10 +68,15 @@ class WordCloudSubmission
     #[ORM\Column(name: 'moderation_state', length: 20, enumType: WordCloudModerationState::class)]
     private WordCloudModerationState $moderationState = WordCloudModerationState::Approved;
 
-    public function __construct(WordCloud $wordCloud, User $student, string $text, string $normalizedText, WordCloudModerationState $moderationState)
+    public function __construct(WordCloud $wordCloud, ?User $student, string $text, string $normalizedText, WordCloudModerationState $moderationState, ?string $guestTokenHash = null)
     {
+        if ((null === $student) === (null === $guestTokenHash)) {
+            throw new \InvalidArgumentException('A word comes from an account or from a guest, never both nor neither.');
+        }
+
         $this->wordCloud = $wordCloud;
         $this->student = $student;
+        $this->guestTokenHash = $guestTokenHash;
         $this->text = $text;
         $this->normalizedText = $normalizedText;
         $this->moderationState = $moderationState;
@@ -83,6 +96,22 @@ class WordCloudSubmission
     public function getStudent(): ?User
     {
         return $this->student;
+    }
+
+    public function getGuestTokenHash(): ?string
+    {
+        return $this->guestTokenHash;
+    }
+
+    public function isGuest(): bool
+    {
+        return null === $this->student;
+    }
+
+    /** One key per person, whoever they are - what participants are counted on. */
+    public function authorKey(): string
+    {
+        return null !== $this->student ? 'u'.$this->student->getId() : 'g'.$this->guestTokenHash;
     }
 
     public function getText(): ?string

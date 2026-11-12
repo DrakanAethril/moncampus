@@ -128,7 +128,7 @@ class ClassBoardLiveData
                     'clouds' => $choices,
                     'cloud' => [
                         'name' => $cloud->getName(),
-                        'url' => $this->urlGenerator->generate('app_program_word_cloud_projection', ['id' => $program->getId(), 'cloudId' => $cloudId, 'mode' => 'cloud_only']),
+                        'url' => $this->urlGenerator->generate('app_word_cloud_projection', ['cloudId' => $cloudId, 'mode' => 'cloud_only']),
                     ],
                 ];
             }

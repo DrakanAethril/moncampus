@@ -2,14 +2,14 @@
 
 {% set isNew = cloud.id is null %}
 
-{% block title %}{{ (isNew ? 'wordCloudNewPageHeading' : 'wordCloudEditPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block title %}{{ (isNew ? 'wordCloudNewPageHeading' : 'wordCloudEditPageHeading')|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include 'word_cloud/_breadcrumb.html.twig' with {program: program, cloud: isNew ? null : cloud, newLabel: 'wordCloudNewBreadcrumbLabel'|trans} %}
+    {% include 'word_cloud/_breadcrumb.html.twig' with {cloud: isNew ? null : cloud, newLabel: 'wordCloudNewBreadcrumbLabel'|trans} %}
 {% endblock %}
 
 {% block page_title %}
-    {{ (isNew ? 'wordCloudNewPageHeading' : 'wordCloudEditPageHeading')|trans({'%program%': program.displayShortName}) }}
+    {{ (isNew ? 'wordCloudNewPageHeading' : 'wordCloudEditPageHeading')|trans }}
 {% endblock %}
 
 {% block main %}

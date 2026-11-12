@@ -470,7 +470,7 @@
                         {% set tools_beyond = tools_agenda or tools_jobboard or tools_company_search %}
                         {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow or tools_beyond) %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
-                                or current_route starts with 'app_program_word_cloud'
+                                or current_route starts with 'app_word_cloud'
                                 or current_route starts with 'app_seating_plan'
                                 or (current_route starts with 'app_wall' and not (current_route starts with 'app_wall_students') and not app.request.attributes.get('wall_supervised'))
                                 or current_route starts with 'app_audio_recording'
@@ -553,7 +553,7 @@
                                        delivered to both sides of the room and switchable on its
                                        own. #}
                                     {% if feature('word_cloud') %}
-                                        <a class="dropdown-item {{ current_route starts with 'app_tools_word_cloud' or current_route starts with 'app_program_word_cloud' ? 'active' }}" href="{{ path('app_tools_word_cloud') }}">{{ 'wordCloudNavLabel'|trans }}</a>
+                                        <a class="dropdown-item {{ current_route starts with 'app_word_cloud' ? 'active' }}" href="{{ path('app_word_clouds') }}">{{ 'wordCloudNavLabel'|trans }}</a>
                                     {% endif %}
                                     {% if feature('quiz_live') %}
                                         <a class="dropdown-item {{ current_route starts with 'app_quiz_live' ? 'active' }}" href="{{ path('app_quiz_live_index') }}">{{ 'quizLiveNavLabel'|trans }}</a>

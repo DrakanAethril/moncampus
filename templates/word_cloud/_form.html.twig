@@ -7,8 +7,8 @@
    there is nothing page-specific below.
 
    Parameters: `form` (a WordCloudType view), `programOptions` (class id => option ids, for the
-   chips to follow the class), and optionally `showPreview` (the « Vue étudiant » card, on by
-   default) and `cancelUrl`. #}
+   chips to follow the class), `cancelUrl`, and optionally `showPreview` (the « Vue étudiant » card,
+   on by default). #}
 {% set showPreview = showPreview|default(true) %}
 <div class="cm-wc-form"
      data-controller="word-cloud-form"
@@ -124,10 +124,19 @@
                     <span>{{ switch.vars.label|trans }}</span>
                 </label>
             {% endfor %}
+            {# « Ouvert à tous, sans compte »: a cloud of no class is always public, so the switch is
+               held on while no class is chosen - the server decides the same. #}
+            {% do form.public.setRendered %}
+            <label class="cm-wc-switch">
+                <input type="checkbox" id="{{ form.public.vars.id }}" name="{{ form.public.vars.full_name }}" value="1"{{ form.public.vars.checked ? ' checked' }} data-word-cloud-form-target="publicSwitch">
+                <span class="cm-wc-switch__track"><span class="cm-wc-switch__knob"></span></span>
+                <span>{{ form.public.vars.label|trans }}</span>
+            </label>
+            <p class="cm-wc-hint" data-word-cloud-form-target="publicHint">{{ 'wordCloudPublicFieldHint'|trans }}</p>
         </div>
 
         <div class="cm-wc-formfoot">
-            <a class="cm-wc-btn" href="{{ cancelUrl|default(path('app_program_word_clouds', {id: program.id})) }}">{{ 'cancelAction'|trans }}</a>
+            <a class="cm-wc-btn" href="{{ cancelUrl }}">{{ 'cancelAction'|trans }}</a>
             <button type="submit" class="cm-wc-btn cm-wc-btn--gold">{{ 'wordCloudSaveAction'|trans }}</button>
             {# The two footer buttons are one form and two intents: « Créer et ouvrir » carries the
                flag the controller reads, and on a manual cloud it is the only thing that ever opens

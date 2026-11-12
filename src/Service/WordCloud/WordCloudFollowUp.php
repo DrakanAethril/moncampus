@@ -23,7 +23,8 @@ use App\Enum\WordCloudModerationState;
  *   the teacher does not need.
  * - **Refused words appear**, marked as such. They left the cloud, not the record.
  *
- * @phpstan-type WordCloudWordRow array{word: string, count: int, share: int, contributors: list<array{name: string, time: string}>}
+ * @phpstan-type WordCloudWordRow array{word: string, count: int, share: int, contributors: list<array{name: string, time: string, guest: bool}>}
+ * @phpstan-type WordCloudGuestSummary array{participants: int, words: list<array{text: string, rejected: bool}>, lastSubmittedAt: \DateTimeImmutable|null}
  * @phpstan-type WordCloudStudentRow array{student: User, participated: bool, wordCount: int, words: list<array{text: string, rejected: bool}>, lastSubmittedAt: \DateTimeImmutable|null}
  */
 class WordCloudFollowUp
@@ -50,6 +51,7 @@ class WordCloudFollowUp
             $contributorsByKey[$key][] = [
                 'name' => $this->displayName($submission->getStudent()),
                 'time' => $submission->getSubmittedAt()->format('H:i'),
+                'guest' => $submission->isGuest(),
             ];
         }
 
@@ -84,6 +86,9 @@ class WordCloudFollowUp
     }
 
     /**
+     * The class first, those who wrote nothing included, then - on a public cloud - the accounts
+     * outside it who answered, by name. Guests are not people one can list: guestSummary() counts them.
+     *
      * @param list<User>                $roster      the cloud's audience, in display order
      * @param list<WordCloudSubmission> $submissions
      *
@@ -93,12 +98,27 @@ class WordCloudFollowUp
     {
         /** @var array<int, list<WordCloudSubmission>> $byStudentId */
         $byStudentId = [];
-        foreach ($submissions as $submission) {
-            $byStudentId[(int) $submission->getStudent()?->getId()][] = $submission;
+        /** @var array<int, User> $outsiders */
+        $outsiders = [];
+        $inRoster = [];
+        foreach ($roster as $student) {
+            $inRoster[(int) $student->getId()] = true;
         }
+        foreach ($submissions as $submission) {
+            $author = $submission->getStudent();
+            if (null === $author) {
+                continue;
+            }
+            $byStudentId[(int) $author->getId()][] = $submission;
+            if (!isset($inRoster[(int) $author->getId()])) {
+                $outsiders[(int) $author->getId()] = $author;
+            }
+        }
+        $outsiders = array_values($outsiders);
+        usort($outsiders, fn (User $a, User $b): int => strcoll($this->displayName($a), $this->displayName($b)));
 
         $rows = [];
-        foreach ($roster as $student) {
+        foreach ([...$roster, ...$outsiders] as $student) {
             $own = $byStudentId[(int) $student->getId()] ?? [];
             $words = array_map(
                 static fn (WordCloudSubmission $one): array => [
@@ -131,6 +151,40 @@ class WordCloudFollowUp
         }
 
         return $rows;
+    }
+
+    /**
+     * What the visitors without an account wrote on a public cloud, together: how many of them, and
+     * their words in arrival order. Null when no guest answered - or when the search reads nothing
+     * of theirs.
+     *
+     * @param list<WordCloudSubmission> $submissions
+     *
+     * @return WordCloudGuestSummary|null
+     */
+    public function guestSummary(array $submissions, string $query = ''): ?array
+    {
+        $guests = array_values(array_filter($submissions, static fn (WordCloudSubmission $one): bool => $one->isGuest()));
+        if ([] === $guests) {
+            return null;
+        }
+
+        $words = array_map(
+            static fn (WordCloudSubmission $one): array => [
+                'text' => (string) $one->getText(),
+                'rejected' => WordCloudModerationState::Rejected === $one->getModerationState(),
+            ],
+            $guests,
+        );
+        if (!$this->matches($query, ...array_column($words, 'text'))) {
+            return null;
+        }
+
+        return [
+            'participants' => \count(array_unique(array_map(static fn (WordCloudSubmission $one): string => $one->authorKey(), $guests))),
+            'words' => $words,
+            'lastSubmittedAt' => end($guests)->getSubmittedAt(),
+        ];
     }
 
     /**

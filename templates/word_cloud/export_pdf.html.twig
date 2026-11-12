@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ cloud.name }} - {{ program.displayShortName }}{% endblock %}
+{% block title %}{{ cloud.name }}{% if program %} - {{ program.displayShortName }}{% endif %}{% endblock %}
 
 {% block body %}
     {# The printable record of one cloud: the figures, the words with their contributors, and the
@@ -36,7 +36,7 @@
 
     <h1>{{ cloud.name }}</h1>
     <p class="question">{{ cloud.question }}</p>
-    <p class="meta">{{ program.displayShortName }} — {{ 'wordCloudPdfExportedOnLabel'|trans({'%date%': date|date('d/m/Y H:i')}) }}</p>
+    <p class="meta">{{ program ? program.displayShortName : 'wordCloudNoProgramLabel'|trans }} — {{ 'wordCloudPdfExportedOnLabel'|trans({'%date%': date|date('d/m/Y H:i')}) }}</p>
 
     <table class="stats">
         <tr>
@@ -60,7 +60,7 @@
                 <td>{{ row.count }}</td>
                 <td class="who">
                     {%- for contributor in row.contributors -%}
-                        {{ contributor.name }} ({{ contributor.time }}){{ not loop.last ? ', ' }}
+                        {{ contributor.guest ? 'wordCloudGuestLabel'|trans : contributor.name }} ({{ contributor.time }}){{ not loop.last ? ', ' }}
                     {%- endfor -%}
                 </td>
             </tr>
@@ -91,5 +91,17 @@
                 <td>{{ row.lastSubmittedAt ? row.lastSubmittedAt|date('d/m/Y H:i') : '—' }}</td>
             </tr>
         {% endfor %}
+        {% if guests is not null %}
+            <tr>
+                <td>{{ 'wordCloudGuestsRowLabel'|trans({'%count%': guests.participants}) }}</td>
+                <td>{{ 'wordCloudParticipatedLabel'|trans }}</td>
+                <td>
+                    {%- for word in guests.words -%}
+                        <span class="{{ word.rejected ? 'rejected' }}">{{ word.text }}</span>{{ not loop.last ? ', ' }}
+                    {%- endfor -%}
+                </td>
+                <td>{{ guests.lastSubmittedAt ? guests.lastSubmittedAt|date('d/m/Y H:i') : '—' }}</td>
+            </tr>
+        {% endif %}
     </table>
 {% endblock %}

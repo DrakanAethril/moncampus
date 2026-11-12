@@ -48,7 +48,7 @@ class WordCloudCsvExporterTest extends TestCase
     {
         $csv = $this->export([], []);
 
-        self::assertStringStartsWith("\u{FEFF}\"Étudiant\";\"Mot\";\"Horodatage\";\"État\"\r\n", $csv);
+        self::assertStringStartsWith("\u{FEFF}\"Personne\";\"Mot\";\"Horodatage\";\"État\"\r\n", $csv);
     }
 
     /** A word carrying the separator must not split the row it is on. */

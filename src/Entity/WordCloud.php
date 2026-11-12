@@ -26,12 +26,17 @@ use Symfony\Component\Validator\Constraints as Assert;
  * Nothing here counts anything either: a cloud's words, participants and ranking are the sum of its
  * WordCloudSubmission rows, in the same spirit as GameEntry's ledger. What is stored is the
  * question and the rules; what is displayed is always recomputed from the submissions.
+ *
+ * **A class, or none** (design/validated/word-cloud-public.md, 2026-11-12): a cloud may also be
+ * « Ouvert à tous, sans compte », answered at /cloud/{code} - by any account as itself and by
+ * visitors without one. A cloud without a class is always public; its author alone pilots it.
  */
 #[ORM\Entity(repositoryClass: WordCloudRepository::class)]
 #[ORM\Table(name: 'word_cloud')]
 // The list screen reads one teacher's clouds for one class, newest first, and the student's banner
 // asks the same table for whatever is open right now across their formations.
 #[ORM\Index(name: 'idx_word_cloud_program_created', columns: ['program_id', 'created_at'])]
+#[ORM\UniqueConstraint(name: 'uniq_word_cloud_public_code', columns: ['public_code'])]
 class WordCloud
 {
     use AuditableTrait;
@@ -51,9 +56,9 @@ class WordCloud
     #[Assert\Length(max: 500)]
     private ?string $question = null;
 
+    // Null for a cloud of no class - which is then public (WordCloud::isPublic()).
     #[ORM\ManyToOne(targetEntity: Program::class)]
-    #[ORM\JoinColumn(name: 'program_id', nullable: false)]
-    #[Assert\NotNull]
+    #[ORM\JoinColumn(name: 'program_id', nullable: true)]
     private ?Program $program = null;
 
     // Who runs it. Not the same question as who may pilot it - that is WordCloudVoter's, and it
@@ -109,6 +114,15 @@ class WordCloud
 
     #[ORM\Column(name: 'visible_to_students')]
     private bool $visibleToStudents = false;
+
+    // « Ouvert à tous, sans compte ». Read through isPublic(), which a cloud of no class always is.
+    #[ORM\Column(name: 'is_public', options: ['default' => false])]
+    private bool $public = false;
+
+    // The code of the public address, /cloud/{code}. Given the first time the cloud is made public and
+    // kept for good, unticking included: a QR code already printed stays right if it is ticked again.
+    #[ORM\Column(name: 'public_code', length: 8, nullable: true)]
+    private ?string $publicCode = null;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
@@ -339,6 +353,31 @@ class WordCloud
     public function setVisibleToStudents(bool $visibleToStudents): static
     {
         $this->visibleToStudents = $visibleToStudents;
+
+        return $this;
+    }
+
+    /** Answered at /cloud/{code} without an account. A cloud of no class has no other audience. */
+    public function isPublic(): bool
+    {
+        return $this->public || null === $this->program;
+    }
+
+    public function setPublic(bool $public): static
+    {
+        $this->public = $public;
+
+        return $this;
+    }
+
+    public function getPublicCode(): ?string
+    {
+        return $this->publicCode;
+    }
+
+    public function setPublicCode(?string $publicCode): static
+    {
+        $this->publicCode = $publicCode;
 
         return $this;
     }

@@ -1,0 +1,4 @@
+{# Where a cloud is asked: its class, or « Sans classe » - and « Public » when anybody may answer it
+   at /cloud/{code} (design/validated/word-cloud-public.md). #}
+{{ cloud.program ? cloud.program.displayShortName : 'wordCloudNoProgramLabel'|trans }}
+{% if cloud.public %}<span class="cm-wc-tag cm-wc-tag--public">{{ 'wordCloudPublicBadge'|trans }}</span>{% endif %}

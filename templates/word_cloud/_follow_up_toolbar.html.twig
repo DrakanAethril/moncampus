@@ -5,8 +5,8 @@
    the segmented control's two links carry the current query. #}
 <div class="cm-wc-toolbar">
     <div class="cm-wc-seg">
-        <a class="{{ byWord ? 'is-on' }}" href="{{ path('app_program_word_cloud_follow_up', {id: program.id, cloudId: cloud.id, q: query}) }}">{{ 'wordCloudByWordTabLabel'|trans }}</a>
-        <a class="{{ byWord ? '' : 'is-on' }}" href="{{ path('app_program_word_cloud_follow_up_students', {id: program.id, cloudId: cloud.id, q: query}) }}">{{ 'wordCloudByStudentTabLabel'|trans }}</a>
+        <a class="{{ byWord ? 'is-on' }}" href="{{ path('app_word_cloud_follow_up', {cloudId: cloud.id, q: query}) }}">{{ 'wordCloudByWordTabLabel'|trans }}</a>
+        <a class="{{ byWord ? '' : 'is-on' }}" href="{{ path('app_word_cloud_follow_up_students', {cloudId: cloud.id, q: query}) }}">{{ 'wordCloudByStudentTabLabel'|trans }}</a>
     </div>
     <form method="get" class="ms-auto">
         <input type="search" name="q" class="cm-wc-search" value="{{ query }}" placeholder="{{ 'wordCloudSearchPlaceholder'|trans }}" aria-label="{{ 'wordCloudSearchPlaceholder'|trans }}">

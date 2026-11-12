@@ -39,7 +39,7 @@ class WordCloudFollowUpTest extends TestCase
         self::assertSame(2, $rows[0]['count']);
         self::assertSame(100, $rows[0]['share']);
         self::assertSame(
-            [['name' => 'Lucas Martin', 'time' => '08:34'], ['name' => 'Emma Bernard', 'time' => '08:37']],
+            [['name' => 'Lucas Martin', 'time' => '08:34', 'guest' => false], ['name' => 'Emma Bernard', 'time' => '08:37', 'guest' => false]],
             $rows[0]['contributors'],
         );
     }
@@ -158,6 +158,31 @@ class WordCloudFollowUpTest extends TestCase
         self::assertSame([$enzo], $silent);
     }
 
+    /** A public cloud: the class, then the accounts outside it who answered, guests counted apart. */
+    public function testAPublicCloudListsTheOutsidersAfterTheClassAndCountsTheGuestsApart(): void
+    {
+        $lucas = $this->student(1, 'Lucas Martin');
+        $visitor = $this->student(9, 'Zoé Parent');
+        $submissions = [
+            $this->submission($visitor, 'réseau', '08:30'),
+            $this->guestSubmission('aaa', 'pare-feu', '08:31'),
+            $this->guestSubmission('aaa', 'routeur', '08:32'),
+            $this->guestSubmission('bbb', 'VLAN', '08:40', WordCloudModerationState::Rejected),
+        ];
+
+        $rows = $this->followUp()->byStudent($this->cloud(), [$lucas], $submissions);
+        self::assertSame(['Lucas Martin', 'Zoé Parent'], $this->names($rows));
+        self::assertFalse($rows[0]['participated']);
+
+        $guests = $this->followUp()->guestSummary($submissions);
+        self::assertNotNull($guests);
+        self::assertSame(2, $guests['participants']);
+        self::assertSame([['text' => 'pare-feu', 'rejected' => false], ['text' => 'routeur', 'rejected' => false], ['text' => 'VLAN', 'rejected' => true]], $guests['words']);
+        self::assertSame('08:40', $guests['lastSubmittedAt']?->format('H:i'));
+        self::assertNull($this->followUp()->guestSummary($submissions, 'introuvable'));
+        self::assertNull($this->followUp()->guestSummary([$this->submission($lucas, 'x', '08:00')]));
+    }
+
     /**
      * @param list<WordCloudStudentRow> $rows
      *
@@ -202,6 +227,26 @@ class WordCloudFollowUpTest extends TestCase
         $submission->method('getSubmittedAt')->willReturn(new \DateTimeImmutable('2026-09-08 '.$time));
         $submission->method('getModerationState')->willReturn($state);
         $submission->method('isCounted')->willReturn(WordCloudModerationState::Approved === $state);
+        $submission->method('isGuest')->willReturn(false);
+        $submission->method('authorKey')->willReturn('u'.$student->getId());
+
+        return $submission;
+    }
+
+    private function guestSubmission(
+        string $token,
+        string $text,
+        string $time,
+        WordCloudModerationState $state = WordCloudModerationState::Approved,
+    ): WordCloudSubmission {
+        $submission = $this->createStub(WordCloudSubmission::class);
+        $submission->method('getStudent')->willReturn(null);
+        $submission->method('getText')->willReturn($text);
+        $submission->method('getSubmittedAt')->willReturn(new \DateTimeImmutable('2026-09-08 '.$time));
+        $submission->method('getModerationState')->willReturn($state);
+        $submission->method('isCounted')->willReturn(WordCloudModerationState::Approved === $state);
+        $submission->method('isGuest')->willReturn(true);
+        $submission->method('authorKey')->willReturn('g'.$token);
 
         return $submission;
     }

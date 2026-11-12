@@ -104,6 +104,12 @@ class FeatureCoverageTest extends KernelTestCase
                 'app_quiz_live_guest',
                 'app_quiz_live_play',
                 'app_quiz_live_answer',
+                // A public word cloud's address, /cloud/{code} (design/validated/word-cloud-public.md):
+                // what its QR code opens, for visitors without an account. App\Controller\WordCloud\
+                // PublicController asks the feature itself, for the cloud's author, and 404s when off.
+                'app_word_cloud_public_join',
+                'app_word_cloud_public',
+                'app_word_cloud_public_submit',
             ],
             // The mobile app's own account plumbing. Same reason as the row above, one step later:
             // an account that cannot read its profile cannot be told what it may see.

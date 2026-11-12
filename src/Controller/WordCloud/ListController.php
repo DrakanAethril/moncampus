@@ -12,10 +12,11 @@ use App\Entity\WordCloud;
 use App\Enum\Feature;
 use App\Form\WordCloudType;
 use App\Repository\LessonSessionRepository;
-use App\Repository\ProgramRepository;
 use App\Repository\WordCloudRepository;
 use App\Repository\WordCloudSubmissionRepository;
-use App\Security\StructureAccessChecker;
+use App\Service\QueryValue;
+use App\Service\WordCloud\WordCloudPrograms;
+use App\Service\WordCloud\WordCloudPublicCodes;
 use App\Service\WordCloud\WordCloudSchedule;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,6 +28,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * « Liste des nuages » and « Nouveau nuage » - the tool's entry point and its creation form.
+ *
+ * Since 2026-11-12 a cloud belongs to a class or to none (design/validated/word-cloud-public.md):
+ * the list is no longer reached through a class, the class is one of its filters, and a cloud of no
+ * class is always « Ouvert à tous, sans compte ».
  *
  * The form is the reusable component of App\Form\WordCloudType, hosted here in a page. Everything
  * it can be told is re-decided on the server: the class must be one the teacher actually teaches,
@@ -41,23 +46,34 @@ class ListController extends AbstractController
     private const string CSRF_TOKEN_ID = 'word_cloud';
 
     public function __construct(
-        private readonly ProgramRepository $programs,
         private readonly WordCloudRepository $clouds,
         private readonly WordCloudSubmissionRepository $submissions,
         private readonly LessonSessionRepository $lessonSessions,
-        private readonly StructureAccessChecker $accessChecker,
+        private readonly WordCloudPrograms $pilotPrograms,
         private readonly WordCloudSchedule $schedule,
+        private readonly WordCloudPublicCodes $publicCodes,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds', name: 'app_program_word_clouds', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function index(int $id): Response
+    #[Route(path: '/word-clouds', name: 'app_word_clouds', methods: ['GET'])]
+    public function index(Request $request): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $clouds = $this->clouds->findForProgram($program);
-        $now = new \DateTimeImmutable();
+        $programs = $this->pilotPrograms->piloted($this->currentUser());
 
+        // `?class=` narrows the list: a class one runs clouds in, or « none ». An unknown value is
+        // the whole list - a filter never 404s.
+        $filter = QueryValue::trimmed($request, 'class');
+        $only = null;
+        foreach ($programs as $program) {
+            if ((string) $program->getId() === $filter) {
+                $only = $program;
+            }
+        }
+        $classless = 'none' === $filter;
+
+        $clouds = $this->clouds->findForPilot($this->currentUser(), $programs, $only, $classless);
+        $now = new \DateTimeImmutable();
         $participants = $this->submissions->countParticipantsByCloud($clouds);
 
         $rows = array_map(
@@ -70,20 +86,28 @@ class ListController extends AbstractController
         );
 
         return $this->render('word_cloud/index.html.twig', [
-            'program' => $program,
             'rows' => $rows,
+            'programs' => $programs,
+            'filter' => null !== $only ? (string) $only->getId() : ($classless ? 'none' : ''),
+            'filteredProgram' => $only,
         ]);
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/new', name: 'app_program_word_cloud_new', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
-    public function create(int $id, Request $request): Response
+    #[Route(path: '/word-clouds/new', name: 'app_word_cloud_new', methods: ['GET', 'POST'])]
+    public function create(Request $request): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
+        $programs = $this->pilotPrograms->piloted($this->currentUser());
+        $preselected = QueryValue::nullableInt($request, 'program');
+        $program = null;
+        foreach ($programs as $candidate) {
+            if ($candidate->getId() === $preselected) {
+                $program = $candidate;
+            }
+        }
 
         $cloud = new WordCloud();
-        // Both before handleRequest(), not after a successful validation: they are #[Assert\NotNull]
-        // and the form validates the entity it is bound to, so setting them later meant every
-        // submission failing on two fields the form does not even show.
+        // Before handleRequest(), not after a successful validation: the form validates the entity
+        // it is bound to.
         $cloud->setProgram($program);
         $cloud->setTeacher($this->currentUser());
         $cloud->setCreatedBy($this->currentUser());
@@ -93,16 +117,21 @@ class ListController extends AbstractController
         $cloud->setOpensAt($opensAt);
         $cloud->setClosesAt($opensAt->modify('+45 minutes'));
 
-        return $this->renderForm($program, $cloud, $request, 'app_program_word_cloud_new');
+        return $this->renderForm($programs, $cloud, $request);
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/edit', name: 'app_program_word_cloud_edit', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['GET', 'POST'])]
-    public function edit(int $id, int $cloudId, Request $request): Response
+    #[Route(path: '/word-clouds/{cloudId}/edit', name: 'app_word_cloud_edit', requirements: ['cloudId' => '\d+'], methods: ['GET', 'POST'])]
+    public function edit(int $cloudId, Request $request): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
+        $programs = $this->pilotPrograms->piloted($this->currentUser());
+        // A colleague piloting a cloud of a class they no longer list (staff, say) keeps it on offer.
+        $current = $cloud->getProgram();
+        if (null !== $current && !\in_array($current, $programs, true)) {
+            $programs[] = $current;
+        }
 
-        return $this->renderForm($program, $cloud, $request, 'app_program_word_cloud_edit');
+        return $this->renderForm($programs, $cloud, $request);
     }
 
     /**
@@ -111,15 +140,14 @@ class ListController extends AbstractController
      * A duplicate rather than a reopening, because the point is to compare two moments - what the
      * class said before the chapter and what it says after - and reopening would merge them.
      */
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/duplicate', name: 'app_program_word_cloud_duplicate', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['POST'])]
-    public function duplicate(int $id, int $cloudId, Request $request): Response
+    #[Route(path: '/word-clouds/{cloudId}/duplicate', name: 'app_word_cloud_duplicate', requirements: ['cloudId' => '\d+'], methods: ['POST'])]
+    public function duplicate(int $cloudId, Request $request): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $source = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $source = $this->findCloudOrDeny($cloudId, $this->clouds);
         $this->assertCsrf(self::CSRF_TOKEN_ID, $request->request->getString('_token'));
 
         $copy = new WordCloud();
-        $copy->setProgram($program)
+        $copy->setProgram($source->getProgram())
             ->setTeacher($this->currentUser())
             // The copy lands on the edit screen straight away, so a plain suffix is enough: the
             // first thing the teacher does is name it.
@@ -131,6 +159,8 @@ class ListController extends AbstractController
             ->setGroupVariants($source->isGroupVariants())
             ->setModeration($source->isModeration())
             ->setVisibleToStudents($source->isVisibleToStudents())
+            // Public like its source, under a code of its own: its words are not the source's.
+            ->setPublic($source->isPublic())
             // A new window, always manual: the copy is prepared now and run when the teacher says
             // so, which is what « relancer » means.
             ->setManualOpening(true)
@@ -139,31 +169,56 @@ class ListController extends AbstractController
         foreach ($source->getOptions() as $option) {
             $copy->addOption($option);
         }
+        $this->publicCodes->ensure($copy);
 
         $this->entityManager->persist($copy);
         $this->entityManager->flush();
 
-        return $this->redirectToRoute('app_program_word_cloud_edit', ['id' => $program->getId(), 'cloudId' => $copy->getId()]);
+        return $this->redirectToRoute('app_word_cloud_edit', ['cloudId' => $copy->getId()]);
     }
 
-    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}/delete', name: 'app_program_word_cloud_delete', requirements: ['id' => '\d+', 'cloudId' => '\d+'], methods: ['POST'])]
-    public function delete(int $id, int $cloudId, Request $request): Response
+    #[Route(path: '/word-clouds/{cloudId}/delete', name: 'app_word_cloud_delete', requirements: ['cloudId' => '\d+'], methods: ['POST'])]
+    public function delete(int $cloudId, Request $request): Response
     {
-        $program = $this->findProgramOrDeny($id, $this->programs, $this->accessChecker);
-        $cloud = $this->findCloudOrDeny($program, $cloudId, $this->clouds);
+        $cloud = $this->findCloudOrDeny($cloudId, $this->clouds);
         $this->assertCsrf(self::CSRF_TOKEN_ID, $request->request->getString('_token'));
+        $program = $cloud->getProgram();
 
         $this->entityManager->remove($cloud);
         $this->entityManager->flush();
 
         $this->addFlash('success', 'wordCloudDeletedFlashMessage');
 
-        return $this->redirectToRoute('app_program_word_clouds', ['id' => $program->getId()]);
+        return $this->redirectToRoute('app_word_clouds', null !== $program ? ['class' => $program->getId()] : []);
     }
 
-    private function renderForm(Program $program, WordCloud $cloud, Request $request, string $route): Response
+    /**
+     * The addresses of the time a cloud was always a class's (before 2026-11-12), kept for bookmarks
+     * and for the links already written: the list, the form, and every screen of one cloud.
+     */
+    #[Route(path: '/programs/{id}/tools/word-clouds', name: 'app_program_word_clouds_legacy', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function legacyList(int $id): Response
     {
-        $teachingPrograms = $this->teachingPrograms();
+        return $this->redirectToRoute('app_word_clouds', ['class' => $id], Response::HTTP_MOVED_PERMANENTLY);
+    }
+
+    #[Route(path: '/programs/{id}/tools/word-clouds/new', name: 'app_program_word_cloud_new_legacy', requirements: ['id' => '\d+'], methods: ['GET'], priority: 1)]
+    public function legacyNew(int $id): Response
+    {
+        return $this->redirectToRoute('app_word_cloud_new', ['program' => $id], Response::HTTP_MOVED_PERMANENTLY);
+    }
+
+    #[Route(path: '/programs/{id}/tools/word-clouds/{cloudId}{rest}', name: 'app_program_word_cloud_legacy', requirements: ['id' => '\d+', 'cloudId' => '\d+', 'rest' => '(/[a-z./-]*)?'], defaults: ['rest' => ''], methods: ['GET'])]
+    public function legacyCloud(int $cloudId, string $rest): Response
+    {
+        return $this->redirect('/word-clouds/'.$cloudId.$rest, Response::HTTP_MOVED_PERMANENTLY);
+    }
+
+    /**
+     * @param list<Program> $teachingPrograms
+     */
+    private function renderForm(array $teachingPrograms, WordCloud $cloud, Request $request): Response
+    {
         $form = $this->createForm(WordCloudType::class, $cloud, [
             'programs' => $teachingPrograms,
             'availableOptions' => $this->optionsOf($teachingPrograms),
@@ -174,16 +229,24 @@ class ListController extends AbstractController
             $chosen = $cloud->getProgram();
 
             // The select is not a permission: whatever came back, the class must be one this
-            // person teaches, and each targeted option must belong to it.
-            if (null === $chosen || !\in_array($chosen, $teachingPrograms, true)) {
+            // person may run clouds in - or none -, and each targeted option must belong to it.
+            if (null !== $chosen && !\in_array($chosen, $teachingPrograms, true)) {
                 throw $this->createAccessDeniedException();
             }
 
             foreach ($cloud->getOptions() as $option) {
-                if (!$chosen->getOptions()->contains($option)) {
+                if (null === $chosen || !$chosen->getOptions()->contains($option)) {
                     $cloud->removeOption($option);
                 }
             }
+
+            // A cloud of no class has no audience but the public one: it is public, whatever the
+            // switch said - and its author alone pilots it from now on.
+            if (null === $chosen) {
+                $cloud->setPublic(true);
+                $cloud->setTeacher($cloud->getTeacher() ?? $this->currentUser());
+            }
+            $this->publicCodes->ensure($cloud);
 
             if (null === $cloud->getId()) {
                 $this->entityManager->persist($cloud);
@@ -202,21 +265,19 @@ class ListController extends AbstractController
 
             $this->entityManager->flush();
 
-            return $this->redirectToRoute(
-                $openNow ? 'app_program_word_cloud_pilot' : 'app_program_word_clouds',
-                $openNow
-                    ? ['id' => $chosen->getId(), 'cloudId' => $cloud->getId()]
-                    : ['id' => $chosen->getId()],
-            );
+            return $openNow
+                ? $this->redirectToRoute('app_word_cloud_pilot', ['cloudId' => $cloud->getId()])
+                : $this->redirectToRoute('app_word_clouds', null !== $chosen ? ['class' => $chosen->getId()] : ['class' => 'none']);
         }
 
         return $this->render('word_cloud/form.html.twig', [
-            'program' => $program,
             'cloud' => $cloud,
             'form' => $form,
-            'route' => $route,
             'programOptions' => $this->optionsByProgram($teachingPrograms),
-            'currentLesson' => $this->currentLesson($program),
+            'currentLesson' => null !== $cloud->getProgram() ? $this->currentLesson($cloud->getProgram()) : null,
+            'cancelUrl' => null !== $cloud->getId()
+                ? $this->generateUrl('app_word_cloud_pilot', ['cloudId' => $cloud->getId()])
+                : $this->generateUrl('app_word_clouds', null !== $cloud->getProgram() ? ['class' => $cloud->getProgram()->getId()] : []),
         ]);
     }
 
@@ -256,23 +317,6 @@ class ListController extends AbstractController
         }
 
         return $day->setTime((int) $hour->format('G'), (int) $hour->format('i'));
-    }
-
-    /**
-     * The classes this form may create a cloud for: the ones actually taught, and every one of them
-     * for staff who teach none - the same rule as App\Controller\ToolsController's picker.
-     *
-     * @return list<Program>
-     */
-    private function teachingPrograms(): array
-    {
-        $taught = $this->programs->findAllForTeacher($this->currentUser());
-
-        if ([] !== $taught) {
-            return $taught;
-        }
-
-        return $this->accessChecker->isStaff() ? $this->programs->findActiveForNav($this->currentUser()) : [];
     }
 
     /**

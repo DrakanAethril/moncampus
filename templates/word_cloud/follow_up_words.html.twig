@@ -19,12 +19,12 @@
 
 {% block page_actions %}
     <div class="cm-wc-actions">
-        <a class="cm-wc-btn cm-wc-btn--gold" href="{{ path('app_program_word_cloud_projection', {id: program.id, cloudId: cloud.id}) }}">⛶ {{ 'wordCloudReprojectAction'|trans }}</a>
-        <a class="cm-wc-btn" href="{{ path('app_program_word_cloud_export_csv', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudExportCsvAction'|trans }}</a>
-        <a class="cm-wc-btn" href="{{ path('app_program_word_cloud_export_pdf', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudExportPdfAction'|trans }}</a>
+        <a class="cm-wc-btn cm-wc-btn--gold" href="{{ path('app_word_cloud_projection', {cloudId: cloud.id}) }}">⛶ {{ 'wordCloudReprojectAction'|trans }}</a>
+        <a class="cm-wc-btn" href="{{ path('app_word_cloud_export_csv', {cloudId: cloud.id}) }}">{{ 'wordCloudExportCsvAction'|trans }}</a>
+        <a class="cm-wc-btn" href="{{ path('app_word_cloud_export_pdf', {cloudId: cloud.id}) }}">{{ 'wordCloudExportPdfAction'|trans }}</a>
         {# « Relancer la question » duplicates rather than reopens: the point is to compare two
            moments, and reopening would merge them into one. #}
-        <form method="post" action="{{ path('app_program_word_cloud_duplicate', {id: program.id, cloudId: cloud.id}) }}">
+        <form method="post" action="{{ path('app_word_cloud_duplicate', {cloudId: cloud.id}) }}">
             <input type="hidden" name="_token" value="{{ csrf_token('word_cloud') }}">
             <button type="submit" class="cm-wc-btn">{{ 'wordCloudRelaunchAction'|trans }}</button>
         </form>
@@ -55,7 +55,7 @@
                     </div>
                     <div class="cm-wc-contribs" data-word-cloud-follow-up-target="panel" hidden>
                         {% for contributor in row.contributors %}
-                            <span class="cm-wc-contrib">{{ contributor.name }}<span>{{ contributor.time }}</span></span>
+                            <span class="cm-wc-contrib">{{ contributor.guest ? 'wordCloudGuestLabel'|trans : contributor.name }}<span>{{ contributor.time }}</span></span>
                         {% endfor %}
                     </div>
                 </div>
