@@ -11,6 +11,10 @@
         </span>
         <span class="cm-dash-banner__action">
             <a href="{{ path('app_ufa_reminder_batch_new', {target: staff.banner.key}) }}" class="cm-btn cm-btn--gold">{{ 'homeStaffBannerEvaluationsAction'|trans }}</a>
+            {# The UFA list on that same step - who exactly waits, before deciding to chase them. #}
+            {% if staff.bannerStep %}
+                <twig:Cm:Button variant="outline" href="{{ path('app_ufa', {step: staff.bannerStep}) }}">{{ 'homeStaffBannerSeeAction'|trans }}</twig:Cm:Button>
+            {% endif %}
         </span>
     </div>
 {% endif %}
@@ -36,10 +40,13 @@
             </span>
         </span>
         <span class="cm-dash-banner__action">
+            {# With one alternance, « Signer » opens it; « Voir » is the UFA list filtered on the
+               centre's signature, whatever the count. #}
             {% if staff.engagementBanner.tutorLink %}
                 <a href="{{ path('app_ufa_alternance_engagement', {id: staff.engagementBanner.tutorLink.id}) }}" class="cm-btn cm-btn--gold">{{ 'homeStaffBannerEngagementAction'|trans }}</a>
+                <twig:Cm:Button variant="outline" href="{{ path('app_ufa', {step: 'engagement_center'}) }}">{{ 'homeStaffBannerSeeAction'|trans }}</twig:Cm:Button>
             {% else %}
-                <a href="{{ path('app_ufa') }}" class="cm-btn cm-btn--gold">{{ 'homeStaffBannerEngagementActionAll'|trans }}</a>
+                <a href="{{ path('app_ufa', {step: 'engagement_center'}) }}" class="cm-btn cm-btn--gold">{{ 'homeStaffBannerSeeAction'|trans }}</a>
             {% endif %}
         </span>
     </div>

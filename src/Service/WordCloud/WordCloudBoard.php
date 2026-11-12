@@ -20,7 +20,7 @@ use App\Repository\WordCloudSubmissionRepository;
  * participation figures - comes out of one pass over the same rows.
  *
  * @phpstan-type WordCloudWord array{word: string, count: int}
- * @phpstan-type WordCloudLatest array{text: string, author: string}
+ * @phpstan-type WordCloudLatest array{text: string, author: string, guest: bool}
  * @phpstan-type WordCloudTop array{word: string, count: int, share: int}
  */
 class WordCloudBoard
@@ -60,15 +60,18 @@ class WordCloudBoard
         // Participants are counted on everything submitted, refused words included: somebody who
         // wrote and had their word turned down did take part, and telling them otherwise on the
         // « N'ont pas participé » list would be plainly wrong.
+        // Keyed by person, accounts and guests alike (WordCloudSubmission::authorKey()).
         $participantIds = [];
         foreach ($submissions as $submission) {
-            $participantIds[(int) $submission->getStudent()?->getId()] = true;
+            $participantIds[$submission->authorKey()] = true;
         }
 
         $latest = array_map(
             static fn (WordCloudSubmission $one): array => [
                 'text' => (string) $one->getText(),
                 'author' => self::shortName($one->getStudent()),
+                // A guest has no name; the screens write « Invité » in their own language.
+                'guest' => $one->isGuest(),
             ],
             \array_slice(array_reverse($counted), 0, self::LATEST_SIZE),
         );

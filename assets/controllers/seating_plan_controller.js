@@ -1056,6 +1056,25 @@ export default class extends Controller {
         }
     }
 
+    // The sheet is laid out by the server from the saved plan: unsaved work is saved first, or
+    // « Imprimer » would print the plan as it was before (an empty room right after « Proposer »).
+    // The tab opens in the click itself - after an await the browser would take it for a pop-up.
+    async printPlan(event) {
+        if (!this.dirty) return;
+        event.preventDefault();
+        const sheet = window.open('', '_blank');
+        if (await this.save()) {
+            if (sheet) {
+                sheet.opener = null;
+                sheet.location.href = this.printLinkTarget.href;
+            } else {
+                window.open(this.printLinkTarget.href, '_blank', 'noopener');
+            }
+        } else {
+            sheet?.close();
+        }
+    }
+
     leaveWithoutSaving() {
         this.leaving = true;
         this.leaveDialogTarget.close();

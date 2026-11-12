@@ -14,7 +14,8 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Taking one word from one student, and everything that has to be true for that.
+ * Taking one word from one person - a student of the class, or on a public cloud any account or a
+ * visitor without one - and everything that has to be true for that.
  *
  * The rules live in WordCloudSubmissionPolicy, on primitives; this is what reads the student's own
  * history to build them a context, writes the row, and tells the board a word has arrived.
@@ -36,24 +37,36 @@ class WordCloudSubmissionService
      */
     public function submit(WordCloud $cloud, User $student, string $text, \DateTimeImmutable $now): WordCloudSubmission
     {
+        return $this->submitAs($cloud, WordCloudAuthor::account($student), $text, $now);
+    }
+
+    /**
+     * Who may write is the caller's question (the Voter for an account of the class, the public
+     * page for a public cloud); this applies the rules every word obeys, whoever wrote it.
+     *
+     * @throws WordCloudSubmissionRefused when the word is not taken, carrying which rule refused it
+     */
+    public function submitAs(WordCloud $cloud, WordCloudAuthor $author, string $text, \DateTimeImmutable $now): WordCloudSubmission
+    {
         $trimmed = trim($text);
         // The key is always the fully normalised form, whatever « Regrouper les variantes » says:
         // it is the duplicate rule's key as well as the counting key, and « chat » then « Chat »
         // from the same person is the same person saying the same thing either way.
         $normalized = $this->aggregator->key($trimmed, true);
 
-        $refusal = $this->policy->refusalFor($trimmed, $normalized, $this->contextFor($cloud, $student, $now));
+        $refusal = $this->policy->refusalFor($trimmed, $normalized, $this->contextFor($cloud, $author, $now));
         if (null !== $refusal) {
             throw new WordCloudSubmissionRefused($refusal);
         }
 
         $submission = new WordCloudSubmission(
             $cloud,
-            $student,
+            $author->user,
             $trimmed,
             $normalized,
             // The queue is a setting of the cloud, not a stage every word goes through.
             $cloud->isModeration() ? WordCloudModerationState::Pending : WordCloudModerationState::Approved,
+            $author->guestTokenHash,
         );
 
         $this->entityManager->persist($submission);
@@ -72,9 +85,9 @@ class WordCloudSubmissionService
         return $submission;
     }
 
-    private function contextFor(WordCloud $cloud, User $student, \DateTimeImmutable $now): WordCloudSubmissionContext
+    private function contextFor(WordCloud $cloud, WordCloudAuthor $author, \DateTimeImmutable $now): WordCloudSubmissionContext
     {
-        $own = $this->submissions->findForCloudAndStudent($cloud, $student);
+        $own = $this->submissions->findForCloudAndAuthor($cloud, $author);
 
         $keys = [];
         $counted = 0;

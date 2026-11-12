@@ -336,6 +336,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // picker is still not theirs: what they reach is /my/word-clouds/{id}, from the banner
             // on their dashboard. Piloting and writing are two doors, and this is the wrong one.
             '/tools/word-cloud' => 403,
+            '/word-clouds' => 403,
             // The frise of a supervised copy: the teachers of the formation and the staff read it,
             // never the student it is about.
             $this->timelinePath => 403,
@@ -381,6 +382,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // student with particular needs. Refused to the student side and to the teaching side
             // alike: who holds one is health-adjacent, and only the administration decides it.
             '/settings/structure/accommodations' => 403,
+            // Paramètres › Pédagogique › Années scolaires › Importer (design/validated/school-year-import.md):
+            // the access of the school-years tab, nothing wider.
+            '/settings/structure/school-years/'.$this->program->getSchoolYear()?->getId().'/import' => 403,
             '/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
@@ -545,7 +549,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/quiz-live/new' => 200,
             '/quiz-live/themes' => 200,
             '/tools/job-search-tracking' => 200,
-            '/tools/word-cloud' => 200,
+            // The old picker hands over to the clouds list, which asks for no class (2026-11-12).
+            '/tools/word-cloud' => 302,
+            '/word-clouds' => 200,
+            '/word-clouds/new' => 200,
             // Not a picker: the cross-class quiz list renders whatever the viewer teaches, empty
             // included, so it answers 200 rather than handing over to a class.
             '/tools/quiz' => 200,
@@ -570,6 +577,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
             '/settings/structure/accommodations' => 403,
+            // Paramètres › Pédagogique › Années scolaires › Importer (design/validated/school-year-import.md):
+            // the access of the school-years tab, nothing wider.
+            '/settings/structure/school-years/'.$this->program->getSchoolYear()?->getId().'/import' => 403,
             '/features' => 403,
             '/settings/groups' => 403,
             '/settings/groups/hierarchy' => 403,
@@ -630,6 +640,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
             '/settings/structure/accommodations' => 200,
+            // Paramètres › Pédagogique › Années scolaires › Importer (design/validated/school-year-import.md):
+            // the access of the school-years tab, nothing wider.
+            '/settings/structure/school-years/'.$this->program->getSchoolYear()?->getId().'/import' => 200,
             // Groups are admin-only, deliberately stricter than the rest of Settings - see
             // App\Controller\SettingsGroupsController's own note.
             '/settings/groups' => 200,
@@ -744,6 +757,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/quiz-live/new' => 200,
             '/tools/job-search-tracking' => 302,
             '/tools/word-cloud' => 302,
+            '/word-clouds' => 200,
             '/tools/quiz' => 200,
             // Staff read the frise too: StructureAccessChecker::isProgramTeacher() bypasses for them.
             $this->timelinePath => 200,
@@ -944,6 +958,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
             '/settings/structure/accommodations' => 403,
+            // Paramètres › Pédagogique › Années scolaires › Importer (design/validated/school-year-import.md):
+            // the access of the school-years tab, nothing wider.
+            '/settings/structure/school-years/'.$this->program->getSchoolYear()?->getId().'/import' => 403,
             '/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,

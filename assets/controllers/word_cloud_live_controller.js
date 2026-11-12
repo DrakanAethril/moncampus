@@ -30,6 +30,8 @@ export default class extends Controller {
         // whichever language it was not written against.
         metaTemplate: String,
         participantsTemplate: String,
+        // « Invité »: a visitor of a public cloud has no name to put on a chip.
+        guestLabel: String,
     };
 
     connect() {
@@ -125,7 +127,7 @@ export default class extends Controller {
         chip.className = 'cm-wc-fluxchip';
         chip.append(document.createTextNode(word.text));
         const who = document.createElement('span');
-        who.textContent = word.author;
+        who.textContent = word.guest ? this.guestLabelValue : word.author;
         chip.append(who);
 
         return chip;

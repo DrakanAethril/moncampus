@@ -91,6 +91,9 @@ export default class extends Controller {
         selectLabel: String,
         modalitiesUrlTemplate: String,
         modalitiesLabel: String,
+        // Paramètres › Pédagogique › Années scolaires (the 'schoolYearActions' renderer below).
+        importUrlTemplate: String,
+        importLabel: String,
         // A search the screen arrives already filtered by - Annuaire > Opérations de comptes is
         // reached from a user's fiche with that account's login in the URL, and a journal that
         // opened on everybody's rows would make the link a lie.
@@ -452,6 +455,17 @@ export default class extends Controller {
         // read from a row field - for a single value whose color doesn't vary row-to-row (e.g.
         // directory/users.html.twig's "Type" column, kept visually distinct from the "groupes"/
         // "groupes manuels" badge columns on the same row).
+        // A text with a gold badge when the row carries `column.flag` - « À relire » on the dates the
+        // school-year import moved (design/validated/school-year-import.md §6).
+        if (column.render === 'flaggedText') {
+            return {
+                data: column.data,
+                render: (data, type, row) => (type === 'display' && row[column.flag]
+                    ? `${escapeHtml(data)} <span class="cm-badge cm-badge--gold">${escapeHtml(column.flagLabel)}</span>`
+                    : data),
+            };
+        }
+
         if (column.render === 'staticBadge') {
             return {
                 data: column.data,
@@ -503,6 +517,50 @@ export default class extends Controller {
                         : '';
 
                     return `${editButton}${duplicateButton}${deactivateButton}`;
+                },
+            };
+        }
+
+        // Paramètres › Pédagogique › Années scolaires (design/validated/school-year-import.md, écran 1):
+        // « Importer » before Modifier / Désactiver on every active year, highlighted while the year
+        // has never received an import - and still there afterwards, a second import being safe.
+        if (column.render === 'schoolYearActions') {
+            return {
+                data: null,
+                orderable: false,
+                className: 'cm-actions',
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return '';
+                    }
+                    const importLink = row.isInactive
+                        ? ''
+                        : `<a href="${this.importUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--positive${row.imported ? '' : ' cm-syi-import--first'}">${escapeHtml(this.importLabelValue)}</a>`;
+                    const editLink = `<a href="${this.editUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>`;
+                    const deactivateButton = row.isInactive
+                        ? ''
+                        : `<button type="button" class="cm-action--danger" data-datatable-deactivate-id="${row.id}">${escapeHtml(this.deactivateLabelValue)}</button>`;
+
+                    return `${importLink}${editLink}${deactivateButton}`;
+                },
+            };
+        }
+
+        // The number of formations of a school year, and under it the trace of its last import,
+        // linked to that import's report.
+        if (column.render === 'schoolYearPrograms') {
+            return {
+                data: column.data,
+                orderable: false,
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return data;
+                    }
+                    const trace = row.importTrace
+                        ? `<a href="${escapeHtml(row.importUrl)}" class="cm-syi-trace">${escapeHtml(row.importTrace)}</a>`
+                        : '';
+
+                    return `${escapeHtml(String(data))}${trace}`;
                 },
             };
         }

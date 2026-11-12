@@ -18,6 +18,14 @@ framework:
             limit: 400
             interval: '10 minutes'
 
+        # The words a public word cloud takes from visitors without an account, per IP
+        # (App\Controller\WordCloud\PublicController). A whole school behind one address writes
+        # a few hundred; a script does not stop there.
+        word_cloud_guest:
+            policy: sliding_window
+            limit: 600
+            interval: '10 minutes'
+
         # Guards the logged-out "send me a magic login link" form (see
         # PublicMagicLoginController) - the same shared factory is consumed twice per request,
         # once keyed "ip:<ip>" and once "email:<contactEmail>" (both must pass), so a single IP

@@ -74,6 +74,17 @@
                     {% endfor %}
                 </select>
             </label>
+            {# Where the alternance stands now - the badge of the « Statut » column, read as a filter.
+               A bilan is named by its rank, so « Bilan 2 » covers every formation's second one. #}
+            <label class="cm-filterbar__field">
+                {{ 'ufaAlternanceFilterStepLabel'|trans }}
+                <select name="step" class="cm-filterbar__select {{ selectedStep ? '' : 'cm-filterbar__select--any' }}" data-action="change->auto-submit#submit">
+                    <option value="">{{ 'ufaAlternanceFilterStepAllLabel'|trans }}</option>
+                    {% for option in stepOptions %}
+                        <option value="{{ option.key }}"{{ selectedStep and selectedStep.key == option.key ? ' selected' }}>{{ option.labelKey|trans({'%rank%': option.rank}) }}</option>
+                    {% endfor %}
+                </select>
+            </label>
             {# Links, not submit buttons: pressing Enter in the search box implicitly submits
                through the form's *first* submit button, which silently reset the toggle back to
                "Actives". The hidden field is what carries the current state on the other

@@ -1,0 +1,55 @@
+{% extends 'layout/public.html.twig' %}
+
+{# A public cloud's address, /cloud/{code} (design/validated/word-cloud-public.md) - what its QR
+   code opens on a phone. The student's screen (word_cloud/student.html.twig) for whoever comes:
+   an account writes as itself, a visitor without one with no name at all. #}
+{% block public_title %}{{ cloud.name }}{% endblock %}
+{% block public_home_url %}{{ path('app_word_cloud_public', {code: cloud.publicCode}) }}{% endblock %}
+
+{% block public_main %}
+    <div class="cm-wc-pubpage">
+        <div class="cm-wc-card cm-wc-card--pad">
+            <span class="cm-wc-label">{{ 'wordCloudNavLabel'|trans }}</span>
+            <h1 class="cm-wc-preview__question cm-wc-pubpage__question">{{ cloud.question }}</h1>
+
+            {% if open and remainingBoxes > 0 %}
+                <form method="post" action="{{ path('app_word_cloud_public_submit', {code: cloud.publicCode}) }}" class="cm-wc-preview__frame" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token('word_cloud_public') }}">
+                    <div class="cm-wc-preview__boxes">
+                        {% for index in 1..remainingBoxes %}
+                            <input type="text" name="words[]" class="cm-wc-preview__box"
+                                   maxlength="30" autocomplete="off" {{ loop.first ? 'autofocus' }}
+                                   placeholder="{{ 'wordCloudPreviewPlaceholderLabel'|trans({'%number%': index}) }}"
+                                   aria-label="{{ 'wordCloudPreviewPlaceholderLabel'|trans({'%number%': index}) }}">
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="cm-wc-btn cm-wc-btn--lead">{{ 'wordCloudSendAction'|trans }}</button>
+                </form>
+                {% if not app.user %}
+                    <p class="cm-wc-pubpage__note">{{ 'wordCloudPublicAnonymousNote'|trans }}</p>
+                {% endif %}
+            {% elseif not open %}
+                <div class="cm-wc-student__closed">{{ (status.value == 'scheduled' ? 'wordCloudNotOpenYetMessage' : 'wordCloudClosedMessage')|trans }}</div>
+            {% else %}
+                <div class="cm-wc-student__closed">{{ 'wordCloudQuotaReachedMessage'|trans }}</div>
+            {% endif %}
+
+            {% if own|length > 0 %}
+                <span class="cm-wc-label">{{ 'wordCloudYourWordsLabel'|trans }}</span>
+                <div class="cm-wc-student__own">
+                    {% for submission in own %}
+                        <span class="cm-wc-wordchip {{ submission.moderationState.value == 'rejected' ? 'cm-wc-wordchip--rejected' }}">{{ submission.text }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        {# Only when the teacher asked for it, as for the class. #}
+        {% if board is not null %}
+            <div class="cm-wc-card cm-wc-card--pad">
+                <span class="cm-wc-label">{{ 'wordCloudClassCloudLabel'|trans }}</span>
+                {% include 'word_cloud/_cloud.html.twig' with {words: words, scale: scale, frameClass: 'cm-wc-cloud--preview'} %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

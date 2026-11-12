@@ -110,6 +110,7 @@ homeTeacherNextSessionTodayLabel: 'Today'
 homeTeacherQuickLinksLabel: 'Quick links'
 homeStaffBannerEvaluationsTitle: 'Some tutors or apprentices have a booklet step waiting, and no reminder batch covers them.'
 homeStaffBannerEvaluationsAction: 'Create a reminder'
+homeStaffBannerSeeAction: 'View'
 homeStaffMatrixCardTitle: 'Timetable'
 homeStaffMatrixCloseLabel: 'Close'
 homeStaffMatrixPreviousDayLabel: 'Previous day with classes'
@@ -7835,7 +7836,7 @@ checklistSheetPdfExportFailedFlashMessage: 'The checklist sheet could not be gen
 featureWordCloudLabel: 'Word cloud'
 wordCloudNavLabel: 'Word cloud'
 wordCloudNewAction: 'Start a new cloud'
-wordCloudNewPageHeading: 'New word cloud — %program%'
+wordCloudNewPageHeading: 'New word cloud'
 wordCloudEditPageHeading: 'Edit the word cloud'
 wordCloudNewBreadcrumbLabel: 'New cloud'
 wordCloudNoneYetMessage: 'No word cloud for this class yet.'
@@ -7847,7 +7848,7 @@ wordCloudColumnStatusLabel: 'Status'
 wordCloudColumnWordLabel: 'Word'
 wordCloudColumnCitationsLabel: 'Citations'
 wordCloudColumnWeightLabel: 'Weight'
-wordCloudColumnStudentLabel: 'Student'
+wordCloudColumnStudentLabel: 'Person'
 wordCloudColumnWordsLabel: 'Words'
 wordCloudColumnProposalsLabel: 'Proposals'
 wordCloudColumnLastSentLabel: 'Last sent'
@@ -7923,7 +7924,7 @@ wordCloudStatSubmissionsLabel: 'Words submitted'
 wordCloudStatDistinctLabel: 'Distinct words'
 wordCloudStatMostCitedLabel: 'Most cited word'
 wordCloudByWordTabLabel: 'By word'
-wordCloudByStudentTabLabel: 'By student'
+wordCloudByStudentTabLabel: 'By person'
 wordCloudSearchPlaceholder: 'Search…'
 wordCloudParticipatedLabel: 'Took part'
 wordCloudNoAnswerLabel: 'No answer'
@@ -7949,6 +7950,25 @@ wordCloudRefusalTooLongMessage: '30 characters at most.'
 wordCloudRefusalTooManyWordsMessage: 'This cloud expects fewer words than that.'
 wordCloudRefusalAlreadyProposedMessage: 'You have already proposed this word.'
 wordCloudRefusalQuotaReachedMessage: 'You have sent all your words.'
+wordCloudNoProgramOption: "No class (public cloud)"
+wordCloudNoProgramLabel: "No class"
+wordCloudAllClassesOption: "All classes"
+wordCloudPublicFieldLabel: "Open to everyone, no account needed (QR code)"
+wordCloudPublicFieldHint: "Anyone answers at the cloud's address or by scanning its QR code, with or without an account. A cloud with no class is always open to everyone; moderation is still advised."
+wordCloudPublicBadge: "Public"
+wordCloudPublicAccessLabel: "Public access"
+wordCloudProjectQrAction: "Project the QR code"
+wordCloudQrCodeLabel: "QR code"
+wordCloudShowCloudAction: "Show the cloud"
+wordCloudGuestLabel: "Guest"
+wordCloudGuestsRowLabel: "{1} Without an account: 1 person|]1,Inf[ Without an account: %count% people"
+wordCloudJoinTitle: "Join a word cloud"
+wordCloudJoinCodeLabel: "Cloud code"
+wordCloudJoinAction: "Join"
+wordCloudJoinEmpty: "Type the code shown under the QR code."
+wordCloudJoinUnknown: "No cloud open to everyone carries this code."
+wordCloudPublicAnonymousNote: "You are answering without an account: your name is not asked for."
+wordCloudPublicTooManyFlashMessage: "Too many words sent from this network. Try again in a few minutes."
 homeStudentBannerWordCloudTitle: 'A word cloud is open'
 homeStudentBannerWordCloudAction: 'Answer'
 
@@ -11112,3 +11132,12 @@ ufaAlternanceSecondaryTutorNoneLabel: "None"
 ufaAlternanceSecondaryTutorSectionLabel: "Secondary tutor (optional)"
 ufaAlternanceSecondaryTutorSectionHelp: "They open, fill in and sign the booklet like the principal tutor. Reminders go to the principal tutor, with the secondary tutor in copy."
 ufaAlternanceSecondaryTutorShortLabel: "Secondary tutor"
+ufaAlternanceFilterStepLabel: 'Step'
+ufaAlternanceFilterStepAllLabel: 'All'
+ufaAlternanceStepEngagementTutorLabel: 'Commitment · tutor signature'
+ufaAlternanceStepEngagementStudentLabel: 'Commitment · apprentice signature'
+ufaAlternanceStepEngagementCenterLabel: 'Commitment · training centre signature'
+ufaAlternanceStepPeriodTutorLabel: 'Review %rank% · tutor evaluation'
+ufaAlternanceStepPeriodStudentLabel: 'Review %rank% · apprentice evaluation'
+ufaAlternanceStepPeriodSupervisorLabel: 'Review %rank% · supervisor closing'
+ufaAlternanceStepClosedLabel: 'Nothing pending'

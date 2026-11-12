@@ -30,11 +30,11 @@ class WordCloudCsvExporter
      */
     public function export(WordCloud $cloud, array $roster, array $submissions, WordCloudFollowUp $followUp): string
     {
-        $rows = [['Étudiant', 'Mot', 'Horodatage', 'État']];
+        $rows = [['Personne', 'Mot', 'Horodatage', 'État']];
 
         foreach ($submissions as $submission) {
             $rows[] = [
-                $this->displayName($submission->getStudent()),
+                $submission->isGuest() ? 'Invité (sans compte)' : $this->displayName($submission->getStudent()),
                 (string) $submission->getText(),
                 $submission->getSubmittedAt()->format('d/m/Y H:i'),
                 $this->stateLabel($submission->getModerationState()),

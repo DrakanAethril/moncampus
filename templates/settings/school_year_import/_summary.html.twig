@@ -1,0 +1,20 @@
+{# The figures of a report (SchoolYearImportScreen::totals()), for screens 3 and 4. #}
+<div class="cm-syi-sum__row"><span>{{ 'schoolYearImportSummaryCreatedRow'|trans }}</span><b>{{ totals.created }}</b></div>
+<div class="cm-syi-sum__row"><span>{{ 'schoolYearImportSummaryCompleted'|trans }}</span><b>{{ totals.completed }}</b></div>
+{% if totals.periodCalendars > 0 %}<div class="cm-syi-sum__row"><span>{{ 'schoolYearImportBlockPeriodCalendarsLabel'|trans }}</span><b>{{ totals.periodCalendars }}</b></div>{% endif %}
+{% if totals.evaluationCalendars > 0 %}<div class="cm-syi-sum__row"><span>{{ 'schoolYearImportBlockEvaluationCalendarsLabel'|trans }}</span><b>{{ totals.evaluationCalendars }}</b></div>{% endif %}
+{% for key, label in {
+    teachers: 'schoolYearImportSummaryTeachers',
+    topics: 'schoolYearImportSummaryTopics',
+    skillGroups: 'schoolYearImportSummarySkillGroups',
+    financialItems: 'schoolYearImportSummaryFinancialItems',
+    certifications: 'schoolYearImportSummaryCertifications',
+    portfolio: 'schoolYearImportSummaryPortfolio',
+    gameRules: 'schoolYearImportSummaryGameRules',
+    crm: 'schoolYearImportSummaryCrm',
+} %}
+    {% if (totals.added[key] ?? 0) > 0 %}
+        <div class="cm-syi-sum__row"><span>{{ label|trans }}</span><b>{{ totals.added[key] }}</b></div>
+    {% endif %}
+{% endfor %}
+<div class="cm-syi-sum__row"><span>{{ 'schoolYearImportSummaryDatesRow'|trans }}</span><b>{{ totals.dates }}</b></div>

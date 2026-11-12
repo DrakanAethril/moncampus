@@ -26,6 +26,24 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.12'
+      date: '2026-11-12'
+      summary: "Une année scolaire se prépare désormais en reprenant la précédente : calendriers et formations sont recréés aux dates de la nouvelle année, sans les élèves. Un nuage de mots peut s'ouvrir à tous, sans compte, par un QR code à projeter."
+      entries:
+          - type: nouveaute
+            title: "Années scolaires : importer une année dans une autre, en choisissant les calendriers, les formations et ce qui est repris de chacune"
+            detail: "Les formations sont recréées sans élèves et masquées ; un second import complète sans rien modifier ni retirer."
+          - type: nouveaute
+            title: "Après un import d'année, les dates décalées sont marquées « À relire » jusqu'à leur confirmation"
+          - type: nouveaute
+            title: "Nuage de mots ouvert à tous, sans compte : une adresse et un QR code à projeter, pour une classe ou pour aucune"
+          - type: nouveaute
+            title: "Le connecteur Claude lit les nuages de mots : les mots et leurs chiffres, jamais un nom"
+          - type: modification
+            title: "UFA : les listes d'étudiants se lisent par nom de famille, et la liste des alternances se filtre par étape du livret"
+            detail: "Les bannières de l'accueil mènent directement à la liste des alternances concernées."
+          - type: fix
+            title: "Plans de classe : imprimer un plan tout juste proposé sortait une feuille sans aucun nom"
     - version: '2026.11.11'
       date: '2026-11-11'
       summary: "Le CRM des inscriptions, qui suivra chaque candidat de la pré-inscription au dossier complet à la place du classeur de l'équipe, entre en essai auprès de l'administration. L'application installée s'appelle désormais Formatool, et quelques entrées de menu changent de place."

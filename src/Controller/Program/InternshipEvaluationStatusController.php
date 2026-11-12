@@ -21,6 +21,7 @@ use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SkillLevelRepository;
 use App\Service\InternshipTutorEvaluationBuilder;
+use App\Service\StudentNameOrder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -75,7 +76,8 @@ class InternshipEvaluationStatusController extends AbstractController
             }
         }
 
-        usort($rows, static fn (array $a, array $b): int => self::evaluationStatusSortWeight($a['status']) <=> self::evaluationStatusSortWeight($b['status']));
+        usort($rows, static fn (array $a, array $b): int => self::evaluationStatusSortWeight($a['status']) <=> self::evaluationStatusSortWeight($b['status'])
+            ?: StudentNameOrder::compare($a['tutorLink']->getStudent(), $b['tutorLink']->getStudent()));
 
         return $this->render('program/internship_tutor_evaluations_status.html.twig', [
             'program' => $program,
@@ -168,7 +170,8 @@ class InternshipEvaluationStatusController extends AbstractController
             }
         }
 
-        usort($rows, static fn (array $a, array $b): int => self::evaluationStatusSortWeight($a['status']) <=> self::evaluationStatusSortWeight($b['status']));
+        usort($rows, static fn (array $a, array $b): int => self::evaluationStatusSortWeight($a['status']) <=> self::evaluationStatusSortWeight($b['status'])
+            ?: StudentNameOrder::compare($a['student'], $b['student']));
 
         return $this->render('program/internship_student_evaluations_status.html.twig', [
             'program' => $program,

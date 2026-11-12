@@ -61,6 +61,30 @@ class InternshipEvaluationPeriodRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * The most active bilans any of these formations has - how many « Bilan N » the UFA list's
+     * step filter offers.
+     *
+     * @param list<Program> $programs
+     */
+    public function maxActiveCountForPrograms(array $programs): int
+    {
+        if ([] === $programs) {
+            return 0;
+        }
+
+        $counts = $this->createQueryBuilder('ep')
+            ->select('COUNT(ep.id) AS periodCount')
+            ->where('ep.program IN (:programs)')
+            ->andWhere('ep.inactiveDate IS NULL')
+            ->setParameter('programs', $programs)
+            ->groupBy('ep.program')
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        return [] === $counts ? 0 : max(array_map(static fn (mixed $count): int => is_numeric($count) ? (int) $count : 0, $counts));
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

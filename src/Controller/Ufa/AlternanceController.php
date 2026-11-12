@@ -28,6 +28,7 @@ use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceTerminationService;
 use App\Service\Ecf\EcfBookletOverview;
 use App\Service\Ecf\EcfOverview;
+use App\Service\StudentNameOrder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -202,7 +203,9 @@ class AlternanceController extends AbstractController
                 }
             }
         }
-        $candidates = array_values($candidates);
+        // By surname, like every list of students in the UFA - the roster's own order is the order
+        // students were added to the class.
+        $candidates = StudentNameOrder::sort($candidates, static fn (array $pair): User => $pair[0]);
 
         return $this->json([
             'results' => array_map(static fn (array $pair): array => [

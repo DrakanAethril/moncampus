@@ -29,6 +29,7 @@ use App\Security\FeatureAccess;
 use App\Service\Ecf\EcfSettingsEditor;
 use App\Service\PostValue;
 use App\Service\ProgramCertificationEditor;
+use App\Service\SchoolYearImport\ShiftedDates;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -100,6 +101,19 @@ class UfaController extends AbstractController
         $evaluationPeriod->setInactiveDate(new \DateTimeImmutable());
         $evaluationPeriod->setInactivatedBy($this->currentUser());
         $entityManager->flush();
+
+        return $this->redirectToRoute('app_ufa_formation_evaluation_periods', ['id' => $program->getId()]);
+    }
+
+    // « Confirmer ces dates » (design/validated/school-year-import.md §6): the booklet's periods the
+    // school-year import moved are kept.
+    #[Route(path: '/ufa/programs/{id}/evaluation-periods/confirm-dates', name: 'app_ufa_formation_evaluation_periods_confirm_dates', methods: ['POST'])]
+    public function confirmShiftedEvaluationPeriods(int $id, Request $request, ProgramRepository $repository, ShiftedDates $shiftedDates): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $this->assertValidToken('shifted_dates', $request);
+        $shiftedDates->confirmInternshipPeriods($program);
+        $this->addFlash('success', 'shiftedDatesConfirmedFlashMessage');
 
         return $this->redirectToRoute('app_ufa_formation_evaluation_periods', ['id' => $program->getId()]);
     }

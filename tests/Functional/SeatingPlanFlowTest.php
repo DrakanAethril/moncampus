@@ -120,6 +120,13 @@ class SeatingPlanFlowTest extends FunctionalTestCase
         $stored = static::getContainer()->get(SeatingPlanRepository::class)->find($plan->getId());
         self::assertSame('Mon plan', $stored?->getName());
         self::assertCount(6, $stored->getDocument()['seats']);
+
+        // The printed sheet reads the saved plan: every student's name is on it.
+        $crawler = $this->client->request('GET', '/tools/seating-plans/'.$plan->getId().'/print');
+        self::assertResponseIsSuccessful();
+        $names = $crawler->filter('.cm-sp-seat--print .cm-sp-seat__first')->each(static fn ($node): string => $node->text());
+        sort($names);
+        self::assertSame(['Sp.student', 'Sp.student1', 'Sp.student2', 'Sp.student3', 'Sp.student4', 'Sp.student5'], $names);
     }
 
     public function testAMalformedDocumentIsRefusedWhole(): void

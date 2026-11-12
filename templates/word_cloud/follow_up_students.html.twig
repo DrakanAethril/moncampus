@@ -19,10 +19,10 @@
 
 {% block page_actions %}
     <div class="cm-wc-actions">
-        <a class="cm-wc-btn" href="{{ path('app_program_word_cloud_export_csv', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudExportCsvAction'|trans }}</a>
-        <a class="cm-wc-btn" href="{{ path('app_program_word_cloud_export_pdf', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudExportPdfAction'|trans }}</a>
+        <a class="cm-wc-btn" href="{{ path('app_word_cloud_export_csv', {cloudId: cloud.id}) }}">{{ 'wordCloudExportCsvAction'|trans }}</a>
+        <a class="cm-wc-btn" href="{{ path('app_word_cloud_export_pdf', {cloudId: cloud.id}) }}">{{ 'wordCloudExportPdfAction'|trans }}</a>
         {% if silentCount > 0 %}
-            <form method="post" action="{{ path('app_program_word_cloud_remind', {id: program.id, cloudId: cloud.id}) }}">
+            <form method="post" action="{{ path('app_word_cloud_remind', {cloudId: cloud.id}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('word_cloud_pilot') }}">
                 <input type="hidden" name="back" value="students">
                 <button type="submit" class="cm-wc-btn">{{ 'wordCloudMessageSilentAction'|trans }}</button>
@@ -65,8 +65,24 @@
                     <span class="cm-wc-students__last">{{ row.lastSubmittedAt ? row.lastSubmittedAt|date('H:i') : '—' }}</span>
                 </div>
             {% else %}
-                <div class="cm-wc-empty">{{ (query ? 'wordCloudNoSearchResultMessage' : 'wordCloudNoStudentsMessage')|trans }}</div>
+                {% if guests is null %}
+                    <div class="cm-wc-empty">{{ (query ? 'wordCloudNoSearchResultMessage' : 'wordCloudNoStudentsMessage')|trans }}</div>
+                {% endif %}
             {% endfor %}
+            {# A public cloud's visitors without an account, together: they have no name to list. #}
+            {% if guests is not null %}
+                <div class="cm-wc-students__row">
+                    <span class="cm-wc-students__name"><b>{{ 'wordCloudGuestsRowLabel'|trans({'%count%': guests.participants}) }}</b></span>
+                    <span><span class="cm-wc-tag cm-wc-tag--public">{{ 'wordCloudPublicBadge'|trans }}</span></span>
+                    <span class="cm-wc-students__nb">{{ guests.words|length }}</span>
+                    <span class="cm-wc-students__words">
+                        {% for word in guests.words %}
+                            <span class="cm-wc-wordchip {{ word.rejected ? 'cm-wc-wordchip--rejected' }}">{{ word.text }}</span>
+                        {% endfor %}
+                    </span>
+                    <span class="cm-wc-students__last">{{ guests.lastSubmittedAt ? guests.lastSubmittedAt|date('H:i') : '—' }}</span>
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endblock %}

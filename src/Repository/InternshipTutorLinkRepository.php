@@ -39,8 +39,13 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
-    /** @return list<InternshipTutorLink> */
-    public function findPageForProgramOrderedByMostRecent(Program $program, int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
+    /**
+     * One page of the UFA formation's « Tuteurs » table, by the alternant's surname - the order
+     * every list of students of the UFA is read in.
+     *
+     * @return list<InternshipTutorLink>
+     */
+    public function findPageForProgramByStudentName(Program $program, int $offset, int $limit, ?string $search = null, bool $includeInactive = false): array
     {
         $qb = $this->createQueryBuilder('l')
             ->leftJoin('l.student', 'st')->addSelect('st')
@@ -51,7 +56,9 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->leftJoin('l.lastUpdatedBy', 'ub')->addSelect('ub')
             ->where('l.program = :program')
             ->setParameter('program', $program)
-            ->orderBy('l.id', 'DESC')
+            ->orderBy('st.lastname', 'ASC')
+            ->addOrderBy('st.firstname', 'ASC')
+            ->addOrderBy('l.id', 'ASC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);
         $this->applySearch($qb, $search);
@@ -270,17 +277,22 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
     // worlds everywhere else (see App\Security\StructureAccessChecker::matchesTestMode()). Showing
     // both at once is what the flag exists to prevent.
     /**
-     * @param list<Program> $programs
+     * $ids, when given, narrows the list to those alternances - the « Étape » filter's answer,
+     * which is read in PHP (AlternanceListSteps) and handed here as ids. An empty list matches
+     * nothing.
+     *
+     * @param list<Program>  $programs
+     * @param list<int>|null $ids
      *
      * @return list<InternshipTutorLink>
      */
-    public function findDashboardPage(array $programs, bool $includeInactive, ?Enterprise $enterprise, ?string $search, bool $testData, int $offset, int $limit): array
+    public function findDashboardPage(array $programs, bool $includeInactive, ?Enterprise $enterprise, ?string $search, bool $testData, int $offset, int $limit, ?array $ids = null): array
     {
-        if ([] === $programs) {
+        if ([] === $programs || [] === $ids) {
             return [];
         }
 
-        return $this->dashboardQuery($programs, $includeInactive, $enterprise, $search, $testData)
+        return $this->dashboardQuery($programs, $includeInactive, $enterprise, $search, $testData, $ids)
             ->addSelect('st', 'tu', 'e', 'p')
             ->orderBy('st.lastname', 'ASC')
             ->addOrderBy('st.firstname', 'ASC')
@@ -295,21 +307,27 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** @param list<Program> $programs */
-    public function countForDashboard(array $programs, bool $includeInactive, ?Enterprise $enterprise, ?string $search, bool $testData): int
+    /**
+     * @param list<Program>  $programs
+     * @param list<int>|null $ids
+     */
+    public function countForDashboard(array $programs, bool $includeInactive, ?Enterprise $enterprise, ?string $search, bool $testData, ?array $ids = null): int
     {
-        if ([] === $programs) {
+        if ([] === $programs || [] === $ids) {
             return 0;
         }
 
-        return (int) $this->dashboardQuery($programs, $includeInactive, $enterprise, $search, $testData)
+        return (int) $this->dashboardQuery($programs, $includeInactive, $enterprise, $search, $testData, $ids)
             ->select('COUNT(l.id)')
             ->getQuery()
             ->getSingleScalarResult();
     }
 
-    /** @param list<Program> $programs */
-    private function dashboardQuery(array $programs, bool $includeInactive, ?Enterprise $enterprise, ?string $search, bool $testData): QueryBuilder
+    /**
+     * @param list<Program>  $programs
+     * @param list<int>|null $ids
+     */
+    private function dashboardQuery(array $programs, bool $includeInactive, ?Enterprise $enterprise, ?string $search, bool $testData, ?array $ids): QueryBuilder
     {
         $qb = $this->createQueryBuilder('l')
             ->leftJoin('l.student', 'st')
@@ -323,6 +341,10 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
 
         if (null !== $enterprise) {
             $qb->andWhere('l.enterprise = :enterprise')->setParameter('enterprise', $enterprise);
+        }
+
+        if (null !== $ids) {
+            $qb->andWhere('l.id IN (:ids)')->setParameter('ids', $ids);
         }
 
         $this->applySearch($qb, $search, true);
@@ -453,16 +475,25 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * The alternances of one employer, for its UFA fiche: the running ones first, each group by the
+     * alternant's surname - the order every list of students of the UFA is read in.
+     *
+     * @return list<InternshipTutorLink>
+     */
     public function findAllForEnterprise(Enterprise $enterprise): array
     {
         return $this->createQueryBuilder('l')
             ->addSelect('st', 'tu', 'p')
+            ->addSelect('CASE WHEN l.inactiveDate IS NULL THEN 0 ELSE 1 END AS HIDDEN terminatedRank')
             ->leftJoin('l.student', 'st')
             ->leftJoin('l.tutor', 'tu')
             ->leftJoin('l.program', 'p')
             ->where('l.enterprise = :enterprise')
             ->setParameter('enterprise', $enterprise)
-            ->orderBy('l.inactiveDate', 'ASC')
+            ->orderBy('terminatedRank', 'ASC')
+            ->addOrderBy('st.lastname', 'ASC')
+            ->addOrderBy('st.firstname', 'ASC')
             ->addOrderBy('l.contractStartDate', 'DESC')
             ->getQuery()
             ->getResult();

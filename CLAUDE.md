@@ -220,6 +220,22 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   - The accommodation criterion `Accommodation::$seatInFront` (`AccommodationProfile::$seatInFront`)
     makes the rules step *propose* « placer devant », never set it.
   - Printing is a server-laid page (`SeatingPlanPrintView`), students' view or the desk's (half a turn).
+- **Nuage de mots** (Outils › Animer la classe) — `WordCloud` → `WordCloudSubmission`,
+  `App\Controller\WordCloud\*`, `src/Service/WordCloud/`, handoff `design/design_handoff_nuage_de_mots/`,
+  spec `design/validated/word-cloud-public.md` for the public half. **A cloud belongs to a class or
+  to none** (2026-11-12): the teacher's screens are addressed by the cloud (`/word-clouds/{id}`…, the
+  class a filter of `/word-clouds`; the old `/programs/{id}/tools/word-clouds…` answer a 301), and
+  `WordCloudVoter::PILOT` is the class's teachers and staff, or the author alone for a cloud of no
+  class. « Ouvert à tous, sans compte » (`WordCloud::isPublic()`, always true without a class) gives
+  the cloud a code kept for good and an address, `/cloud/{code}` (`PublicController`, PUBLIC_ACCESS,
+  404 unless the feature is lit for the author): an account answers as itself, a visitor with no
+  name, known by a cookie token whose SHA-256 alone is stored (`WordCloudGuestToken`, quota and
+  duplicates per token, limiter `word_cloud_guest` per IP). A submission is an account's **or** a
+  guest's, never both (`WordCloudSubmission::authorKey()` is what participants are counted on). The
+  QR code is projected on a screen of its own (`/word-clouds/{id}/qr`, `WordCloudPublicAddress`).
+  Every word goes through `WordCloudSubmissionService::submitAs()`. The connector reads clouds with
+  `word_cloud_list` / `word_cloud_get`: **words and figures, never a name** (the user's decision of
+  2026-11-12), pending and refused words counted, not listed.
 - **Murs collaboratifs** (Outils › Animer la classe; « Ressources » for a student) — `Wall` →
   `WallList` → `WallCard` → `WallComment`, `App\Controller\Wall\*`, `src/Service/Wall/`, handoff
   `design/design_handoff_murs_collaboratifs/` (no spec in `design/validated/`: the handoff is the

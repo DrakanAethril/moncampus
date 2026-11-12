@@ -23,6 +23,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 class InternshipEvaluationPeriod
 {
     use AuditableTrait;
+    use ShiftedDatesTrait;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -85,7 +86,9 @@ class InternshipEvaluationPeriod
 
     public function setStartDate(?\DateTimeImmutable $startDate): static
     {
+        $before = $this->startDate;
         $this->startDate = $startDate;
+        $this->clearShiftedMarkIfChanged($before, $this->startDate);
 
         return $this;
     }
@@ -97,7 +100,9 @@ class InternshipEvaluationPeriod
 
     public function setEndDate(?\DateTimeImmutable $endDate): static
     {
+        $before = $this->endDate;
         $this->endDate = $endDate;
+        $this->clearShiftedMarkIfChanged($before, $this->endDate);
 
         return $this;
     }

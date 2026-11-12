@@ -102,7 +102,7 @@
                 </div>
             </div>
             <div class="cm-sp-top__buttons">
-                <twig:Cm:Button variant="outline" href="{{ path('app_seating_plan_print', {id: plan.id}) }}" target="_blank" rel="noopener" data-seating-plan-target="printLink">
+                <twig:Cm:Button variant="outline" href="{{ path('app_seating_plan_print', {id: plan.id}) }}" target="_blank" rel="noopener" data-seating-plan-target="printLink" data-action="seating-plan#printPlan">
                     <twig:ux:icon name="printer" width="16" height="16"/>{{ 'seatingPlanPrintAction'|trans }}
                 </twig:Cm:Button>
                 {% if canManage %}

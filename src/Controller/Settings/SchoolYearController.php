@@ -6,7 +6,9 @@ namespace App\Controller\Settings;
 
 use App\Entity\SchoolYear;
 use App\Form\SchoolYearType;
+use App\Repository\SchoolYearImportRepository;
 use App\Repository\SchoolYearRepository;
+use App\Service\SchoolYearImport\SchoolYearImportScreen;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -15,6 +17,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Paramètres > Pédagogique, onglet « Années scolaires ».
@@ -76,13 +79,17 @@ class SchoolYearController extends AbstractController
     }
 
     #[Route(path: '/settings/structure/school-years/data', name: 'app_settings_structure_school_years_data')]
-    public function schoolYearsData(Request $request, SchoolYearRepository $repository): JsonResponse
+    public function schoolYearsData(Request $request, SchoolYearRepository $repository, SchoolYearImportScreen $importScreen, SchoolYearImportRepository $imports, TranslatorInterface $translator): JsonResponse
     {
         [$draw, $start, $length, $search, $includeInactive] = $this->readDataTableParams($request);
 
         $total = $repository->countAll(null, $includeInactive);
         $filteredTotal = '' !== $search ? $repository->countAll($search, $includeInactive) : $total;
         $rows = $repository->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $includeInactive);
+        // The « Formations » column and the trace of the last import (school-year import, écran 1):
+        // two queries for the whole page.
+        $programCounts = $importScreen->programCounts($rows);
+        $latestImports = $imports->latestByTarget(array_map(static fn (SchoolYear $year): int => (int) $year->getId(), $rows));
 
         return $this->json([
             'draw' => $draw,
@@ -92,6 +99,17 @@ class SchoolYearController extends AbstractController
                 fn (SchoolYear $schoolYear): array => [
                     'id' => $schoolYear->getId(),
                     'isInactive' => null !== $schoolYear->getInactiveDate(),
+                    'programs' => $programCounts[(int) $schoolYear->getId()] ?? 0,
+                    'imported' => isset($latestImports[(int) $schoolYear->getId()]),
+                    'importTrace' => isset($latestImports[(int) $schoolYear->getId()]) ? $translator->trans('schoolYearImportTrace', [
+                        '%year%' => SchoolYearImportScreen::label($latestImports[(int) $schoolYear->getId()]->getSource()),
+                        '%date%' => $latestImports[(int) $schoolYear->getId()]->getCreationDate()->format('d/m/Y'),
+                        '%user%' => $this->userLabel($latestImports[(int) $schoolYear->getId()]->getCreatedBy()),
+                    ]) : null,
+                    'importUrl' => isset($latestImports[(int) $schoolYear->getId()]) ? $this->generateUrl('app_settings_structure_school_years_import_report', [
+                        'id' => $schoolYear->getId(),
+                        'import' => $latestImports[(int) $schoolYear->getId()]->getId(),
+                    ]) : null,
                     'startDate' => $schoolYear->getStartDate()->format('d/m/Y'),
                     'endDate' => $schoolYear->getEndDate()->format('d/m/Y'),
                     'creationDate' => $schoolYear->getCreationDate()->format('d/m/Y H:i'),

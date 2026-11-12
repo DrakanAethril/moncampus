@@ -1,0 +1,182 @@
+{# Screen 2 of the school-year import (design/validated/school-year-import.md §2): the source year,
+   the calendars, the formations, what is taken over for each. A GET form - nothing is written
+   before screen 3's POST. The summary on the right only adds up the counts the server put on each
+   formation (school_year_import_controller.js); it decides nothing. #}
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = 'schoolYearImportHeading'|trans({'%year%': targetLabel}) %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'settings/school_year_import/_breadcrumb.html.twig' with {leaf: 'schoolYearImportBreadcrumb'|trans({'%year%': targetLabel})} only %}
+{% endblock %}
+
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    {% include 'settings/school_year_import/_steps.html.twig' with {step: 1} only %}
+
+    {% if source is null %}
+        <div class="cm-syi-card">
+            <p class="cm-syi-empty">{{ 'schoolYearImportNoSourceText'|trans }}</p>
+            <twig:Cm:ActionBar>
+                <twig:Cm:Button variant="outline" href="{{ path('app_settings_structure_school_years') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+            </twig:Cm:ActionBar>
+        </div>
+    {% else %}
+        <form method="get" action="{{ path('app_settings_structure_school_years_import', {id: target.id}) }}" class="cm-syi"
+              data-controller="school-year-import"
+              data-school-year-import-source-url-value="{{ path('app_settings_structure_school_years_import', {id: target.id}) }}"
+              data-school-year-import-needs-label-value="{{ 'schoolYearImportNeedsLabel'|trans }}"
+              data-school-year-import-selected-label-value="{{ 'schoolYearImportSelectedCount'|trans }}">
+            <input type="hidden" name="step" value="check">
+            <input type="hidden" name="submitted" value="1">
+
+            <div class="cm-syi__main">
+                <section class="cm-syi-card cm-syi-card--fields">
+                    <label class="cm-syi-field">
+                        <span class="cm-syi-field__label">{{ 'schoolYearImportSourceLabel'|trans }}</span>
+                        <select name="source" class="form-select" data-action="school-year-import#changeSource">
+                            {% for row in sources %}
+                                <option value="{{ row.year.id }}"{{ row.year.id == source.id ? ' selected' }}>
+                                    {{ 'schoolYearImportSourceOption'|trans({'%year%': row.label, '%start%': row.year.startDate|date('d/m/Y'), '%end%': row.year.endDate|date('d/m/Y'), '%count%': row.programs}) }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <span class="cm-syi-field__hint">{{ 'schoolYearImportSourceHint'|trans }}</span>
+                    </label>
+                    <div class="cm-syi-field">
+                        <span class="cm-syi-field__label">{{ 'schoolYearImportTargetDatesLabel'|trans }}</span>
+                        <div class="cm-syi-field__value">{{ target.startDate|date('d/m/Y') }} → {{ target.endDate|date('d/m/Y') }}</div>
+                        <span class="cm-syi-field__hint">{{ 'schoolYearImportShiftHint'|trans({'%count%': view.weeks|abs, '%direction%': (view.weeks < 0 ? 'schoolYearImportShiftBackward' : 'schoolYearImportShiftForward')|trans})|raw }}</span>
+                    </div>
+                </section>
+
+                <section class="cm-syi-card">
+                    <div class="cm-syi-card__head">
+                        <h3 class="cm-syi-card__title">{{ 'schoolYearImportCalendarsTitle'|trans }}</h3>
+                        <span class="cm-syi-card__meta">{{ 'schoolYearImportCalendarsMeta'|trans }}</span>
+                    </div>
+                    {% for block in calendarBlocks %}
+                        {% set kind = block.value == 'period_calendars' ? 'period' : 'evaluation' %}
+                        {% set created = view.calendars[kind]|filter(c => c.status == 'created') %}
+                        {% set existing = view.calendars[kind]|filter(c => c.status == 'existing') %}
+                        <label class="cm-syi-check">
+                            <input type="checkbox" class="form-check-input" name="blocks[]" value="{{ block.value }}"{{ choices.has(block) ? ' checked' }}
+                                   data-school-year-import-target="block" data-action="school-year-import#update"
+                                   data-label="{{ block.labelKey|trans }}"
+                                   data-calendars="{{ created|length }}" data-periods="{{ created|reduce((sum, c) => sum + c.periods, 0) }}">
+                            <span>
+                                <span class="cm-syi-check__title">{{ block.labelKey|trans }}</span>
+                                <span class="cm-syi-check__hint">
+                                    {% if view.calendars[kind] is empty %}
+                                        {{ 'schoolYearImportCalendarsNone'|trans }}
+                                    {% else %}
+                                        {{ view.calendars[kind]|map(c => c.name)|join(' · ') }}.
+                                        {{ block.hintKey|trans }}
+                                        {% if existing is not empty %}{{ 'schoolYearImportCalendarsExisting'|trans({'%count%': existing|length}) }}{% endif %}
+                                    {% endif %}
+                                </span>
+                            </span>
+                            <span class="cm-syi-check__count">{{ 'schoolYearImportCalendarsCount'|trans({'%count%': created|length, '%periods%': created|reduce((sum, c) => sum + c.periods, 0)}) }}</span>
+                        </label>
+                    {% endfor %}
+                </section>
+
+                <section class="cm-syi-card">
+                    <div class="cm-syi-card__head">
+                        <h3 class="cm-syi-card__title">{{ 'schoolYearImportProgramsTitle'|trans }}</h3>
+                        <span class="cm-syi-card__meta" data-school-year-import-target="programCount"></span>
+                    </div>
+                    {% if view.programs is empty %}
+                        <p class="cm-syi-empty">{{ 'schoolYearImportNoProgramText'|trans({'%year%': sourceLabel}) }}</p>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="cm-syi-table">
+                                <thead>
+                                    <tr>
+                                        <th class="cm-syi-table__check"><input type="checkbox" class="form-check-input" aria-label="{{ 'schoolYearImportAllPrograms'|trans }}" data-school-year-import-target="all" data-action="school-year-import#toggleAll"></th>
+                                        <th>{{ 'schoolYearImportProgramColumn'|trans({'%year%': sourceLabel}) }}</th>
+                                        <th>{{ 'schoolYearImportOptionsColumn'|trans }}</th>
+                                        <th class="cm-syi-table__num">{{ 'schoolYearImportTeachersColumn'|trans }}</th>
+                                        <th class="cm-syi-table__num">{{ 'schoolYearImportTopicsColumn'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for program in view.programs %}
+                                        <tr>
+                                            <td class="cm-syi-table__check">
+                                                <input type="checkbox" class="form-check-input" name="programs[]" value="{{ program.id }}" id="syi-program-{{ program.id }}"{{ choices.hasProgram(program.id) ? ' checked' }}
+                                                       data-school-year-import-target="program" data-action="school-year-import#update"
+                                                       data-status="{{ program.status }}" data-dates="{{ program.dates }}" data-counts="{{ program.counts|json_encode }}">
+                                            </td>
+                                            <td>
+                                                <label for="syi-program-{{ program.id }}" class="cm-syi-table__name">{{ program.name }}</label>
+                                                {% if program.test %}<twig:Cm:Badge tone="purple">{{ 'schoolYearImportTestBadge'|trans }}</twig:Cm:Badge>{% endif %}
+                                                {% if program.status == 'completed' %}
+                                                    <twig:Cm:Badge tone="blue">{{ 'schoolYearImportCompletedBadge'|trans }}</twig:Cm:Badge>
+                                                    <span class="cm-syi-table__sub">{{ 'schoolYearImportCompletedHint'|trans({'%year%': targetLabel}) }}</span>
+                                                {% endif %}
+                                                <span class="cm-syi-table__sub">{{ program.cohort }}</span>
+                                            </td>
+                                            <td>{{ [program.options, program.modalities]|filter(v => v != '')|join(' · ') ?: '—' }}</td>
+                                            <td class="cm-syi-table__num">{{ program.teachers }}</td>
+                                            <td class="cm-syi-table__num">{{ program.topics }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </section>
+
+                <section class="cm-syi-card">
+                    <div class="cm-syi-card__head">
+                        <h3 class="cm-syi-card__title">{{ 'schoolYearImportContentTitle'|trans }}</h3>
+                        <span class="cm-syi-card__meta">{{ 'schoolYearImportContentMeta'|trans }}</span>
+                    </div>
+                    <div class="cm-syi-check is-locked">
+                        <input type="checkbox" class="form-check-input" checked disabled>
+                        <span>
+                            <span class="cm-syi-check__title">{{ 'schoolYearImportBlockProgramLabel'|trans }}</span>
+                            <span class="cm-syi-check__hint">{{ 'schoolYearImportBlockProgramHint'|trans }}</span>
+                        </span>
+                        <span class="cm-syi-check__count">{{ 'schoolYearImportAlways'|trans }}</span>
+                    </div>
+                    {% for block in programBlocks %}
+                        <label class="cm-syi-check{{ block.child ? ' cm-syi-check--child' }}" data-school-year-import-target="row">
+                            <input type="checkbox" class="form-check-input" name="blocks[]" value="{{ block.value }}"{{ choices.has(block) ? ' checked' }}
+                                   data-school-year-import-target="block" data-action="school-year-import#update"
+                                   data-label="{{ block.labelKey|trans }}"
+                                   data-needs="{{ block.needs|map(b => b.value)|join(' ') }}"
+                                   data-needs-any="{{ block.needsAny|map(b => b.value)|join(' ') }}">
+                            <span>
+                                <span class="cm-syi-check__title">{{ block.labelKey|trans }}</span>
+                                <span class="cm-syi-check__hint">{{ block.hintKey|trans }}</span>
+                                <span class="cm-syi-check__needs" data-needs-hint hidden></span>
+                            </span>
+                            <span class="cm-syi-check__count" data-sum="{{ block.value }}"></span>
+                        </label>
+                    {% endfor %}
+                </section>
+            </div>
+
+            <aside class="cm-syi__summary" aria-live="polite">
+                <h3 class="cm-syi-sum__title">{{ 'schoolYearImportSummaryTitle'|trans({'%year%': targetLabel}) }}</h3>
+                <div class="cm-syi-sum__big"><span data-school-year-import-target="created">0</span> <small>{{ 'schoolYearImportSummaryCreated'|trans }}</small></div>
+                <div class="cm-syi-sum__row"><span>{{ 'schoolYearImportSummaryCompleted'|trans }}</span><b data-school-year-import-target="completed">0</b></div>
+                <div data-school-year-import-target="rows"></div>
+                <div class="cm-syi-sum__warn" data-school-year-import-target="dates" hidden></div>
+                <template data-school-year-import-target="rowTemplate">
+                    <div class="cm-syi-sum__row"><span data-label></span><b data-value></b></div>
+                </template>
+                <template data-school-year-import-target="datesTemplate">{{ 'schoolYearImportSummaryDates'|trans }}</template>
+                <div class="cm-syi-sum__actions">
+                    <twig:Cm:Button variant="outline" href="{{ path('app_settings_structure_school_years') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" type="submit" data-school-year-import-target="submit">{{ 'schoolYearImportCheckAction'|trans }}</twig:Cm:Button>
+                </div>
+            </aside>
+        </form>
+    {% endif %}
+{% endblock %}

@@ -4016,7 +4016,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-dash-banner__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cm-dash-banner__title { font: 600 15px var(--cm-font-title); }
 .cm-dash-banner__text { font-size: 13px; }
-.cm-dash-banner__action { margin-left: auto; flex: none; }
+.cm-dash-banner__action { margin-left: auto; flex: none; display: flex; gap: 8px; flex-wrap: wrap; }
 .cm-dash-banner--ok { background: #e7f4ee; border-color: #9ecdb4; color: #1f7a54; }
 .cm-dash-banner--danger { background: #fbeeea; border-color: #dfab9e; color: #b0553f; }
 [data-bs-theme=dark] .cm-dash-banner { background: #3c3117; border-color: #7a5417; color: #e0bc6d; }
@@ -10754,6 +10754,8 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-wc-tag--open { background: var(--cm-wc-ok-bg); color: var(--cm-wc-ok-tx); }
 .cm-wc-tag--scheduled { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
 .cm-wc-tag--closed { background: var(--cm-border-soft); color: var(--cm-muted); }
+/* « Public »: answered without an account at /cloud/{code}. */
+.cm-wc-tag--public { background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); margin-left: 6px; }
 /* « Sans réponse » on the follow-up: an alert shade rather than the neutral one, because the whole
    tab exists to make that line findable. */
 .cm-wc-tag--silent { background: var(--cm-wc-no-bg); color: var(--cm-red-tx); }
@@ -10896,6 +10898,9 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-wc-switch:has(input:checked) .cm-wc-switch__track {
   background: var(--cm-brand); justify-content: flex-end;
 }
+/* « Ouvert à tous » held on while no class is chosen: a cloud of no class is always public. */
+.cm-wc-switch.is-locked { cursor: default; opacity: .7; }
+.cm-wc-hint { margin: -4px 0 0 56px; font-size: 12.5px; color: var(--cm-muted); }
 
 /* -- Creation form -------------------------------------------------------- */
 .cm-wc-form { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
@@ -11117,6 +11122,34 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    correctly at a glance. */
 .cm-wc-wordchip--rejected { color: var(--cm-red-tx); border-color: var(--cm-wc-no-bd); text-decoration: line-through; }
 .cm-wc-dash { color: var(--cm-wc-dim); font-size: 12.5px; }
+
+/* -- Public access (pilot screen) ---------------------------------------- */
+.cm-wc-public { display: flex; flex-direction: column; gap: 12px; }
+.cm-wc-public__body { display: flex; gap: 14px; align-items: center; }
+.cm-wc-public__qr { width: 112px; height: 112px; flex: none; padding: 6px; background: #fff; border-radius: var(--cm-radius-sm); }
+.cm-wc-public__qr svg { width: 100%; height: 100%; display: block; }
+.cm-wc-public__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cm-wc-public__join { font-size: 12.5px; color: var(--cm-muted); }
+.cm-wc-public__code { font: 700 26px var(--cm-font-ui); letter-spacing: 4px; color: var(--cm-ink); }
+.cm-wc-public__link { font-size: 12px; overflow-wrap: anywhere; }
+
+/* -- Projected QR code --------------------------------------------------- */
+/* The board's own dark wall, one QR code wide: the room scans it from the back. */
+.cm-wc-qrwall { align-items: center; justify-content: center; text-align: center; gap: 22px; }
+.cm-wc-qrwall .cm-wc-board__question { margin: 0; max-width: 1100px; }
+.cm-wc-qrwall__qr { width: min(52vh, 520px); aspect-ratio: 1; padding: 22px; background: #fff; border-radius: 18px; box-sizing: border-box; }
+.cm-wc-qrwall__qr svg { width: 100%; height: 100%; display: block; }
+.cm-wc-qrwall__join { font: 600 22px var(--cm-font-ui); color: var(--cm-wc-board-dim); }
+.cm-wc-qrwall__code { font: 700 56px var(--cm-font-ui); letter-spacing: 10px; color: #fff; line-height: 1; }
+.cm-wc-qrwall__meta { font: 600 16px var(--cm-font-ui); color: var(--cm-wc-board-faint); }
+
+/* -- Public page (/cloud/{code}) ----------------------------------------- */
+.cm-wc-pubpage { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; padding: 8px 0 24px; }
+.cm-wc-pubpage__question { font: 600 24px var(--cm-font-title); color: var(--cm-ink); margin: 8px 0 14px; }
+.cm-wc-pubpage__note { margin: 10px 0 0; font-size: 12.5px; color: var(--cm-muted); }
+.cm-wc-pubjoin { display: flex; flex-direction: column; gap: 10px; }
+.cm-wc-pubjoin__code { font: 700 22px var(--cm-font-ui); letter-spacing: 4px; text-transform: uppercase; }
+.cm-wc-pubjoin__error { margin: 0; color: var(--cm-red-tx); font-size: 13px; }
 
 /* -- Projection board ----------------------------------------------------- */
 /* Dark in both themes on purpose: this is a wall at the back of a room, not a page. */
@@ -14319,3 +14352,98 @@ body.cm-sg-immersive { overflow: hidden; }
     .cm-rb-programs__head > :nth-child(2), .cm-rb-programs__row > .cm-rb-bar { display: none; }
     .cm-rb-status__updated { margin-left: 0; }
 }
+
+/* ===================================================================================== */
+/* Import d'année scolaire (Paramètres › Pédagogique › Années scolaires › Importer)        */
+/* design/validated/school-year-import.md - screens 2, 3 and 4: a column of cards and a    */
+/* sticky summary on the right, folded under it below the large breakpoint.               */
+/* ===================================================================================== */
+.cm-syi { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.cm-syi__main { display: grid; gap: 16px; min-width: 0; }
+.cm-syi__summary {
+    position: sticky; top: 16px;
+    display: grid; gap: 9px;
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+    padding: 16px 18px;
+}
+.cm-syi-card {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+    padding: 14px 18px; min-width: 0;
+}
+.cm-syi-card--fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.cm-syi-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; }
+.cm-syi-card__title { font: 600 15px var(--cm-font-ui); color: var(--cm-ink); margin: 0; }
+.cm-syi-card__meta { font-size: 12.5px; color: var(--cm-muted); }
+.cm-syi-empty { color: var(--cm-muted); font-size: 13.5px; margin: 6px 0; }
+
+.cm-syi-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cm-syi-field__label { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; }
+.cm-syi-field__value { background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm); padding: 7px 10px; font-weight: 600; color: var(--cm-ink); }
+.cm-syi-field__hint { font-size: 12.5px; color: var(--cm-muted); }
+
+.cm-syi-check {
+    display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 10px; align-items: start;
+    padding: 10px 0; border-top: 1px solid var(--cm-border-soft); margin: 0; cursor: pointer;
+}
+.cm-syi-check .form-check-input { margin-top: 3px; }
+.cm-syi-check--child { padding-left: 28px; }
+.cm-syi-check.is-locked, .cm-syi-check.is-disabled { cursor: default; }
+.cm-syi-check.is-disabled .cm-syi-check__title, .cm-syi-check.is-disabled .cm-syi-check__hint { color: var(--cm-faint); }
+.cm-syi-check__title { display: block; font-weight: 600; color: var(--cm-ink); }
+.cm-syi-check__hint { display: block; font-size: 12.5px; color: var(--cm-muted); }
+.cm-syi-check__needs { display: block; font-size: 12px; color: var(--cm-gold-tx); margin-top: 2px; }
+.cm-syi-check__count { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); white-space: nowrap; }
+
+.cm-syi-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.cm-syi-table th { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--cm-border); }
+.cm-syi-table td { padding: 8px; border-bottom: 1px solid var(--cm-border-soft); vertical-align: top; color: var(--cm-text); }
+.cm-syi-table__check { width: 28px; }
+.cm-syi-table__num { text-align: right; white-space: nowrap; }
+.cm-syi-table__nowrap { white-space: nowrap; }
+.cm-syi-table__muted { color: var(--cm-muted); font-style: italic; }
+.cm-syi-table__name { font-weight: 600; color: var(--cm-ink); margin-right: 6px; cursor: pointer; }
+.cm-syi-table__sub { display: block; font-size: 12px; color: var(--cm-muted); }
+
+.cm-syi-sum__title { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; margin: 0; }
+.cm-syi-sum__big { font: 700 28px var(--cm-font-title); color: var(--cm-ink); line-height: 1.1; }
+.cm-syi-sum__big small { font: 500 13px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-syi-sum__row { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; color: var(--cm-text); }
+.cm-syi-sum__row b { color: var(--cm-ink); }
+.cm-syi-sum__warn { background: var(--cm-gold-bg-soft); color: var(--cm-gold-tx); border-radius: var(--cm-radius-sm); padding: 8px 10px; font-size: 12.5px; }
+.cm-syi-sum__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--cm-border-soft); padding-top: 12px; margin-top: 4px; }
+
+.cm-syi-rows { display: grid; }
+.cm-syi-row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-top: 1px solid var(--cm-border-soft); }
+.cm-syi-row:first-child { border-top: 0; }
+.cm-syi-row__title { font-weight: 600; color: var(--cm-ink); }
+.cm-syi-row__meta, .cm-syi-row__note { font-size: 12.5px; color: var(--cm-muted); }
+.cm-syi-row__note { color: var(--cm-gold-tx); }
+.cm-syi-row__right { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 6px; flex: none; max-width: 45%; }
+.cm-syi-row__link { font-size: 13px; white-space: nowrap; }
+
+.cm-syi-done { background: var(--cm-green-bg); color: var(--cm-green-tx); border-radius: var(--cm-radius); padding: 12px 16px; margin-bottom: 16px; font-weight: 600; }
+.cm-syi-todo { list-style: none; margin: 0; padding: 0; display: grid; }
+.cm-syi-todo li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--cm-border-soft); font-size: 13.5px; }
+.cm-syi-todo li:first-child { border-top: 0; }
+.cm-syi-todo__muted { color: var(--cm-muted); font-size: 12.5px; text-align: right; }
+
+/* Écran 1: the trace of the last import under the number of formations. */
+.cm-syi-trace { display: block; font-size: 12px; color: var(--cm-muted); }
+.cm-actions .cm-syi-import--first { background: var(--cm-gold-bg-soft); border-radius: var(--cm-radius-sm); padding: 1px 8px; font-weight: 600; }
+
+@media (max-width: 991.98px) {
+    .cm-syi { grid-template-columns: minmax(0, 1fr); }
+    .cm-syi__summary { position: static; }
+    .cm-syi-card--fields { grid-template-columns: minmax(0, 1fr); }
+    .cm-syi-row { flex-direction: column; }
+    .cm-syi-row__right { justify-content: flex-start; max-width: none; }
+}
+
+/* « À relire »: the notice above a list of dates moved by the school-year import. */
+.cm-syi-shifted {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    background: var(--cm-gold-bg-soft); color: var(--cm-gold-tx);
+    border-radius: var(--cm-radius); padding: 10px 14px; margin-bottom: 14px; font-size: 13.5px;
+}
+.cm-syi-shifted__text { flex: 1 1 260px; }
+.cm-syi-shifted__form { margin: 0; }
