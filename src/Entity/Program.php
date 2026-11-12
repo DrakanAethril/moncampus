@@ -340,6 +340,23 @@ class Program
     #[ORM\Column(name: 'portfolio_exam_session', nullable: true)]
     private ?int $portfolioExamSession = null;
 
+    /**
+     * « À relire » on the portfolio deadlines: the school-year import moved them
+     * (design/validated/school-year-import.md, R4). Cleared by changing a deadline or by « Confirmer
+     * ces dates » in the formation's portfolio settings.
+     */
+    #[ORM\Column(name: 'portfolio_dates_shifted_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $portfolioDatesShiftedAt = null;
+
+    /**
+     * The formation of another year this one was created from, or completed from, by the school-year
+     * import - the first thing a second import recognises it by (R5). Never read as a pedagogical
+     * link: nothing of the other year is shown through it.
+     */
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(name: 'imported_from_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Program $importedFrom = null;
+
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
     {
         $this->name = $name;
@@ -798,6 +815,9 @@ class Program
 
     public function setPortfolioE5Deadline(?\DateTimeImmutable $portfolioE5Deadline): static
     {
+        if ($this->portfolioE5Deadline?->format('Y-m-d H:i:s') !== $portfolioE5Deadline?->format('Y-m-d H:i:s')) {
+            $this->portfolioDatesShiftedAt = null;
+        }
         $this->portfolioE5Deadline = $portfolioE5Deadline;
 
         return $this;
@@ -810,6 +830,9 @@ class Program
 
     public function setPortfolioE6Deadline(?\DateTimeImmutable $portfolioE6Deadline): static
     {
+        if ($this->portfolioE6Deadline?->format('Y-m-d H:i:s') !== $portfolioE6Deadline?->format('Y-m-d H:i:s')) {
+            $this->portfolioDatesShiftedAt = null;
+        }
         $this->portfolioE6Deadline = $portfolioE6Deadline;
 
         return $this;
@@ -828,6 +851,30 @@ class Program
     }
 
     /** The portfolio is live for this class: switched on and pointed at a référentiel. */
+    public function getPortfolioDatesShiftedAt(): ?\DateTimeImmutable
+    {
+        return $this->portfolioDatesShiftedAt;
+    }
+
+    public function markPortfolioDatesShifted(?\DateTimeImmutable $at): static
+    {
+        $this->portfolioDatesShiftedAt = $at;
+
+        return $this;
+    }
+
+    public function getImportedFrom(): ?Program
+    {
+        return $this->importedFrom;
+    }
+
+    public function setImportedFrom(?Program $importedFrom): static
+    {
+        $this->importedFrom = $importedFrom;
+
+        return $this;
+    }
+
     public function hasPortfolio(): bool
     {
         return $this->portfolioEnabled && null !== $this->portfolioReferential;

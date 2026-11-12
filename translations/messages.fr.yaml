@@ -13138,3 +13138,168 @@ crmImportPieceTwice: '« %piece% » est donnée deux fois.'
 crmImportDateInvalid: '« %piece% » : la date « %date% » n''est pas une date AAAA-MM-JJ.'
 crmImportNoteDateInvalid: 'La date de note « %date% » n''est pas une date AAAA-MM-JJ.'
 crmImportValueUnknown: '« %value% » n''est pas une valeur de %field% (%values%).'
+# Import d'année scolaire (design/validated/school-year-import.md)
+schoolYearProgramsColumnLabel: 'Formations'
+schoolYearImportAction: 'Importer'
+schoolYearImportTrace: 'importée de %year% le %date% par %user%'
+schoolYearImportHeading: "Importer dans l'année %year%"
+schoolYearImportBreadcrumb: 'Importer dans %year%'
+schoolYearImportStepChoose: 'Choisir'
+schoolYearImportStepCheck: 'Vérifier'
+schoolYearImportStepReport: 'Compte rendu'
+schoolYearImportNoSourceText: "Aucune autre année scolaire active : il n'y a rien à importer. Créez ou réactivez d'abord l'année d'origine."
+schoolYearImportSourceLabel: "Année d'origine"
+schoolYearImportSourceOption: '{0}%year% · %start% → %end% · aucune formation|{1}%year% · %start% → %end% · 1 formation|]1,Inf[%year% · %start% → %end% · %count% formations'
+schoolYearImportSourceHint: "Par défaut, l'année qui précède. L'année d'origine n'est jamais modifiée."
+schoolYearImportTargetDatesLabel: "Dates de l'année d'arrivée"
+schoolYearImportShiftHint: '{0}Les formations prennent ces dates. Les autres dates gardent leur jour.|{1}Les formations prennent ces dates. Les autres dates sont décalées de <b>1 semaine</b> %direction%.|]1,Inf[Les formations prennent ces dates. Les autres dates sont décalées de <b>%count% semaines</b> %direction%.'
+schoolYearImportShiftForward: 'en avant'
+schoolYearImportShiftBackward: 'en arrière'
+schoolYearImportCalendarsTitle: "Calendriers de l'établissement"
+schoolYearImportCalendarsMeta: 'Partagés par plusieurs formations'
+schoolYearImportCalendarsNone: "L'année d'origine n'en a pas."
+schoolYearImportCalendarsExisting: '{1}Un est déjà là sous le même nom : il est gardé tel quel.|]1,Inf[%count% sont déjà là sous le même nom : ils sont gardés tels quels.'
+schoolYearImportCalendarsCount: '{0}rien à créer|{1}1 · %periods% périodes|]1,Inf[%count% · %periods% périodes'
+schoolYearImportProgramsTitle: 'Formations'
+schoolYearImportSelectedCount: '%count% sur %total% cochées'
+schoolYearImportNoProgramText: "L'année %year% n'a aucune formation active."
+schoolYearImportAllPrograms: 'Toutes'
+schoolYearImportProgramColumn: 'Formation de %year%'
+schoolYearImportOptionsColumn: 'Options · modalités'
+schoolYearImportTeachersColumn: 'Enseignants'
+schoolYearImportTopicsColumn: 'Matières'
+schoolYearImportTestBadge: 'Test'
+schoolYearImportCompletedBadge: 'Complétée'
+schoolYearImportCompletedHint: 'déjà en %year%, on ajoute ce qui lui manque'
+schoolYearImportCreatedBadge: 'Créée'
+schoolYearImportExistingBadge: 'Déjà là'
+schoolYearImportToCompleteBadge: 'À compléter'
+schoolYearImportContentTitle: 'Contenu repris pour chaque formation'
+schoolYearImportContentMeta: "S'applique à toutes les formations cochées"
+schoolYearImportAlways: 'toujours'
+schoolYearImportNeedsLabel: 'Demande : %blocks%.'
+schoolYearImportBlockProgramLabel: 'La formation elle-même'
+schoolYearImportBlockProgramHint: "Nom, nom court, cohorte, options et modalités, visibilités et modules activés (emploi du temps, travail à faire, financier, alternance, courrier pro, export TSF, offres d'emploi, filière du jeu). Une formation créée naît masquée aux étudiants. Toujours repris."
+schoolYearImportBlockPeriodCalendarsLabel: 'Calendriers de périodes'
+schoolYearImportBlockPeriodCalendarsHint: 'Périodes, types et modalités, dates décalées.'
+schoolYearImportBlockEvaluationCalendarsLabel: "Calendriers d'évaluation"
+schoolYearImportBlockEvaluationCalendarsHint: "Ceux des formations cochées, recopiés sous le nom de l'année d'arrivée, dates décalées."
+schoolYearImportBlockTeamLabel: 'Équipe pédagogique'
+schoolYearImportBlockTeamHint: 'Les enseignants de la formation. Seuls les comptes encore actifs et encore enseignants sont repris.'
+schoolYearImportBlockReferentsLabel: 'Référents'
+schoolYearImportBlockReferentsHint: "Et leur option, quand un référent l'est pour une option seulement."
+schoolYearImportBlockTeacherOptionsLabel: 'Options des enseignants'
+schoolYearImportBlockTeacherOptionsHint: 'Qui enseigne dans quelle option.'
+schoolYearImportBlockHoldersLabel: 'Titulaires'
+schoolYearImportBlockHoldersHint: "Des matières, des groupes de matières, des blocs de compétences et des compétences, posés sur ce que l'import crée."
+schoolYearImportBlockTopicsLabel: 'Matières et groupes de matières'
+schoolYearImportBlockTopicsHint: 'Volumes horaires CM, TD, TP, coefficients, descriptions, options des groupes.'
+schoolYearImportBlockSyllabusLabel: 'Programme de la formation'
+schoolYearImportBlockSyllabusHint: 'Le mode (par matières ou document) et sa visibilité ; le PDF du programme est recopié.'
+schoolYearImportBlockSkillsLabel: 'Blocs de compétences'
+schoolYearImportBlockSkillsHint: 'Blocs et compétences du livret, codes, options, visibilités ; niveaux de compétences propres à la formation.'
+schoolYearImportBlockCalendarLinksLabel: 'Rattachement aux calendriers'
+schoolYearImportBlockCalendarLinksHint: "Quels calendriers de périodes, dans quel ordre, et quel calendrier d'évaluation pour le carnet de notes. Pointe vers les copies."
+schoolYearImportBlockFinancialLabel: 'Financier'
+schoolYearImportBlockFinancialHint: 'Lignes du budget et coût horaire par type de cours.'
+schoolYearImportBlockInternshipLabel: 'Alternance (UFA)'
+schoolYearImportBlockInternshipHint: "Dénomination et certifications par option (titre, RNCP, millésime, dates), raison sociale, modalités d'examen, équipe du livret, modalités par type de contrat, périodes d'évaluation du livret (décalées), réglages du livret ECF."
+schoolYearImportBlockPortfolioLabel: 'Portfolio E5 / E6'
+schoolYearImportBlockPortfolioHint: "Référentiel, année de cursus, session décalée d'autant d'années, échéances décalées."
+schoolYearImportBlockPortfolioValidatorsLabel: 'Validateurs du portfolio'
+schoolYearImportBlockPortfolioValidatorsHint: "Par option, s'ils font partie de l'équipe reprise."
+schoolYearImportBlockGameLabel: 'Jeu du campus'
+schoolYearImportBlockGameHint: 'Pondérations, seuils, règles et catalogue de récompenses. Jamais les points.'
+schoolYearImportBlockCrmLabel: 'CRM des inscriptions'
+schoolYearImportBlockCrmHint: "Formation suivie, modalité par défaut, acompte, NPEC, contraintes des pièces. Ouvre l'année au CRM."
+schoolYearImportSummaryTitle: 'Sera écrit dans %year%'
+schoolYearImportSummaryPlainTitle: 'Résumé'
+schoolYearImportSummaryCreated: 'formations créées'
+schoolYearImportSummaryCreatedRow: 'Formations créées'
+schoolYearImportSummaryCompleted: 'Formations complétées'
+schoolYearImportSummaryDates: '%count% dates décalées, marquées « À relire » dans leur écran.'
+schoolYearImportSummaryDatesRow: 'Dates à relire'
+schoolYearImportSummaryTeachers: "Affectations d'enseignants"
+schoolYearImportSummaryTopics: 'Matières'
+schoolYearImportSummarySkillGroups: 'Blocs de compétences'
+schoolYearImportSummaryFinancialItems: 'Lignes financières'
+schoolYearImportSummaryCertifications: 'Certifications UFA'
+schoolYearImportSummaryPortfolio: 'Portfolios'
+schoolYearImportSummaryGameRules: 'Règles du jeu'
+schoolYearImportSummaryCrm: 'Réglages CRM'
+schoolYearImportCheckAction: 'Vérifier'
+schoolYearImportCheckExistingTitle: 'Déjà là, ou non repris'
+schoolYearImportCheckCompletedText: "Existe déjà en %year%. Elle est complétée, sans que rien de ce qu'elle porte soit modifié ou retiré :"
+schoolYearImportCheckNothingText: 'Rien à signaler : chaque formation est créée, avec toute son équipe.'
+schoolYearImportSkippedTeachersTitle: '{1}1 enseignant non repris|]1,Inf[%count% enseignants non repris'
+schoolYearImportTeacherRefusal_inactive: 'compte désactivé'
+schoolYearImportTeacherRefusal_not_teacher: "n'est plus enseignant"
+schoolYearImportWithoutHolderText: "{1}1 matière arrivera sans titulaire.|]1,Inf[%count% matières arriveront sans titulaire."
+schoolYearImportShiftedTitle: '{0}Dates gardées|{1}Dates décalées de 1 semaine|]1,Inf[Dates décalées de %count% semaines'
+schoolYearImportShiftedMeta: 'Toutes marquées « À relire » dans leur écran'
+schoolYearImportShiftedNone: 'Aucune date à décaler.'
+schoolYearImportShiftedWhere: 'Où'
+schoolYearImportShiftedMore: '{1}… et 1 autre.|]1,Inf[… et %count% autres.'
+schoolYearImportFlag_clamped: "ramenée à une borne de l'année"
+schoolYearImportFlag_outside: "hors de l'année, posée sur la borne"
+schoolYearImportBackAction: '← Modifier les choix'
+schoolYearImportRunAction: 'Importer'
+schoolYearImportReportHeading: 'Import du %date% dans %year%'
+schoolYearImportReportBreadcrumb: 'Import du %date%'
+schoolYearImportDoneText: '%created% formation(s) créée(s) et %completed% complétée(s) depuis %source%, par %user% le %date%.'
+schoolYearImportDoneHiddenText: " Les formations créées sont masquées aux étudiants jusqu'à ce que vous les ouvriez."
+schoolYearImportReportProgramsTitle: 'Formations'
+schoolYearImportReportNoProgram: "Aucune formation n'a été reprise."
+schoolYearImportDatesToReadBadge: '{1}1 date à relire|]1,Inf[%count% dates à relire'
+schoolYearImportProgramSettingsLink: 'Paramétrage →'
+schoolYearImportPeriodsCount: '{0}aucune période|{1}1 période|]1,Inf[%count% périodes'
+schoolYearImportNextTitle: 'Ensuite'
+schoolYearImportNextCalendars: 'Relire les dates des calendriers (vacances, ponts)'
+schoolYearImportNextCalendarsLink: 'Calendriers →'
+schoolYearImportNextTimetable: "Importer l'emploi du temps depuis EDT"
+schoolYearImportNextTimetableHint: "par la commande d'import EDT"
+schoolYearImportNextStudents: 'Inscrire les élèves de chaque formation'
+schoolYearImportNextStudentsLink: "Import d'une classe →"
+schoolYearImportNextHolders: "{1}Donner un titulaire à la matière qui n'en a pas|]1,Inf[Donner un titulaire aux %count% matières qui n'en ont pas"
+schoolYearImportNextSeeLink: 'Formations →'
+schoolYearImportNextOpen: 'Ouvrir les formations aux étudiants'
+schoolYearImportNextOpenLink: 'Formations →'
+schoolYearImportBackToYears: 'Retour aux années scolaires'
+schoolYearImportAddedNothing: 'rien à ajouter'
+schoolYearImportAddedOptions: '{1}1 option|]1,Inf[%count% options'
+schoolYearImportAddedModalities: '{1}1 modalité|]1,Inf[%count% modalités'
+schoolYearImportAddedTeachers: '{1}1 enseignant|]1,Inf[%count% enseignants'
+schoolYearImportAddedReferents: '{1}1 référent|]1,Inf[%count% référents'
+schoolYearImportAddedTeacherOptions: "{1}1 option d'enseignant|]1,Inf[%count% options d'enseignants"
+schoolYearImportAddedTopicGroups: '{1}1 groupe de matières|]1,Inf[%count% groupes de matières'
+schoolYearImportAddedTopics: '{1}1 matière|]1,Inf[%count% matières'
+schoolYearImportAddedSyllabus: 'le PDF du programme'
+schoolYearImportAddedSkillGroups: '{1}1 bloc de compétences|]1,Inf[%count% blocs de compétences'
+schoolYearImportAddedSkills: '{1}1 compétence|]1,Inf[%count% compétences'
+schoolYearImportAddedSkillLevels: '{1}1 niveau de compétence|]1,Inf[%count% niveaux de compétences'
+schoolYearImportAddedPeriodLinks: '{1}1 rattachement à un calendrier|]1,Inf[%count% rattachements à des calendriers'
+schoolYearImportAddedEvaluationCalendar: "son calendrier d'évaluation"
+schoolYearImportAddedFinancialItems: '{1}1 ligne financière|]1,Inf[%count% lignes financières'
+schoolYearImportAddedLessonTypeCosts: '{1}1 coût horaire|]1,Inf[%count% coûts horaires'
+schoolYearImportAddedCertifications: '{1}1 certification UFA|]1,Inf[%count% certifications UFA'
+schoolYearImportAddedInternshipInfo: 'sa dénomination UFA'
+schoolYearImportAddedLegalNames: '{1}1 raison sociale par option|]1,Inf[%count% raisons sociales par option'
+schoolYearImportAddedExamModalities: "{1}1 modalité d'examen par option|]1,Inf[%count% modalités d'examen par option"
+schoolYearImportAddedContractModalities: '{1}1 modalité par type de contrat|]1,Inf[%count% modalités par type de contrat'
+schoolYearImportAddedInternshipPeriods: "{1}1 période d'évaluation du livret|]1,Inf[%count% périodes d'évaluation du livret"
+schoolYearImportAddedEcfSettings: 'les réglages du livret ECF'
+schoolYearImportAddedPortfolio: 'le portfolio E5 / E6'
+schoolYearImportAddedPortfolioValidators: '{1}1 validateur du portfolio|]1,Inf[%count% validateurs du portfolio'
+schoolYearImportAddedGameSettings: 'les réglages du jeu'
+schoolYearImportAddedGameRules: '{1}1 règle du jeu|]1,Inf[%count% règles du jeu'
+schoolYearImportAddedRewards: '{1}1 récompense|]1,Inf[%count% récompenses'
+schoolYearImportAddedCrm: 'ses réglages CRM'
+schoolYearImportNoteAmbiguous: "Plusieurs formations de l'année d'arrivée lui correspondent : celle importée d'elle, sinon la plus ancienne, est complétée."
+schoolYearImportNoteAlternanceCalendarFile: "Son calendrier d'alternance était un fichier déposé : il n'est pas repris, la formation affiche le calendrier généré."
+schoolYearImportNoteOptionInactive: "L'option %option% est désactivée : elle n'est pas reprise."
+schoolYearImportNoteModalityInactive: "La modalité %modality% est désactivée : elle n'est pas reprise."
+schoolYearImportNoteCertificationShape: "Ses certifications UFA ont déjà une autre forme (une par option ou une seule) : aucune n'est ajoutée."
+schoolYearImportNoteSyllabusMissing: "Le PDF du programme est introuvable : il n'est pas recopié."
+schoolYearImportRefusalSameYear: "L'année d'origine et l'année d'arrivée doivent être deux années différentes, avec leurs dates."
+schoolYearImportRefusalInactiveYear: "Une année désactivée ne s'importe pas et ne reçoit pas d'import."
+schoolYearImportRefusalEmptyName: "La formation « %program% » n'aurait plus de nom une fois l'année réécrite : renommez-la avant d'importer."

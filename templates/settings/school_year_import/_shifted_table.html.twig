@@ -1,0 +1,20 @@
+<div class="table-responsive">
+    <table class="cm-syi-table">
+        <thead><tr><th>{{ 'schoolYearImportShiftedWhere'|trans }}</th><th>{{ source }}</th><th>{{ target }}</th></tr></thead>
+        <tbody>
+            {% for date in dates|slice(0, limit) %}
+                <tr>
+                    <td>{{ date.where }}</td>
+                    <td class="cm-syi-table__nowrap">{{ date.from }}</td>
+                    <td class="cm-syi-table__nowrap">
+                        {{ date.to }}
+                        {% if date.flag %}<twig:Cm:Badge tone="gold">{{ ('schoolYearImportFlag_' ~ date.flag)|trans }}</twig:Cm:Badge>{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if dates|length > limit %}
+                <tr><td colspan="3" class="cm-syi-table__muted">{{ 'schoolYearImportShiftedMore'|trans({'%count%': dates|length - limit}) }}</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>

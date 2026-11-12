@@ -2,6 +2,8 @@
      data-controller="datatable"
      data-datatable-url-value="{{ path('app_settings_structure_school_years_data') }}"
      data-datatable-edit-url-template-value="{{ path('app_settings_structure_school_years_edit', {id: '__ID__'}) }}"
+     data-datatable-import-url-template-value="{{ path('app_settings_structure_school_years_import', {id: 0})|replace({'/0/import': '/__ID__/import'}) }}"
+     data-datatable-import-label-value="{{ 'schoolYearImportAction'|trans }}"
      data-datatable-deactivate-url-template-value="{{ path('app_settings_structure_school_years_deactivate', {id: '__ID__'}) }}"
      data-datatable-deactivate-token-value="{{ csrf_token('structure_deactivate') }}"
      data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
@@ -12,7 +14,8 @@
      data-datatable-columns-value="{{ [
          {data: 'startDate'},
          {data: 'endDate'},
-         {data: null, render: 'actions'},
+         {data: 'programs', render: 'schoolYearPrograms'},
+         {data: null, render: 'schoolYearActions'},
      ]|json_encode }}"
      data-datatable-language-value="{{ {
          info: 'datatableInfoLabel'|trans,
@@ -37,6 +40,7 @@
                 <tr>
                     <th>{{ 'structureStartDateColumnLabel'|trans }}</th>
                     <th>{{ 'structureEndDateColumnLabel'|trans }}</th>
+                    <th>{{ 'schoolYearProgramsColumnLabel'|trans }}</th>
                     <th></th>
                 </tr>
             </thead>

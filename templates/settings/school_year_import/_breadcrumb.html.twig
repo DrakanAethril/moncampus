@@ -1,0 +1,5 @@
+{# Accueil › Pédagogique › Importer dans 2027-2028 (or the report's « Import du … »). #}
+{{ component('Cm:Breadcrumb', {segments: [
+    {label: 'pedagogiquePageHeading'|trans, url: path('app_settings_structure_school_years')},
+    {label: leaf, url: app.request.requestUri},
+]}) }}
