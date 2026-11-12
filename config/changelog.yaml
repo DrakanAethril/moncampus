@@ -26,6 +26,12 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.12.3'
+      date: '2026-11-12'
+      summary: "Dans le CRM des inscriptions, toujours en essai auprès de l'administration, les réglages d'une formation s'enregistrent à nouveau."
+      entries:
+          - type: fix
+            title: "CRM des inscriptions : les réglages d'une formation (options, modalité par défaut, acompte, NPEC) ne s'enregistraient pas"
     - version: '2026.11.12.2'
       date: '2026-11-12'
       summary: "Dans le CRM des inscriptions, toujours en essai auprès de l'administration, les options d'une formation se choisissent une à une : seules celles retenues sont suivies à part."
