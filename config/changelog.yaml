@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.13.3'
+      date: '2026-11-13'
+      summary: "Dans le CRM des inscriptions, toujours en essai auprès de l'administration, la page d'une formation devient une liste des candidats par nom, avec l'avancement de chaque dossier et un export."
+      entries:
+          - type: modification
+            title: "CRM : la page d'une formation liste ses candidats par nom, avec leur modalité et l'avancement de la pré-inscription, de l'inscription et du dossier"
+            detail: "Les démissions et annulations s'affichent sur demande ; les pièces se saisissent depuis la fiche du dossier."
+          - type: nouveaute
+            title: "CRM : export de la liste d'une formation en tableur, démissions et annulations comprises, avec les coordonnées des candidats"
     - version: '2026.11.13.2'
       date: '2026-11-13'
       summary: "Le CRM des inscriptions, toujours en essai auprès de l'administration, connaît de nouvelles modalités et distingue les documents qui rendent un dossier complet de ceux que l'équipe suit ensuite."

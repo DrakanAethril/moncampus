@@ -1,8 +1,9 @@
 {% extends 'crm/_layout.html.twig' %}
 
-{# A formation's page: its figures, then one accordion per stage - a column per piece, a row per
-   dossier at that stage - the documents split by modality. A formation that asks for an option
-   filters by option. #}
+{# A formation's page: its figures, then one list of its candidates by surname - the modality and a
+   mark per stage (pré-inscription, inscription, dossier complet). The resigned and cancelled are
+   shown on demand; the export has them always, with mails and phones. A formation that asks for an
+   option filters by option, and so does its export. #}
 
 {% block title %}{{ program.shortName }} · {{ 'crmNavLabel'|trans }}{% endblock %}
 
@@ -17,12 +18,11 @@
 {% block page_title %}{{ program.shortName }}{% endblock %}
 
 {% block page_actions %}
+    <twig:Cm:Button variant="outline" href="{{ path('app_crm_program_export', {id: program.id}|merge(board.option ? {option: board.option} : {})) }}" data-turbo="false"><twig:ux:icon name="download" width="14" height="14"/>{{ 'crmExportCsvAction'|trans }}</twig:Cm:Button>
     <twig:Cm:Button variant="primary" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_new', {program: program.id}) }}"><twig:ux:icon name="plus" width="14" height="14"/>{{ 'crmNewDossierAction'|trans }}</twig:Cm:Button>
 {% endblock %}
 
 {% block crm_content %}
-    {% set back = app.request.requestUri %}
-    {% set csrf = crm_csrf %}
     <p class="cm-crm-sub">{{ program.name }}</p>
 
     {% if board.asksOption %}
@@ -45,53 +45,48 @@
         <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ stats.low }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiLowLabel'|trans({'%count%': stats.visaPending}) }}</span></div>
     </div>
 
-    {% if board.modalityMissing %}
-        <details class="cm-crm-acc" open>
-            <summary>
-                <twig:ux:icon name="caret-right" width="13" height="13"/>
-                <span class="cm-crm-acc__title">{{ 'crmStepModalityLabel'|trans }}</span>
-                <span class="cm-crm-acc__sum">{{ 'crmModalityMissingSummary'|trans({'%count%': board.modalityMissing.count}) }}</span>
-            </summary>
-            <div class="cm-crm-acc__body">
-                <p class="cm-crm-faint">{{ 'crmModalityMissingText'|trans }}</p>
-                {% include 'crm/_board_table.html.twig' with {table: board.modalityMissing, keyPrefix: 'modality', asksOption: board.asksOption, back: back, csrf: csrf} only %}
+    {% set toggleParams = {id: program.id}|merge(board.option ? {option: board.option} : {})|merge(board.showClosed ? {} : {closed: 1}) %}
+    <section class="cm-crm-card">
+        <div class="cm-crm-subhead">
+            <h2 class="cm-crm-subhead__title">{{ 'crmDossiersHeading'|trans({'%count%': board.rows|length}) }}</h2>
+            <a class="cm-crm-acc__done" href="{{ path('app_crm_program', toggleParams) }}" data-turbo-action="replace">
+                <input type="checkbox" tabindex="-1" aria-hidden="true"{% if board.showClosed %} checked{% endif %}>
+                {{ 'crmShowClosedLabel'|trans }} <span class="cm-crm-faint cm-crm-num">({{ board.closedCount }})</span>
+            </a>
+        </div>
+        {% if board.rows is empty %}
+            <p class="cm-crm-faint">{% if board.empty %}{{ 'crmProgramEmptyText'|trans }}{% elseif board.filtered %}{{ 'crmListFilteredEmptyText'|trans }}{% else %}{{ 'crmListEmptyText'|trans }}{% endif %}</p>
+        {% else %}
+            <div class="cm-crm-tablewrap">
+                <table class="cm-crm-table cm-crm-list">
+                    <thead>
+                        <tr>
+                            <th>{{ 'crmCandidateColumn'|trans }}</th>
+                            <th>{{ 'crmModalityColumn'|trans }}</th>
+                            <th class="c">{{ 'crmPhasePreEnrolmentLabel'|trans }}</th>
+                            <th class="c">{{ 'crmPhaseEnrolmentLabel'|trans }}</th>
+                            <th class="c">{{ 'crmCompleteDossierColumn'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in board.rows %}
+                            {% set dossier = row.progress.dossier %}
+                            <tr class="is-link">
+                                <td>
+                                    <a class="cm-crm-rowlink" href="{{ path('app_crm_dossier', {id: dossier.id}) }}">{{ dossier.candidate.fullName }}</a>
+                                    {% if dossier.situation.value != 'active' %}<twig:Cm:Badge :of="dossier.situation"/>{% endif %}
+                                    {% include 'crm/_tags.html.twig' with {progress: row.progress, asksOption: board.asksOption} only %}
+                                </td>
+                                <td><twig:Cm:Badge :of="dossier.modality"/></td>
+                                {% for phase in ['pre_enrolment', 'enrolment'] %}
+                                    <td class="c">{% include 'crm/_stage_mark.html.twig' with {state: row.stages[phase]} only %}</td>
+                                {% endfor %}
+                                <td class="c">{% include 'crm/_stage_mark.html.twig' with {state: row.complete ? 'done' : 'todo'} only %}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        </details>
-    {% endif %}
-
-    {% for phase in board.phases %}
-        {% set doneParams = showDone|filter(v => v != phase.phase.value) %}
-        {% set toggledDone = phase.showDone ? doneParams : doneParams|merge([phase.phase.value]) %}
-        {% set toggleUrl = path('app_crm_program', {id: program.id}|merge(board.option ? {option: board.option} : {})|merge(toggledDone is empty ? {} : {done: toggledDone})) %}
-        <details class="cm-crm-acc"{% if phase.open or phase.showDone %} open{% endif %}>
-            <summary>
-                <twig:ux:icon name="caret-right" width="13" height="13"/>
-                <span class="cm-crm-acc__title">{{ phase.phase.labelKey|trans }}</span>
-                {% if phase.skipped %}
-                    <span class="cm-crm-acc__sum">{{ 'crmPhaseSkippedText'|trans }}</span>
-                {% else %}
-                    <span class="cm-crm-acc__sum">{{ (phase.phase.countsTowardsCompletion ? 'crmPhaseSummary' : 'crmFollowUpSummary')|trans({'%here%': phase.here, '%finished%': phase.finished, '%total%': phase.withPhase})|raw }}{% if phase.phase.isDocuments %} · {{ 'crmByModalityText'|trans }}{% endif %}</span>
-                    <a class="cm-crm-acc__done" href="{{ toggleUrl }}" data-turbo-action="replace">
-                        <input type="checkbox" tabindex="-1" aria-hidden="true"{% if phase.showDone %} checked{% endif %}>
-                        {{ 'crmShowCompleteLabel'|trans }} <span class="cm-crm-faint cm-crm-num">({{ phase.doneCount }})</span>
-                    </a>
-                {% endif %}
-            </summary>
-            <div class="cm-crm-acc__body">
-                {% if phase.skipped %}
-                    <p class="cm-crm-faint">{{ 'crmPhaseSkippedBody'|trans }}</p>
-                {% elseif phase.rowCount == 0 %}
-                    <p class="cm-crm-faint">
-                        {% if board.empty %}{{ 'crmProgramEmptyText'|trans }}{% elseif board.filtered %}{{ 'crmPhaseFilteredEmptyText'|trans }}{% else %}{{ 'crmPhaseEmptyText'|trans }}{% endif %}
-                        {% if phase.doneCount > 0 and not phase.showDone %}{{ 'crmCompleteHiddenText'|trans({'%count%': phase.doneCount}) }}{% endif %}
-                    </p>
-                {% else %}
-                    {% for table in phase.tables %}
-                        {% if table.modality %}<div class="cm-crm-acc__sub">{{ table.modality.labelKey|trans }}<twig:Cm:Badge tone="gray">{{ table.count }}</twig:Cm:Badge></div>{% endif %}
-                        {% include 'crm/_board_table.html.twig' with {table: table, keyPrefix: phase.phase.value, asksOption: board.asksOption, back: back, csrf: csrf} only %}
-                    {% endfor %}
-                {% endif %}
-            </div>
-        </details>
-    {% endfor %}
+        {% endif %}
+    </section>
 {% endblock %}

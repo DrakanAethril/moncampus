@@ -15,6 +15,7 @@ use App\Enum\CrmPhase;
 use App\Enum\CrmPieceKind;
 use App\Enum\CrmSituation;
 use App\Repository\CrmDossierRepository;
+use App\Service\Crm\CrmSettings;
 use App\Tests\Functional\FunctionalTestCase;
 
 /**
@@ -88,8 +89,6 @@ class CrmScreensTest extends FunctionalTestCase
         self::assertContains('Documents d’entrée · Apprentissage', $groups);
         self::assertContains('Documents de suivi · Apprentissage', $groups);
         self::assertSame(3, $crawler->filter('.cm-crm-stepper .cm-crm-step')->count() - 1);
-        $crawler = $this->client->request('GET', '/crm/programs/'.$this->program->getId());
-        self::assertContains('Documents de suivi', $crawler->filter('.cm-crm-acc__title')->each(static fn ($n): string => trim($n->text())));
 
         // « Non renseignée »: no piece on the dossier, listed apart on the formation's page.
         $this->client->request('POST', '/crm/dossiers/'.$dossier->getId().'/modality', ['_token' => $this->csrfToken('crm'), 'modality' => 'unspecified', 'date' => '2026-10-01', 'reason' => '']);
@@ -98,11 +97,51 @@ class CrmScreensTest extends FunctionalTestCase
         self::assertResponseIsSuccessful();
         self::assertSame([], $crawler->filter('.cm-crm-acc__title')->each(static fn ($n): string => trim($n->text())));
         self::assertStringContainsString('Modalité non renseignée', $crawler->filter('.cm-crm-callout')->text());
-        $crawler = $this->client->request('GET', '/crm/programs/'.$this->program->getId());
-        self::assertSame('Modalité à renseigner', trim($crawler->filter('.cm-crm-acc__title')->first()->text()));
-        self::assertStringContainsString('DUPONT Léa', $crawler->filter('.cm-crm-acc')->first()->text());
         $this->client->request('GET', '/crm/years/'.$year);
         self::assertResponseIsSuccessful();
+    }
+
+    public function testAFormationListsItsCandidatesBySurnameAndExportsThemAll(): void
+    {
+        $lea = $this->newDossier('Dupont', 'Léa', 'lea@exemple.fr');
+        $this->newDossier('Émery', 'Paul', 'paul@exemple.fr');
+        $zoe = $this->newDossier('Abadie', 'Zoé', 'zoe@exemple.fr');
+        // Every piece her pré-inscription asks for, whatever the catalogue holds (the seeded one adds
+        // the apprentice's kit to an apprenticeship).
+        $settings = static::getContainer()->get(CrmSettings::class);
+        $dossier = $this->crmEntityManager()->find(CrmDossier::class, $zoe->getId()) ?? self::fail('dossier');
+        foreach ($settings->progress($dossier)->applicableIn(CrmPhase::PreEnrolment) as $piece) {
+            $value = match ($piece->getKind()) {
+                CrmPieceKind::Check => [],
+                CrmPieceKind::Choice, CrmPieceKind::List => ['value' => $piece->lastChoice() ?? ''],
+                default => ['value' => '1'],
+            };
+            $this->client->request('POST', '/crm/dossiers/'.$zoe->getId().'/pieces/'.$piece->getCode(), ['_token' => $this->csrfToken('crm'), 'date' => ''] + $value);
+            self::assertResponseRedirects();
+        }
+        $this->client->request('POST', '/crm/dossiers/'.$lea->getId().'/situation', ['_token' => $this->csrfToken('crm'), 'situation' => 'resigned', 'reason' => '']);
+        self::assertResponseRedirects();
+
+        $names = fn (string $url): array => $this->client->request('GET', $url)->filter('.cm-crm-list .cm-crm-rowlink')->each(static fn ($n): string => trim($n->text()));
+        $program = '/crm/programs/'.$this->program->getId();
+        // Surname order, the French way (É among the E), the resigned left out until asked for.
+        self::assertSame(['ABADIE Zoé', 'ÉMERY Paul'], $names($program));
+        self::assertSame(['ABADIE Zoé', 'DUPONT Léa', 'ÉMERY Paul'], $names($program.'?closed=1'));
+        $crawler = $this->client->request('GET', $program);
+        self::assertSame(['Candidat', 'Modalité', 'Pré-inscription', 'Inscription', 'Dossier complet'], $crawler->filter('.cm-crm-list thead th')->each(static fn ($n): string => trim($n->text())));
+        // Zoé's pré-inscription is done: one green mark, on her row.
+        self::assertCount(1, $crawler->filter('.cm-crm-list .cm-crm-mark.is-done'));
+        self::assertCount(1, $crawler->filter('.cm-crm-list tbody tr')->first()->filter('.cm-crm-mark.is-done'));
+
+        $this->client->request('GET', $program.'/export');
+        self::assertResponseIsSuccessful();
+        $csv = (string) $this->client->getInternalResponse()->getContent();
+        self::assertStringStartsWith('text/csv', (string) $this->client->getResponse()->headers->get('Content-Type'));
+        $lines = array_map(static fn (string $line): array => str_getcsv($line, ';', '"', ''), explode("\n", trim(substr($csv, 3))));
+        self::assertSame(['Nom', 'Prénom', 'Modalité', 'Situation', 'Pré-inscription', 'Inscription', 'Dossier complet', 'Mail', 'Téléphone'], $lines[0]);
+        self::assertSame(['ABADIE', 'DUPONT', 'ÉMERY'], array_map(static fn (array $l): ?string => $l[0], \array_slice($lines, 1)));
+        self::assertSame(['DUPONT', 'Léa', 'Apprentissage', 'Démission', 'Non', 'Non', 'Non', 'lea@exemple.fr', ''], $lines[2]);
+        self::assertSame('Oui', $lines[1][4]);
     }
 
     public function testEveryDialogRenders(): void
@@ -134,13 +173,12 @@ class CrmScreensTest extends FunctionalTestCase
         self::assertStringContainsString('ne sert qu', (string) $this->client->getResponse()->getContent());
     }
 
-    public function testTheBoardTicksABoxAndADialogEntersAValue(): void
+    public function testADialogEntersABoxAndAValue(): void
     {
         $dossier = $this->newDossier();
-        $back = '/crm/programs/'.$this->program->getId();
 
-        $this->client->request('POST', '/crm/dossiers/'.$dossier->getId().'/pieces/file_completed/tick', ['_token' => $this->csrfToken('crm'), 'back' => $back]);
-        self::assertResponseRedirects($back);
+        $this->client->request('POST', '/crm/dossiers/'.$dossier->getId().'/pieces/file_completed', ['_token' => $this->csrfToken('crm'), 'date' => '']);
+        self::assertResponseRedirects('/crm/dossiers/'.$dossier->getId());
 
         $this->client->request('POST', '/crm/dossiers/'.$dossier->getId().'/pieces/deposit', ['_token' => $this->csrfToken('crm'), 'value' => '250', 'paymentMode' => 'Chèque', 'date' => '']);
         self::assertResponseRedirects('/crm/dossiers/'.$dossier->getId());
