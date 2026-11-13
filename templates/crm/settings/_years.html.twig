@@ -2,7 +2,7 @@
    formations followed in each. Opening a year with nothing followed opens the choice at once. #}
 {% set choose = app.request.query.get('choose') %}
 <div class="cm-crm-callout">{{ 'crmYearsCallout'|trans|raw }}</div>
-<div class="cm-crm-tablewrap" style="margin-top: 14px">
+<div class="cm-crm-tablewrap cm-crm-tablewrap--sticky" style="margin-top: 14px">
     <table class="cm-crm-table">
         <thead><tr><th>{{ 'crmSchoolYearLabel'|trans }}</th><th>{{ 'crmFollowedProgramsColumn'|trans }}</th><th class="n">{{ 'crmDossiersColumn'|trans }}</th><th>{{ 'crmCrmColumn'|trans }}</th><th>{{ 'crmDefaultColumn'|trans }}</th><th></th></tr></thead>
         <tbody>

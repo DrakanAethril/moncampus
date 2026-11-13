@@ -255,7 +255,7 @@ class DossierController extends AbstractController
                 ];
             }
             $current = $this->settings->progress($dossier);
-            $kept = \count(array_filter($current->applicableIn(CrmPhase::Documents), static fn ($piece): bool => $current->isDone($piece) && \count($piece->getModalities()) < \count(CrmModality::cases())));
+            $kept = \count(array_filter([...$current->applicableIn(CrmPhase::Documents), ...$current->applicableIn(CrmPhase::FollowUp)], static fn ($piece): bool => $current->isDone($piece) && \count($piece->getModalities()) < \count(CrmModality::cases())));
 
             return $this->dialog('crm/dialog/modality.html.twig', ['dossier' => $dossier, 'choices' => $choices, 'kept' => $kept, 'today' => $this->writer->today()]);
         }

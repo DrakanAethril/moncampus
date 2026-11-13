@@ -56,7 +56,7 @@
                 {% if phase.skipped %}
                     <span class="cm-crm-acc__sum">{{ 'crmPhaseSkippedText'|trans }}</span>
                 {% else %}
-                    <span class="cm-crm-acc__sum">{{ 'crmPhaseSummary'|trans({'%here%': phase.here, '%finished%': phase.finished, '%total%': phase.withPhase})|raw }}{% if phase.phase.value == 'documents' %} · {{ 'crmByModalityText'|trans }}{% endif %}</span>
+                    <span class="cm-crm-acc__sum">{{ (phase.phase.countsTowardsCompletion ? 'crmPhaseSummary' : 'crmFollowUpSummary')|trans({'%here%': phase.here, '%finished%': phase.finished, '%total%': phase.withPhase})|raw }}{% if phase.phase.isDocuments %} · {{ 'crmByModalityText'|trans }}{% endif %}</span>
                     <a class="cm-crm-acc__done" href="{{ toggleUrl }}" data-turbo-action="replace">
                         <input type="checkbox" tabindex="-1" aria-hidden="true"{% if phase.showDone %} checked{% endif %}>
                         {{ 'crmShowCompleteLabel'|trans }} <span class="cm-crm-faint cm-crm-num">({{ phase.doneCount }})</span>

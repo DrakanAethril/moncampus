@@ -29,11 +29,11 @@
 
 {% block crm_content %}
     <div class="cm-crm-callout">{{ 'crmProgramPiecesCallout'|trans }}</div>
-    <div class="cm-crm-tablewrap">
+    <div class="cm-crm-tablewrap cm-crm-tablewrap--sticky">
         <table class="cm-crm-table">
             <thead><tr><th>{{ 'crmPieceColumn'|trans }}</th><th>{{ 'crmModalitiesLabel'|trans }}</th><th>{{ 'crmInThisProgramColumn'|trans }}</th><th></th></tr></thead>
             <tbody>
-                {% for phase in phases %}
+                {% for phase in phases|filter(ph => catalogue|filter(p => p.phase == ph) is not empty) %}
                     <tr class="is-section"><td colspan="4">{{ phase.labelKey|trans }}</td></tr>
                     {% for piece in catalogue|filter(p => p.phase == phase) %}
                         {% set own = crmProgram ? crmProgram.pieceConstraint(piece.code) : null %}

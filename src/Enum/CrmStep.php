@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * Where a dossier is: the first stage whose required pieces are not all done, or « Complet ».
+ * Where a dossier is: the first stage whose required pieces are not all done, or « Complet ». The
+ * « Documents de suivi » are no stage: they never hold a dossier back.
  * Read, never stored (App\Service\Crm\CrmDossierProgress).
  */
 enum CrmStep: string implements HasBadge
@@ -40,7 +41,7 @@ enum CrmStep: string implements HasBadge
         return match ($this) {
             self::PreEnrolment => 'Pré-inscription',
             self::Enrolment => 'Inscription',
-            self::Documents => 'Documents',
+            self::Documents => 'Documents d’entrée',
             self::Complete => 'Complet',
         };
     }
