@@ -22,7 +22,10 @@ use App\Enum\CrmStep;
  * - It is **done** once entered, except a list ending on a status (lastValueCompletes), which is
  *   done on its last value only and « en cours » before.
  * - The dossier's **step** is the first stage whose required pieces are not all done; a stage with
- *   nothing required is passed over; all done is « Complet ». Optional pieces never hold it back.
+ *   nothing required is passed over; all done is « Complet ». Optional pieces never hold it back,
+ *   nor do the « Documents de suivi » (CrmPhase::FollowUp), required or not.
+ * - A dossier is **at** a stage while it is its step; it is at the follow-up documents while one
+ *   applies to it and its required ones are not all done - whatever its step.
  * - What was entered for a piece that no longer applies (another modality, a hidden piece) is
  *   **kept**, shown apart, and no longer counts.
  */
@@ -147,14 +150,28 @@ final readonly class CrmDossierProgress
 
     public function step(): CrmStep
     {
-        foreach (CrmPhase::cases() as $phase) {
+        foreach (CrmPhase::stages() as $phase) {
             $count = $this->phaseCount($phase);
             if ($count['done'] < $count['total']) {
-                return $phase->step();
+                return $phase->step() ?? CrmStep::Complete;
             }
         }
 
         return CrmStep::Complete;
+    }
+
+    /** Whether the group concerns this dossier: a required piece for a stage, any piece for the follow-up. */
+    public function concerns(CrmPhase $phase): bool
+    {
+        return $phase->countsTowardsCompletion() ? $this->phaseCount($phase)['total'] > 0 : [] !== $this->applicableIn($phase);
+    }
+
+    /** Whether the dossier waits on that group now (see the class comment). */
+    public function isAt(CrmPhase $phase): bool
+    {
+        $step = $phase->step();
+
+        return null !== $step ? $step === $this->step() : $this->concerns($phase) && !$this->isPhaseDone($phase);
     }
 
     /** @return list<CrmDossierPiece> entries of pieces that no longer apply, in the catalogue's order */

@@ -36,6 +36,7 @@ class CrmScreensTest extends FunctionalTestCase
         $this->crmPiece('file_completed');
         $this->crmPiece('deposit', kind: CrmPieceKind::Amount);
         $this->crmPiece('company', CrmPhase::Documents, CrmPieceKind::Text, [CrmModality::Apprenticeship]);
+        $this->crmPiece('follow_up_check', CrmPhase::FollowUp, CrmPieceKind::Check, [CrmModality::Apprenticeship]);
         $this->crmOrigin('JPO');
         $this->client->loginUser($this->admin);
     }
@@ -80,6 +81,15 @@ class CrmScreensTest extends FunctionalTestCase
         }
         $this->client->request('GET', '/crm/search?q=dup');
         self::assertStringContainsString('<mark>DUP</mark>ONT', (string) $this->client->getResponse()->getContent());
+
+        // The documents come in two groups: the entry ones, which make « Complet », and the follow-up ones.
+        $crawler = $this->client->request('GET', '/crm/dossiers/'.$dossier->getId());
+        $groups = $crawler->filter('.cm-crm-acc__title')->each(static fn ($n): string => trim($n->text()));
+        self::assertContains('Documents d’entrée · Apprentissage', $groups);
+        self::assertContains('Documents de suivi · Apprentissage', $groups);
+        self::assertSame(3, $crawler->filter('.cm-crm-stepper .cm-crm-step')->count() - 1);
+        $crawler = $this->client->request('GET', '/crm/programs/'.$this->program->getId());
+        self::assertContains('Documents de suivi', $crawler->filter('.cm-crm-acc__title')->each(static fn ($n): string => trim($n->text())));
     }
 
     public function testEveryDialogRenders(): void
@@ -174,6 +184,13 @@ class CrmScreensTest extends FunctionalTestCase
         self::assertResponseRedirects();
         $this->client->request('POST', '/crm/settings/origins', ['_token' => $token, 'label' => 'Formulaire de contact']);
         self::assertResponseRedirects();
+        // « Complétude » unticked moves a document to the follow-up ones, ticked brings it back.
+        $company = $this->crmEntityManager()->getRepository(CrmPiece::class)->findOneBy(['code' => 'company']);
+        $npec = $this->crmEntityManager()->getRepository(CrmPiece::class)->findOneBy(['code' => 'follow_up_check']);
+        $this->client->request('POST', '/crm/settings/pieces/'.$company?->getId().'/inline', ['_token' => $token, 'modalities' => ['apprenticeship'], 'defaultConstraint' => 'required']);
+        self::assertResponseRedirects();
+        $this->client->request('POST', '/crm/settings/pieces/'.$npec?->getId().'/inline', ['_token' => $token, 'modalities' => ['apprenticeship'], 'defaultConstraint' => 'required', 'completion' => '1']);
+        self::assertResponseRedirects();
 
         $this->crmEntityManager()->clear();
         $settings = $this->crmEntityManager()->getRepository(CrmProgram::class)->findOneBy(['program' => $this->program->getId()]);
@@ -182,6 +199,8 @@ class CrmScreensTest extends FunctionalTestCase
         self::assertSame(250, $settings->getDepositAmount());
         self::assertSame([$slam->getId()], $settings->getTrackedOptionIds());
         self::assertSame(['company' => 'hidden'], $settings->getPieceConstraints());
+        self::assertSame(CrmPhase::FollowUp, $this->crmEntityManager()->getRepository(CrmPiece::class)->findOneBy(['code' => 'company'])?->getPhase());
+        self::assertSame(CrmPhase::Documents, $this->crmEntityManager()->getRepository(CrmPiece::class)->findOneBy(['code' => 'follow_up_check'])?->getPhase());
         $cvec = $this->crmEntityManager()->getRepository(CrmPiece::class)->findOneBy(['code' => 'attestation_cvec']);
         self::assertSame(['Demandée', 'Reçue'], $cvec?->getChoices());
         self::assertNotNull($this->crmEntityManager()->getRepository(CrmOrigin::class)->findOneBy(['label' => 'Formulaire de contact']));

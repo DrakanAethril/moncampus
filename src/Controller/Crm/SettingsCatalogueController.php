@@ -82,15 +82,20 @@ class SettingsCatalogueController extends AbstractController
         return $this->redirect($this->generateUrl('app_crm_settings', ['tab' => 'pieces']).'#piece-'.$piece->getCode());
     }
 
-    /** The table's own boxes: the modalities, the default constraint, a date to come. */
+    /** The table's own boxes: the modalities, « Complétude », the default constraint, a date to come. */
     #[Route(path: '/crm/settings/pieces/{id}/inline', name: 'app_crm_settings_piece_inline', methods: ['POST'])]
     public function inline(Request $request, CrmPiece $piece, CrmPieceEditor $editor): Response
     {
         $this->assertCsrf($request);
+        // « Complétude » moves a document between the entry and the follow-up documents.
+        $phase = $piece->getPhase();
+        if ($phase->isDocuments()) {
+            $phase = $request->request->getBoolean('completion') ? CrmPhase::Documents : CrmPhase::FollowUp;
+        }
         $input = new CrmPieceInput(
             $piece->getLabel(),
             $piece->getShortLabel(),
-            $piece->getPhase(),
+            $phase,
             $piece->getKind(),
             array_values(array_filter(array_map(CrmModality::tryFrom(...), array_map('strval', $request->request->all()['modalities'] ?? [])))),
             $piece->getPaths(),

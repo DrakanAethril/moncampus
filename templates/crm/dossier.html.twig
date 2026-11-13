@@ -47,7 +47,7 @@
 
     <section class="cm-crm-card">
         <div class="cm-crm-stepper">
-            {% for phase in enum('App\\Enum\\CrmPhase').cases() %}
+            {% for phase in enum('App\\Enum\\CrmPhase').stages() %}
                 {% set count = progress.phaseCount(phase) %}
                 <div class="cm-crm-step {{ count.total == 0 ? 'is-skipped' : (count.done == count.total ? 'is-ok' : (step == phase.step ? 'is-current' : '')) }}">
                     <b>{{ phase.labelKey|trans }}</b>
@@ -70,7 +70,7 @@
                 <details class="cm-crm-acc"{% if not complete or loop.last %} open{% endif %}>
                     <summary>
                         <twig:ux:icon name="caret-right" width="13" height="13"/>
-                        <span class="cm-crm-acc__title">{{ phase.value == 'documents' ? 'crmDocumentsOf'|trans({'%modality%': dossier.modality.labelKey|trans}) : phase.labelKey|trans }}</span>
+                        <span class="cm-crm-acc__title">{{ phase.isDocuments ? 'crmDocumentsOf'|trans({'%group%': phase.labelKey|trans, '%modality%': dossier.modality.labelKey|trans}) : phase.labelKey|trans }}</span>
                         {% if complete %}<twig:Cm:Badge tone="green">{{ 'crmPhaseCompleteBadge'|trans }}</twig:Cm:Badge>{% endif %}
                         <span class="cm-crm-acc__sum">{{ 'crmRequiredCount'|trans({'%done%': count.done, '%count%': count.total}) }}</span>
                     </summary>

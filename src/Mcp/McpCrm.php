@@ -93,6 +93,7 @@ final readonly class McpCrm
                 'code' => $piece->getCode(),
                 'label' => $piece->getLabel(),
                 'phase' => $piece->getPhase()->value,
+                'countsTowardsCompletion' => $piece->getPhase()->countsTowardsCompletion(),
                 'kind' => $piece->getKind()->value,
                 'choices' => $piece->getChoices(),
                 'modalities' => array_map(static fn (CrmModality $m): string => $m->value, $piece->getModalities()),
