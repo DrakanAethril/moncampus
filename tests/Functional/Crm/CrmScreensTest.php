@@ -90,6 +90,19 @@ class CrmScreensTest extends FunctionalTestCase
         self::assertSame(3, $crawler->filter('.cm-crm-stepper .cm-crm-step')->count() - 1);
         $crawler = $this->client->request('GET', '/crm/programs/'.$this->program->getId());
         self::assertContains('Documents de suivi', $crawler->filter('.cm-crm-acc__title')->each(static fn ($n): string => trim($n->text())));
+
+        // « Non renseignée »: no piece on the dossier, listed apart on the formation's page.
+        $this->client->request('POST', '/crm/dossiers/'.$dossier->getId().'/modality', ['_token' => $this->csrfToken('crm'), 'modality' => 'unspecified', 'date' => '2026-10-01', 'reason' => '']);
+        self::assertResponseRedirects();
+        $crawler = $this->client->request('GET', '/crm/dossiers/'.$dossier->getId());
+        self::assertResponseIsSuccessful();
+        self::assertSame([], $crawler->filter('.cm-crm-acc__title')->each(static fn ($n): string => trim($n->text())));
+        self::assertStringContainsString('Modalité non renseignée', $crawler->filter('.cm-crm-callout')->text());
+        $crawler = $this->client->request('GET', '/crm/programs/'.$this->program->getId());
+        self::assertSame('Modalité à renseigner', trim($crawler->filter('.cm-crm-acc__title')->first()->text()));
+        self::assertStringContainsString('DUPONT Léa', $crawler->filter('.cm-crm-acc')->first()->text());
+        $this->client->request('GET', '/crm/years/'.$year);
+        self::assertResponseIsSuccessful();
     }
 
     public function testEveryDialogRenders(): void

@@ -46,6 +46,12 @@
     </div>
 
     <section class="cm-crm-card">
+        {% if not dossier.modality.asksPieces %}
+            <div class="cm-crm-callout cm-crm-callout--gold cm-crm-callout--row" style="margin-bottom: 12px">
+                <span>{{ 'crmModalityMissingDossierText'|trans }}</span>
+                <twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_dossier_modality', {id: dossier.id}) }}">{{ 'crmChangeModalityAction'|trans }}</twig:Cm:Button>
+            </div>
+        {% endif %}
         <div class="cm-crm-stepper">
             {% for phase in enum('App\\Enum\\CrmPhase').stages() %}
                 {% set count = progress.phaseCount(phase) %}

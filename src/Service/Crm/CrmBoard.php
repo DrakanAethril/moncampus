@@ -99,7 +99,7 @@ final readonly class CrmBoard
                     continue; // no follow-up document concerns this formation: no group at all
                 }
                 $entry['skipped'] = false;
-                foreach (CrmModality::cases() as $modality) {
+                foreach (CrmModality::pieceModalities() as $modality) {
                     $rows = array_values(array_filter($pool, static fn (CrmDossierProgress $p): bool => $modality === $p->dossier()->getModality()));
                     if ([] === $rows) {
                         continue;
@@ -124,8 +124,12 @@ final readonly class CrmBoard
             }
         }
 
+        // The dossiers whose modality is « Non renseignée »: asked nothing, listed apart until one is chosen.
+        $missing = array_values(array_filter($shown, static fn (CrmDossierProgress $p): bool => !$p->dossier()->getModality()->asksPieces()));
+
         return [
             'stats' => CrmProgramStats::of($shown),
+            'modalityMissing' => [] === $missing ? null : ['modality' => CrmModality::Unspecified, 'columns' => [], 'groups' => self::groups($missing, false), 'count' => \count($missing)],
             'phases' => $phases,
             'empty' => [] === $all,
             'filtered' => \count($shown) < \count($all),

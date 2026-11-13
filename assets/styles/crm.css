@@ -111,12 +111,14 @@
 .cm-crm-rowlink:hover { color: var(--cm-brand-strong); text-decoration: underline; }
 .cm-crm-bar { display: flex; height: 9px; border-radius: 999px; overflow: hidden; background: var(--cm-border-soft); min-width: 120px; }
 .cm-crm-bar span { display: block; height: 100%; }
+.cm-crm-bar .modality { background: var(--cm-faint); }
 .cm-crm-bar .pre_enrolment { background: var(--crm-bar-pre); }
 .cm-crm-bar .enrolment { background: var(--crm-bar-ins); }
 .cm-crm-bar .documents { background: var(--crm-bar-doc); }
 .cm-crm-bar .complete { background: var(--crm-bar-done); }
 .cm-crm-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--cm-muted); }
 .cm-crm-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.cm-crm-legend .modality { background: var(--cm-faint); }
 .cm-crm-legend .pre_enrolment { background: var(--crm-bar-pre); }
 .cm-crm-legend .enrolment { background: var(--crm-bar-ins); }
 .cm-crm-legend .documents { background: var(--crm-bar-doc); }
