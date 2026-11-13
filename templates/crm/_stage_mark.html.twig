@@ -1,0 +1,9 @@
+{# A stage's mark on a formation's list: a green disc with a tick when done, an empty ring when not,
+   a dash when the stage asks the dossier nothing (CrmBoard::stageState()). #}
+{% if state == 'done' %}
+    <span class="cm-crm-mark is-done" title="{{ 'crmStageDoneHint'|trans }}"><twig:ux:icon name="check" width="12" height="12" aria-hidden="true"/><span class="visually-hidden">{{ 'crmStageDoneHint'|trans }}</span></span>
+{% elseif state == 'todo' %}
+    <span class="cm-crm-mark" title="{{ 'crmStageTodoHint'|trans }}"><span class="visually-hidden">{{ 'crmStageTodoHint'|trans }}</span></span>
+{% else %}
+    <span class="cm-crm-faint" title="{{ 'crmNotApplicableHint'|trans }}">—</span>
+{% endif %}

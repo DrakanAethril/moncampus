@@ -19,7 +19,6 @@ class CrmExtension extends AbstractExtension
     {
         return [
             new TwigFunction('crm_value', [CrmPieceValue::class, 'format']),
-            new TwigFunction('crm_short_value', [CrmPieceValue::class, 'shortFormat']),
             new TwigFunction('crm_program_name', [CrmSettings::class, 'dossierProgramName']),
             new TwigFunction('crm_mark', $this->mark(...), ['is_safe' => ['html']]),
         ];

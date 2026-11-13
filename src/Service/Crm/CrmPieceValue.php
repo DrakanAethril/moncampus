@@ -47,16 +47,6 @@ final class CrmPieceValue
         };
     }
 
-    /** The short form of a board's cell. */
-    public static function shortFormat(CrmPiece $piece, mixed $value): string
-    {
-        if (CrmPieceKind::Period === $piece->getKind() && \is_array($value) && \is_string($value['start'] ?? null) && \is_string($value['end'] ?? null)) {
-            return substr($value['start'], 5, 2).'/'.substr($value['start'], 2, 2).'→'.substr($value['end'], 5, 2).'/'.substr($value['end'], 2, 2);
-        }
-
-        return self::format($piece, $value);
-    }
-
     /** @throws CrmRefusal */
     public static function paymentMode(?string $raw): ?string
     {
