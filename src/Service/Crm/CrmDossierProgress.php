@@ -24,6 +24,9 @@ use App\Enum\CrmStep;
  * - The dossier's **step** is the first stage whose required pieces are not all done; a stage with
  *   nothing required is passed over; all done is « Complet ». Optional pieces never hold it back,
  *   nor do the « Documents de suivi » (CrmPhase::FollowUp), required or not.
+ * - A dossier whose modality is « Non renseignée » is asked **no piece at all** and is never
+ *   complete: its step is « Modalité à renseigner » (CrmStep::Modality) until one is chosen. What
+ *   was entered on it is kept, and comes back once the modality asks for it.
  * - A dossier is **at** a stage while it is its step; it is at the follow-up documents while one
  *   applies to it and its required ones are not all done - whatever its step.
  * - What was entered for a piece that no longer applies (another modality, a hidden piece) is
@@ -150,6 +153,9 @@ final readonly class CrmDossierProgress
 
     public function step(): CrmStep
     {
+        if (!$this->dossier->getModality()->asksPieces()) {
+            return CrmStep::Modality;
+        }
         foreach (CrmPhase::stages() as $phase) {
             $count = $this->phaseCount($phase);
             if ($count['done'] < $count['total']) {

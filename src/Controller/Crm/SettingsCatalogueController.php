@@ -63,7 +63,7 @@ class SettingsCatalogueController extends AbstractController
             'used' => $editor->usedChoices($piece),
             'phases' => CrmPhase::cases(),
             'kinds' => CrmPieceKind::cases(),
-            'modalities' => CrmModality::cases(),
+            'modalities' => CrmModality::pieceModalities(),
             'constraints' => CrmPieceConstraint::cases(),
         ];
         if ($request->isMethod('GET')) {

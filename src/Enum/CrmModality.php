@@ -9,6 +9,10 @@ namespace App\Enum;
  * `Modality` structure node: they decide which documents a dossier asks for, and a candidate
  * moves between them while the dossier is under way (« Changer de modalité »). The order of the
  * cases is the order of every list, column and checkbox row of the CRM.
+ *
+ * « Non renseignée » (Unspecified) asks for nothing: no piece is ever asked of it - it has no column
+ * in the pieces catalogue - and a dossier under it is never « Complet » (CrmStep::Modality) until a
+ * modality is chosen. It may be a formation's default modality.
  */
 enum CrmModality: string implements HasBadge
 {
@@ -17,6 +21,7 @@ enum CrmModality: string implements HasBadge
     case Apprenticeship = 'apprenticeship';
     case ProfessionalContract = 'professional';
     case Other = 'other';
+    case Unspecified = 'unspecified';
 
     public function labelKey(): string
     {
@@ -26,6 +31,7 @@ enum CrmModality: string implements HasBadge
             self::Apprenticeship => 'crmModalityApprenticeshipLabel',
             self::ProfessionalContract => 'crmModalityProfessionalContractLabel',
             self::Other => 'crmModalityOtherLabel',
+            self::Unspecified => 'crmModalityUnspecifiedLabel',
         };
     }
 
@@ -38,6 +44,7 @@ enum CrmModality: string implements HasBadge
             self::Apprenticeship => 'crmModalityApprenticeshipShortLabel',
             self::ProfessionalContract => 'crmModalityProfessionalContractShortLabel',
             self::Other => 'crmModalityOtherShortLabel',
+            self::Unspecified => 'crmModalityUnspecifiedShortLabel',
         };
     }
 
@@ -49,6 +56,7 @@ enum CrmModality: string implements HasBadge
             self::Apprenticeship => BadgeTone::Gold,
             self::ProfessionalContract => BadgeTone::Green,
             self::Other => BadgeTone::Purple,
+            self::Unspecified => BadgeTone::Gray,
         };
     }
 
@@ -61,7 +69,24 @@ enum CrmModality: string implements HasBadge
             self::Apprenticeship => 'Apprentissage',
             self::ProfessionalContract => 'Contrat pro',
             self::Other => 'Autre',
+            self::Unspecified => 'Non renseignée',
         };
+    }
+
+    /** Whether pieces may be asked of it: every modality but « Non renseignée ». */
+    public function asksPieces(): bool
+    {
+        return self::Unspecified !== $this;
+    }
+
+    /**
+     * The modalities a piece may be asked of - the catalogue's columns.
+     *
+     * @return list<self>
+     */
+    public static function pieceModalities(): array
+    {
+        return array_values(array_filter(self::cases(), static fn (self $m): bool => $m->asksPieces()));
     }
 
     /**

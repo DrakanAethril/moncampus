@@ -52,8 +52,8 @@ class CrmProgramStatsTest extends TestCase
         $stats = CrmProgramStats::of(array_map(static fn (CrmDossier $d): CrmDossierProgress => CrmDossierProgress::of($d, null, $catalogue), $dossiers));
 
         self::assertSame(3, $stats->active);
-        self::assertSame(['pre_enrolment' => 0, 'enrolment' => 2, 'documents' => 0, 'complete' => 1], $stats->steps);
-        self::assertSame(['initial' => 1, 'school' => 0, 'apprenticeship' => 2, 'professional' => 0, 'other' => 0], $stats->modalities);
+        self::assertSame(['modality' => 0, 'pre_enrolment' => 0, 'enrolment' => 2, 'documents' => 0, 'complete' => 1], $stats->steps);
+        self::assertSame(['initial' => 1, 'school' => 0, 'apprenticeship' => 2, 'professional' => 0, 'other' => 0, 'unspecified' => 0], $stats->modalities);
         self::assertSame([CrmModality::Apprenticeship, CrmModality::Initial], $stats->keyModalities());
         self::assertSame(1, $stats->visaPending);
         self::assertSame(2, $stats->low);
