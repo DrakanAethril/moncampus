@@ -144,7 +144,7 @@ final readonly class CrmDossierUpdateTool implements McpTool
             }
 
             if ($args->has('modality')) {
-                $modality = CrmModality::tryFrom($args->string('modality')) ?? throw new McpToolException('`modality` vaut initial, apprenticeship ou other.');
+                $modality = CrmModality::tryFrom($args->string('modality')) ?? throw new McpToolException('`modality` vaut '.implode(', ', CrmModality::values()).'.');
                 $date = '' === $args->string('modalityDate') ? $this->writer->today() : (\DateTimeImmutable::createFromFormat('!Y-m-d', $args->string('modalityDate')) ?: throw new McpToolException('`modalityDate` s\'écrit AAAA-MM-JJ.'));
                 $this->writer->changeModality($dossier, $modality, $date, $args->string('modalityReason'), $user);
             }

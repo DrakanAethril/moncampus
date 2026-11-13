@@ -20,15 +20,13 @@
     <twig:Cm:Button variant="outline" href="{{ path('app_crm_settings') }}"><twig:ux:icon name="settings" width="14" height="14"/>{{ 'crmSettingsAction'|trans }}</twig:Cm:Button>
 {% endblock %}
 
-{% macro line(href, label, title, stats, class) %}
+{% macro line(href, label, title, stats, modalities, class) %}
     <tr class="is-link {{ class }}">
         <td><a class="cm-crm-rowlink" href="{{ href }}"{% if title %} title="{{ title }}"{% endif %}>{{ label }}</a></td>
         <td class="n">{{ stats.active }}</td>
         <td>{% include 'crm/_bar.html.twig' with {stats: stats} only %}</td>
         <td class="n">{{ stats.steps.complete }}</td>
-        <td class="n">{{ stats.initial }}</td>
-        <td class="n">{{ stats.apprenticeship }}</td>
-        <td class="n">{{ stats.other }}</td>
+        {% for modality in modalities %}<td class="n">{{ stats.modality(modality) }}</td>{% endfor %}
         <td class="n">{% if stats.visaPending %}{{ stats.visaPending }}{% else %}<span class="cm-crm-faint">0</span>{% endif %}</td>
         <td class="n">{{ stats.low }}</td>
         <td class="n">{{ stats.waiting }}</td>
@@ -43,7 +41,7 @@
         <div class="cm-crm-kpis">
             <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ total.active }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiActiveLabel'|trans }}</span></div>
             <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ total.steps.complete }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiCompleteLabel'|trans }}</span></div>
-            <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ total.apprenticeship }} / {{ total.initial }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiModalitiesLabel'|trans }}</span></div>
+            <div class="cm-crm-kpi">{% include 'crm/_kpi_modalities.html.twig' with {stats: total} only %}</div>
             <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ total.visaPending }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiVisaLabel'|trans }}</span></div>
         </div>
         <section class="cm-crm-card">
@@ -59,9 +57,7 @@
                             <th class="n">{{ 'crmActiveColumn'|trans }}</th>
                             <th>{{ 'crmProgressColumn'|trans }}</th>
                             <th class="n">{{ 'crmCompleteColumn'|trans }}</th>
-                            <th class="n">{{ 'crmInitialColumn'|trans }}</th>
-                            <th class="n">{{ 'crmModalityApprenticeshipLabel'|trans }}</th>
-                            <th class="n">{{ 'crmModalityOtherLabel'|trans }}</th>
+                            {% for modality in modalities %}<th class="n">{{ modality.value == 'initial' ? 'crmInitialColumn'|trans : modality.labelKey|trans }}</th>{% endfor %}
                             <th class="n">{{ 'crmVisaColumn'|trans }}</th>
                             <th class="n" title="{{ 'crmLowHint'|trans }}">{{ 'crmLowColumn'|trans }}</th>
                             <th class="n">{{ 'crmWaitingColumn'|trans }}</th>
@@ -70,12 +66,12 @@
                     </thead>
                     <tbody>
                         {% for section, lines in sections %}
-                            <tr class="is-section"><td colspan="11">{{ section }}</td></tr>
+                            <tr class="is-section"><td colspan="{{ 8 + modalities|length }}">{{ section }}</td></tr>
                             {% for line in lines %}
                                 {% set href = path('app_crm_program', {id: line.program.id}) %}
-                                {{ _self.line(href, line.program.shortName, line.program.name, line.stats, '') }}
+                                {{ _self.line(href, line.program.shortName, line.program.name, line.stats, modalities, '') }}
                                 {% for sub in line.options %}
-                                    {{ _self.line(path('app_crm_program', {id: line.program.id, option: sub.key}), sub.option ? sub.option.shortName : 'crmOptionToSpecifyLabel'|trans, sub.option ? sub.option.name : '', sub.stats, sub.option ? 'is-sub' : 'is-sub is-warn') }}
+                                    {{ _self.line(path('app_crm_program', {id: line.program.id, option: sub.key}), sub.option ? sub.option.shortName : 'crmOptionToSpecifyLabel'|trans, sub.option ? sub.option.name : '', sub.stats, modalities, sub.option ? 'is-sub' : 'is-sub is-warn') }}
                                 {% endfor %}
                             {% endfor %}
                         {% endfor %}
@@ -84,9 +80,7 @@
                             <td class="n">{{ total.active }}</td>
                             <td></td>
                             <td class="n">{{ total.steps.complete }}</td>
-                            <td class="n">{{ total.initial }}</td>
-                            <td class="n">{{ total.apprenticeship }}</td>
-                            <td class="n">{{ total.other }}</td>
+                            {% for modality in modalities %}<td class="n">{{ total.modality(modality) }}</td>{% endfor %}
                             <td class="n">{{ total.visaPending }}</td>
                             <td class="n">{{ total.low }}</td>
                             <td class="n">{{ total.waiting }}</td>

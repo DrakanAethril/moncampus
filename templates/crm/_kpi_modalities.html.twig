@@ -1,0 +1,4 @@
+{# The modalities' key figure, overview and formation alike: apprenticeship / initial, then any other
+   modality that has a dossier (CrmProgramStats::keyModalities()). #}
+{% set shown = stats.keyModalities %}
+<span class="cm-crm-kpi__value">{{ shown|map(m => stats.modality(m))|join(' / ') }}</span><span class="cm-crm-kpi__label">{{ shown|map(m => m.shortLabelKey|trans)|join(' / ') }}</span>
