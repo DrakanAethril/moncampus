@@ -158,7 +158,7 @@
                             <td>
                                 {{ row.row.studentName }}
                                 {% if row.student %}
-                                    <div class="text-secondary small">{{ row.student.displayName ?? row.student.username }}</div>
+                                    <div class="text-secondary small">{{ row.student.lastFirstName ?? row.student.username }}</div>
                                 {% endif %}
                             </td>
                             <td>

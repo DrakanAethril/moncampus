@@ -40,9 +40,10 @@ class UfaActivityRecorder
         $tutor = $tutorLink->getTutor();
 
         $activity = new UfaActivity($type, $actor, [
-            'student' => $this->name($student),
+            'student' => $tutorLink->nameOf($student),
             'tutor' => $this->name($tutor),
-            'actor' => $this->name($actor),
+            // Surname first when the student acts on their own livret, like everywhere a student is named.
+            'actor' => $tutorLink->nameOf($actor),
             'period' => $period?->getName() ?? '',
             // For the sentences that mention the period in parentheses: without this pre-composed
             // suffix, an engagement reminder - which bears on no period - displayed empty

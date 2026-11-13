@@ -194,7 +194,7 @@ class AlternanceController extends AbstractController
         $candidates = [];
         foreach (null !== $schoolYear ? $programRepository->findAlternanceForSchoolYear($schoolYear, false, $this->currentUser()) : [] as $program) {
             foreach ($program->getStudents() as $student) {
-                if ('' === $query || str_contains(mb_strtolower($student->getDisplayName() ?? $student->getUsername()), $query)) {
+                if ('' === $query || str_contains(mb_strtolower($student->getDisplayName() ?? $student->getUsername()), $query) || str_contains(mb_strtolower((string) $student->getLastFirstName()), $query)) {
                     // The formation name is folded into the option text (rather than a separate
                     // field) so section 1's read-only "Formation (UFA)" display can be filled
                     // client-side straight from the picked tom-select option, with no second
@@ -210,7 +210,7 @@ class AlternanceController extends AbstractController
         return $this->json([
             'results' => array_map(static fn (array $pair): array => [
                 'id' => $pair[0]->getId(),
-                'text' => \sprintf('%s — %s', $pair[0]->getDisplayName() ?? $pair[0]->getUsername(), $pair[1]->getDisplayShortName()),
+                'text' => \sprintf('%s — %s', $pair[0]->getLastFirstName() ?? $pair[0]->getUsername(), $pair[1]->getDisplayShortName()),
                 'formation' => $pair[1]->getDisplayShortName(),
             ], \array_slice($candidates, 0, $limit)),
             'pagination' => ['more' => \count($candidates) > $limit],

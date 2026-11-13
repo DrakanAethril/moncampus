@@ -129,8 +129,8 @@
                                         {% set link = item.tutorLink %}
                                         {% set recipient = batch.step.value ends with 'tutor' ? link.tutor : link.student %}
                                         <tr>
-                                            <td>{{ recipient ? (recipient.displayName ?? recipient.username) : '—' }}</td>
-                                            <td><a href="{{ path('app_ufa_alternance_show', {id: link.id}) }}" data-turbo-frame="_top">{{ link.student ? (link.student.displayName ?? link.student.username) : '—' }}</a></td>
+                                            <td>{{ recipient ? link.nameOf(recipient) : '—' }}</td>
+                                            <td><a href="{{ path('app_ufa_alternance_show', {id: link.id}) }}" data-turbo-frame="_top">{{ link.student ? (link.student.lastFirstName ?? link.student.username) : '—' }}</a></td>
                                             <td>{{ item.program.displayShortName }}{% if item.evaluationPeriod %}<span class="cm-dd-meta"> · {{ item.evaluationPeriod.name }}</span>{% endif %}</td>
                                             <td><twig:Cm:Badge :of="item.status"/></td>
                                             <td class="cm-dd-meta">{% include 'ufa/reminder_batch/_item_detail.html.twig' with {item: item} only %}</td>

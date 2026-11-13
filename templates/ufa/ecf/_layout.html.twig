@@ -2,7 +2,7 @@
    A screen sets `ecfScreenLabel` (null on the overview itself) and fills `ecf_main`. #}
 {% extends 'layout/app.html.twig' %}
 
-{% set studentName = tutorLink.student.displayName ?? tutorLink.student.username %}
+{% set studentName = tutorLink.student.lastFirstName ?? tutorLink.student.username %}
 
 {% block title %}{{ 'ecfBookletPageHeading'|trans }} — {{ studentName }}{% endblock %}
 

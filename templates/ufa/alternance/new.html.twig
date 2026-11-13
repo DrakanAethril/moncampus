@@ -32,7 +32,7 @@
                                     data-tom-select-placeholder-value="{{ 'ufaAlternanceNewStudentFieldLabel'|trans }}"
                                     data-action="change->alternance-student-picker#pick">
                                 {% if student %}
-                                    <option value="{{ student.id }}" selected>{{ student.displayName ?? student.username }} — {{ program.displayShortName }}</option>
+                                    <option value="{{ student.id }}" selected>{{ student.lastFirstName ?? student.username }} — {{ program.displayShortName }}</option>
                                 {% endif %}
                             </select>
                         </div>

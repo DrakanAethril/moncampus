@@ -137,6 +137,23 @@ class InternshipTutorLink
         return $this->student;
     }
 
+    // How the UFA's screens write one of this alternance's people: its student surname first
+    // (User::getLastFirstName(), the order the UFA's lists are sorted in), anybody else - tutor,
+    // supervisor, whoever signed for the centre - first name first. For the places where the
+    // person shown depends on the step (who is awaited, who signed, who is reminded).
+    public function nameOf(?User $user): string
+    {
+        if (null === $user) {
+            return '';
+        }
+
+        $name = null !== $this->student && $user->getId() === $this->student->getId()
+            ? $user->getLastFirstName()
+            : $user->getDisplayName();
+
+        return $name ?? $user->getUsername();
+    }
+
     public function setStudent(?User $student): static
     {
         $this->student = $student;

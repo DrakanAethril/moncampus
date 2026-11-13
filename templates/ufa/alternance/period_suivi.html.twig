@@ -5,7 +5,7 @@
 {% block page_breadcrumb %}
     {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
-        {label: tutorLink.student.displayName ?? tutorLink.student.username, url: path('app_ufa_alternance_show', {id: tutorLink.id})},
+        {label: tutorLink.student.lastFirstName ?? tutorLink.student.username, url: path('app_ufa_alternance_show', {id: tutorLink.id})},
         {label: period.name ~ ' — ' ~ 'ufaAlternanceRoleSupervisorLabel'|trans, url: app.request.requestUri},
     ]}) }}
 {% endblock %}
