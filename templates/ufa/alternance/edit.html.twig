@@ -1,15 +1,15 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'ufaAlternanceEditPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+{% block title %}{{ 'ufaAlternanceEditPageHeading'|trans }} — {{ tutorLink.student.lastFirstName ?? tutorLink.student.username }}{% endblock %}
 
 {% block page_breadcrumb %}
     {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
-        {label: tutorLink.student.displayName ?? tutorLink.student.username, url: path('app_ufa_alternance_show', {id: tutorLink.id})},
+        {label: tutorLink.student.lastFirstName ?? tutorLink.student.username, url: path('app_ufa_alternance_show', {id: tutorLink.id})},
         {label: 'ufaAlternanceEditPageHeading'|trans, url: app.request.requestUri},
     ]}) }}
 {% endblock %}
-{% block page_title %}{{ 'ufaAlternanceEditPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+{% block page_title %}{{ 'ufaAlternanceEditPageHeading'|trans }} — {{ tutorLink.student.lastFirstName ?? tutorLink.student.username }}{% endblock %}
 
 {% block main %}
     <div class="card">
@@ -24,7 +24,7 @@
                                 data-tom-select-url-value="{{ path('app_ufa_formation_tutors_students_search', {id: program.id}) }}"
                                 data-tom-select-placeholder-value="{{ 'internshipTutorLinkStudentFieldLabel'|trans }}">
                             {% if form.vars.data.student %}
-                                <option value="{{ form.vars.data.student.id }}" selected>{{ form.vars.data.student.displayName ?? form.vars.data.student.username }}</option>
+                                <option value="{{ form.vars.data.student.id }}" selected>{{ form.vars.data.student.lastFirstName ?? form.vars.data.student.username }}</option>
                             {% endif %}
                         </select>
                     </div>
@@ -60,7 +60,7 @@
                         {% else %}
                             <button type="submit" form="ufa-alternance-terminate" class="cm-btn cm-btn--danger"
                                     data-controller="confirm-submit"
-                                    data-confirm-submit-message-value="{{ 'ufaAlternanceTerminateConfirmText'|trans({'%student%': tutorLink.student.displayName ?? tutorLink.student.username}) }}"
+                                    data-confirm-submit-message-value="{{ 'ufaAlternanceTerminateConfirmText'|trans({'%student%': tutorLink.student.lastFirstName ?? tutorLink.student.username}) }}"
                                     data-action="click->confirm-submit#confirm">{{ 'ufaAlternanceTerminateButtonLabel'|trans }}</button>
                         {% endif %}
                     </div>

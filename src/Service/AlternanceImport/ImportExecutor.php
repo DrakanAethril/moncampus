@@ -201,6 +201,6 @@ class ImportExecutor
     {
         $student = $analyzedRow->student;
 
-        return null !== $student ? ($student->getDisplayName() ?? $student->getUsername()) : $analyzedRow->row->studentName;
+        return null !== $student ? ($student->getLastFirstName() ?? $student->getUsername()) : $analyzedRow->row->studentName;
     }
 }

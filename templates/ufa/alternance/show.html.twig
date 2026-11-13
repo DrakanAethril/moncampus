@@ -1,14 +1,14 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'ufaAlternanceShowPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+{% block title %}{{ 'ufaAlternanceShowPageHeading'|trans }} — {{ tutorLink.student.lastFirstName ?? tutorLink.student.username }}{% endblock %}
 
 {% block page_breadcrumb %}
     {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
-        {label: tutorLink.student.displayName ?? tutorLink.student.username, url: app.request.requestUri},
+        {label: tutorLink.student.lastFirstName ?? tutorLink.student.username, url: app.request.requestUri},
     ]}) }}
 {% endblock %}
-{% block page_title %}{{ 'ufaAlternanceShowPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+{% block page_title %}{{ 'ufaAlternanceShowPageHeading'|trans }} — {{ tutorLink.student.lastFirstName ?? tutorLink.student.username }}{% endblock %}
 {% block page_actions %}
     {# A single action here: printing and exporting to PDF live on the booklet reader, where they
        bear on what is being read - same rule for every role. #}
@@ -26,7 +26,7 @@
         {%- if tutorLink.supervisor %} · {{ 'ufaAlternanceRoleSupervisorLabel'|trans|lower }} {{ tutorLink.supervisor.displayName ?? tutorLink.supervisor.username }}{% endif %}
     </div>
     {% set currentActorName = currentStatus.pendingActor
-        ? (currentStatus.pendingActor.displayName ?? currentStatus.pendingActor.username)
+        ? tutorLink.nameOf(currentStatus.pendingActor)
         : (currentStatus.step in ['tutor', 'engagement_tutor']
             ? (tutorLink.tutor.displayName ?? tutorLink.tutor.username)
             : (currentStatus.step == 'supervisor' ? 'ufaAlternanceRoleSupervisorLabel'|trans : 'ufaAlternanceRoleCenterLabel'|trans)) %}
@@ -110,7 +110,7 @@
                             <span class="badge {{ row.badge.class }}">{{ row.badge.label }}</span>
                             {% if row.status.isLate %}
                                 {% set rowActorName = row.status.pendingActor
-                                    ? (row.status.pendingActor.displayName ?? row.status.pendingActor.username)
+                                    ? tutorLink.nameOf(row.status.pendingActor)
                                     : (row.status.step in ['tutor', 'engagement_tutor']
                                         ? (tutorLink.tutor.displayName ?? tutorLink.tutor.username)
                                         : (row.status.step == 'supervisor' ? 'ufaAlternanceRoleSupervisorLabel'|trans : 'ufaAlternanceRoleCenterLabel'|trans)) %}

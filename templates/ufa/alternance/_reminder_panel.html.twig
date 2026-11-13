@@ -19,7 +19,7 @@
                    AlternanceReminderService::emailForStep(), which actually sends the mail:
                    User::$email is the internal @beaupeyrat.lan address, and displaying it made one
                    believe the reminder went there. #}
-                {{ status.pendingActor.displayName ?? status.pendingActor.username }} — {{ status.pendingActor.contactEmail ?? '—' }}
+                {{ tutorLink.nameOf(status.pendingActor) }} — {{ status.pendingActor.contactEmail ?? '—' }}
             {% else %}
                 {{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }} — {{ tutorLink.tutor.contactEmail ?? '—' }}
             {% endif %}
