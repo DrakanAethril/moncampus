@@ -21,7 +21,9 @@ use App\Service\QueryValue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 
 /**
  * The CRM's reading screens: a year's overview (one line per formation followed, by section, and
@@ -79,15 +81,65 @@ class BoardController extends AbstractController
     {
         $this->crmProgram($program, $settings);
         $option = QueryValue::trimmed($request, 'option');
-        $showDone = array_values(array_filter(array_map('strval', QueryValue::all($request, 'done')), static fn (string $v): bool => null !== CrmPhase::tryFrom($v)));
 
         return $this->render('crm/program.html.twig', [
             'program' => $program,
             'year' => $program->getSchoolYear(),
-            'board' => $board->build($program, '' === $option ? null : $option, $showDone),
-            'showDone' => $showDone,
+            'board' => $board->build($program, '' === $option ? null : $option, QueryValue::bool($request, 'closed')),
             'settings' => $settings,
         ]);
+    }
+
+    /**
+     * The formation's list as a spreadsheet: every dossier, the resigned and cancelled included,
+     * with the candidate's mail and phone. Semicolons and a BOM, which is what Excel reads in French.
+     */
+    #[Route(path: '/crm/programs/{id}/export', name: 'app_crm_program_export', methods: ['GET'])]
+    public function export(Request $request, Program $program, CrmSettings $settings, CrmBoard $board): StreamedResponse
+    {
+        $this->crmProgram($program, $settings);
+        $option = QueryValue::trimmed($request, 'option');
+        $asksOption = $settings->asksOption($program);
+        $rows = $board->exportRows($program, '' === $option ? null : $option);
+        $mark = static fn (string $state): string => match ($state) {
+            CrmBoard::DONE => 'Oui',
+            CrmBoard::TODO => 'Non',
+            default => 'Sans objet',
+        };
+
+        $response = new StreamedResponse(static function () use ($rows, $asksOption, $mark): void {
+            $handle = fopen('php://output', 'w');
+            if (false === $handle) {
+                return;
+            }
+            fwrite($handle, "\u{FEFF}");
+            fputcsv($handle, array_merge(['Nom', 'Prénom', 'Modalité'], $asksOption ? ['Option'] : [], ['Situation', 'Pré-inscription', 'Inscription', 'Dossier complet', 'Mail', 'Téléphone']), ';', '"', '');
+            foreach ($rows as $row) {
+                $dossier = $row['progress']->dossier();
+                $candidate = $dossier->getCandidate();
+                fputcsv($handle, array_merge(
+                    [$candidate->getLastName(), $candidate->getFirstName(), $dossier->getModality()->label()],
+                    $asksOption ? [$dossier->getOption()?->getShortName() ?? ''] : [],
+                    [
+                        $dossier->getSituation()->label(),
+                        $mark($row['stages'][CrmPhase::PreEnrolment->value]),
+                        $mark($row['stages'][CrmPhase::Enrolment->value]),
+                        $row['complete'] ? 'Oui' : 'Non',
+                        $candidate->getEmail() ?? '',
+                        $candidate->getPhone() ?? '',
+                    ],
+                ), ';', '"', '');
+            }
+            fclose($handle);
+        });
+
+        $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition(
+            'attachment',
+            \sprintf('crm-%s-%s.csv', strtolower((string) (new AsciiSlugger())->slug($program->getShortName())), (new \DateTimeImmutable())->format('Y-m-d')),
+        ));
+
+        return $response;
     }
 
     #[Route(path: '/crm/years/{id}/history', name: 'app_crm_history', methods: ['GET'])]

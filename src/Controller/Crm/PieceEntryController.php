@@ -83,22 +83,6 @@ class PieceEntryController extends AbstractController
         return $this->redirect($parameters['back']);
     }
 
-    /** The board's « + » on a box: done today, in one click. */
-    #[Route(path: '/crm/dossiers/{id}/pieces/{code}/tick', name: 'app_crm_piece_tick', methods: ['POST'], requirements: ['code' => '[a-z0-9_]+'])]
-    public function tick(Request $request, CrmDossier $dossier, string $code): Response
-    {
-        $this->crmProgram($dossier->getProgram(), $this->settings);
-        $this->assertCsrf($request);
-        $piece = $this->settings->piece($code) ?? throw $this->createNotFoundException();
-        if (CrmPieceKind::Check === $piece->getKind() && null === $dossier->entryFor($piece)) {
-            $this->writer->enterPiece($dossier, $piece, null, null, null, $this->currentUser());
-            $this->entityManager->flush();
-            $this->flashComplete($dossier, $piece->getLabel());
-        }
-
-        return $this->redirect($this->back($request, $dossier));
-    }
-
     #[Route(path: '/crm/dossiers/{id}/pieces/{code}/clear', name: 'app_crm_piece_clear', methods: ['POST'], requirements: ['code' => '[a-z0-9_]+'])]
     public function clear(Request $request, CrmDossier $dossier, string $code): Response
     {

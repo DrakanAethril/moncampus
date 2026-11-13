@@ -4,28 +4,33 @@ declare(strict_types=1);
 
 namespace App\Service\Crm;
 
-use App\Entity\CrmPiece;
 use App\Entity\Program;
-use App\Enum\CrmModality;
-use App\Enum\CrmPath;
 use App\Enum\CrmPhase;
-use App\Enum\CrmPieceConstraint;
 use App\Enum\CrmSituation;
+use App\Enum\CrmStep;
 use App\Repository\CrmDossierRepository;
 
 /**
- * A formation's page: one accordion per stage, a column per piece, a row per dossier at that stage
- * (and, ticked, the ones that finished it), grouped by situation; the documents, entry and
- * follow-up, split by modality. A dossier is listed under the follow-up documents whatever its
- * step, while one of them is still to do (CrmDossierProgress::isAt()).
+ * A formation's page: one list of its candidates, by surname then first name, each with its
+ * modality and three marks - pré-inscription done, inscription done, dossier complete. The
+ * resigned and cancelled dossiers are left out unless asked for; the export always has them.
  *
- * A column is drawn when the piece concerns at least one dossier of the formation - its path, a
- * foreign student for a foreign-only piece - and the formation does not hide it; a cell whose piece
- * does not apply to that dossier reads « — ».
+ * A stage reads « done » once its required pieces are all done, « sans objet » when it asks the
+ * dossier nothing required (a re-enrolment has no pré-inscription, « Non renseignée » asks nothing),
+ * and « to do » otherwise. « Complet » is CrmDossierProgress::step(), the overview's own reading.
+ *
+ * @phpstan-type BoardRow array{progress: CrmDossierProgress, stages: array<string, string>, complete: bool}
  */
 final readonly class CrmBoard
 {
     public const string OPTION_NONE = 'none';
+
+    public const string DONE = 'done';
+    public const string TODO = 'todo';
+    public const string NOT_APPLICABLE = 'na';
+
+    /** The stages the list shows, in their columns' order. */
+    public const array STAGES = [CrmPhase::PreEnrolment, CrmPhase::Enrolment];
 
     public function __construct(
         private CrmDossierRepository $dossiers,
@@ -40,77 +45,17 @@ final readonly class CrmBoard
     }
 
     /**
-     * @param list<string> $showDone the stages whose finished dossiers are shown too (CrmPhase values)
-     *
-     * @return array<string, mixed>
+     * @return array{stats: CrmProgramStats, rows: list<BoardRow>, closedCount: int, showClosed: bool, empty: bool, filtered: bool, option: string|null, optionLinks: list<array{key: string|null, label: string|null, count: int}>, asksOption: bool}
      */
-    public function build(Program $program, ?string $option, array $showDone): array
+    public function build(Program $program, ?string $option, bool $showClosed): array
     {
         $all = $this->progressesOf($program);
-        $settings = $this->settings->settingsOf($program);
         $asksOption = $this->settings->asksOption($program);
         $option = $asksOption ? $option : null;
+        $shown = self::inOption($all, $option);
 
-        $matches = static fn (CrmDossierProgress $p): bool => null === $option
-            || (self::OPTION_NONE === $option ? null === $p->dossier()->getOption() : (string) $p->dossier()->getOption()?->getId() === $option);
-        $shown = array_values(array_filter($all, $matches));
-
-        $paths = [];
-        $anyForeign = false;
-        foreach ($all as $progress) {
-            $paths[$progress->dossier()->getPath()->value] = true;
-            $anyForeign = $anyForeign || $progress->dossier()->getCandidate()->isForeignStudent();
-        }
-        if ([] === $paths) {
-            $paths[CrmPath::Enrolment->value] = true;
-        }
-        $fits = static fn (CrmPiece $piece): bool => [] !== array_filter($piece->getPaths(), static fn (CrmPath $path): bool => isset($paths[$path->value]))
-            && CrmPieceConstraint::Hidden !== CrmDossierProgress::constraint($piece, $settings)
-            && (!$piece->isForeignOnly() || $anyForeign);
-
-        $phases = [];
-        foreach (CrmPhase::cases() as $phase) {
-            $done = \in_array($phase->value, $showDone, true);
-            $showIn = static fn (CrmDossierProgress $p): bool => $p->isAt($phase) || ($done && $p->isPhaseDone($phase));
-            $active = array_values(array_filter($all, static fn (CrmDossierProgress $p): bool => CrmSituation::Active === $p->dossier()->getSituation()));
-            $withPhase = array_filter($active, static fn (CrmDossierProgress $p): bool => $p->concerns($phase));
-
-            $entry = [
-                'phase' => $phase,
-                'here' => \count(array_filter($active, static fn (CrmDossierProgress $p): bool => $p->isAt($phase))),
-                'finished' => \count(array_filter($withPhase, static fn (CrmDossierProgress $p): bool => $p->isPhaseDone($phase))),
-                'withPhase' => \count($withPhase),
-                'doneCount' => \count(array_filter($shown, static fn (CrmDossierProgress $p): bool => $p->isPhaseDone($phase))),
-                'showDone' => $done,
-                'open' => [] !== array_filter($shown, static fn (CrmDossierProgress $p): bool => $p->isAt($phase)) || ([] === $all && CrmPhase::PreEnrolment === $phase),
-                'tables' => [],
-            ];
-
-            $catalogue = array_values(array_filter($this->settings->catalogue(), static fn (CrmPiece $piece): bool => $phase === $piece->getPhase() && $fits($piece)));
-            $pool = array_values(array_filter($shown, $showIn));
-
-            if (!$phase->isDocuments()) {
-                $entry['skipped'] = [] === $catalogue;
-                if ([] !== $catalogue) {
-                    $entry['tables'][] = ['modality' => null, 'columns' => $catalogue, 'groups' => self::groups($pool, true), 'count' => \count($pool)];
-                }
-            } else {
-                if (!$phase->countsTowardsCompletion() && [] === $catalogue) {
-                    continue; // no follow-up document concerns this formation: no group at all
-                }
-                $entry['skipped'] = false;
-                foreach (CrmModality::pieceModalities() as $modality) {
-                    $rows = array_values(array_filter($pool, static fn (CrmDossierProgress $p): bool => $modality === $p->dossier()->getModality()));
-                    if ([] === $rows) {
-                        continue;
-                    }
-                    $columns = array_values(array_filter($catalogue, static fn (CrmPiece $piece): bool => $piece->isFor($modality)));
-                    $entry['tables'][] = ['modality' => $modality, 'columns' => $columns, 'groups' => self::groups($rows, false), 'count' => \count($rows)];
-                }
-            }
-            $entry['rowCount'] = array_sum(array_map(static fn (array $t): int => $t['count'], $entry['tables']));
-            $phases[] = $entry;
-        }
+        $closed = array_filter($shown, static fn (CrmDossierProgress $p): bool => $p->dossier()->getSituation()->isClosed());
+        $listed = $showClosed ? $shown : array_filter($shown, static fn (CrmDossierProgress $p): bool => !$p->dossier()->getSituation()->isClosed());
 
         $optionLinks = [];
         if ($asksOption) {
@@ -124,13 +69,11 @@ final readonly class CrmBoard
             }
         }
 
-        // The dossiers whose modality is « Non renseignée »: asked nothing, listed apart until one is chosen.
-        $missing = array_values(array_filter($shown, static fn (CrmDossierProgress $p): bool => !$p->dossier()->getModality()->asksPieces()));
-
         return [
             'stats' => CrmProgramStats::of($shown),
-            'modalityMissing' => [] === $missing ? null : ['modality' => CrmModality::Unspecified, 'columns' => [], 'groups' => self::groups($missing, false), 'count' => \count($missing)],
-            'phases' => $phases,
+            'rows' => array_map(self::row(...), self::sorted($listed)),
+            'closedCount' => \count($closed),
+            'showClosed' => $showClosed,
             'empty' => [] === $all,
             'filtered' => \count($shown) < \count($all),
             'option' => $option,
@@ -140,27 +83,75 @@ final readonly class CrmBoard
     }
 
     /**
-     * @param list<CrmDossierProgress> $rows
+     * The export: the same list with every situation, the resigned and cancelled included.
      *
-     * @return list<array{key: string, labelKey: string|null, rows: list<CrmDossierProgress>}>
+     * @return list<BoardRow>
      */
-    private static function groups(array $rows, bool $labelActive): array
+    public function exportRows(Program $program, ?string $option): array
     {
-        $groups = [
-            ['key' => 'active', 'labelKey' => $labelActive ? 'crmGroupActiveLabel' : null, 'filter' => static fn (CrmSituation $s): bool => CrmSituation::Active === $s],
-            ['key' => 'pending', 'labelKey' => 'crmGroupPendingLabel', 'filter' => static fn (CrmSituation $s): bool => CrmSituation::Pending === $s],
-            ['key' => 'waitlist', 'labelKey' => 'crmGroupWaitlistLabel', 'filter' => static fn (CrmSituation $s): bool => CrmSituation::Waitlist === $s],
-            ['key' => 'closed', 'labelKey' => 'crmGroupClosedLabel', 'filter' => static fn (CrmSituation $s): bool => $s->isClosed()],
-        ];
+        $option = $this->settings->asksOption($program) ? $option : null;
 
-        $out = [];
-        foreach ($groups as $group) {
-            $list = array_values(array_filter($rows, static fn (CrmDossierProgress $p): bool => $group['filter']($p->dossier()->getSituation())));
-            if ([] !== $list) {
-                $out[] = ['key' => $group['key'], 'labelKey' => $group['labelKey'], 'rows' => $list];
-            }
+        return array_map(self::row(...), self::sorted(self::inOption($this->progressesOf($program), $option)));
+    }
+
+    /** One stage of one dossier: done, to do, or not asked of it. */
+    public static function stageState(CrmDossierProgress $progress, CrmPhase $phase): string
+    {
+        $count = $progress->phaseCount($phase);
+        if (0 === $count['total']) {
+            return self::NOT_APPLICABLE;
         }
 
-        return $out;
+        return $count['done'] === $count['total'] ? self::DONE : self::TODO;
+    }
+
+    /** @return BoardRow */
+    private static function row(CrmDossierProgress $progress): array
+    {
+        $stages = [];
+        foreach (self::STAGES as $phase) {
+            $stages[$phase->value] = self::stageState($progress, $phase);
+        }
+
+        return ['progress' => $progress, 'stages' => $stages, 'complete' => CrmStep::Complete === $progress->step()];
+    }
+
+    /**
+     * @param list<CrmDossierProgress> $all
+     *
+     * @return list<CrmDossierProgress>
+     */
+    private static function inOption(array $all, ?string $option): array
+    {
+        if (null === $option) {
+            return $all;
+        }
+
+        return array_values(array_filter($all, static fn (CrmDossierProgress $p): bool => self::OPTION_NONE === $option
+            ? null === $p->dossier()->getOption()
+            : (string) $p->dossier()->getOption()?->getId() === $option));
+    }
+
+    /**
+     * Surname, then first name, the French way: accents and case do not move a name.
+     *
+     * @param array<array-key, CrmDossierProgress> $progresses
+     *
+     * @return list<CrmDossierProgress>
+     */
+    private static function sorted(array $progresses): array
+    {
+        $collator = new \Collator('fr_FR');
+        $progresses = array_values($progresses);
+        usort($progresses, static function (CrmDossierProgress $a, CrmDossierProgress $b) use ($collator): int {
+            $left = $a->dossier()->getCandidate();
+            $right = $b->dossier()->getCandidate();
+
+            return (int) $collator->compare($left->getLastName(), $right->getLastName())
+                ?: (int) $collator->compare($left->getFirstName(), $right->getFirstName())
+                ?: ($a->dossier()->getId() ?? 0) <=> ($b->dossier()->getId() ?? 0);
+        });
+
+        return $progresses;
     }
 }
