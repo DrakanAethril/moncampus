@@ -26,6 +26,18 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.13.2'
+      date: '2026-11-13'
+      summary: "Le CRM des inscriptions, toujours en essai auprès de l'administration, connaît de nouvelles modalités et distingue les documents qui rendent un dossier complet de ceux que l'équipe suit ensuite."
+      entries:
+          - type: nouveaute
+            title: "CRM : modalités « Scolaire », « Contrat pro » et « Non renseignée »"
+            detail: "Un dossier « Non renseignée » ne demande aucune pièce et n'est jamais complet tant qu'une modalité n'est pas choisie ; elle peut être la modalité par défaut d'une formation."
+          - type: nouveaute
+            title: "CRM : les documents se répartissent entre « Documents d'entrée », nécessaires pour que le dossier soit complet, et « Documents de suivi »"
+            detail: "Une case « Complétude » dans les réglages des pièces décide du groupe de chaque document."
+          - type: modification
+            title: "CRM : dans les réglages, la ligne des titres de colonnes reste visible pendant le défilement"
     - version: '2026.11.13'
       date: '2026-11-13'
       summary: "Dans les écrans de l'UFA, les alternants sont désormais nommés par leur nom de famille puis leur prénom, dans l'ordre où les listes sont triées."

@@ -182,7 +182,8 @@ class CrmPiece
     {
         $values = array_map(static fn (CrmModality $m): string => $m->value, $modalities);
         // Kept in the enum's order, whatever order they were ticked in.
-        $this->modalities = array_values(array_filter(array_map(static fn (CrmModality $m): string => $m->value, CrmModality::cases()), static fn (string $v): bool => \in_array($v, $values, true)));
+        // « Non renseignée » is never asked anything: it is dropped here whoever sends it.
+        $this->modalities = array_values(array_filter(array_map(static fn (CrmModality $m): string => $m->value, CrmModality::pieceModalities()), static fn (string $v): bool => \in_array($v, $values, true)));
     }
 
     /** @return list<CrmPath> */

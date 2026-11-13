@@ -77,7 +77,7 @@ class SettingsController extends AbstractController
                     }
                 }
             }
-            $parameters += ['phases' => CrmPhase::cases(), 'history' => $history, 'adapted' => $adapted, 'modalities' => CrmModality::cases()];
+            $parameters += ['phases' => CrmPhase::cases(), 'history' => $history, 'adapted' => $adapted, 'modalities' => CrmModality::pieceModalities()];
         } else {
             $parameters += ['origins' => $origins->all(), 'usage' => $origins->usage()];
         }

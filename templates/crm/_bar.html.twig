@@ -2,8 +2,8 @@
 {% if stats.active == 0 %}
     <div class="cm-crm-bar" aria-label="{{ 'crmNoActiveDossierLabel'|trans }}"></div>
 {% else %}
-    <div class="cm-crm-bar" role="img" aria-label="{{ 'crmBarLabel'|trans({'%pre%': stats.steps.pre_enrolment, '%ins%': stats.steps.enrolment, '%doc%': stats.steps.documents, '%done%': stats.steps.complete}) }}">
-        {% for step in ['pre_enrolment', 'enrolment', 'documents', 'complete'] %}
+    <div class="cm-crm-bar" role="img" aria-label="{{ 'crmBarLabel'|trans({'%mod%': stats.steps.modality, '%pre%': stats.steps.pre_enrolment, '%ins%': stats.steps.enrolment, '%doc%': stats.steps.documents, '%done%': stats.steps.complete}) }}">
+        {% for step in ['modality', 'pre_enrolment', 'enrolment', 'documents', 'complete'] %}
             {% if stats.steps[step] > 0 %}<span class="{{ step }}" style="width: {{ stats.share(step) }}%" title="{{ stats.steps[step] }}"></span>{% endif %}
         {% endfor %}
     </div>

@@ -8,6 +8,7 @@ use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Enum\CrmJournalKind;
+use App\Enum\CrmModality;
 use App\Enum\CrmPhase;
 use App\Enum\Feature;
 use App\Repository\CrmDossierRepository;
@@ -68,6 +69,7 @@ class BoardController extends AbstractController
             'year' => $year,
             'sections' => $sections,
             'total' => CrmProgramStats::sum($all),
+            'modalities' => CrmModality::cases(),
             'hasPrograms' => [] !== $programs,
         ]);
     }

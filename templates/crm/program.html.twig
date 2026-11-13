@@ -41,9 +41,23 @@
     <div class="cm-crm-kpis">
         <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ stats.active }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiActiveLabel'|trans }}</span></div>
         <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ stats.steps.complete }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiCompleteShortLabel'|trans }}</span></div>
-        <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ stats.apprenticeship }} / {{ stats.initial }}{% if stats.other %} / {{ stats.other }}{% endif %}</span><span class="cm-crm-kpi__label">{{ stats.other ? 'crmKpiModalitiesOtherLabel'|trans : 'crmKpiModalitiesShortLabel'|trans }}</span></div>
+        <div class="cm-crm-kpi">{% include 'crm/_kpi_modalities.html.twig' with {stats: stats} only %}</div>
         <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ stats.low }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiLowLabel'|trans({'%count%': stats.visaPending}) }}</span></div>
     </div>
+
+    {% if board.modalityMissing %}
+        <details class="cm-crm-acc" open>
+            <summary>
+                <twig:ux:icon name="caret-right" width="13" height="13"/>
+                <span class="cm-crm-acc__title">{{ 'crmStepModalityLabel'|trans }}</span>
+                <span class="cm-crm-acc__sum">{{ 'crmModalityMissingSummary'|trans({'%count%': board.modalityMissing.count}) }}</span>
+            </summary>
+            <div class="cm-crm-acc__body">
+                <p class="cm-crm-faint">{{ 'crmModalityMissingText'|trans }}</p>
+                {% include 'crm/_board_table.html.twig' with {table: board.modalityMissing, keyPrefix: 'modality', asksOption: board.asksOption, back: back, csrf: csrf} only %}
+            </div>
+        </details>
+    {% endif %}
 
     {% for phase in board.phases %}
         {% set doneParams = showDone|filter(v => v != phase.phase.value) %}
@@ -56,7 +70,7 @@
                 {% if phase.skipped %}
                     <span class="cm-crm-acc__sum">{{ 'crmPhaseSkippedText'|trans }}</span>
                 {% else %}
-                    <span class="cm-crm-acc__sum">{{ 'crmPhaseSummary'|trans({'%here%': phase.here, '%finished%': phase.finished, '%total%': phase.withPhase})|raw }}{% if phase.phase.value == 'documents' %} · {{ 'crmByModalityText'|trans }}{% endif %}</span>
+                    <span class="cm-crm-acc__sum">{{ (phase.phase.countsTowardsCompletion ? 'crmPhaseSummary' : 'crmFollowUpSummary')|trans({'%here%': phase.here, '%finished%': phase.finished, '%total%': phase.withPhase})|raw }}{% if phase.phase.isDocuments %} · {{ 'crmByModalityText'|trans }}{% endif %}</span>
                     <a class="cm-crm-acc__done" href="{{ toggleUrl }}" data-turbo-action="replace">
                         <input type="checkbox" tabindex="-1" aria-hidden="true"{% if phase.showDone %} checked{% endif %}>
                         {{ 'crmShowCompleteLabel'|trans }} <span class="cm-crm-faint cm-crm-num">({{ phase.doneCount }})</span>
@@ -74,51 +88,7 @@
                 {% else %}
                     {% for table in phase.tables %}
                         {% if table.modality %}<div class="cm-crm-acc__sub">{{ table.modality.labelKey|trans }}<twig:Cm:Badge tone="gray">{{ table.count }}</twig:Cm:Badge></div>{% endif %}
-                        <div class="cm-crm-tablewrap">
-                            <table class="cm-crm-table cm-crm-board">
-                                <thead>
-                                    <tr>
-                                        <th class="is-cand">{{ 'crmCandidateColumn'|trans }}</th>
-                                        {% if not table.modality %}<th>{{ 'crmModalityColumn'|trans }}</th>{% endif %}
-                                        <th>{{ 'crmStepColumn'|trans }}</th>
-                                        {% for piece in table.columns %}<th class="is-piece" title="{{ piece.label }}">{{ piece.label }}</th>{% endfor %}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for group in table.groups %}
-                                        {% set groupKey = phase.phase.value ~ '-' ~ (table.modality ? table.modality.value : 'all') ~ '-' ~ group.key %}
-                                        {% set closed = group.key != 'active' %}
-                                        {% if group.labelKey %}
-                                            <tr class="is-group{% if closed %} is-closed{% endif %}" data-group="{{ groupKey }}">
-                                                <td colspan="{{ 2 + (table.modality ? 0 : 1) + table.columns|length }}">
-                                                    <button type="button" data-action="crm-board#toggle" aria-expanded="{{ closed ? 'false' : 'true' }}"><twig:ux:icon name="caret-right" width="12" height="12"/>{{ group.labelKey|trans }} <twig:Cm:Badge tone="gray">{{ group.rows|length }}</twig:Cm:Badge></button>
-                                                </td>
-                                            </tr>
-                                        {% else %}
-                                            {% set closed = false %}
-                                        {% endif %}
-                                        {% for progress in group.rows %}
-                                            {% set dossier = progress.dossier %}
-                                            <tr data-in-group="{{ groupKey }}"{% if closed %} class="is-hidden"{% endif %}>
-                                                <td class="is-cand">
-                                                    <a class="cm-crm-cand" href="{{ path('app_crm_dossier', {id: dossier.id}) }}">{{ dossier.candidate.fullName }}</a>
-                                                    {% include 'crm/_tags.html.twig' with {progress: progress, asksOption: board.asksOption} only %}
-                                                </td>
-                                                {% if not table.modality %}<td><twig:Cm:Badge :of="dossier.modality"/></td>{% endif %}
-                                                <td>{% if dossier.situation.value == 'active' %}<twig:Cm:Badge :of="progress.step"/>{% else %}<twig:Cm:Badge :of="dossier.situation"/>{% endif %}</td>
-                                                {% for piece in table.columns %}
-                                                    {% if progress.applies(piece) %}
-                                                        <td>{% include 'crm/_cell.html.twig' with {progress: progress, piece: piece, back: back, csrf: csrf} only %}</td>
-                                                    {% else %}
-                                                        <td class="is-na" title="{{ 'crmNotApplicableHint'|trans }}">—</td>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </tr>
-                                        {% endfor %}
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                        {% include 'crm/_board_table.html.twig' with {table: table, keyPrefix: phase.phase.value, asksOption: board.asksOption, back: back, csrf: csrf} only %}
                     {% endfor %}
                 {% endif %}
             </div>

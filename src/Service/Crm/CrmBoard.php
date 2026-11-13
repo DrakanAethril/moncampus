@@ -15,7 +15,9 @@ use App\Repository\CrmDossierRepository;
 
 /**
  * A formation's page: one accordion per stage, a column per piece, a row per dossier at that stage
- * (and, ticked, the ones that finished it), grouped by situation; the documents split by modality.
+ * (and, ticked, the ones that finished it), grouped by situation; the documents, entry and
+ * follow-up, split by modality. A dossier is listed under the follow-up documents whatever its
+ * step, while one of them is still to do (CrmDossierProgress::isAt()).
  *
  * A column is drawn when the piece concerns at least one dossier of the formation - its path, a
  * foreign student for a foreign-only piece - and the formation does not hide it; a cell whose piece
@@ -69,32 +71,35 @@ final readonly class CrmBoard
         $phases = [];
         foreach (CrmPhase::cases() as $phase) {
             $done = \in_array($phase->value, $showDone, true);
-            $showIn = static fn (CrmDossierProgress $p): bool => $phase->step() === $p->step() || ($done && $p->isPhaseDone($phase));
+            $showIn = static fn (CrmDossierProgress $p): bool => $p->isAt($phase) || ($done && $p->isPhaseDone($phase));
             $active = array_values(array_filter($all, static fn (CrmDossierProgress $p): bool => CrmSituation::Active === $p->dossier()->getSituation()));
-            $withPhase = array_filter($active, static fn (CrmDossierProgress $p): bool => $p->phaseCount($phase)['total'] > 0);
+            $withPhase = array_filter($active, static fn (CrmDossierProgress $p): bool => $p->concerns($phase));
 
             $entry = [
                 'phase' => $phase,
-                'here' => \count(array_filter($active, static fn (CrmDossierProgress $p): bool => $phase->step() === $p->step())),
+                'here' => \count(array_filter($active, static fn (CrmDossierProgress $p): bool => $p->isAt($phase))),
                 'finished' => \count(array_filter($withPhase, static fn (CrmDossierProgress $p): bool => $p->isPhaseDone($phase))),
                 'withPhase' => \count($withPhase),
                 'doneCount' => \count(array_filter($shown, static fn (CrmDossierProgress $p): bool => $p->isPhaseDone($phase))),
                 'showDone' => $done,
-                'open' => [] !== array_filter($shown, static fn (CrmDossierProgress $p): bool => $phase->step() === $p->step()) || ([] === $all && CrmPhase::PreEnrolment === $phase),
+                'open' => [] !== array_filter($shown, static fn (CrmDossierProgress $p): bool => $p->isAt($phase)) || ([] === $all && CrmPhase::PreEnrolment === $phase),
                 'tables' => [],
             ];
 
             $catalogue = array_values(array_filter($this->settings->catalogue(), static fn (CrmPiece $piece): bool => $phase === $piece->getPhase() && $fits($piece)));
             $pool = array_values(array_filter($shown, $showIn));
 
-            if (CrmPhase::Documents !== $phase) {
+            if (!$phase->isDocuments()) {
                 $entry['skipped'] = [] === $catalogue;
                 if ([] !== $catalogue) {
                     $entry['tables'][] = ['modality' => null, 'columns' => $catalogue, 'groups' => self::groups($pool, true), 'count' => \count($pool)];
                 }
             } else {
+                if (!$phase->countsTowardsCompletion() && [] === $catalogue) {
+                    continue; // no follow-up document concerns this formation: no group at all
+                }
                 $entry['skipped'] = false;
-                foreach (CrmModality::cases() as $modality) {
+                foreach (CrmModality::pieceModalities() as $modality) {
                     $rows = array_values(array_filter($pool, static fn (CrmDossierProgress $p): bool => $modality === $p->dossier()->getModality()));
                     if ([] === $rows) {
                         continue;
@@ -119,8 +124,12 @@ final readonly class CrmBoard
             }
         }
 
+        // The dossiers whose modality is « Non renseignée »: asked nothing, listed apart until one is chosen.
+        $missing = array_values(array_filter($shown, static fn (CrmDossierProgress $p): bool => !$p->dossier()->getModality()->asksPieces()));
+
         return [
             'stats' => CrmProgramStats::of($shown),
+            'modalityMissing' => [] === $missing ? null : ['modality' => CrmModality::Unspecified, 'columns' => [], 'groups' => self::groups($missing, false), 'count' => \count($missing)],
             'phases' => $phases,
             'empty' => [] === $all,
             'filtered' => \count($shown) < \count($all),

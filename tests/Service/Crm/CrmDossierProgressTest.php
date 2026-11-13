@@ -63,6 +63,54 @@ class CrmDossierProgressTest extends TestCase
         self::assertFalse($progress->isDone($pre));
     }
 
+    public function testAFollowUpDocumentNeverHoldsTheDossierBackButKeepsItListedUntilDone(): void
+    {
+        $pre = self::piece('preins', CrmPhase::PreEnrolment);
+        $npec = self::piece('npec', CrmPhase::FollowUp);
+        $dossier = $this->dossier();
+        self::enter($dossier, $pre);
+        $progress = CrmDossierProgress::of($dossier, $this->settings, [$pre, $npec]);
+
+        self::assertSame(CrmStep::Complete, $progress->step());
+        self::assertTrue($progress->concerns(CrmPhase::FollowUp));
+        self::assertTrue($progress->isAt(CrmPhase::FollowUp));
+        self::assertFalse($progress->isAt(CrmPhase::PreEnrolment));
+
+        self::enter($dossier, $npec);
+        $progress = CrmDossierProgress::of($dossier, $this->settings, [$pre, $npec]);
+        self::assertFalse($progress->isAt(CrmPhase::FollowUp));
+        self::assertTrue($progress->isPhaseDone(CrmPhase::FollowUp));
+    }
+
+    public function testADossierWaitingOnAStageIsAtItWhileItsFollowUpWaitsToo(): void
+    {
+        $sent = self::piece('sent', CrmPhase::Enrolment);
+        $npec = self::piece('npec', CrmPhase::FollowUp);
+        $progress = CrmDossierProgress::of($this->dossier(), $this->settings, [$sent, $npec]);
+
+        self::assertSame(CrmStep::Enrolment, $progress->step());
+        self::assertTrue($progress->isAt(CrmPhase::Enrolment));
+        self::assertTrue($progress->isAt(CrmPhase::FollowUp));
+        self::assertFalse(CrmDossierProgress::of($this->dossier(), $this->settings, [$sent])->concerns(CrmPhase::FollowUp));
+    }
+
+    public function testAnUnspecifiedModalityIsAskedNothingAndIsNeverComplete(): void
+    {
+        $pre = new CrmPiece('preins', 'Preins', 'preins', CrmPhase::PreEnrolment, CrmPieceKind::Check, CrmModality::cases(), [CrmPath::Enrolment, CrmPath::Reenrolment], 0);
+        $dossier = $this->dossier(CrmModality::Unspecified);
+        self::enter($dossier, $pre);
+        $progress = CrmDossierProgress::of($dossier, $this->settings, [$pre]);
+
+        self::assertNotContains(CrmModality::Unspecified, $pre->getModalities());
+        self::assertSame([], $progress->applicable());
+        self::assertSame(CrmStep::Modality, $progress->step());
+        self::assertFalse($progress->isAt(CrmPhase::PreEnrolment));
+        self::assertCount(1, $progress->kept());
+
+        $dossier->setModality(CrmModality::Initial);
+        self::assertSame(CrmStep::Complete, CrmDossierProgress::of($dossier, $this->settings, [$pre])->step());
+    }
+
     public function testEachStageDoneMovesTheDossierOnUntilItIsComplete(): void
     {
         $pre = self::piece('preins', CrmPhase::PreEnrolment);
