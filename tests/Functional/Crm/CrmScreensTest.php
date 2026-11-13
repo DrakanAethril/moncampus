@@ -15,6 +15,7 @@ use App\Enum\CrmPhase;
 use App\Enum\CrmPieceKind;
 use App\Enum\CrmSituation;
 use App\Repository\CrmDossierRepository;
+use App\Service\Crm\CrmSettings;
 use App\Tests\Functional\FunctionalTestCase;
 
 /**
@@ -105,8 +106,19 @@ class CrmScreensTest extends FunctionalTestCase
         $lea = $this->newDossier('Dupont', 'Léa', 'lea@exemple.fr');
         $this->newDossier('Émery', 'Paul', 'paul@exemple.fr');
         $zoe = $this->newDossier('Abadie', 'Zoé', 'zoe@exemple.fr');
-        $this->client->request('POST', '/crm/dossiers/'.$zoe->getId().'/pieces/pre_enrolment', ['_token' => $this->csrfToken('crm'), 'value' => 'En ligne', 'date' => '']);
-        self::assertResponseRedirects();
+        // Every piece her pré-inscription asks for, whatever the catalogue holds (the seeded one adds
+        // the apprentice's kit to an apprenticeship).
+        $settings = static::getContainer()->get(CrmSettings::class);
+        $dossier = $this->crmEntityManager()->find(CrmDossier::class, $zoe->getId()) ?? self::fail('dossier');
+        foreach ($settings->progress($dossier)->applicableIn(CrmPhase::PreEnrolment) as $piece) {
+            $value = match ($piece->getKind()) {
+                CrmPieceKind::Check => [],
+                CrmPieceKind::Choice, CrmPieceKind::List => ['value' => $piece->lastChoice() ?? ''],
+                default => ['value' => '1'],
+            };
+            $this->client->request('POST', '/crm/dossiers/'.$zoe->getId().'/pieces/'.$piece->getCode(), ['_token' => $this->csrfToken('crm'), 'date' => ''] + $value);
+            self::assertResponseRedirects();
+        }
         $this->client->request('POST', '/crm/dossiers/'.$lea->getId().'/situation', ['_token' => $this->csrfToken('crm'), 'situation' => 'resigned', 'reason' => '']);
         self::assertResponseRedirects();
 
