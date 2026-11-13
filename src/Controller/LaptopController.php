@@ -338,14 +338,14 @@ class LaptopController extends AbstractController
         $candidates = StudentNameOrder::sortStudents($userRepository->findActiveMatchingRoles([], [], $request->query->get('q')));
 
         return $this->json([
-            'results' => array_map(static function (User $user) use ($programRepository): array {
+            'results' => array_map(function (User $user) use ($programRepository): array {
                 $program = $programRepository->findActiveForStudent($user);
 
                 return [
                     'id' => $user->getId(),
                     'text' => null !== $program
-                        ? sprintf('%s — %s', $user->getDisplayName() ?? $user->getUsername(), $program->getDisplayShortName())
-                        : ($user->getDisplayName() ?? $user->getUsername()),
+                        ? sprintf('%s — %s', $this->borrowerLabel($user), $program->getDisplayShortName())
+                        : $this->borrowerLabel($user),
                 ];
             }, array_slice($candidates, 0, $limit)),
             'pagination' => ['more' => count($candidates) > $limit],
@@ -458,7 +458,7 @@ class LaptopController extends AbstractController
 
                     $availability = match (true) {
                         null !== $laptop->getInactiveDate() => $translator->trans('laptopOutOfFleetLabel'),
-                        null !== $activeLoan => $translator->trans('laptopLentToLabel', ['%name%' => $this->userLabel($activeLoan->getBorrower())]),
+                        null !== $activeLoan => $translator->trans('laptopLentToLabel', ['%name%' => $this->borrowerLabel($activeLoan->getBorrower())]),
                         default => $translator->trans('laptopStatusAvailableLabel'),
                     };
 
@@ -531,7 +531,7 @@ class LaptopController extends AbstractController
             foreach ($loans as $loan) {
                 fputcsv($handle, [
                     $loan->getLaptop()->getAssetTag(),
-                    $this->userLabel($loan->getBorrower()),
+                    $this->borrowerLabel($loan->getBorrower()),
                     $this->userLabel($loan->getLentBy()),
                     $loan->getLentAt()->format('d/m/Y H:i'),
                     $loan->getLentConditionType()?->getName() ?? '',
@@ -642,7 +642,7 @@ class LaptopController extends AbstractController
         $studentCell = sprintf(
             '<span class="avatar avatar-sm me-2">%s</span><div class="d-inline-block align-middle"><div class="fw-semibold text-ink">%s</div><div class="text-secondary small">%s</div></div>',
             htmlspecialchars($this->initials($borrower)),
-            htmlspecialchars($this->userLabel($borrower)),
+            htmlspecialchars($this->borrowerLabel($borrower)),
             htmlspecialchars($program?->getDisplayShortName() ?? ''),
         );
 
@@ -694,7 +694,7 @@ class LaptopController extends AbstractController
     {
         $row = [
             'id' => $loan->getId(),
-            'borrowerName' => $this->userLabel($loan->getBorrower()),
+            'borrowerName' => $this->borrowerLabel($loan->getBorrower()),
             'lentByName' => $this->userLabel($loan->getLentBy()),
             'lentAt' => $loan->getLentAt()->format('d/m/Y H:i'),
             'dueAt' => $statusFormatter->dueAtLabel($loan),
@@ -750,6 +750,17 @@ class LaptopController extends AbstractController
         }
 
         return $user->getDisplayName() ?? $user->getUsername();
+    }
+
+    // A borrower who is a student is written surname first, like every student in the UFA; a
+    // member of staff borrowing a machine keeps the usual order.
+    private function borrowerLabel(?User $user): string
+    {
+        if (null === $user || !\in_array('ROLE_STUDENT', $user->getRoles(), true)) {
+            return $this->userLabel($user);
+        }
+
+        return $user->getLastFirstName() ?? $user->getUsername();
     }
 
     /**

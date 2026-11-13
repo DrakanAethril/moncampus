@@ -437,6 +437,18 @@ class User implements UserInterface
         return trim(\sprintf('%s %s', $this->firstname ?? '', $this->lastname ?? ''));
     }
 
+    // The surname first ("Tharaud Sébastien"): how a student is written wherever the UFA and the
+    // CRM list people, so that the name reads in the order those lists are sorted by
+    // (StudentNameOrder). Null under the same condition as getDisplayName().
+    public function getLastFirstName(): ?string
+    {
+        if (null === $this->firstname && null === $this->lastname) {
+            return null;
+        }
+
+        return trim(\sprintf('%s %s', $this->lastname ?? '', $this->firstname ?? ''));
+    }
+
     // A less identifying variant ("S. Tharaud" instead of "Sébastien Tharaud") for contexts that
     // shouldn't expose a person's full first name (e.g. a teacher's name shown to students on the
     // Program teachers list) - kept as its own method, not a parameter on getDisplayName(), so

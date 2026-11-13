@@ -130,7 +130,7 @@
                             {% for alternance in alternances %}
                                 <tr>
                                     <td>
-                                        <a href="{{ path('app_ufa_alternance_show', {id: alternance.id}) }}">{{ alternance.student.displayName ?? alternance.student.username }}</a>
+                                        <a href="{{ path('app_ufa_alternance_show', {id: alternance.id}) }}">{{ alternance.student.lastFirstName ?? alternance.student.username }}</a>
                                         {% if alternance.terminated %}
                                             <span class="badge bg-secondary-lt ms-1">{{ 'ufaEnterpriseAlternanceTerminatedBadgeLabel'|trans({'%date%': alternance.inactiveDate|date('d/m/Y')}) }}</span>
                                         {% endif %}

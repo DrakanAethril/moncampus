@@ -23,7 +23,7 @@
             <div class="cm-wizard-readonly-block">
                 <div class="text-secondary small mb-1">
                     {{ 'internshipStudentEvaluationRemarksFieldLabel'|trans }}
-                    {% if studentEvaluation.signedAt %}· {{ studentEvaluation.signedBy.displayName ?? studentEvaluation.signedBy.username }}, {{ studentEvaluation.signedAt|date('d/m/Y') }}{% endif %}
+                    {% if studentEvaluation.signedAt %}· {{ tutorLink.nameOf(studentEvaluation.signedBy) }}, {{ studentEvaluation.signedAt|date('d/m/Y') }}{% endif %}
                 </div>
                 {{ (studentEvaluation.remarksText ?: '—')|nl2br }}
             </div>
