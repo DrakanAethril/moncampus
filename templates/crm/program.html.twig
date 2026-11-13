@@ -41,7 +41,7 @@
     <div class="cm-crm-kpis">
         <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ stats.active }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiActiveLabel'|trans }}</span></div>
         <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ stats.steps.complete }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiCompleteShortLabel'|trans }}</span></div>
-        <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ stats.apprenticeship }} / {{ stats.initial }}{% if stats.other %} / {{ stats.other }}{% endif %}</span><span class="cm-crm-kpi__label">{{ stats.other ? 'crmKpiModalitiesOtherLabel'|trans : 'crmKpiModalitiesShortLabel'|trans }}</span></div>
+        <div class="cm-crm-kpi">{% include 'crm/_kpi_modalities.html.twig' with {stats: stats} only %}</div>
         <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ stats.low }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiLowLabel'|trans({'%count%': stats.visaPending}) }}</span></div>
     </div>
 

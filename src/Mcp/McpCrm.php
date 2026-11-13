@@ -196,7 +196,7 @@ final readonly class McpCrm
             'foreign' => ['type' => 'boolean', 'description' => 'Étudiant étranger, sous réserve de visa.'],
             'guardians' => ['type' => 'array', 'maxItems' => 2, 'items' => ['type' => 'object', 'properties' => ['lastName' => ['type' => 'string'], 'firstName' => ['type' => 'string'], 'email' => ['type' => 'string'], 'phone' => ['type' => 'string']]]],
             'path' => ['type' => 'string', 'enum' => ['enrolment', 'reenrolment'], 'default' => 'enrolment'],
-            'modality' => ['type' => 'string', 'enum' => ['initial', 'apprenticeship', 'other'], 'description' => 'Absente : la modalité par défaut de la formation.'],
+            'modality' => ['type' => 'string', 'enum' => CrmModality::values(), 'description' => 'Absente : la modalité par défaut de la formation.'],
             'situation' => ['type' => 'string', 'enum' => ['active', 'pending', 'waitlist', 'resigned', 'cancelled'], 'default' => 'active'],
             'situationReason' => ['type' => 'string'],
             'refundDue' => ['type' => 'boolean', 'description' => 'Situation close et acompte saisi : acompte à rembourser.'],

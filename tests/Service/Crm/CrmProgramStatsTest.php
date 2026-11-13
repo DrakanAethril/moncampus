@@ -53,13 +53,23 @@ class CrmProgramStatsTest extends TestCase
 
         self::assertSame(3, $stats->active);
         self::assertSame(['pre_enrolment' => 0, 'enrolment' => 2, 'documents' => 0, 'complete' => 1], $stats->steps);
-        self::assertSame(1, $stats->initial);
-        self::assertSame(2, $stats->apprenticeship);
-        self::assertSame(0, $stats->other);
+        self::assertSame(['initial' => 1, 'school' => 0, 'apprenticeship' => 2, 'professional' => 0, 'other' => 0], $stats->modalities);
+        self::assertSame([CrmModality::Apprenticeship, CrmModality::Initial], $stats->keyModalities());
         self::assertSame(1, $stats->visaPending);
         self::assertSame(2, $stats->low);
         self::assertSame(2, $stats->waiting);
         self::assertSame(1, $stats->closed);
+    }
+
+    public function testTheKeyFigureNamesAnotherModalityOnceItHasADossier(): void
+    {
+        $candidate = new CrmCandidate('X', 'Y');
+        $dossier = new CrmDossier($candidate, $this->createStub(Program::class), CrmPath::Enrolment, CrmModality::ProfessionalContract, new \DateTimeImmutable(), null);
+        $stats = CrmProgramStats::of([CrmDossierProgress::of($dossier, null, [])]);
+
+        self::assertSame(1, $stats->modality(CrmModality::ProfessionalContract));
+        self::assertSame([CrmModality::Apprenticeship, CrmModality::Initial, CrmModality::ProfessionalContract], $stats->keyModalities());
+        self::assertSame(2, CrmProgramStats::sum([$stats, $stats])->modality(CrmModality::ProfessionalContract));
     }
 
     public function testFiguresAddUpWithoutEverMixingTwoYears(): void
