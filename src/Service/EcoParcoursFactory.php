@@ -46,7 +46,7 @@ class EcoParcoursFactory
         $start = new EcoCheckpoint($parcours);
         $start->setType(EcoCheckpointType::Start);
         $start->setPosition(0);
-        $start->setName('Départ');
+        $start->setName(EcoCheckpoint::defaultName(EcoCheckpointType::Start, 0));
         $start->setShortCode($this->uniqueShortCode($drawn));
         $parcours->addCheckpoint($start);
 
@@ -54,7 +54,7 @@ class EcoParcoursFactory
             $checkpoint = new EcoCheckpoint($parcours);
             $checkpoint->setType(EcoCheckpointType::Checkpoint);
             $checkpoint->setPosition($number);
-            $checkpoint->setName(\sprintf('Balise %d', $number));
+            $checkpoint->setName(EcoCheckpoint::defaultName(EcoCheckpointType::Checkpoint, $number));
             $checkpoint->setShortCode($this->uniqueShortCode($drawn));
             $parcours->addCheckpoint($checkpoint);
         }
@@ -62,7 +62,7 @@ class EcoParcoursFactory
         $finish = new EcoCheckpoint($parcours);
         $finish->setType(EcoCheckpointType::Finish);
         $finish->setPosition($checkpointCount + 1);
-        $finish->setName('Arrivée');
+        $finish->setName(EcoCheckpoint::defaultName(EcoCheckpointType::Finish, $checkpointCount + 1));
         $finish->setShortCode($this->uniqueShortCode($drawn));
         $parcours->addCheckpoint($finish);
 

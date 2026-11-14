@@ -43,14 +43,22 @@ export default class extends Controller {
     drawCheckpoint(checkpoint) {
         // Départ and Arrivée keep the navy of the anchors; every numbered balise that has been
         // located reads green, as on the table beside the map.
-        const modifier = checkpoint.isAnchor ? 'eco-map__checkpoint-dot--anchor' : 'eco-map__checkpoint-dot--located';
+        // A flag somebody named shows its name in a pill centred on the spot, built with
+        // textContent: the name is typed by a teacher and never goes through innerHTML.
+        const dot = document.createElement('span');
+        dot.className = 'eco-map__checkpoint-dot';
+        dot.classList.add(checkpoint.isAnchor ? 'eco-map__checkpoint-dot--anchor' : 'eco-map__checkpoint-dot--located');
+        if (checkpoint.named) {
+            dot.classList.add('eco-map__checkpoint-dot--named');
+        }
+        dot.textContent = checkpoint.label;
 
         L.marker([checkpoint.latitude, checkpoint.longitude], {
             icon: L.divIcon({
                 className: 'eco-map__checkpoint',
                 iconSize: [26, 26],
                 iconAnchor: [13, 13],
-                html: `<span class="eco-map__checkpoint-dot ${modifier}">${checkpoint.label}</span>`,
+                html: dot,
             }),
         })
             .addTo(this.map)

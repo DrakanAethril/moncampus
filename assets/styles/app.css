@@ -6031,6 +6031,11 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   background: var(--cm-brand-strong); border-color: var(--cm-brand-strong); color: #fff;
   outline: 3px solid rgba(18, 80, 126, .25);
 }
+/* A named flag: its name in a pill, still centred on the 26px spot the marker is anchored to. */
+.eco-map__checkpoint-dot--named {
+  position: relative; left: 50%; transform: translateX(-50%);
+  width: max-content; min-width: 26px; padding: 0 9px; border-radius: 13px; white-space: nowrap;
+}
 
 .eco-map__arrow svg { width: 14px; height: 14px; overflow: visible; }
 
