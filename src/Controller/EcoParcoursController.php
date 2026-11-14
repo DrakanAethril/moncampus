@@ -230,13 +230,10 @@ class EcoParcoursController extends AbstractController
                 continue;
             }
 
-            // A flag somebody named is shown by its name; one still bearing the name it was born
-            // with by its letter (D, A) or its number, which says the same thing in less room.
-            $letter = $checkpoint->getType()->shortLetter();
             $markers[] = [
-                'label' => $checkpoint->hasOwnName() ? (string) $checkpoint->getName() : ($letter ?? (string) $checkpoint->getPosition()),
+                'label' => $checkpoint->mapLabel(),
                 'named' => $checkpoint->hasOwnName(),
-                'isAnchor' => null !== $letter,
+                'isAnchor' => null !== $checkpoint->getType()->shortLetter(),
                 'latitude' => (float) $checkpoint->getLatitude(),
                 'longitude' => (float) $checkpoint->getLongitude(),
                 'lines' => array_values(array_filter([

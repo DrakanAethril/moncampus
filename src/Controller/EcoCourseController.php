@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
-use App\Entity\EcoCheckpoint;
 use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoCourse;
 use App\Entity\EcoParcours;
@@ -271,7 +270,7 @@ class EcoCourseController extends AbstractController
      * on a live map nothing has been validated by "the class", only by individual runners, so a
      * checkpoint is just a landmark here.
      *
-     * @return list<array{label: string, isAnchor: bool, latitude: float, longitude: float, lines: list<string>}>
+     * @return list<array{label: string, named: bool, isAnchor: bool, latitude: float, longitude: float, lines: list<string>}>
      */
     private function liveMapCheckpoints(EcoCourse $course): array
     {
@@ -282,7 +281,8 @@ class EcoCourseController extends AbstractController
             }
 
             $markers[] = [
-                'label' => $this->checkpointLabel($checkpoint),
+                'label' => $checkpoint->mapLabel(),
+                'named' => $checkpoint->hasOwnName(),
                 'isAnchor' => EcoCheckpointType::Checkpoint !== $checkpoint->getType(),
                 'latitude' => (float) $checkpoint->getLatitude(),
                 'longitude' => (float) $checkpoint->getLongitude(),
@@ -469,7 +469,8 @@ class EcoCourseController extends AbstractController
 
             $sharedIndex = $this->coLocatedIndex($drawn, $latitude, $longitude);
             if (null !== $sharedIndex) {
-                $drawn[$sharedIndex]['label'] .= '/'.$this->checkpointLabel($checkpoint);
+                $drawn[$sharedIndex]['label'] .= '/'.$checkpoint->mapLabel();
+                $drawn[$sharedIndex]['named'] = $drawn[$sharedIndex]['named'] || $checkpoint->hasOwnName();
                 $drawn[$sharedIndex]['lines'] = [...$drawn[$sharedIndex]['lines'], '', ...$lines];
                 $drawn[$sharedIndex]['validated'] = $drawn[$sharedIndex]['validated'] && $validated;
 
@@ -477,7 +478,8 @@ class EcoCourseController extends AbstractController
             }
 
             $drawn[] = [
-                'label' => $this->checkpointLabel($checkpoint),
+                'label' => $checkpoint->mapLabel(),
+                'named' => $checkpoint->hasOwnName(),
                 'lines' => $lines,
                 'latitude' => $latitude,
                 'longitude' => $longitude,
@@ -706,16 +708,6 @@ class EcoCourseController extends AbstractController
         }
 
         return $refused;
-    }
-
-    /** Départ and Arrivée are marked D and A; a regular checkpoint carries its own number. */
-    private function checkpointLabel(EcoCheckpoint $checkpoint): string
-    {
-        return match ($checkpoint->getType()) {
-            EcoCheckpointType::Start => 'D',
-            EcoCheckpointType::Finish => 'A',
-            EcoCheckpointType::Checkpoint => (string) $checkpoint->getPosition(),
-        };
     }
 
     /**

@@ -1,7 +1,7 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.min.css';
 import { Controller } from '@hotwired/stimulus';
-import { addFullscreenControl, createMap, frameOn, mergeCoLocated, tooltipElement } from './eco_map.js';
+import { addFullscreenControl, checkpointIcon, createMap, frameOn, mergeCoLocated, tooltipElement } from './eco_map.js';
 
 /**
  * The live safety map of screen 1h: the parcours checkpoints, and one pill per runner at their
@@ -109,14 +109,7 @@ export default class extends Controller {
     drawCheckpoint(checkpoint) {
         const modifier = checkpoint.isAnchor ? 'eco-map__checkpoint-dot--anchor' : '';
 
-        L.marker([checkpoint.latitude, checkpoint.longitude], {
-            icon: L.divIcon({
-                className: 'eco-map__checkpoint',
-                iconSize: [26, 26],
-                iconAnchor: [13, 13],
-                html: `<span class="eco-map__checkpoint-dot ${modifier}">${checkpoint.label}</span>`,
-            }),
-        })
+        L.marker([checkpoint.latitude, checkpoint.longitude], { icon: checkpointIcon(checkpoint, [modifier]) })
             .addTo(this.map)
             .bindTooltip(tooltipElement(checkpoint.lines));
     }
