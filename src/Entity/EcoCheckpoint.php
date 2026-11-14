@@ -218,6 +218,19 @@ class EcoCheckpoint
         return '' !== $name && $name !== self::defaultName($this->type, $this->position);
     }
 
+    /**
+     * What a map writes on the flag's marker: its name once somebody named it, otherwise its letter
+     * (D, A) or its number, which say the same thing as the name it was born with in less room.
+     */
+    public function mapLabel(): string
+    {
+        if ($this->hasOwnName()) {
+            return trim((string) $this->name);
+        }
+
+        return $this->type->shortLetter() ?? (string) $this->position;
+    }
+
     public function isLocated(): bool
     {
         return null !== $this->latitude && null !== $this->longitude;

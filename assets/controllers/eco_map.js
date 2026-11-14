@@ -176,6 +176,26 @@ export function mergeCoLocated(checkpoints) {
 }
 
 /**
+ * The marker of a checkpoint: its label in a dot, or in a pill centred on the spot when the flag
+ * was named. Built with textContent - a name is typed by a teacher and never goes through innerHTML.
+ */
+export function checkpointIcon(checkpoint, modifiers = []) {
+    const dot = document.createElement('span');
+    dot.classList.add('eco-map__checkpoint-dot', ...modifiers.filter(Boolean));
+    if (checkpoint.named) {
+        dot.classList.add('eco-map__checkpoint-dot--named');
+    }
+    dot.textContent = checkpoint.label;
+
+    return L.divIcon({
+        className: 'eco-map__checkpoint',
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+        html: dot,
+    });
+}
+
+/**
  * A multi-line tooltip built out of text nodes: checkpoint names and runner pseudos come from user
  * input, so they are never handed to innerHTML.
  */

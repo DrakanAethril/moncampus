@@ -36,6 +36,15 @@ class EcoCheckpointNameTest extends TestCase
         self::assertTrue($this->checkpoint(EcoCheckpointType::Checkpoint, 3, 'Balise 7')->hasOwnName());
     }
 
+    public function testAMapShowsTheNameOnceThereIsOneAndTheLetterOrNumberOtherwise(): void
+    {
+        self::assertSame('D', $this->checkpoint(EcoCheckpointType::Start, 0, 'Départ')->mapLabel());
+        self::assertSame('3', $this->checkpoint(EcoCheckpointType::Checkpoint, 3, 'Balise 3')->mapLabel());
+        self::assertSame('A', $this->checkpoint(EcoCheckpointType::Finish, 13, 'Arrivée')->mapLabel());
+        self::assertSame('Parking', $this->checkpoint(EcoCheckpointType::Start, 0, 'Parking')->mapLabel());
+        self::assertSame('Passerelle', $this->checkpoint(EcoCheckpointType::Checkpoint, 3, 'Passerelle')->mapLabel());
+    }
+
     private function checkpoint(EcoCheckpointType $type, int $position, string $name): EcoCheckpoint
     {
         $checkpoint = new EcoCheckpoint(new EcoParcours(new User('eco.teacher')));
