@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.14'
+      date: '2026-11-14'
+      summary: "Sur les cartes d'e-CO, une balise à laquelle on a donné un nom s'affiche désormais par ce nom plutôt que par son numéro."
+      entries:
+          - type: modification
+            title: "e-CO : les cartes du parcours, du suivi en direct et des résultats affichent le nom des balises renommées"
+            detail: "Les balises qui gardent leur nom d'origine restent signalées par leur numéro, ou par D et A pour le départ et l'arrivée."
     - version: '2026.11.13.3'
       date: '2026-11-13'
       summary: "Dans le CRM des inscriptions, toujours en essai auprès de l'administration, la page d'une formation devient une liste des candidats par nom, avec l'avancement de chaque dossier et un export."

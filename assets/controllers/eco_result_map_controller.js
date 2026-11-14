@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.min.css';
-import { addFullscreenControl, createMap, frameOn, tooltipElement } from './eco_map.js';
+import { addFullscreenControl, checkpointIcon, createMap, frameOn, tooltipElement } from './eco_map.js';
 
 /**
  * The runner's route on the results screen (App\Controller\EcoCourseController::results): their
@@ -110,12 +110,7 @@ export default class extends Controller {
     drawCheckpoint(checkpoint) {
         const validated = checkpoint.validated === true;
         const marker = L.marker([checkpoint.latitude, checkpoint.longitude], {
-            icon: L.divIcon({
-                className: 'eco-map__checkpoint',
-                iconSize: [26, 26],
-                iconAnchor: [13, 13],
-                html: `<span class="eco-map__checkpoint-dot ${validated ? 'is-validated' : ''}">${checkpoint.label}</span>`,
-            }),
+            icon: checkpointIcon(checkpoint, [validated ? 'is-validated' : '']),
         }).addTo(this.map);
 
         marker.bindTooltip(tooltipElement(checkpoint.lines));

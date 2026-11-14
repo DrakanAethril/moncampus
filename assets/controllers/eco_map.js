@@ -168,10 +168,31 @@ export function mergeCoLocated(checkpoints) {
 
         twin.label += `/${checkpoint.label}`;
         twin.isAnchor = twin.isAnchor || checkpoint.isAnchor;
+        twin.named = Boolean(twin.named || checkpoint.named);
         twin.lines = [...twin.lines, '', ...checkpoint.lines];
     });
 
     return merged;
+}
+
+/**
+ * The marker of a checkpoint: its label in a dot, or in a pill centred on the spot when the flag
+ * was named. Built with textContent - a name is typed by a teacher and never goes through innerHTML.
+ */
+export function checkpointIcon(checkpoint, modifiers = []) {
+    const dot = document.createElement('span');
+    dot.classList.add('eco-map__checkpoint-dot', ...modifiers.filter(Boolean));
+    if (checkpoint.named) {
+        dot.classList.add('eco-map__checkpoint-dot--named');
+    }
+    dot.textContent = checkpoint.label;
+
+    return L.divIcon({
+        className: 'eco-map__checkpoint',
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+        html: dot,
+    });
 }
 
 /**

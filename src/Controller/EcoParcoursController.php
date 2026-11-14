@@ -220,7 +220,7 @@ class EcoParcoursController extends AbstractController
      * ground has no coordinates, so it simply has no marker - the "à localiser" count in the
      * legend is what stands for those.
      *
-     * @return list<array{label: string, isAnchor: bool, latitude: float, longitude: float, lines: list<string>}>
+     * @return list<array{label: string, named: bool, isAnchor: bool, latitude: float, longitude: float, lines: list<string>}>
      */
     private function mapCheckpoints(EcoParcours $parcours): array
     {
@@ -230,10 +230,10 @@ class EcoParcoursController extends AbstractController
                 continue;
             }
 
-            $letter = $checkpoint->getType()->shortLetter();
             $markers[] = [
-                'label' => $letter ?? (string) $checkpoint->getPosition(),
-                'isAnchor' => null !== $letter,
+                'label' => $checkpoint->mapLabel(),
+                'named' => $checkpoint->hasOwnName(),
+                'isAnchor' => null !== $checkpoint->getType()->shortLetter(),
                 'latitude' => (float) $checkpoint->getLatitude(),
                 'longitude' => (float) $checkpoint->getLongitude(),
                 'lines' => array_values(array_filter([
