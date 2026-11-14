@@ -168,6 +168,7 @@ export function mergeCoLocated(checkpoints) {
 
         twin.label += `/${checkpoint.label}`;
         twin.isAnchor = twin.isAnchor || checkpoint.isAnchor;
+        twin.named = Boolean(twin.named || checkpoint.named);
         twin.lines = [...twin.lines, '', ...checkpoint.lines];
     });
 

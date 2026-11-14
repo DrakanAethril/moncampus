@@ -194,6 +194,30 @@ class EcoCheckpoint
         return $this->locatedAt;
     }
 
+    /**
+     * The name a flag is born with (App\Service\EcoParcoursFactory): « Départ », « Balise 3 »,
+     * « Arrivée ». A flag's type and position never change, so this stays its default for good.
+     */
+    public static function defaultName(EcoCheckpointType $type, int $position): string
+    {
+        return match ($type) {
+            EcoCheckpointType::Start => 'Départ',
+            EcoCheckpointType::Finish => 'Arrivée',
+            EcoCheckpointType::Checkpoint => \sprintf('Balise %d', $position),
+        };
+    }
+
+    /**
+     * Whether somebody named this flag (screen 1e's « Nom » column) rather than leaving the name it
+     * was born with - which only repeats what its letter or number already says.
+     */
+    public function hasOwnName(): bool
+    {
+        $name = trim((string) $this->name);
+
+        return '' !== $name && $name !== self::defaultName($this->type, $this->position);
+    }
+
     public function isLocated(): bool
     {
         return null !== $this->latitude && null !== $this->longitude;
