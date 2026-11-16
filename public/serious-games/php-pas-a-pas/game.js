@@ -478,9 +478,9 @@
     if (st === 'done') meta = '<span class="st">' + starLine(qualityOf(lv.id)) + '</span>' + (chal ? (lv.kind === 'final' ? ' · réussie' : ' · maîtrisé') : '');
     else if (lv.kind === 'final' && G.data.best[lv.id] !== undefined) meta = 'Meilleur : ' + G.data.best[lv.id] + '/' + lv.draw;
     else if (chal && st === 'open') meta = lv.kind === 'mastery' ? 'Non tenté · ne bloque pas la suite' : 'Ouverte';
-    if (st === 'done' && G.data.rp[lv.id]) meta += ' · rejeu en cours';
     else if (st === 'open' && G.cards[lv.id] && G.cards[lv.id].status === 'doing') meta = 'Étape ' + (G.cards[lv.id].step + 1) + ' sur ' + G.cards[lv.id].steps;
     else if (st === 'open') meta = Object.keys(lv.steps).length + ' étapes · 20 min environ';
+    if (st === 'done' && G.data.rp[lv.id]) meta += ' · rejeu en cours';
     return '<li><button type="button" class="' + cls + '" data-lv="' + lv.id + '"' + (st === 'locked' ? ' disabled aria-disabled="true"' : '') + '><span class="lv-node">' + node + '</span><span class="lv-text"><span class="lv-k">' + esc(k) + '</span><b>' + esc(lv.title) + '</b><span class="lv-sub">' + esc(sub) + '</span>' + (meta ? '<span class="lv-meta">' + meta + '</span>' : '') + '</span></button></li>';
   }
   function flashRow(f) {
