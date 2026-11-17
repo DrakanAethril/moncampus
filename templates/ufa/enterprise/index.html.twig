@@ -29,8 +29,7 @@
          data-controller="datatable"
          data-datatable-url-value="{{ path('app_ufa_enterprises_data') }}"
          data-datatable-search-placeholder-value="{{ 'ufaEnterpriseSearchPlaceholder'|trans }}"
-         {# Twenty rows, newest first (EnterpriseRepository::findPageOrderedByMostRecent()) - the
-            employer somebody is looking for right after an import is at the top. #}
+         {# Twenty rows in alphabetical order (EnterpriseRepository::findPageOrderedByName()). #}
          data-datatable-page-length-value="20"
          data-datatable-columns-value="{{ [
              {data: 'name', render: 'html'},

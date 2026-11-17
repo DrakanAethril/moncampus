@@ -25,9 +25,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * « UFA > Entreprises » - the employers, which until now existed only as a name on an alternance.
  *
- * The list opens on the twenty most recently created and searches on the name alone; the paging is
- * the platform's usual server-side DataTables one, so the twenty rows are the twenty rows asked for
- * and not a page of a table the browser already holds.
+ * The list runs in alphabetical order of the name, twenty rows a page, and searches on the name
+ * alone (EnterpriseRepository::findPageOrderedByName()); the paging is the platform's usual
+ * server-side DataTables one, so the twenty rows are the twenty rows asked for and not a page of a
+ * table the browser already holds.
  *
  * Each row carries its number of alternances **en cours**, and clicking the name opens the fiche:
  * the employer's details, the contacts that follow from its alternances
@@ -60,7 +61,7 @@ class EnterpriseController extends AbstractController
         $viewer = $this->currentUser();
 
         $total = $enterprises->countMatching(null, $viewer);
-        $page = $enterprises->findPageOrderedByMostRecent($params->start, $params->length, $params->search, $viewer);
+        $page = $enterprises->findPageOrderedByName($params->start, $params->length, $params->search, $viewer);
         // One query for the whole page rather than one per row - see countActiveByEnterprise().
         $activeCounts = $tutorLinks->countActiveByEnterprise($page);
         $now = new \DateTimeImmutable();
