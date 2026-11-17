@@ -40,13 +40,9 @@ class EnterpriseRepository extends ServiceEntityRepository
     }
 
     /**
-     * « UFA > Entreprises » - one page of employers, most recently created first.
-     *
-     * The order is on the creation date rather than the name because the screen opens on « les 20
-     * plus récentes »: an employer is typed in as a contract arrives, so the one somebody is
-     * looking for right after an import is at the top without searching for it. The search is on
-     * the name alone - it is the only thing the list shows, and a match on an address nobody can
-     * see reads as a bug.
+     * One page of employers, most recently created first - the vivier's hosting
+     * suggestions (CompanySearch\HostingController). The search is on the name alone - it is the
+     * only thing those lists show, and a match on an address nobody can see reads as a bug.
      *
      * @return list<Enterprise>
      */
@@ -55,6 +51,23 @@ class EnterpriseRepository extends ServiceEntityRepository
         return $this->queryMatching($search, $viewer)
             ->orderBy('e.creationDate', 'DESC')
             ->addOrderBy('e.id', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * « UFA > Entreprises » - one page of employers in alphabetical order of their name, the id
+     * breaking ties so that two employers of one name never swap places between two pages.
+     *
+     * @return list<Enterprise>
+     */
+    public function findPageOrderedByName(int $offset, int $limit, ?string $search = null, ?User $viewer = null): array
+    {
+        return $this->queryMatching($search, $viewer)
+            ->orderBy('e.name', 'ASC')
+            ->addOrderBy('e.id', 'ASC')
             ->setFirstResult($offset)
             ->setMaxResults($limit)
             ->getQuery()

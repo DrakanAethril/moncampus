@@ -1307,7 +1307,7 @@ ufaLaptopsConfigurationNavLabel: 'Configuration'
 
 # UFA > Entreprises - templates/ufa/enterprise/*.html.twig
 ufaEnterprisesPageHeading: 'Entreprises'
-ufaEnterpriseListHintText: "Les employeurs nommés sur les contrats d'alternance, les vingt plus récents d'abord. Une entreprise naît du contrat qui la nomme : elle ne se crée ni ne se supprime ici, elle se corrige."
+ufaEnterpriseListHintText: "Les employeurs nommés sur les contrats d'alternance, par ordre alphabétique. Une entreprise naît du contrat qui la nomme : elle ne se crée ni ne se supprime ici, elle se corrige."
 ufaEnterpriseSearchPlaceholder: "Nom de l'entreprise"
 ufaEnterpriseNameColumnLabel: 'Entreprise'
 ufaEnterpriseCityColumnLabel: 'Ville'
