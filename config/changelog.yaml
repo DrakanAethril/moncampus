@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.17'
+      date: '2026-11-17'
+      summary: "Dans PHP pas à pas, la carte des niveaux s'affiche de nouveau normalement lorsqu'un défi de maîtrise est ouvert mais pas encore commencé."
+      entries:
+          - type: fix
+            title: "PHP pas à pas : la carte des niveaux ne se bloque plus sur un défi de maîtrise pas encore tenté"
+            detail: "Le défi y est de nouveau marqué « Non tenté », sans empêcher de passer à la suite."
     - version: '2026.11.14'
       date: '2026-11-14'
       summary: "Sur les cartes d'e-CO, une balise à laquelle on a donné un nom s'affiche désormais par ce nom plutôt que par son numéro."
