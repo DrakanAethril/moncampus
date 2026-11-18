@@ -3771,6 +3771,9 @@ ecoCourseSpecificFreeOrderLabel: 'Dans l’ordre de son choix'
 ecoCourseSpecificCheckpointsFieldLabel: 'Balises à trouver'
 ecoCourseSpecificCheckpointsHintText: "Départ et Arrivée font partie de toute course. Pour cette course, les balises non cochées n'existent pas : leur code est refusé comme celui d'une balise inconnue."
 ecoCourseSpecificCheckpointsRequiredMessage: 'Cochez au moins une balise.'
+ecoCourseSpecificOrderHintText: "L’ordre de la course est celui de la liste, pas celui du parcours : faites glisser une balise cochée par sa poignée pour la déplacer. Une balise cochée se place en dernier."
+ecoCourseSpecificDragHintText: 'Faire glisser pour changer l’ordre'
+ecoCourseSpecificOrderSequence: 'Ordre : %sequence%'
 ecoCourseSpecificOrderedSummary: '{1}1 balise, dans l’ordre|]1,Inf[%count% balises, dans l’ordre'
 ecoCourseSpecificFreeSummary: '{1}1 balise, ordre au choix|]1,Inf[%count% balises, ordre au choix'
 ecoCourseMapVisibilityFieldLabel: 'Carte visible par le coureur'

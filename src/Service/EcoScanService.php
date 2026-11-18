@@ -95,18 +95,19 @@ class EcoScanService
         return null !== $distanceMeters && $distanceMeters <= $checkpoint->getToleranceMeters();
     }
 
-    // The lowest-position checkpoint (Checkpoint or Finish) this runner hasn't already
-    // successfully scanned - what Ordre imposé requires the next scan to match.
+    // The first checkpoint of the race (Checkpoint or Finish), in the race's own order, this runner
+    // hasn't already successfully scanned - what a race run in order requires the next scan to
+    // match. In « Balises spécifiques » that order is the teacher's, not the parcours'.
     private function isNextExpected(EcoRunner $runner, EcoCheckpoint $candidate): bool
     {
-        $validatedPositions = array_map(
-            static fn (EcoCheckpointScan $scan): int => $scan->getCheckpoint()->getPosition(),
+        $validatedIds = array_map(
+            static fn (EcoCheckpointScan $scan): int => (int) $scan->getCheckpoint()->getId(),
             array_filter($runner->getScans()->toArray(), static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()),
         );
 
         $remaining = array_values(array_filter(
             $runner->getCourse()->getRaceCheckpoints(),
-            static fn (EcoCheckpoint $checkpoint): bool => EcoCheckpointType::Start !== $checkpoint->getType() && !\in_array($checkpoint->getPosition(), $validatedPositions, true),
+            static fn (EcoCheckpoint $checkpoint): bool => EcoCheckpointType::Start !== $checkpoint->getType() && !\in_array((int) $checkpoint->getId(), $validatedIds, true),
         ));
 
         $expected = $remaining[0] ?? null;

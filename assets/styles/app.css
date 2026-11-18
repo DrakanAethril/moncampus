@@ -5954,10 +5954,32 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
     padding: 12px 14px; border: 1px solid var(--cm-border-soft); border-radius: 8px;
     background: var(--cm-surface-alt);
 }
-.cm-eco-specific__checks {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px 16px;
-    max-height: 260px; overflow-y: auto;
+/* The flags of a « Balises spécifiques » race: the ticked ones first, in the race's order, with
+   their rank and a drag handle (eco_checkpoint_order_controller); the others below, dimmed. */
+.cm-eco-order {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 4px;
+    max-height: 320px; overflow-y: auto;
 }
+.cm-eco-order__row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 8px; border: 1px solid transparent; border-radius: 6px;
+}
+.cm-eco-order__row .form-check { margin: 0; }
+.cm-eco-order__row.is-selected { background: var(--cm-surface); border-color: var(--cm-border-soft); }
+.cm-eco-order__row:not(.is-selected) { color: var(--cm-muted); }
+.cm-eco-order__row.sortable-ghost { opacity: .4; }
+.cm-eco-order__handle {
+    display: inline-flex; width: 14px; color: var(--cm-faint); cursor: grab; touch-action: none;
+}
+.cm-eco-order__row:not(.is-selected) .cm-eco-order__handle { visibility: hidden; }
+.cm-eco-order__rank {
+    min-width: 22px; text-align: center;
+    font-weight: 700; font-size: 12.5px; color: var(--cm-muted);
+}
+.cm-eco-specific--free .cm-eco-order__handle,
+.cm-eco-specific--free .cm-eco-order__rank,
+.cm-eco-specific--free .cm-eco-order__hint { display: none; }
 /* Under the name: who shared the parcours with the reader, or how many they share it with. */
 .cm-eco-list__sub { font-weight: 400; font-size: 12.5px; color: var(--cm-muted); }
 .cm-eco-list__date { color: var(--cm-muted); }

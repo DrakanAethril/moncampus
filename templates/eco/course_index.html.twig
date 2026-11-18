@@ -36,6 +36,9 @@
                                         {{ course.mode.labelKey|trans }}
                                         {% if course.specificCheckpoints is not empty and course.mode.value == 'specific_checkpoints' %}
                                             <div class="text-secondary" style="font-size: 12.5px;">{{ (course.specificOrdered ? 'ecoCourseSpecificOrderedSummary' : 'ecoCourseSpecificFreeSummary')|trans({'%count%': course.specificCheckpoints|length}) }}</div>
+                                            {% if course.specificOrdered and course.specificCheckpoints|length > 1 %}
+                                                <div class="text-secondary" style="font-size: 12.5px;">{{ 'ecoCourseSpecificOrderSequence'|trans({'%sequence%': course.specificCheckpoints|map(checkpoint => checkpoint.mapLabel)|join(' → ')}) }}</div>
+                                            {% endif %}
                                         {% endif %}
                                     </td>
                                     <td><span class="badge {{ course.status.badgeClass }}">{{ course.status.labelKey|trans }}</span></td>

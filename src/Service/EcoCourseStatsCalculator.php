@@ -24,6 +24,8 @@ use App\Enum\EcoScanResult;
  * @phpstan-import-type EcoLeg from EcoPerformanceAnalyzer
  *
  * @phpstan-type EcoSegmentAccumulator array{
+ *     fromCheckpointId: int,
+ *     toCheckpointId: int,
  *     fromPosition: int,
  *     toPosition: int,
  *     fromLabel: string,
@@ -123,7 +125,7 @@ class EcoCourseStatsCalculator
         return [
             'kpis' => $this->kpis($runners, $rows),
             'runners' => $rows,
-            'segments' => $this->finaliseSegments($segments),
+            'segments' => $this->finaliseSegments($segments, $course),
             'checkpoints' => $this->checkpointRows($course, $runners, $searchSecondsByCheckpoint),
         ];
     }
@@ -201,6 +203,8 @@ class EcoCourseStatsCalculator
     {
         $key = $leg['fromCheckpointId'].'>'.$leg['toCheckpointId'];
         $segments[$key] ??= [
+            'fromCheckpointId' => $leg['fromCheckpointId'],
+            'toCheckpointId' => $leg['toCheckpointId'],
             'fromPosition' => $leg['fromPosition'],
             'toPosition' => $leg['toPosition'],
             'fromLabel' => $this->positionLabel($leg['fromPosition'], $leg['fromType']),
@@ -242,13 +246,20 @@ class EcoCourseStatsCalculator
      *
      * @return list<array<string, mixed>>
      */
-    private function finaliseSegments(array $segments): array
+    private function finaliseSegments(array $segments, EcoCourse $course): array
     {
+        // Where each flag stands in the race: the parcours' order, or the teacher's in « Balises
+        // spécifiques ». A flag the race no longer holds goes last.
+        $raceIndex = [];
+        foreach ($course->getRaceCheckpoints() as $index => $checkpoint) {
+            $raceIndex[(int) $checkpoint->getId()] = $index;
+        }
+
         $rows = [];
         foreach ($segments as $segment) {
             $rows[] = [
-                'fromPosition' => $segment['fromPosition'],
-                'toPosition' => $segment['toPosition'],
+                'fromRaceIndex' => $raceIndex[$segment['fromCheckpointId']] ?? \PHP_INT_MAX,
+                'toRaceIndex' => $raceIndex[$segment['toCheckpointId']] ?? \PHP_INT_MAX,
                 'label' => $segment['fromLabel'].' → '.$segment['toLabel'],
                 'runCount' => \count($segment['seconds']),
                 'averageSeconds' => (int) round(array_sum($segment['seconds']) / \count($segment['seconds'])),
@@ -261,9 +272,9 @@ class EcoCourseStatsCalculator
             ];
         }
 
-        // "Trié par point de départ du segment en commençant par D" - the Départ is position 0, so
-        // sorting on the departure point puts it first on its own.
-        usort($rows, static fn (array $a, array $b): int => [$a['fromPosition'], $a['toPosition']] <=> [$b['fromPosition'], $b['toPosition']]);
+        // "Trié par point de départ du segment en commençant par D" - the Départ opens the race, so
+        // sorting on the departure point's place in the race puts it first on its own.
+        usort($rows, static fn (array $a, array $b): int => [$a['fromRaceIndex'], $a['toRaceIndex']] <=> [$b['fromRaceIndex'], $b['toRaceIndex']]);
 
         return $rows;
     }
