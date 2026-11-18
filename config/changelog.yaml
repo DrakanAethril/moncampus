@@ -26,6 +26,12 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.18'
+      date: '2026-11-18'
+      summary: "La liste des entreprises de l'UFA est désormais classée par ordre alphabétique du nom, et non plus par date d'ajout."
+      entries:
+          - type: modification
+            title: "UFA : les entreprises sont listées par ordre alphabétique"
     - version: '2026.11.17'
       date: '2026-11-17'
       summary: "Dans PHP pas à pas, la carte des niveaux s'affiche de nouveau normalement lorsqu'un défi de maîtrise est ouvert mais pas encore commencé."
