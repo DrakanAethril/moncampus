@@ -21,10 +21,11 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
  * no account (App\Entity\EcoRunner).
  *
  * « Balises spécifiques » (EcoCourseMode::SpecificCheckpoints) runs the course on a subset of the
- * parcours: Départ, Arrivée and the flags named in $specificCheckpoints, in order or not
- * ($specificOrdered). For that race the other flags do not exist - getRaceCheckpoints() is the one
- * list every reading of a course goes through (scan, ranking, live map, statistics, runner app),
- * never the parcours' own.
+ * parcours: Départ, Arrivée and the flags of $specificSelection, in the order the teacher ranked
+ * them - never presumed to be the parcours' - and taken in that order or not ($specificOrdered).
+ * For that race the other flags do not exist - getRaceCheckpoints() is the one list every reading
+ * of a course goes through (scan, ranking, live map, statistics, runner app), never the parcours'
+ * own.
  */
 #[ORM\Entity(repositoryClass: \App\Repository\EcoCourseRepository::class)]
 #[ORM\Table(name: 'eco_course')]
@@ -72,16 +73,15 @@ class EcoCourse
     private ?int $timeLimitMinutes = null;
 
     /**
-     * The regular flags a « Balises spécifiques » course is run on. Empty, and ignored, in every
-     * other mode. Départ and Arrivée are never listed: every race has them.
+     * The regular flags a « Balises spécifiques » course is run on, each with its rank in the race.
+     * Empty, and ignored, in every other mode. Départ and Arrivée are never listed: every race has
+     * them. Read through getSpecificCheckpoints(), which hands them in rank order.
      *
-     * @var Collection<int, EcoCheckpoint>
+     * @var Collection<int, EcoCourseSpecificCheckpoint>
      */
-    #[ORM\ManyToMany(targetEntity: EcoCheckpoint::class)]
-    #[ORM\JoinTable(name: 'eco_course_checkpoint')]
-    #[ORM\JoinColumn(name: 'course_id', onDelete: 'CASCADE')]
-    #[ORM\InverseJoinColumn(name: 'checkpoint_id', onDelete: 'CASCADE')]
-    private Collection $specificCheckpoints;
+    #[ORM\OneToMany(mappedBy: 'course', targetEntity: EcoCourseSpecificCheckpoint::class, cascade: ['persist'], orphanRemoval: true)]
+    #[ORM\OrderBy(['raceRank' => 'ASC'])]
+    private Collection $specificSelection;
 
     // « Dans l'ordre » (ranked on time, like Ordre imposé) or « Dans l'ordre de son choix » (a time
     // allowance, like Ordre libre). Only read in « Balises spécifiques ».
@@ -114,7 +114,7 @@ class EcoCourse
         $this->teacher = $teacher;
         $this->runners = new ArrayCollection();
         $this->teams = new ArrayCollection();
-        $this->specificCheckpoints = new ArrayCollection();
+        $this->specificSelection = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -169,19 +169,39 @@ class EcoCourse
         return $this;
     }
 
-    /** @return Collection<int, EcoCheckpoint> */
-    public function getSpecificCheckpoints(): Collection
+    /**
+     * The flags chosen for « Balises spécifiques », in the order of the race.
+     *
+     * @return list<EcoCheckpoint>
+     */
+    public function getSpecificCheckpoints(): array
     {
-        return $this->specificCheckpoints;
+        return array_map(
+            static fn (EcoCourseSpecificCheckpoint $entry): EcoCheckpoint => $entry->getCheckpoint(),
+            $this->rankedSelection(),
+        );
     }
 
-    // A flag of another parcours, Départ or Arrivée is never kept: none of them can be chosen.
+    /** The flag's rank in a « Balises spécifiques » race (1 for the first), null if not chosen. */
+    public function getSpecificRank(EcoCheckpoint $checkpoint): ?int
+    {
+        foreach ($this->specificSelection as $entry) {
+            if ($entry->getCheckpoint() === $checkpoint) {
+                return $entry->getRaceRank();
+            }
+        }
+
+        return null;
+    }
+
+    // Added last in the race. A flag of another parcours, Départ or Arrivée is never kept: none of
+    // them can be chosen.
     public function addSpecificCheckpoint(EcoCheckpoint $checkpoint): static
     {
         if ($checkpoint->getParcours() === $this->parcours
             && EcoCheckpointType::Checkpoint === $checkpoint->getType()
-            && !$this->specificCheckpoints->contains($checkpoint)) {
-            $this->specificCheckpoints->add($checkpoint);
+            && null === $this->getSpecificRank($checkpoint)) {
+            $this->specificSelection->add(new EcoCourseSpecificCheckpoint($this, $checkpoint, $this->specificSelection->count() + 1));
         }
 
         return $this;
@@ -189,9 +209,57 @@ class EcoCourse
 
     public function removeSpecificCheckpoint(EcoCheckpoint $checkpoint): static
     {
-        $this->specificCheckpoints->removeElement($checkpoint);
+        foreach ($this->specificSelection->toArray() as $entry) {
+            if ($entry->getCheckpoint() === $checkpoint) {
+                $this->specificSelection->removeElement($entry);
+            }
+        }
+        $this->renumber($this->rankedSelection());
 
         return $this;
+    }
+
+    /**
+     * Puts the chosen flags in the order given by their ids. An id that is not chosen is ignored; a
+     * chosen flag the list forgets keeps its place relative to the other forgotten ones, after
+     * those named. The rows are kept and only their rank moves: dropping and re-adding a row in one
+     * flush would insert before it deletes, and trip the unique index.
+     *
+     * @param list<int> $checkpointIds
+     */
+    public function orderSpecificCheckpoints(array $checkpointIds): static
+    {
+        $wanted = array_flip(array_values(array_unique($checkpointIds)));
+        $entries = $this->rankedSelection();
+        $named = array_values(array_filter($entries, static fn (EcoCourseSpecificCheckpoint $entry): bool => isset($wanted[(int) $entry->getCheckpoint()->getId()])));
+        $forgotten = array_values(array_filter($entries, static fn (EcoCourseSpecificCheckpoint $entry): bool => !isset($wanted[(int) $entry->getCheckpoint()->getId()])));
+        usort($named, static fn (EcoCourseSpecificCheckpoint $a, EcoCourseSpecificCheckpoint $b): int => $wanted[(int) $a->getCheckpoint()->getId()] <=> $wanted[(int) $b->getCheckpoint()->getId()]);
+
+        $this->renumber([...$named, ...$forgotten]);
+
+        return $this;
+    }
+
+    /**
+     * The rows in rank order. Sorted here and not trusted to the mapping's OrderBy, which only
+     * holds for a collection freshly loaded.
+     *
+     * @return list<EcoCourseSpecificCheckpoint>
+     */
+    private function rankedSelection(): array
+    {
+        $entries = array_values($this->specificSelection->toArray());
+        usort($entries, static fn (EcoCourseSpecificCheckpoint $a, EcoCourseSpecificCheckpoint $b): int => $a->getRaceRank() <=> $b->getRaceRank());
+
+        return $entries;
+    }
+
+    /** @param list<EcoCourseSpecificCheckpoint> $entries */
+    private function renumber(array $entries): void
+    {
+        foreach ($entries as $index => $entry) {
+            $entry->setRaceRank($index + 1);
+        }
     }
 
     public function isSpecificOrdered(): bool
@@ -239,22 +307,51 @@ class EcoCourse
     }
 
     /**
-     * The flags this race is run on, in position order: the whole parcours, or in « Balises
-     * spécifiques » its Départ, its Arrivée and the flags chosen.
+     * The flags this race is run on, in the order of the race: the whole parcours in position
+     * order, or in « Balises spécifiques » its Départ, the flags chosen in the rank the teacher gave
+     * them, and its Arrivée. In a race run in order, this is the order the runners must follow.
      *
      * @return list<EcoCheckpoint>
      */
     public function getRaceCheckpoints(): array
     {
-        $checkpoints = array_values(array_filter(
-            $this->parcours->getCheckpoints()->toArray(),
-            fn (EcoCheckpoint $checkpoint): bool => !$this->isSpecificCheckpoints()
-                || EcoCheckpointType::Checkpoint !== $checkpoint->getType()
-                || $this->specificCheckpoints->contains($checkpoint),
-        ));
+        $checkpoints = array_values($this->parcours->getCheckpoints()->toArray());
         usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
+        if (!$this->isSpecificCheckpoints()) {
+            return $checkpoints;
+        }
 
-        return $checkpoints;
+        $ofType = static fn (EcoCheckpointType $type): array => array_values(array_filter(
+            $checkpoints,
+            static fn (EcoCheckpoint $checkpoint): bool => $type === $checkpoint->getType(),
+        ));
+
+        return [
+            ...$ofType(EcoCheckpointType::Start),
+            ...array_values(array_filter(
+                $this->getSpecificCheckpoints(),
+                fn (EcoCheckpoint $checkpoint): bool => $checkpoint->getParcours() === $this->parcours,
+            )),
+            ...$ofType(EcoCheckpointType::Finish),
+        ];
+    }
+
+    /**
+     * The number the runner app gives a flag. The app predates « Balises spécifiques », sorts the
+     * flags by this number and takes the first one not validated as the next to find: in a race
+     * run in order on chosen flags it must therefore be the flag's rank in the race (Départ 0, the
+     * flags 1..n, Arrivée n + 1), not its number in the parcours. Everywhere else it is the
+     * parcours' number, the one the teacher's screens show.
+     */
+    public function runnerPosition(EcoCheckpoint $checkpoint): int
+    {
+        if (!$this->isSpecificCheckpoints() || !$this->specificOrdered) {
+            return $checkpoint->getPosition();
+        }
+
+        $index = array_search($checkpoint, $this->getRaceCheckpoints(), true);
+
+        return false === $index ? $checkpoint->getPosition() : $index;
     }
 
     public function hasRaceCheckpoint(EcoCheckpoint $checkpoint): bool
@@ -265,7 +362,7 @@ class EcoCourse
     #[Assert\Callback]
     public function validateSpecificCheckpoints(ExecutionContextInterface $context): void
     {
-        if ($this->isSpecificCheckpoints() && $this->specificCheckpoints->isEmpty()) {
+        if ($this->isSpecificCheckpoints() && $this->specificSelection->isEmpty()) {
             $context->buildViolation('ecoCourseSpecificCheckpointsRequiredMessage')
                 ->atPath('specificCheckpoints')
                 ->addViolation();

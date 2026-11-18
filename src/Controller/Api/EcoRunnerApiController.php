@@ -377,7 +377,9 @@ class EcoRunnerApiController extends AbstractController
                 // required string.
                 'shortCode' => '',
                 'name' => $checkpoint->getName(),
-                'position' => $checkpoint->getPosition(),
+                // What the app sorts the flags by to find the next one: the rank in a race run in
+                // order on chosen flags (EcoCourse::runnerPosition()).
+                'position' => $course->runnerPosition($checkpoint),
                 'type' => $checkpoint->getType()->value,
                 'toleranceMeters' => $checkpoint->getToleranceMeters(),
                 // What the runner map (3f) has to tell apart: validated, next, still to find.

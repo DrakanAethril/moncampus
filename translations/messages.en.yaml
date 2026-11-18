@@ -3149,6 +3149,9 @@ ecoCourseSpecificFreeOrderLabel: 'In any order'
 ecoCourseSpecificCheckpointsFieldLabel: 'Checkpoints to find'
 ecoCourseSpecificCheckpointsHintText: "Start and Finish are part of every race. For this race the unticked checkpoints do not exist: their code is refused like an unknown checkpoint's."
 ecoCourseSpecificCheckpointsRequiredMessage: 'Tick at least one checkpoint.'
+ecoCourseSpecificOrderHintText: 'The race follows the order of the list, not the parcours: drag a ticked checkpoint by its handle to move it. A newly ticked checkpoint goes last.'
+ecoCourseSpecificDragHintText: 'Drag to change the order'
+ecoCourseSpecificOrderSequence: 'Order: %sequence%'
 ecoCourseSpecificOrderedSummary: '{1}1 checkpoint, in order|]1,Inf[%count% checkpoints, in order'
 ecoCourseSpecificFreeSummary: '{1}1 checkpoint, any order|]1,Inf[%count% checkpoints, any order'
 ecoCourseMapVisibilityFieldLabel: "Map visible to the runner"

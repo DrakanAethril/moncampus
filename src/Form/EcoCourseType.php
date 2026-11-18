@@ -13,6 +13,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -101,7 +102,38 @@ class EcoCourseType extends AbstractType
                 'required' => false,
                 'label' => 'ecoCourseSpecificCheckpointsFieldLabel',
             ]);
+            // The order of the race, as the ids of the flags ticked above, comma-separated
+            // (eco_checkpoint_order_controller writes it as the rows are dragged). A field of its
+            // own: a multiple choice hands its selection back in the order of its choices, and
+            // merges it into the previous one, so it cannot carry an order.
+            $event->getForm()->add('specificCheckpointOrder', HiddenType::class, [
+                'mapped' => false,
+                'required' => false,
+                'data' => implode(',', array_map(
+                    static fn (EcoCheckpoint $checkpoint): int => (int) $checkpoint->getId(),
+                    $course->getSpecificCheckpoints(),
+                )),
+            ]);
         });
+
+        // The selection has been mapped (a flag ticked is added last); the order field now ranks
+        // it. Before the listener below, which empties what the mode does not use.
+        $builder->addEventListener(FormEvents::POST_SUBMIT, static function (FormEvent $event): void {
+            $course = $event->getData();
+            $form = $event->getForm();
+            if (!$course instanceof EcoCourse || !$form->has('specificCheckpointOrder')) {
+                return;
+            }
+
+            $order = $form->get('specificCheckpointOrder')->getData();
+            $ids = [];
+            foreach (explode(',', \is_string($order) ? $order : '') as $id) {
+                if (ctype_digit(trim($id))) {
+                    $ids[] = (int) trim($id);
+                }
+            }
+            $course->orderSpecificCheckpoints($ids);
+        }, 20);
 
         // What a mode does not use is not kept: a selection left over from « Balises spécifiques »,
         // an allowance left over from a mode played against the clock. Before validation, so the
@@ -113,7 +145,7 @@ class EcoCourseType extends AbstractType
             }
 
             if (!$course->isSpecificCheckpoints()) {
-                foreach ($course->getSpecificCheckpoints()->toArray() as $checkpoint) {
+                foreach ($course->getSpecificCheckpoints() as $checkpoint) {
                     $course->removeSpecificCheckpoint($checkpoint);
                 }
                 $course->setSpecificOrdered(true);
