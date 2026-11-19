@@ -73,7 +73,9 @@
             {% for phase in shownPhases %}
                 {% set count = progress.phaseCount(phase) %}
                 {% set complete = count.done == count.total %}
-                <details class="cm-crm-acc"{% if not complete or loop.last %} open{% endif %}>
+                {# A complete pré-inscription on a dossier that is not « En cours »: the stage warns, and stays open to show it. #}
+                {% set notActiveWarning = phase.value == 'pre_enrolment' and complete and count.total > 0 and dossier.situation.value != 'active' %}
+                <details class="cm-crm-acc"{% if not complete or loop.last or notActiveWarning %} open{% endif %}>
                     <summary>
                         <twig:ux:icon name="caret-right" width="13" height="13"/>
                         <span class="cm-crm-acc__title">{{ phase.isDocuments ? 'crmDocumentsOf'|trans({'%group%': phase.labelKey|trans, '%modality%': dossier.modality.labelKey|trans}) : phase.labelKey|trans }}</span>
@@ -81,6 +83,12 @@
                         <span class="cm-crm-acc__sum">{{ 'crmRequiredCount'|trans({'%done%': count.done, '%count%': count.total}) }}</span>
                     </summary>
                     <div class="cm-crm-acc__body" style="gap: 0">
+                        {% if notActiveWarning %}
+                            <div class="cm-crm-callout cm-crm-callout--gold cm-crm-callout--row" style="margin-bottom: 10px">
+                                <span>{{ 'crmPreEnrolmentNotActiveText'|trans({'%situation%': dossier.situation.labelKey|trans}) }}</span>
+                                <twig:Cm:Button variant="outline" size="sm" data-action="crm-dialog#open" data-crm-dialog-url-param="{{ path('app_crm_dossier_situation', {id: dossier.id}) }}">{{ 'crmChangeAction'|trans }}</twig:Cm:Button>
+                            </div>
+                        {% endif %}
                         {% for piece in progress.applicableIn(phase) %}
                             {% include 'crm/_item.html.twig' with {progress: progress, piece: piece, today: today} only %}
                         {% endfor %}

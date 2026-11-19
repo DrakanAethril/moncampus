@@ -133,7 +133,7 @@ class ClaudeConnectorCrmToolsTest extends FunctionalTestCase
         self::assertTrue($refused['isError']);
         self::assertStringContainsString('ne sert qu', $refused['text']);
 
-        $updated = $this->callTool($this->token, 'crm_dossier_update', ['dossierId' => $id, 'candidate' => ['phone' => '06 12 34 56 78'], 'situation' => 'waitlist', 'situationReason' => 'Formation complète.', 'modality' => 'initial']);
+        $updated = $this->callTool($this->token, 'crm_dossier_update', ['dossierId' => $id, 'candidate' => ['phone' => '06 12 34 56 78'], 'situation' => 'active', 'situationReason' => 'Candidature retenue.', 'modality' => 'initial']);
         self::assertFalse($updated['isError'], $updated['text']);
 
         $pieces = $this->callTool($this->token, 'crm_pieces_set', ['dossierId' => $id, 'pieces' => [['code' => 'file_completed'], ['code' => 'file_sent', 'value' => 'Fax']]]);
@@ -149,7 +149,7 @@ class ClaudeConnectorCrmToolsTest extends FunctionalTestCase
         $data = $read['data'];
         self::assertSame('GARCIA', $data['candidate']['lastName']);
         self::assertSame('06 12 34 56 78', $data['candidate']['phone']);
-        self::assertSame(CrmSituation::Waitlist->value, $data['situation']);
+        self::assertSame(CrmSituation::Active->value, $data['situation']);
         self::assertSame('initial', $data['modality']);
         self::assertSame('Message laissé.', $data['journal'][\count($data['journal']) - 1]['text']);
         $entered = array_values(array_filter($data['pieces'], static fn (array $p): bool => null !== $p['entry']));
