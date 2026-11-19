@@ -3,7 +3,8 @@ import { Controller } from '@hotwired/stimulus';
 /**
  * The e-CO course form's two dependent blocks (screen 1g, and the edit screen):
  *
- * - the flag picker and the order choice, only for « Balises spécifiques »;
+ * - the flag picker and the order choice, only for « Balises spécifiques » - the flags' ranks
+ *   and drag handles only when that race is run in order (eco_checkpoint_order_controller);
  * - the time allowance, only for a race not run in order - Ordre libre, Course au score, and
  *   « Balises spécifiques » in the order of one's choice. A race run in order is ranked on time.
  *
@@ -25,7 +26,11 @@ export default class extends Controller {
         const specific = 'specific_checkpoints' === mode;
         const timed = ('free_order' === mode || 'score' === mode) || (specific && !ordered);
 
-        this.specificPanelTargets.forEach((panel) => panel.classList.toggle('d-none', !specific));
+        this.specificPanelTargets.forEach((panel) => {
+            panel.classList.toggle('d-none', !specific);
+            // In the order of one's choice, the race's order means nothing: no rank, no handle.
+            panel.classList.toggle('cm-eco-specific--free', !ordered);
+        });
         this.timePanelTargets.forEach((panel) => panel.classList.toggle('d-none', !timed));
     }
 }

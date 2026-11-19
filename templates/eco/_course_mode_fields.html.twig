@@ -29,17 +29,37 @@
                 {% endfor %}
             </div>
         </div>
-        <div>
+        <div data-controller="eco-checkpoint-order">
             <span class="form-label">{{ form.specificCheckpoints.vars.label|trans }}</span>
             {# Checkbox group rather than a <select multiple>, per this app's form convention. Départ
-               and Arrivée are not offered: every race has them. #}
-            <div class="cm-eco-specific__checks">
-                {% for choice in form.specificCheckpoints %}
-                    {{ form_widget(choice) }}
+               and Arrivée are not offered: every race has them. The ticked flags come first, in the
+               order of the race - the course's, or the one just submitted when the form comes back
+               refused - and are dragged to reorder it; the others follow in the parcours' order.
+               The checkboxes say which flags, the hidden field in which order. #}
+            {% set orderIds = form.specificCheckpointOrder.vars.value|split(',')|filter(id => id != '') %}
+            {% set choices = form.specificCheckpoints.children %}
+            {% set ticked = [] %}
+            {% for id in orderIds %}
+                {% for choice in choices|filter(choice => choice.vars.checked and choice.vars.value == id) %}
+                    {% set ticked = ticked|merge([choice]) %}
                 {% endfor %}
-            </div>
+            {% endfor %}
+            {% set rows = ticked
+                |merge(choices|filter(choice => choice.vars.checked and choice.vars.value not in orderIds))
+                |merge(choices|filter(choice => not choice.vars.checked)) %}
+            <ol class="cm-eco-order" data-eco-checkpoint-order-target="list">
+                {% for choice in rows %}
+                    <li class="cm-eco-order__row{{ choice.vars.checked ? ' is-selected' }}" data-eco-checkpoint-order-target="row" data-id="{{ choice.vars.value }}" data-parcours-rank="{{ choice.vars.name }}">
+                        <span class="cm-eco-order__handle" title="{{ 'ecoCourseSpecificDragHintText'|trans }}" aria-hidden="true"><twig:ux:icon name="grip" width="14" height="14"/></span>
+                        <span class="cm-eco-order__rank"></span>
+                        {{ form_widget(choice, {attr: {'data-action': 'eco-checkpoint-order#toggle'}}) }}
+                    </li>
+                {% endfor %}
+            </ol>
+            {{ form_widget(form.specificCheckpointOrder, {attr: {'data-eco-checkpoint-order-target': 'order'}}) }}
             {{ form_errors(form.specificCheckpoints) }}
             <div class="form-hint">{{ 'ecoCourseSpecificCheckpointsHintText'|trans }}</div>
+            <div class="form-hint cm-eco-order__hint">{{ 'ecoCourseSpecificOrderHintText'|trans }}</div>
         </div>
     </div>
     <div data-eco-course-mode-target="timePanel" style="max-width: 320px;">

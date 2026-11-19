@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.19'
+      date: '2026-11-19'
+      summary: "Dans e-CO, une course sur des balises spécifiques à trouver dans l'ordre suit désormais l'ordre choisi par l'enseignant, et non plus celui du parcours."
+      entries:
+          - type: modification
+            title: "e-CO : on choisit l'ordre des balises spécifiques d'une course"
+            detail: "Les balises cochées se réordonnent par glisser-déposer ; le scan, la balise suivante et les statistiques suivent cet ordre. Les courses existantes gardent l'ordre du parcours."
     - version: '2026.11.18'
       date: '2026-11-18'
       summary: "La liste des entreprises de l'UFA est désormais classée par ordre alphabétique du nom, et non plus par date d'ajout."

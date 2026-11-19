@@ -252,6 +252,8 @@ class EcoTeacherApiController extends AbstractController
             'timeLimitMinutes' => null !== $timeLimit ? (string) $timeLimit : null,
             'specificOrdered' => $payload->bool('specificOrdered', true) ? '1' : '0',
             'specificCheckpoints' => array_map(static fn (int $checkpointId): string => (string) $checkpointId, $payload->ids('specificCheckpointIds')),
+            // The order the app sends the ids in is the order of the race.
+            'specificCheckpointOrder' => implode(',', $payload->ids('specificCheckpointIds')),
             'mapVisibility' => $mapVisibility,
             // A checkbox reads any submitted value as ticked: null is what unticks it.
             'teamsEnabled' => $payload->bool('teamsEnabled', $course->isTeamsEnabled()) ? '1' : null,
@@ -351,10 +353,11 @@ class EcoTeacherApiController extends AbstractController
             'modeLabel' => $this->translator->trans($course->getMode()->labelKey()),
             // « Balises spécifiques »: « 4 balises, dans l'ordre » under the mode on the course card.
             'modeDetail' => $course->isSpecificCheckpoints()
-                ? $this->translator->trans($course->isSpecificOrdered() ? 'ecoCourseSpecificOrderedSummary' : 'ecoCourseSpecificFreeSummary', ['%count%' => $course->getSpecificCheckpoints()->count()])
+                ? $this->translator->trans($course->isSpecificOrdered() ? 'ecoCourseSpecificOrderedSummary' : 'ecoCourseSpecificFreeSummary', ['%count%' => \count($course->getSpecificCheckpoints())])
                 : null,
             'specificOrdered' => $course->isSpecificCheckpoints() ? $course->isSpecificOrdered() : null,
-            'specificCheckpointIds' => array_values(array_map(static fn (EcoCheckpoint $checkpoint): int => (int) $checkpoint->getId(), $course->getSpecificCheckpoints()->toArray())),
+            // In the order of the race.
+            'specificCheckpointIds' => array_map(static fn (EcoCheckpoint $checkpoint): int => (int) $checkpoint->getId(), $course->getSpecificCheckpoints()),
             'timeLimitMinutes' => $course->getTimeLimitMinutes(),
             'mapVisibility' => $course->getMapVisibility()->value,
             'teamsEnabled' => $course->isTeamsEnabled(),
