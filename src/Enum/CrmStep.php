@@ -14,7 +14,9 @@ enum CrmStep: string implements HasBadge
 {
     case Modality = 'modality';
     case PreEnrolment = 'pre_enrolment';
+    case FileSending = 'file_sending';
     case Enrolment = 'enrolment';
+    case DiPieces = 'di_pieces';
     case Documents = 'documents';
     case Complete = 'complete';
 
@@ -23,7 +25,9 @@ enum CrmStep: string implements HasBadge
         return match ($this) {
             self::Modality => 'crmStepModalityLabel',
             self::PreEnrolment => 'crmPhasePreEnrolmentLabel',
+            self::FileSending => 'crmPhaseFileSendingLabel',
             self::Enrolment => 'crmPhaseEnrolmentLabel',
+            self::DiPieces => 'crmPhaseDiPiecesLabel',
             self::Documents => 'crmPhaseDocumentsLabel',
             self::Complete => 'crmStepCompleteLabel',
         };
@@ -34,7 +38,9 @@ enum CrmStep: string implements HasBadge
         return match ($this) {
             self::Modality => BadgeTone::Gray,
             self::PreEnrolment => BadgeTone::Gold,
+            self::FileSending => BadgeTone::Teal,
             self::Enrolment => BadgeTone::Blue,
+            self::DiPieces => BadgeTone::Purple,
             self::Documents => BadgeTone::Purple,
             self::Complete => BadgeTone::Green,
         };
@@ -45,7 +51,9 @@ enum CrmStep: string implements HasBadge
         return match ($this) {
             self::Modality => 'Modalité à renseigner',
             self::PreEnrolment => 'Pré-inscription',
+            self::FileSending => 'Envoi du dossier',
             self::Enrolment => 'Inscription',
+            self::DiPieces => 'Pièces D.I.',
             self::Documents => 'Documents d’entrée',
             self::Complete => 'Complet',
         };

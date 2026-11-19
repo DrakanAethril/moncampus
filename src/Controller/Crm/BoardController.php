@@ -10,6 +10,7 @@ use App\Entity\SchoolYear;
 use App\Enum\CrmJournalKind;
 use App\Enum\CrmModality;
 use App\Enum\CrmPhase;
+use App\Enum\CrmSituation;
 use App\Enum\Feature;
 use App\Repository\CrmDossierRepository;
 use App\Repository\CrmJournalEntryRepository;
@@ -85,7 +86,9 @@ class BoardController extends AbstractController
         return $this->render('crm/program.html.twig', [
             'program' => $program,
             'year' => $program->getSchoolYear(),
-            'board' => $board->build($program, '' === $option ? null : $option, QueryValue::bool($request, 'closed')),
+            'board' => $board->build($program, '' === $option ? null : $option, CrmSituation::tryFrom(QueryValue::trimmed($request, 'situation'))),
+            'situations' => CrmSituation::cases(),
+            'stages' => CrmBoard::STAGES,
             'settings' => $settings,
         ]);
     }
@@ -113,17 +116,16 @@ class BoardController extends AbstractController
                 return;
             }
             fwrite($handle, "\u{FEFF}");
-            fputcsv($handle, array_merge(['Nom', 'Prénom', 'Modalité'], $asksOption ? ['Option'] : [], ['Situation', 'Pré-inscription', 'Inscription', 'Dossier complet', 'Mail', 'Téléphone']), ';', '"', '');
+            fputcsv($handle, array_merge(['Nom', 'Prénom', 'Modalité'], $asksOption ? ['Option'] : [], ['Situation'], array_map(static fn (CrmPhase $phase): string => $phase->label(), CrmBoard::STAGES), ['Dossier complet', 'Mail', 'Téléphone']), ';', '"', '');
             foreach ($rows as $row) {
                 $dossier = $row['progress']->dossier();
                 $candidate = $dossier->getCandidate();
                 fputcsv($handle, array_merge(
                     [$candidate->getLastName(), $candidate->getFirstName(), $dossier->getModality()->label()],
                     $asksOption ? [$dossier->getOption()?->getShortName() ?? ''] : [],
+                    [$dossier->getSituation()->label()],
+                    array_map(static fn (CrmPhase $phase): string => $mark($row['stages'][$phase->value]), CrmBoard::STAGES),
                     [
-                        $dossier->getSituation()->label(),
-                        $mark($row['stages'][CrmPhase::PreEnrolment->value]),
-                        $mark($row['stages'][CrmPhase::Enrolment->value]),
                         $row['complete'] ? 'Oui' : 'Non',
                         $candidate->getEmail() ?? '',
                         $candidate->getPhone() ?? '',

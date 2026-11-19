@@ -45,14 +45,14 @@ class CrmProgramStatsTest extends TestCase
             $make(CrmModality::Initial, sentDone: true),
             $make(CrmModality::Apprenticeship),
             $make(CrmModality::Apprenticeship, foreign: true, sentDone: true),
-            $make(CrmModality::Other, CrmSituation::Waitlist),
+            $make(CrmModality::Other, CrmSituation::Pending),
             $make(CrmModality::Initial, CrmSituation::Pending),
             $make(CrmModality::Initial, CrmSituation::Resigned),
         ];
         $stats = CrmProgramStats::of(array_map(static fn (CrmDossier $d): CrmDossierProgress => CrmDossierProgress::of($d, null, $catalogue), $dossiers));
 
         self::assertSame(3, $stats->active);
-        self::assertSame(['modality' => 0, 'pre_enrolment' => 0, 'enrolment' => 2, 'documents' => 0, 'complete' => 1], $stats->steps);
+        self::assertSame(['modality' => 0, 'pre_enrolment' => 0, 'file_sending' => 0, 'enrolment' => 2, 'di_pieces' => 0, 'documents' => 0, 'complete' => 1], $stats->steps);
         self::assertSame(['initial' => 1, 'school' => 0, 'apprenticeship' => 2, 'professional' => 0, 'other' => 0, 'unspecified' => 0], $stats->modalities);
         self::assertSame([CrmModality::Apprenticeship, CrmModality::Initial], $stats->keyModalities());
         self::assertSame(1, $stats->visaPending);
@@ -65,6 +65,7 @@ class CrmProgramStatsTest extends TestCase
     {
         $candidate = new CrmCandidate('X', 'Y');
         $dossier = new CrmDossier($candidate, $this->createStub(Program::class), CrmPath::Enrolment, CrmModality::ProfessionalContract, new \DateTimeImmutable(), null);
+        $dossier->setSituation(CrmSituation::Active);
         $stats = CrmProgramStats::of([CrmDossierProgress::of($dossier, null, [])]);
 
         self::assertSame(1, $stats->modality(CrmModality::ProfessionalContract));

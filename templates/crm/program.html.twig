@@ -1,9 +1,9 @@
 {% extends 'crm/_layout.html.twig' %}
 
 {# A formation's page: its figures, then one list of its candidates by surname - the modality and a
-   mark per stage (pré-inscription, inscription, dossier complet). The resigned and cancelled are
-   shown on demand; the export has them always, with mails and phones. A formation that asks for an
-   option filters by option, and so does its export. #}
+   mark per stage before the documents, then « dossier complet ». The list shows the situation the
+   select names, « En cours » by default; the export has every situation, with mails and phones. A
+   formation that asks for an option filters by option, and so does its export. #}
 
 {% block title %}{{ program.shortName }} · {{ 'crmNavLabel'|trans }}{% endblock %}
 
@@ -30,7 +30,7 @@
             <span>{{ 'crmOptionLabel'|trans }}</span>
             <nav class="cm-crm-seg" aria-label="{{ 'crmOptionLabel'|trans }}">
                 {% for link in board.optionLinks %}
-                    {% set params = {id: program.id}|merge(link.key is null ? {} : {option: link.key}) %}
+                    {% set params = {id: program.id}|merge(link.key is null ? {} : {option: link.key})|merge(board.situation.value != 'active' ? {situation: board.situation.value} : {}) %}
                     <a href="{{ path('app_crm_program', params) }}"{% if board.option == link.key %} aria-current="true"{% endif %}>{{ link.key is null ? 'crmAllLabel'|trans : (link.key == 'none' ? 'crmToSpecifyLabel'|trans : link.label) }}<span class="n">{{ link.count }}</span></a>
                 {% endfor %}
             </nav>
@@ -45,17 +45,21 @@
         <div class="cm-crm-kpi"><span class="cm-crm-kpi__value">{{ stats.low }}</span><span class="cm-crm-kpi__label">{{ 'crmKpiLowLabel'|trans({'%count%': stats.visaPending}) }}</span></div>
     </div>
 
-    {% set toggleParams = {id: program.id}|merge(board.option ? {option: board.option} : {})|merge(board.showClosed ? {} : {closed: 1}) %}
     <section class="cm-crm-card">
         <div class="cm-crm-subhead">
             <h2 class="cm-crm-subhead__title">{{ 'crmDossiersHeading'|trans({'%count%': board.rows|length}) }}</h2>
-            <a class="cm-crm-acc__done" href="{{ path('app_crm_program', toggleParams) }}" data-turbo-action="replace">
-                <input type="checkbox" tabindex="-1" aria-hidden="true"{% if board.showClosed %} checked{% endif %}>
-                {{ 'crmShowClosedLabel'|trans }} <span class="cm-crm-faint cm-crm-num">({{ board.closedCount }})</span>
-            </a>
+            <form method="get" action="{{ path('app_crm_program', {id: program.id}) }}" class="cm-crm-situation-filter" data-turbo-action="replace">
+                {% if board.option %}<input type="hidden" name="option" value="{{ board.option }}">{% endif %}
+                <label for="crm-situation-filter">{{ 'crmSituationHeading'|trans }}</label>
+                <select class="cm-select" id="crm-situation-filter" name="situation" data-controller="auto-submit" data-action="change->auto-submit#submit">
+                    {% for situation in situations %}
+                        <option value="{{ situation.value }}"{% if situation == board.situation %} selected{% endif %}>{{ situation.labelKey|trans }} ({{ board.situationCounts[situation.value] }})</option>
+                    {% endfor %}
+                </select>
+            </form>
         </div>
         {% if board.rows is empty %}
-            <p class="cm-crm-faint">{% if board.empty %}{{ 'crmProgramEmptyText'|trans }}{% elseif board.filtered %}{{ 'crmListFilteredEmptyText'|trans }}{% else %}{{ 'crmListEmptyText'|trans }}{% endif %}</p>
+            <p class="cm-crm-faint">{% if board.empty %}{{ 'crmProgramEmptyText'|trans }}{% else %}{{ (board.filtered ? 'crmListFilteredEmptyText' : 'crmListEmptyText')|trans({'%situation%': board.situation.labelKey|trans}) }}{% endif %}</p>
         {% else %}
             <div class="cm-crm-tablewrap">
                 <table class="cm-crm-table cm-crm-list">
@@ -63,8 +67,7 @@
                         <tr>
                             <th>{{ 'crmCandidateColumn'|trans }}</th>
                             <th>{{ 'crmModalityColumn'|trans }}</th>
-                            <th class="c">{{ 'crmPhasePreEnrolmentLabel'|trans }}</th>
-                            <th class="c">{{ 'crmPhaseEnrolmentLabel'|trans }}</th>
+                            {% for phase in stages %}<th class="c">{{ phase.labelKey|trans }}</th>{% endfor %}
                             <th class="c">{{ 'crmCompleteDossierColumn'|trans }}</th>
                         </tr>
                     </thead>
@@ -74,12 +77,11 @@
                             <tr class="is-link">
                                 <td>
                                     <a class="cm-crm-rowlink" href="{{ path('app_crm_dossier', {id: dossier.id}) }}">{{ dossier.candidate.fullName }}</a>
-                                    {% if dossier.situation.value != 'active' %}<twig:Cm:Badge :of="dossier.situation"/>{% endif %}
                                     {% include 'crm/_tags.html.twig' with {progress: row.progress, asksOption: board.asksOption} only %}
                                 </td>
                                 <td><twig:Cm:Badge :of="dossier.modality"/></td>
-                                {% for phase in ['pre_enrolment', 'enrolment'] %}
-                                    <td class="c">{% include 'crm/_stage_mark.html.twig' with {state: row.stages[phase]} only %}</td>
+                                {% for phase in stages %}
+                                    <td class="c">{% include 'crm/_stage_mark.html.twig' with {state: row.stages[phase.value]} only %}</td>
                                 {% endfor %}
                                 <td class="c">{% include 'crm/_stage_mark.html.twig' with {state: row.complete ? 'done' : 'todo'} only %}</td>
                             </tr>

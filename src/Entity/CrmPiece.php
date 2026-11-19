@@ -15,9 +15,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * One thing a dossier asks for - a box to tick, a choice, an amount, a period, a list of values -
- * in one of the three stages, for some modalities and some paths. A piece is asked of every
- * formation with its own default (required, optional or hidden); each formation may say otherwise
- * (App\Entity\CrmProgram::$pieceConstraints).
+ * in one of the five stages or among the follow-up documents, for some modalities and some paths.
+ * A piece is asked of every formation with its own default (required, optional or hidden); each
+ * formation may say otherwise (App\Entity\CrmProgram::$pieceConstraints).
  *
  * The `code` is what the connector and the import name a piece by, and it never changes. Three
  * pieces the CRM reads itself keep their kind for ever (systemKinds()): the deposit (its amount,

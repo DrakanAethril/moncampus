@@ -51,7 +51,7 @@ class CrmDossier
     private CrmModality $modality;
 
     #[ORM\Column(length: 20, enumType: CrmSituation::class)]
-    private CrmSituation $situation = CrmSituation::Active;
+    private CrmSituation $situation = CrmSituation::Pending;
 
     /** @var Collection<int, CrmOrigin> */
     #[ORM\ManyToMany(targetEntity: CrmOrigin::class)]

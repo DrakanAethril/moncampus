@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * Where a dossier stands apart from its pieces. Only an active dossier counts in a formation's
- * numbers; the others keep their pieces and are listed in their own groups.
+ * Where a dossier stands apart from its pieces. A new dossier starts « Candidature en attente »
+ * (CrmDossier::$situation). Only an active dossier counts in a formation's numbers; the others
+ * keep their pieces and are listed under their own situation.
  */
 enum CrmSituation: string implements HasBadge
 {
     case Active = 'active';
     case Pending = 'pending';
-    case Waitlist = 'waitlist';
     case Resigned = 'resigned';
     case Cancelled = 'cancelled';
 
@@ -21,7 +21,6 @@ enum CrmSituation: string implements HasBadge
         return match ($this) {
             self::Active => 'crmSituationActiveLabel',
             self::Pending => 'crmSituationPendingLabel',
-            self::Waitlist => 'crmSituationWaitlistLabel',
             self::Resigned => 'crmSituationResignedLabel',
             self::Cancelled => 'crmSituationCancelledLabel',
         };
@@ -32,7 +31,6 @@ enum CrmSituation: string implements HasBadge
         return match ($this) {
             self::Active => BadgeTone::Green,
             self::Pending => BadgeTone::Teal,
-            self::Waitlist => BadgeTone::Gold,
             self::Resigned => BadgeTone::Red,
             self::Cancelled => BadgeTone::Gray,
         };
@@ -43,7 +41,6 @@ enum CrmSituation: string implements HasBadge
         return match ($this) {
             self::Active => 'En cours',
             self::Pending => 'Candidature en attente',
-            self::Waitlist => 'Liste d\'attente',
             self::Resigned => 'Démission',
             self::Cancelled => 'Annulation',
         };
@@ -51,7 +48,7 @@ enum CrmSituation: string implements HasBadge
 
     public function isWaiting(): bool
     {
-        return self::Pending === $this || self::Waitlist === $this;
+        return self::Pending === $this;
     }
 
     public function isClosed(): bool
