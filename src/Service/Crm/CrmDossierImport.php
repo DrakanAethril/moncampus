@@ -96,7 +96,7 @@ final readonly class CrmDossierImport
 
         $path = $this->enum(CrmPath::class, $row->string('path', CrmPath::Enrolment->value), 'path', $reasons);
         $modality = '' === $row->string('modality') ? null : $this->enum(CrmModality::class, $row->string('modality'), 'modality', $reasons);
-        $situation = $this->enum(CrmSituation::class, $row->string('situation', CrmSituation::Active->value), 'situation', $reasons);
+        $situation = $this->enum(CrmSituation::class, $row->string('situation', CrmSituation::Pending->value), 'situation', $reasons);
         if (null === $modality && null !== $program && $imported) {
             $notices[] = \sprintf('Modalité %s : celle de la formation par défaut, le classeur ne la disait pas.', $this->settings->defaultModality($program)->label());
         }
@@ -220,7 +220,7 @@ final readonly class CrmDossierImport
         foreach ($plan->notes as $note) {
             $this->writer->journal($dossier, CrmJournalKind::Note, null === $note['date'] && null !== $reference ? $note['text'].' (repris du classeur, sans date)' : $note['text'], $by, $note['date']);
         }
-        if (CrmSituation::Active !== $plan->situation) {
+        if ($plan->situation !== $dossier->getSituation()) {
             $this->writer->changeSituation($dossier, $plan->situation, $plan->situationReason ?? (null === $reference ? null : 'Repris du classeur.'), $plan->refundDue, $by);
         }
         $this->writer->setSfp($dossier, $plan->sfp, $by);

@@ -126,6 +126,27 @@ class CrmDossierProgressTest extends TestCase
         self::assertSame(CrmStep::Complete, CrmDossierProgress::of($dossier, $this->settings, [$pre, $sent, $doc])->step());
     }
 
+    public function testTheFileSendingComesBetweenThePreEnrolmentAndTheEnrolmentAndTheDiPiecesRightAfter(): void
+    {
+        $pre = self::piece('preins', CrmPhase::PreEnrolment);
+        $sending = self::piece('sending', CrmPhase::FileSending);
+        $sent = self::piece('sent', CrmPhase::Enrolment);
+        $di = self::piece('di', CrmPhase::DiPieces);
+        $doc = self::piece('positioning', CrmPhase::Documents);
+        $catalogue = [$doc, $di, $sent, $sending, $pre];
+        $dossier = $this->dossier();
+
+        self::assertSame([CrmPhase::PreEnrolment, CrmPhase::FileSending, CrmPhase::Enrolment, CrmPhase::DiPieces, CrmPhase::Documents], CrmPhase::stages());
+        $steps = [];
+        foreach ([$pre, $sending, $sent, $di, $doc] as $piece) {
+            $steps[] = CrmDossierProgress::of($dossier, $this->settings, $catalogue)->step();
+            self::enter($dossier, $piece);
+        }
+        $steps[] = CrmDossierProgress::of($dossier, $this->settings, $catalogue)->step();
+
+        self::assertSame([CrmStep::PreEnrolment, CrmStep::FileSending, CrmStep::Enrolment, CrmStep::DiPieces, CrmStep::Documents, CrmStep::Complete], $steps);
+    }
+
     public function testAStageWithNothingRequiredIsPassedOver(): void
     {
         $pre = self::piece('preins', CrmPhase::PreEnrolment, paths: [CrmPath::Enrolment]);

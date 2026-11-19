@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * The groups a piece belongs to. The first three are the stages a dossier goes through, in this
- * order: they decide its step and its « Complet ». The fourth, « Documents de suivi », holds the
+ * The groups a piece belongs to. The first five are the stages a dossier goes through, in this
+ * order: they decide its step and its « Complet ». The last, « Documents de suivi », holds the
  * documents the team follows without making the dossier wait for them - a piece is moved there by
  * unticking « Complétude » in Réglages › Pièces, and never holds the step back.
  */
 enum CrmPhase: string
 {
     case PreEnrolment = 'pre_enrolment';
+    case FileSending = 'file_sending';
     case Enrolment = 'enrolment';
+    case DiPieces = 'di_pieces';
     case Documents = 'documents';
     case FollowUp = 'follow_up';
 
@@ -21,7 +23,9 @@ enum CrmPhase: string
     {
         return match ($this) {
             self::PreEnrolment => 'crmPhasePreEnrolmentLabel',
+            self::FileSending => 'crmPhaseFileSendingLabel',
             self::Enrolment => 'crmPhaseEnrolmentLabel',
+            self::DiPieces => 'crmPhaseDiPiecesLabel',
             self::Documents => 'crmPhaseDocumentsLabel',
             self::FollowUp => 'crmPhaseFollowUpLabel',
         };
@@ -31,7 +35,9 @@ enum CrmPhase: string
     {
         return match ($this) {
             self::PreEnrolment => 'Pré-inscription',
+            self::FileSending => 'Envoi du dossier',
             self::Enrolment => 'Inscription',
+            self::DiPieces => 'Pièces D.I.',
             self::Documents => 'Documents d’entrée',
             self::FollowUp => 'Documents de suivi',
         };
@@ -42,7 +48,9 @@ enum CrmPhase: string
     {
         return match ($this) {
             self::PreEnrolment => CrmStep::PreEnrolment,
+            self::FileSending => CrmStep::FileSending,
             self::Enrolment => CrmStep::Enrolment,
+            self::DiPieces => CrmStep::DiPieces,
             self::Documents => CrmStep::Documents,
             self::FollowUp => null,
         };

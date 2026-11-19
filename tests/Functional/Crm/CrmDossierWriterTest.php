@@ -59,7 +59,7 @@ class CrmDossierWriterTest extends FunctionalTestCase
         self::assertSame('Léa', $dossier->getCandidate()->getFirstName());
         self::assertSame('lea.dupont@exemple.fr', $dossier->getCandidate()->getEmail());
         self::assertSame(CrmModality::Apprenticeship, $dossier->getModality());
-        self::assertSame(CrmSituation::Active, $dossier->getSituation());
+        self::assertSame(CrmSituation::Pending, $dossier->getSituation());
         self::assertCount(1, $dossier->getModalityChanges());
         self::assertSame('Dossier ouvert.', $dossier->getJournal()->first()->getText());
     }

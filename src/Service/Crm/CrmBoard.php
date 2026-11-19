@@ -12,8 +12,8 @@ use App\Repository\CrmDossierRepository;
 
 /**
  * A formation's page: one list of its candidates, by surname then first name, each with its
- * modality and three marks - pré-inscription done, inscription done, dossier complete. The
- * resigned and cancelled dossiers are left out unless asked for; the export always has them.
+ * modality and a mark per stage before the documents, then « dossier complet ». The list shows one
+ * situation at a time, « En cours » unless another is chosen; the export always has them all.
  *
  * A stage reads « done » once its required pieces are all done, « sans objet » when it asks the
  * dossier nothing required (a re-enrolment has no pré-inscription, « Non renseignée » asks nothing),
@@ -30,7 +30,7 @@ final readonly class CrmBoard
     public const string NOT_APPLICABLE = 'na';
 
     /** The stages the list shows, in their columns' order. */
-    public const array STAGES = [CrmPhase::PreEnrolment, CrmPhase::Enrolment];
+    public const array STAGES = [CrmPhase::PreEnrolment, CrmPhase::FileSending, CrmPhase::Enrolment, CrmPhase::DiPieces];
 
     public function __construct(
         private CrmDossierRepository $dossiers,
@@ -45,17 +45,21 @@ final readonly class CrmBoard
     }
 
     /**
-     * @return array{stats: CrmProgramStats, rows: list<BoardRow>, closedCount: int, showClosed: bool, empty: bool, filtered: bool, option: string|null, optionLinks: list<array{key: string|null, label: string|null, count: int}>, asksOption: bool}
+     * @return array{stats: CrmProgramStats, rows: list<BoardRow>, situation: CrmSituation, situationCounts: array<string, int>, empty: bool, filtered: bool, option: string|null, optionLinks: list<array{key: string|null, label: string|null, count: int}>, asksOption: bool}
      */
-    public function build(Program $program, ?string $option, bool $showClosed): array
+    public function build(Program $program, ?string $option, ?CrmSituation $situation): array
     {
+        $situation ??= CrmSituation::Active;
         $all = $this->progressesOf($program);
         $asksOption = $this->settings->asksOption($program);
         $option = $asksOption ? $option : null;
         $shown = self::inOption($all, $option);
 
-        $closed = array_filter($shown, static fn (CrmDossierProgress $p): bool => $p->dossier()->getSituation()->isClosed());
-        $listed = $showClosed ? $shown : array_filter($shown, static fn (CrmDossierProgress $p): bool => !$p->dossier()->getSituation()->isClosed());
+        $situationCounts = array_fill_keys(array_map(static fn (CrmSituation $s): string => $s->value, CrmSituation::cases()), 0);
+        foreach ($shown as $progress) {
+            ++$situationCounts[$progress->dossier()->getSituation()->value];
+        }
+        $listed = array_filter($shown, static fn (CrmDossierProgress $p): bool => $situation === $p->dossier()->getSituation());
 
         $optionLinks = [];
         if ($asksOption) {
@@ -72,8 +76,8 @@ final readonly class CrmBoard
         return [
             'stats' => CrmProgramStats::of($shown),
             'rows' => array_map(self::row(...), self::sorted($listed)),
-            'closedCount' => \count($closed),
-            'showClosed' => $showClosed,
+            'situation' => $situation,
+            'situationCounts' => $situationCounts,
             'empty' => [] === $all,
             'filtered' => \count($shown) < \count($all),
             'option' => $option,

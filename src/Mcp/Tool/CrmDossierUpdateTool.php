@@ -152,7 +152,7 @@ final readonly class CrmDossierUpdateTool implements McpTool
                 $this->writer->setSfp($dossier, $args->bool('sfp'), $user);
             }
             if ($args->has('situation')) {
-                $situation = CrmSituation::tryFrom($args->string('situation')) ?? throw new McpToolException('`situation` vaut active, pending, waitlist, resigned ou cancelled.');
+                $situation = CrmSituation::tryFrom($args->string('situation')) ?? throw new McpToolException('`situation` vaut active, pending, resigned ou cancelled.');
                 $this->writer->changeSituation($dossier, $situation, $args->string('situationReason'), $args->bool('refundDue'), $user);
             }
             if ($args->bool('refunded')) {

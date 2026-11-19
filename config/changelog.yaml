@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.19.2'
+      date: '2026-11-19'
+      summary: "Dans le CRM des inscriptions, toujours en essai auprès de l'administration, un dossier passe par deux étapes de plus et commence en « Candidature en attente » ; la liste d'une formation se filtre par situation."
+      entries:
+          - type: nouveaute
+            title: "CRM : nouvelles étapes « Envoi du dossier », entre la pré-inscription et l'inscription, et « Pièces D.I. », juste après l'inscription"
+          - type: modification
+            title: "CRM : tout nouveau dossier est « Candidature en attente », et la situation « Liste d'attente » disparaît"
+            detail: "Les dossiers qui étaient en liste d'attente passent en candidature en attente."
+          - type: modification
+            title: "CRM : la liste d'une formation montre une situation à la fois, choisie dans une liste déroulante, « En cours » par défaut"
+          - type: nouveaute
+            title: "CRM : un avertissement signale une pré-inscription complète sur un dossier qui n'est pas en cours"
     - version: '2026.11.19'
       date: '2026-11-19'
       summary: "Dans e-CO, une course sur des balises spécifiques à trouver dans l'ordre suit désormais l'ordre choisi par l'enseignant, et non plus celui du parcours."
