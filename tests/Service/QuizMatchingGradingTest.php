@@ -293,9 +293,9 @@ class QuizMatchingGradingTest extends TestCase
 
     // --- enum plumbing ---
 
-    public function testApparierIsExcludedFromLiveAndFromAnswerRows(): void
+    public function testApparierIsPlayedLiveAndKeepsNoAnswerRows(): void
     {
-        self::assertFalse(QuestionType::Apparier->isAvailableInLiveContest());
+        self::assertTrue(QuestionType::Apparier->isAvailableInLiveContest(), 'since 2026-11-21, six pairs at most');
         self::assertFalse(QuestionType::Apparier->usesAnswerRows());
         self::assertFalse(QuestionType::Apparier->usesZoneConfig());
         self::assertTrue(QuestionType::Apparier->usesMatchingConfig());

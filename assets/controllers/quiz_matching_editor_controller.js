@@ -17,7 +17,7 @@ export default class extends Controller {
     static targets = [
         'rows', 'row', 'rowTemplate', 'count', 'idInput', 'side',
         'leftKindInput', 'rightKindInput', 'textDistractors', 'imageDistractors', 'distractorList',
-        'textLeft', 'textRight', 'preview',
+        'textLeft', 'textRight', 'preview', 'liveWarning',
     ];
     static values = { altPlaceholder: String, textPlaceholderLeft: String, textPlaceholderRight: String };
 
@@ -127,5 +127,10 @@ export default class extends Controller {
 
         const template = this.countTarget.dataset.countTemplate || '';
         this.countTarget.textContent = template.replace('%count%', String(this.rowTargets.length));
+
+        // A live contest plays six pairs at most: said while the teacher writes the seventh.
+        if (this.hasLiveWarningTarget) {
+            this.liveWarningTarget.hidden = this.rowTargets.length <= Number(this.liveWarningTarget.dataset.liveMax || 6);
+        }
     }
 }

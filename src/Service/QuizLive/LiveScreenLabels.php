@@ -42,6 +42,8 @@ final class LiveScreenLabels
         'answersComing' => 'quizLiveScreenAnswersComing',
         'tickAll' => 'quizLiveScreenTickAll',
         'tapInOrder' => 'quizLiveScreenTapInOrder',
+        'pairsHint' => 'quizLiveScreenPairsHint',
+        'sortHint' => 'quizLiveScreenSortHint',
         'numberField' => 'quizLiveScreenNumberField',
         'textField' => 'quizLiveScreenTextField',
         'textHint' => 'quizLiveScreenTextHint',
@@ -78,6 +80,8 @@ final class LiveScreenLabels
         'number' => 'quizLiveKindNumberHint',
         'slider' => 'quizLiveKindSliderHintTemplate',
         'text' => 'quizLiveKindTextHint',
+        'pairs' => 'quizLiveKindPairsHint',
+        'sort' => 'quizLiveKindSortHint',
         'vote' => 'quizLiveKindVoteHint',
     ];
 

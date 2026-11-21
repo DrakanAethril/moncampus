@@ -222,6 +222,66 @@ class QuizLiveSessionTest extends FunctionalTestCase
     }
 
     /**
+     * An appariement (2026-11-21): six pairs at most, the phone told both columns but neither a pair
+     * id nor a choice key, an answer by positions, all its pairs right or nothing, and the results
+     * one row a pair with how many of the room found it.
+     */
+    public function testAnAppariementIsPlayedPairByPair(): void
+    {
+        $this->quiz = new QuizTemplate($this->teacher);
+        $this->quiz->setName('Capitales');
+        $this->quiz->setCreatedBy($this->teacher);
+        $this->question(QuestionType::Apparier, 'Reliez chaque pays à sa capitale', [])->setMatchingConfig([
+            'pairs' => [
+                ['id' => 'p1', 'left' => 'France', 'right' => 'Paris'],
+                ['id' => 'p2', 'left' => 'Allemagne', 'right' => 'Berlin'],
+                ['id' => 'p3', 'left' => 'Italie', 'right' => 'Rome'],
+            ],
+            'distractors' => ['Lisbonne'],
+        ]);
+        $this->question(QuestionType::Apparier, 'Sept paires', [])->setMatchingConfig([
+            'pairs' => array_map(static fn (int $i): array => ['id' => 'p'.$i, 'left' => 'L'.$i, 'right' => 'R'.$i], range(1, 7)),
+        ]);
+        $this->em->persist($this->quiz);
+        $this->em->flush();
+
+        $service = $this->service();
+        self::assertSame(['Sept paires'], $service->skippedQuestions([$this->quiz]), 'a seventh pair has no shape');
+        $session = $service->createSession([$this->quiz], $this->program, $this->teacher, 30);
+        self::assertCount(1, $session->getQuizInstance()->getQuestions());
+        $this->sessionId = (int) $session->getId();
+        $this->code = (string) $session->getRoomCode();
+        $service->join($session, $this->alice, 'Alice');
+        $service->join($session, $this->bruno, 'Bruno');
+        $service->start($session, $this->teacher);
+        $this->advance(LiveSessionStatus::Countdown);
+        self::assertSame(['pairs', 'pairs'], [$service->buildPlayerSnapshot($this->live())['kind'], $service->buildPlayerSnapshot($this->live())['matchingMode']]);
+        $this->advance(LiveSessionStatus::Reading);
+
+        $matching = $service->buildPlayerSnapshot($this->live())['matching'];
+        self::assertIsArray($matching);
+        self::assertIsArray($matching['left']);
+        self::assertIsArray($matching['right']);
+        self::assertSame(['France', 'Allemagne', 'Italie'], array_column($matching['left'], 'label'));
+        self::assertSame(['triangle', 'square', 'circle'], array_column($matching['left'], 'shape'));
+        self::assertCount(4, $matching['right']);
+        self::assertStringNotContainsString('"p1"', json_encode($matching, \JSON_THROW_ON_ERROR), 'no pair id: the key of an answer is its pair\'s');
+
+        $position = array_flip(array_column($matching['right'], 'label'));
+        $this->answer($this->alice, ['matches' => [$position['Paris'], $position['Berlin']]], 409);
+        $this->answer($this->alice, ['matches' => [$position['Paris'], $position['Berlin'], $position['Rome']]]);
+        $this->answer($this->bruno, ['matches' => [$position['Paris'], $position['Berlin'], $position['Lisbonne']]]);
+
+        $results = $service->buildHostSnapshot($this->live());
+        self::assertSame('results', $results['type']);
+        self::assertTrue($this->outcome($results, $this->alice)['correct']);
+        self::assertFalse($this->outcome($results, $this->bruno)['correct'], 'no partial points');
+        $rows = $this->rows($results);
+        self::assertSame(['Paris', 'Berlin', 'Rome'], array_column($rows, 'answer'));
+        self::assertSame([2, 2, 1], array_column($rows, 'count'), 'how many found each pair');
+    }
+
+    /**
      * @param array<string, bool> $answers
      */
     private function question(QuestionType $type, string $label, array $answers): QuizQuestion

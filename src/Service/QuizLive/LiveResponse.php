@@ -8,7 +8,8 @@ use App\Service\JsonRequestPayload;
 
 /**
  * What a phone sent for one question of a live concours, whatever its type - the propositions
- * tapped (in the order tapped, which is the answer of a remise en ordre), a number, a word. Stored
+ * tapped (in the order tapped, which is the answer of a remise en ordre), a number, a word, the
+ * right-hand position given to each left item of an appariement (LiveMatching). Stored
  * as is on App\Entity\QuizLiveAnswer::$response; checked by isWellFormedFor() before it is graded.
  */
 final readonly class LiveResponse
@@ -18,11 +19,13 @@ final readonly class LiveResponse
 
     /**
      * @param list<int> $answerIds
+     * @param list<int> $matches   apparier: per left item, the position of its answer in the right column
      */
     public function __construct(
         public array $answerIds = [],
         public ?float $value = null,
         public ?string $text = null,
+        public array $matches = [],
     ) {
     }
 
@@ -43,7 +46,7 @@ final readonly class LiveResponse
 
         $text = $payload->has('text') ? trim($payload->string('text')) : null;
 
-        return new self($ids, $payload->float('value'), '' === $text ? null : $text);
+        return new self($ids, $payload->float('value'), '' === $text ? null : $text, $payload->ids('matches'));
     }
 
     /** @param array<string, mixed>|null $stored */
@@ -55,17 +58,23 @@ final readonly class LiveResponse
                 $ids[] = $id;
             }
         }
+        $matches = [];
+        foreach (\is_array($stored['matches'] ?? null) ? $stored['matches'] : [] as $position) {
+            if (\is_int($position)) {
+                $matches[] = $position;
+            }
+        }
         $value = $stored['value'] ?? null;
         $text = $stored['text'] ?? null;
 
-        return new self($ids, is_numeric($value) ? (float) $value : null, \is_string($text) ? $text : null);
+        return new self($ids, is_numeric($value) ? (float) $value : null, \is_string($text) ? $text : null, $matches);
     }
 
     /** @return array<string, mixed> */
     public function toArray(): array
     {
         return array_filter(
-            ['answerIds' => [] === $this->answerIds ? null : $this->answerIds, 'value' => $this->value, 'text' => $this->text],
+            ['answerIds' => [] === $this->answerIds ? null : $this->answerIds, 'value' => $this->value, 'text' => $this->text, 'matches' => [] === $this->matches ? null : $this->matches],
             static fn (mixed $value): bool => null !== $value,
         );
     }
@@ -73,9 +82,10 @@ final readonly class LiveResponse
     /**
      * Whether this is an answer of the right shape for the question - never trust the client.
      *
-     * @param list<int> $questionAnswerIds the question's own propositions
+     * @param list<int>         $questionAnswerIds the question's own propositions
+     * @param LiveMatching|null $matching          an appariement's columns, as the room was shown them
      */
-    public function isWellFormedFor(LiveAnswerKind $kind, array $questionAnswerIds): bool
+    public function isWellFormedFor(LiveAnswerKind $kind, array $questionAnswerIds, ?LiveMatching $matching = null): bool
     {
         $known = [] === array_diff($this->answerIds, $questionAnswerIds);
         $distinct = \count(array_unique($this->answerIds)) === \count($this->answerIds);
@@ -87,6 +97,7 @@ final readonly class LiveResponse
             LiveAnswerKind::Order => \count($this->answerIds) === \count($questionAnswerIds) && $known && $distinct,
             LiveAnswerKind::Number => null !== $this->value && is_finite($this->value),
             LiveAnswerKind::Text => null !== $this->text && mb_strlen($this->text) <= self::MAX_TEXT_LENGTH,
+            LiveAnswerKind::Pairs => null !== $matching && $matching->isWellFormed($this->matches),
         };
     }
 }

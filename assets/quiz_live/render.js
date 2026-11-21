@@ -51,6 +51,29 @@ function colorOf(position) {
     return `var(--c${(position % 6) + 1})`;
 }
 
+/**
+ * One item of an appariement's column: its picture - its text then being the alternative text, as
+ * the question editor has it - or its text.
+ */
+function matchItem(item) {
+    if (item.image) {
+        return `<span class="ql-mpic"><img src="${esc(item.image)}" alt="${esc(item.label)}"></span>`;
+    }
+
+    return `<span class="ql-t">${esc(item.label)}</span>`;
+}
+
+function matchHeads(matching) {
+    const headers = matching.headers || {};
+
+    return headers.left || headers.right ? `<div class="ql-mheads"><span>${esc(headers.left)}</span><span>${esc(headers.right)}</span></div>` : '';
+}
+
+/** The share of the room - out of the players in it - that found a pair. */
+function share(count, participants) {
+    return participants > 0 ? Math.round((count / participants) * 100) : 0;
+}
+
 /** A face: the photo, else the drawn avatar (painted by paintFaces()), else the initial. */
 export function face(avatar, name, size, extra = '') {
     const initial = Array.from(String(name || '').trim())[0]?.toUpperCase() || '?';
@@ -94,6 +117,9 @@ function kindHint(state, labels) {
     const kinds = labels.kinds || {};
     if (state.isVote) {
         return kinds.vote || '';
+    }
+    if ('pairs' === state.kind && 'sort' === state.matchingMode) {
+        return kinds.sort || '';
     }
     if ('number' === state.kind && state.range) {
         return fill(kinds.slider || '', { '%min%': fmt(state.range.min), '%max%': fmt(state.range.max) });
@@ -165,15 +191,41 @@ export function roomQuestion(state, ctx) {
     const timed = null !== state.secondsPerQuestion && undefined !== state.secondsPerQuestion;
     const clock = `<div class="ql-clock"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" fill="var(--panel)" stroke="var(--track)" stroke-width="12"/><circle cx="60" cy="60" r="52" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="326.7" data-bind="clock"/></svg><span class="fd ql-clock-n" data-bind="clockn">${timed ? state.secondsPerQuestion : '∞'}</span></div>`;
     const tiles = ['choice', 'multi', 'order'].includes(state.kind) || state.isVote ? roomTiles(state, false) : '';
+    // An appariement's two columns take the middle of the board: the statement is above them.
+    const match = 'pairs' === state.kind && state.matching;
+    if (match) {
+        center = roomMatchBoard(state.matching);
+    }
 
-    return scr(`${roomHead(state, ctx, hostButton(ctx.labels.skip, true))}<div class="ql-sq"><h2 class="ql-stmt ql-panel">${esc(state.label)}</h2>`
-        + `<div class="ql-mid">${clock}<div class="ql-center">${center}</div><div class="ql-answers-n"><b class="fd" data-bind="answered">${state.answeredCount ?? 0}</b><span>${esc(ctx.labels.answers)}</span></div></div>${tiles}</div>`);
+    return scr(`${roomHead(state, ctx, hostButton(ctx.labels.skip, true))}<div class="ql-sq"><h2 class="ql-stmt ql-panel${match ? ' ql-small' : ''}">${esc(state.label)}</h2>`
+        + `<div class="ql-mid${match ? ' is-match' : ''}">${clock}<div class="${match ? 'ql-col ql-min0' : 'ql-center'}">${center}</div><div class="ql-answers-n"><b class="fd" data-bind="answered">${state.answeredCount ?? 0}</b><span>${esc(ctx.labels.answers)}</span></div></div>${tiles}</div>`);
+}
+
+/** The left items under their shapes, the right ones beside them - the values, in a sort. */
+function roomMatchBoard(matching) {
+    const left = matching.left || [];
+    const right = matching.right || [];
+    const sort = 'sort' === matching.mode;
+    const wide = !sort && right.length > left.length;
+
+    return `${matchHeads(matching)}<div class="ql-mboard"><div class="ql-mcol">${left.map((item) => `<div class="ql-tile" style="--c:${colorOf(item.shapeIndex)}">${shape(item.shape, 30)}${matchItem(item)}</div>`).join('')}</div>`
+        + `<div class="ql-mpool${sort ? ' is-sort' : ''}${wide ? ' is-wide' : ''}">${right.map((item) => `<div class="ql-mchip">${matchItem(item)}</div>`).join('')}</div></div>`;
 }
 
 export function roomResults(state, ctx) {
     const next = state.isLastQuestion ? ctx.labels.podium : (state.isVote ? ctx.labels.next : ctx.labels.scoreboard);
     let mid;
-    if ('order' === state.kind) {
+    if ('pairs' === state.kind) {
+        // Each pair with its answer, and the share of the room that found it: the pair that
+        // stumped the class is what the teacher comes back to.
+        mid = `<div class="ql-grow ql-center ql-gap14"><div class="ql-col ql-gap10 ql-mres">${(state.rows || []).map((row, i) => {
+            const percent = share(row.count, state.participantCount);
+
+            return `<div class="ql-mrow ql-up" style="--c:${colorOf(row.shapeIndex)};animation-delay:${i * 0.2}s"><div class="ql-tile">${shape(row.shape, 28)}${matchItem(row)}</div><span class="ql-marrow" aria-hidden="true">→</span>`
+                + `<div class="ql-mans">${matchItem({ label: row.answer, image: row.answerImage })}</div><div class="ql-mpct"><i style="width:${percent}%;animation-delay:${0.3 + i * 0.2}s"></i><b class="fd">${percent} %</b></div></div>`;
+        }).join('')}</div>`
+            + `<p class="ql-stmt ql-small">${esc(fill(ctx.labels.correctCount, { '%correct%': state.correctCount, '%answered%': state.participantCount }))}</p></div>`;
+    } else if ('order' === state.kind) {
         mid = `<div class="ql-grow ql-center ql-gap14"><div class="ql-col ql-gap10 ql-orderlist">${(state.rows || []).map((row, i) => `<div class="ql-tile ql-up" style="--c:${colorOf(row.shapeIndex)};animation-delay:${i * 0.25}s"><span class="fd ql-rank">${row.rank}</span>${shape(row.shape, 32)}<span class="ql-t">${esc(row.label)}</span></div>`).join('')}</div>`
             + `<p class="ql-stmt ql-small">${esc(fill(ctx.labels.correctCount, { '%correct%': state.correctCount, '%answered%': state.participantCount }))}</p></div>`;
     } else if ('text' === state.kind || ('number' === state.kind && !(state.rows || []).some((row) => row.count > 0))) {
@@ -295,11 +347,43 @@ function phoneAnswerUi(state, ctx) {
 
             return `<div class="ql-field"><label class="ql-b" for="ql-number">${esc(ctx.labels.numberField)}</label><input id="ql-number" type="number" inputmode="decimal" step="any" class="ql-input" data-number data-action="keydown.enter->quiz-live-play#validate"></div><div class="ql-grow"></div>${validateBar(ctx, false, true)}`;
         }
+        case 'pairs':
+            return state.matching ? phoneMatching(state.matching, ctx) : '';
         case 'text':
             return `<div class="ql-field"><label class="ql-b" for="ql-text">${esc(ctx.labels.textField)}</label><input id="ql-text" type="text" class="ql-input" maxlength="200" autocomplete="off" autocapitalize="off" spellcheck="false" data-text data-action="input->quiz-live-play#typed keydown.enter->quiz-live-play#validate"></div><p class="ql-muted ql-m0">${esc(ctx.labels.textHint)}</p><div class="ql-grow"></div>${validateBar(ctx, false)}`;
         default:
             return '';
     }
+}
+
+/**
+ * An appariement on the phone. In pairs, two columns: the left item circled is the one the next tap
+ * on the right answers (quiz_live_play_controller.js), and an answer given takes its item's shape.
+ * In a sort, one row an item, its values as buttons.
+ */
+function phoneMatching(matching, ctx) {
+    const left = matching.left || [];
+    const right = matching.right || [];
+    if ('sort' === matching.mode) {
+        return `<p class="ql-muted ql-b ql-m0">${esc(ctx.labels.sortHint)}</p><div class="ql-sort">${left.map((item, i) => `<div class="ql-srow ql-pop" style="--c:${colorOf(item.shapeIndex)};animation-delay:${i * 50}ms"><div class="ql-sitem">${shape(item.shape, 22)}${matchItem(item)}</div>`
+            + `<div class="ql-scats">${right.map((value) => `<button type="button" class="ql-scat" data-left="${item.index}" data-right="${value.index}" data-action="quiz-live-play#pickSort" aria-pressed="false">${esc(value.label)}</button>`).join('')}</div></div>`).join('')}</div>${validateBar(ctx, true)}`;
+    }
+
+    return `<p class="ql-muted ql-b ql-m0">${esc(ctx.labels.pairsHint)}</p>${matchHeads(matching)}<div class="ql-match">`
+        + `<div class="ql-mcol">${left.map((item, i) => `<button type="button" class="ql-tile ql-pop" style="--c:${colorOf(item.shapeIndex)};animation-delay:${i * 50}ms" data-left="${item.index}" data-action="quiz-live-play#pickLeft" aria-pressed="false">${shape(item.shape, 22)}${matchItem(item)}</button>`).join('')}</div>`
+        + `<div class="ql-mcol">${right.map((item, i) => `<button type="button" class="ql-mright ql-pop" style="animation-delay:${i * 50}ms" data-right="${item.index}" data-action="quiz-live-play#pickRight" aria-pressed="false">${matchItem(item)}<span class="ql-mtag" data-tag></span></button>`).join('')}</div>`
+        + `</div>${validateBar(ctx, true)}`;
+}
+
+/** The shape a left item wears, for the answer given to it. */
+export function matchTag(matching, leftIndex) {
+    const item = (matching.left || [])[leftIndex];
+
+    return item ? shape(item.shape, 20) : '';
+}
+
+export function matchColor(leftIndex) {
+    return colorOf(leftIndex);
 }
 
 function validateBar(ctx, withClear, enabled = false) {
@@ -327,6 +411,7 @@ function rightAnswer(state) {
     if (['choice', 'multi'].includes(state.kind)) {
         return rows.filter((row) => row.correct).map((row) => row.label).join(', ');
     }
+
 
     return state.expected || '';
 }
@@ -356,7 +441,11 @@ export function phoneResults(state, ctx, memory) {
         : `<h2 class="fd ql-title-xl ql-hero ql-s56">${esc(word)}</h2>`;
     const streak = outcome.correct && memory.streak > 1 ? `<span class="ql-pill ql-streak ql-pop">${FLAME}${esc(fill('neon' === ctx.slug ? ctx.labels.combo : ctx.labels.streak, { '%count%': memory.streak }))}</span>` : '';
     const points = outcome.correct ? `<div class="fd ql-ptscount" data-count="${outcome.points}">+${fmt(outcome.points)}</div>${streak}` : '';
-    const right = outcome.correct ? '' : `<div class="ql-panel ql-rightbox"><span class="ql-kind">${esc(ctx.labels.rightAnswer)}</span><p class="ql-stmt ql-s20">${esc(rightAnswer(state))}</p></div>`;
+    // An appariement's answer is one line a pair: run together, the pairs no longer read as pairs.
+    const answer = 'pairs' === state.kind
+        ? (state.rows || []).map((row) => esc(`${row.label || '🖼'} → ${row.answer || '🖼'}`)).join('<br>')
+        : esc(rightAnswer(state));
+    const right = outcome.correct ? '' : `<div class="ql-panel ql-rightbox"><span class="ql-kind">${esc(ctx.labels.rightAnswer)}</span><p class="ql-stmt ${'pairs' === state.kind ? 'ql-s17' : 'ql-s20'}">${answer}</p></div>`;
 
     return `<div class="ql-res ${cls}"><div class="ql-deco${outcome.correct && 'manga' === ctx.slug ? ' is-speed' : ''}" aria-hidden="true"></div><div class="ql-scr">${phoneHead(state, ctx, me)}<div class="ql-grow ql-center ql-pad ql-gap14${outcome.answered && !outcome.correct ? ' ql-shake' : ''}">${big}${points}${right}<p class="ql-stmt ql-s17">${rank}</p></div></div></div>`;
 }

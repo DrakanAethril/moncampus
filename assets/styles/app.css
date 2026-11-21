@@ -2496,6 +2496,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-blanks-count { font-size: 12px; font-weight: 600; color: var(--cm-positive-tx); }
 .cm-blanks-count.is-empty { color: var(--cm-faint); }
+.cm-blanks-count.is-warning { color: var(--cm-warn-tx); }
 
 /* ---------- Answers per blank ---------- */
 .cm-blank-row { display: flex; align-items: center; gap: 10px; }
