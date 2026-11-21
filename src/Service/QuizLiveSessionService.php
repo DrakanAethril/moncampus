@@ -21,6 +21,7 @@ use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
 use App\Service\QuizLive\LiveAnswerKind;
 use App\Service\QuizLive\LiveGuestToken;
+use App\Service\QuizLive\LiveMatching;
 use App\Service\QuizLive\LiveNickname;
 use App\Service\QuizLive\LiveNumberBuckets;
 use App\Service\QuizLive\LiveOrderShuffle;
@@ -45,7 +46,8 @@ use Symfony\Component\Mercure\Update;
  * transitions, scoring, and Mercure publishing all live here.
  *
  * Every type a Kahoot carries is played (App\Service\QuizLive\LiveAnswerKind): one or several right
- * propositions among up to six shapes, a remise en ordre, a number, a word, a vote. A question the
+ * propositions among up to six shapes, a remise en ordre, a number, a word, a vote - and an
+ * appariement of up to six pairs, one shape each (App\Service\QuizLive\LiveMatching). A question the
  * room cannot play is left out at launch, and the launch says which (skippedQuestions()).
  *
  * All participants see the identical shape/color mapping (no per-student shuffle,
@@ -91,6 +93,9 @@ class QuizLiveSessionService
         4 => ['shape' => 'pentagon', 'color' => 'purple'],
         5 => ['shape' => 'triangle-down', 'color' => 'teal'],
     ];
+
+    /** How many shapes the room has - the most propositions, or pairs, a question shows. */
+    public const int SHAPE_COUNT = 6;
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -158,8 +163,8 @@ class QuizLiveSessionService
     }
 
     /**
-     * The questions of the pool a session leaves out - a texte à trous, zones, an appariement, a
-     * calculée, or a question too unfinished to be played (no propositions, more than six, no
+     * The questions of the pool a session leaves out - a texte à trous, zones, a calculée, or a
+     * question too unfinished to be played (no propositions, more than six propositions or pairs, no
      * expected value). The launch names them rather than refusing the whole pool.
      *
      * @param list<QuizTemplate> $templates
@@ -398,12 +403,13 @@ class QuizLiveSessionService
 
             $kind = LiveAnswerKind::of($question->getType()) ?? throw new LiveSessionStateException('This question cannot be played live.');
             $answerIds = array_map(static fn (QuizInstanceAnswer $answer): int => (int) $answer->getId(), $question->getAnswers()->toArray());
-            if (!$response->isWellFormedFor($kind, array_values($answerIds))) {
+            $matching = LiveAnswerKind::Pairs === $kind ? $this->matchingOf($session, $question) : null;
+            if (!$response->isWellFormedFor($kind, array_values($answerIds), $matching)) {
                 throw new LiveSessionStateException('Invalid answer for this question.'); // never trust the client
             }
 
             $answeredAt = new \DateTimeImmutable();
-            $correct = $question->getType()->hasRightAnswer() ? $this->isCorrect($question, $response) : null;
+            $correct = $question->getType()->hasRightAnswer() ? $this->isCorrect($question, $response, $matching) : null;
             $points = LiveScoring::points(
                 true === $correct,
                 $this->secondsBetween($session->getPhaseStartedAt(), $answeredAt),
@@ -560,7 +566,7 @@ class QuizLiveSessionService
 
     /**
      * Whether the room can play this question: a type it plays, and enough to play it with - two to
-     * six propositions where shapes are tapped, an expected value, an accepted word.
+     * six propositions where shapes are tapped, an expected value, an accepted word, two to six pairs.
      */
     private function isPlayable(QuizQuestion $question): bool
     {
@@ -570,9 +576,10 @@ class QuizLiveSessionService
         }
 
         return match ($kind) {
-            LiveAnswerKind::Choice, LiveAnswerKind::Multi, LiveAnswerKind::Order => \count($question->getAnswers()) >= 2 && \count($question->getAnswers()) <= \count(self::SHAPES),
+            LiveAnswerKind::Choice, LiveAnswerKind::Multi, LiveAnswerKind::Order => \count($question->getAnswers()) >= 2 && \count($question->getAnswers()) <= self::SHAPE_COUNT,
             LiveAnswerKind::Number => null !== $question->getNumericAnswer(),
             LiveAnswerKind::Text => [] !== ($question->getBlankAnswers()[0] ?? []),
+            LiveAnswerKind::Pairs => LiveMatching::isPlayable($question),
         };
     }
 
@@ -593,9 +600,11 @@ class QuizLiveSessionService
         return $questions;
     }
 
-    private function isCorrect(QuizInstanceQuestion $question, LiveResponse $response): bool
+    private function isCorrect(QuizInstanceQuestion $question, LiveResponse $response, ?LiveMatching $matching): bool
     {
         return match (LiveAnswerKind::of($question->getType())) {
+            // Every pair right, or nothing: no partial points in the room, whatever the type.
+            LiveAnswerKind::Pairs => null !== $matching && $this->grader->isCorrect($question, [], matchingResponses: $matching->associations($response->matches)),
             LiveAnswerKind::Number => $this->grader->isCorrect(
                 $question,
                 [],
@@ -791,7 +800,7 @@ class QuizLiveSessionService
             'isVote' => !$question->getType()->hasRightAnswer(),
         ];
 
-        $payload += $this->statementOf($question);
+        $payload += $this->statementOf($question) + $this->matchingModeOf($session, $question);
         if ($forHost) {
             $payload['participantCount'] = \count($session->getParticipants());
         }
@@ -831,6 +840,10 @@ class QuizLiveSessionService
             'phaseStartedAt' => $session->getPhaseStartedAt()?->format(\DATE_ATOM),
             'answers' => $kind?->usesShapes() ? $answers : [],
         ];
+
+        if (LiveAnswerKind::Pairs === $kind) {
+            $payload['matching'] = $this->matchingPayload($this->matchingOf($session, $question), $question);
+        }
 
         if (LiveAnswerKind::Number === $kind) {
             $payload['range'] = $question->getNumericRange();
@@ -900,7 +913,7 @@ class QuizLiveSessionService
             'outcomes' => $outcomes,
             'leaderboard' => $this->buildLeaderboard($session),
             'isLastQuestion' => $session->getCurrentQuestionIndex() === $totalQuestions - 1,
-        ] + $this->statementOf($question) + $this->resultRows($session, $question, $kind, $responses);
+        ] + $this->statementOf($question) + $this->matchingModeOf($session, $question) + $this->resultRows($session, $question, $kind, $responses);
     }
 
     /**
@@ -945,6 +958,10 @@ class QuizLiveSessionService
             usort($groups, static fn (array $a, array $b): int => $b['count'] <=> $a['count']);
 
             return ['rows' => \array_slice($groups, 0, self::TEXT_ROWS), 'expected' => $variants[0] ?? null];
+        }
+
+        if (LiveAnswerKind::Pairs === $kind) {
+            return ['rows' => $this->pairRows($this->matchingOf($session, $question), $question, $responses), 'expected' => null];
         }
 
         $shown = $this->shownAnswers($session, $question);
@@ -1037,9 +1054,92 @@ class QuizLiveSessionService
         foreach ($answers as $answer) {
             $byId[(int) $answer->getId()] = $answer;
         }
-        $order = LiveOrderShuffle::shown(array_keys($byId), (int) $session->getId() * 7919 + (int) $question->getId());
+        $order = LiveOrderShuffle::shown(array_keys($byId), $this->seedOf($session, $question));
 
         return array_map(static fn (int $id): QuizInstanceAnswer => $byId[$id], $order);
+    }
+
+    /** The one seed of a question's shuffles, the same for the whole room and for a reloaded screen. */
+    private function seedOf(QuizLiveSession $session, QuizInstanceQuestion $question): int
+    {
+        return (int) $session->getId() * 7919 + (int) $question->getId();
+    }
+
+    private function matchingOf(QuizLiveSession $session, QuizInstanceQuestion $question): LiveMatching
+    {
+        return LiveMatching::of($question, $this->seedOf($session, $question));
+    }
+
+    /**
+     * Pairs or sort, said from the statement on: the reading screen announces which.
+     *
+     * @return array{matchingMode?: string}
+     */
+    private function matchingModeOf(QuizLiveSession $session, QuizInstanceQuestion $question): array
+    {
+        return LiveAnswerKind::Pairs === LiveAnswerKind::of($question->getType()) ? ['matchingMode' => $this->matchingOf($session, $question)->mode] : [];
+    }
+
+    /**
+     * An appariement's two columns as the room plays them: the left items under their shapes, the
+     * right ones by position - never a pair id nor a choice key, which would spell the answer.
+     *
+     * @return array<string, mixed>
+     */
+    private function matchingPayload(LiveMatching $matching, QuizInstanceQuestion $question): array
+    {
+        $left = [];
+        foreach ($matching->left as $index => $item) {
+            $shape = self::SHAPES[$index] ?? self::SHAPES[0];
+            $left[] = ['index' => $index, 'label' => $item['text'], 'image' => $this->imageUrl($item['image']), 'shapeIndex' => $index] + $shape;
+        }
+        $right = [];
+        foreach ($matching->right as $index => $item) {
+            $right[] = ['index' => $index, 'label' => $item['text'], 'image' => $this->imageUrl($item['image'])];
+        }
+
+        return ['mode' => $matching->mode, 'headers' => $question->getMatchingHeaders(), 'left' => $left, 'right' => $right];
+    }
+
+    /**
+     * One row a pair: the left item under its shape, its answer, and how many of the room found it -
+     * out of the players in the room, a silence counting as a miss like everywhere in the results.
+     *
+     * @param list<LiveResponse> $responses
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function pairRows(LiveMatching $matching, QuizInstanceQuestion $question, array $responses): array
+    {
+        $found = [];
+        foreach ($responses as $response) {
+            foreach ($this->checker->matchingResults($question, $matching->associations($response->matches)) as $pairId => $right) {
+                if ($right) {
+                    $found[$pairId] = ($found[$pairId] ?? 0) + 1;
+                }
+            }
+        }
+
+        $expected = $matching->expected();
+        $rows = [];
+        foreach ($matching->left as $index => $item) {
+            $answer = $expected[$index] ?? null;
+            $rows[] = [
+                'label' => $item['text'],
+                'image' => $this->imageUrl($item['image']),
+                'answer' => $answer['text'] ?? '',
+                'answerImage' => $this->imageUrl($answer['image'] ?? null),
+                'count' => $found[$item['id']] ?? 0,
+                'shapeIndex' => $index,
+            ] + (self::SHAPES[$index] ?? []);
+        }
+
+        return $rows;
+    }
+
+    private function imageUrl(?string $key): ?string
+    {
+        return null !== $key && '' !== $key ? $this->fileUploadService->url($key) : null;
     }
 
     private function answeredCount(QuizLiveSession $session, QuizInstanceQuestion $question): int

@@ -15,6 +15,7 @@
 {% set left_is_image = question.matchingLeftKind.isImage %}
 {% set right_is_image = question.matchingRightKind.isImage %}
 {% set feedbacks = question.matchingFeedbacks %}
+{% set live_max_pairs = constant('App\\Service\\QuizLive\\LiveMatching::MAX_PAIRS') %}
 <div class="d-flex flex-column gap-3" data-controller="quiz-matching-editor"
      data-quiz-matching-editor-alt-placeholder-value="{{ 'quizMatchingAltPlaceholder'|trans }}"
      data-quiz-matching-editor-text-placeholder-left-value="{{ 'quizMatchingLeftPlaceholder'|trans }}"
@@ -86,6 +87,10 @@
         </template>
         <div class="cm-blanks-count" data-quiz-matching-editor-target="count"
              data-count-template="{{ 'quizMatchingPairCountTemplate'|trans }}"></div>
+        {# Shown by the editor as soon as the rows outnumber what a live contest plays - the launch
+           would leave the question out (App\Service\QuizLive\LiveMatching::MAX_PAIRS). #}
+        <div class="cm-blanks-count is-warning" data-quiz-matching-editor-target="liveWarning"
+             data-live-max="{{ live_max_pairs }}" hidden>{{ 'quizMatchingLiveTooManyPairsWarning'|trans({'%max%': live_max_pairs}) }}</div>
     </div>
 
     {# Two decoy fields, one per column kind, and only the matching one is ever shown - a list of
@@ -133,7 +138,7 @@
 
     <div class="cm-note cm-note--gold">
         <span class="cm-note__icon">!</span>
-        {# Same live-contest exclusion notice as the texte à trous and the zones types. #}
-        <div>{{ 'quizMatchingLiveExcludedNotice'|trans|raw }}</div>
+        {# A live contest plays six pairs at most, one of the room's six shapes each. #}
+        <div>{{ 'quizMatchingLiveLimitNotice'|trans({'%max%': live_max_pairs})|raw }}</div>
     </div>
 </div>

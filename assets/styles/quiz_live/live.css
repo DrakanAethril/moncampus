@@ -254,6 +254,50 @@
 .ql-plinth { width: 100%; background: var(--c); border: var(--bd); border-bottom: 0; border-radius: var(--r) var(--r) 0 0; display: flex; justify-content: center; padding-top: 14px; font-size: 64px; color: var(--tink); transform-origin: bottom; animation: ql-rise .7s cubic-bezier(.3,1.2,.4,1) both; box-shadow: var(--sh); }
 .ql-marquee { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
 
+/* ---- an appariement (2026-11-21): the phone's two columns or its sort, the board, the results ---- */
+.ql-mpic { display: flex; flex: 1; min-width: 0; justify-content: center; align-items: center; background: #fff; border-radius: calc(var(--r) - 6px); padding: 3px; }
+.ql-mpic img { display: block; max-width: 100%; max-height: 64px; object-fit: contain; }
+.ql-mheads, .ql-match { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.ql-mheads span { font: 800 13px/1.2 var(--fb); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); overflow-wrap: anywhere; }
+.ql-mcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ql-match .ql-tile { min-height: 52px; font-size: 15px; gap: 8px; padding: 8px 10px; }
+.ql-match .ql-tile .ql-shp { width: 22px; height: 22px; }
+.ql-mright { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; min-height: 52px; padding: 8px 34px 8px 10px;
+    background: var(--panel); color: var(--ink); border: var(--bd); border-radius: var(--r); box-shadow: var(--sh);
+    font: 700 15px/1.15 var(--fb); text-align: left; cursor: pointer; overflow: hidden; transition: transform .12s, background .2s; }
+.ql-mright .ql-t { flex: 1; min-width: 0; overflow-wrap: break-word; }
+.ql-mright:active { transform: translate(2px, 3px); }
+.ql-mright.is-used { background: var(--c); color: var(--tink); }
+.ql-mtag { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; }
+.ql-mtag .ql-shp { width: 20px; height: 20px; }
+.ql-sort { display: flex; flex-direction: column; gap: 10px; }
+.ql-srow { display: flex; flex-direction: column; gap: 8px; padding: 8px; background: var(--panel); color: var(--ink); border: var(--bd); border-radius: var(--r); box-shadow: var(--sh); }
+.ql-sitem { display: flex; align-items: center; gap: 8px; font: 800 16px/1.2 var(--fb); overflow-wrap: anywhere; }
+.ql-sitem .ql-shp { width: 22px; height: 22px; fill: var(--c); }
+.ql-scats { display: flex; gap: 6px; }
+.ql-scat { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 6px 8px; background: var(--panel); color: var(--ink); border: var(--bd); border-radius: calc(var(--r) - 4px);
+    font: 700 14px/1.1 var(--fb); overflow-wrap: anywhere; cursor: pointer; transition: background .2s; }
+.ql-scat.is-sel { background: var(--c); color: var(--tink); }
+.ql-mid.is-match { align-items: stretch; }
+.ql-mid.is-match > .ql-clock, .ql-mid.is-match > .ql-answers-n { align-self: center; }
+.ql-mboard { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; min-height: 0; overflow: hidden; }
+.ql-mboard .ql-tile { min-height: 54px; padding: 8px 14px; font-size: 22px; cursor: default; }
+.ql-mboard .ql-shp { width: 30px; height: 30px; }
+.ql-mboard .ql-mpic img, .ql-mres .ql-mpic img { max-height: 64px; }
+.ql-mpool { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.ql-mpool.is-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ql-mchip { display: flex; align-items: center; min-height: 54px; padding: 8px 14px; background: var(--panel); color: var(--ink); border: var(--bd); border-radius: var(--r); box-shadow: var(--sh); font: 700 22px/1.15 var(--fb); overflow-wrap: anywhere; }
+.ql-mpool.is-sort .ql-mchip { justify-content: center; min-height: 70px; font-size: 26px; }
+.ql-mres { width: 1080px; max-width: 100%; }
+.ql-mrow { display: grid; grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr) 200px; align-items: center; gap: 12px; }
+.ql-mrow .ql-tile { min-height: 50px; padding: 6px 12px; font-size: 22px; cursor: default; }
+.ql-mrow .ql-shp { width: 28px; height: 28px; }
+.ql-marrow { font: 800 28px var(--fb); text-align: center; }
+.ql-mans { display: flex; align-items: center; min-height: 50px; padding: 6px 12px; background: var(--ok); color: var(--okink); border: var(--bd); border-radius: var(--r); box-shadow: var(--sh); font: 700 22px/1.15 var(--fb); overflow-wrap: anywhere; }
+.ql-mpct { position: relative; height: 42px; background: var(--track); border: var(--bd); border-radius: 99px; overflow: hidden; }
+.ql-mpct i { position: absolute; inset: 0 auto 0 0; background: var(--c); transform-origin: left; animation: ql-grow-x .8s cubic-bezier(.2,1.2,.4,1) both; }
+.ql-mpct b { position: relative; display: flex; align-items: center; justify-content: center; height: 100%; font-size: 20px; color: var(--ink); }
+
 
 /* ---- motion (each theme picks its hero) ---- */
 .ql-hero { animation: ql-pop-in .5s cubic-bezier(.2,1.5,.35,1) both; }
@@ -267,6 +311,7 @@
 @keyframes ql-fade-up { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes ql-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @keyframes ql-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes ql-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes ql-win-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
 @keyframes ql-slide-rank { from { transform: translateY(var(--from, 0)); } to { transform: none; } }
 @keyframes ql-drop { 0% { transform: translateY(-420px); opacity: 0; } 70% { transform: translateY(12px); opacity: 1; } 85% { transform: translateY(-6px); } 100% { transform: none; opacity: 1; } }

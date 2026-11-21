@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
-import { esc, fmt, paintFaces, phoneMessage, phoneScreen } from '../quiz_live/render.js';
+import { esc, fmt, matchColor, matchTag, paintFaces, phoneMessage, phoneScreen } from '../quiz_live/render.js';
 import { confetti, countUp } from '../quiz_live/effects.js';
 
 /**
@@ -10,7 +10,9 @@ import { confetti, countUp } from '../quiz_live/effects.js';
  *
  * How a question is answered depends on its kind (App\Service\QuizLive\LiveAnswerKind): one tap sends
  * a choice or a vote; several are ticked, or tapped in order, then « Valider »; a number is slid or
- * typed; a word is typed. The server checks the shape of every answer anyway.
+ * typed; a word is typed; an appariement is answered item by item - in pairs, a tap on the right
+ * answers the circled left item and circles the next one; in a sort, each item's value is tapped -
+ * then « Valider ». The server checks the shape of every answer anyway.
  *
  * Built to be played from a phone, in the installed Formatool above all: the screen is kept awake while the game
  * runs (Screen Wake Lock), and the phase is asked again from the server whenever the page comes back
@@ -36,6 +38,9 @@ export default class extends Controller {
         const theme = this.themeValue;
         this.ctx = { ...this.contextValue, words: theme.words || {}, slug: theme.slug };
         this.memory = { sent: false, pick: null, streak: this.loadStreak(), previousRank: null, score: undefined };
+        this.picked = [];
+        this.matches = [];
+        this.activeLeft = null;
         this.shownKey = null;
         this.apply(this.initialStateValue);
 
@@ -138,7 +143,100 @@ export default class extends Controller {
 
     clearOrder() {
         this.picked = [];
+        this.matches = this.matches.map(() => null);
+        this.activeLeft = this.matches.length > 0 ? 0 : null;
         this.paintPicked();
+    }
+
+    // ------------------------------------------------------------------ an appariement
+
+    /** A left item is circled: the next answer tapped is its own. */
+    pickLeft(event) {
+        if (this.memory.sent || this.timeIsUp) {
+            return;
+        }
+        this.activeLeft = Number(event.currentTarget.dataset.left);
+        this.paintPicked();
+    }
+
+    /**
+     * An answer given to the circled item - taken from another one if it had it, each answer
+     * belonging to one item -, then the next item still without one is circled. With nothing
+     * circled, a tap on an answer given takes it back.
+     */
+    pickRight(event) {
+        if (this.memory.sent || this.timeIsUp) {
+            return;
+        }
+        const right = Number(event.currentTarget.dataset.right);
+        const owner = this.matches.indexOf(right);
+        if (null === this.activeLeft) {
+            if (owner >= 0) {
+                this.matches[owner] = null;
+                this.activeLeft = owner;
+            }
+            this.paintPicked();
+
+            return;
+        }
+        if (owner >= 0) {
+            this.matches[owner] = null;
+        }
+        this.matches[this.activeLeft] = right;
+        this.activeLeft = this.nextOpenLeft(this.activeLeft);
+        this.paintPicked();
+    }
+
+    pickSort(event) {
+        if (this.memory.sent || this.timeIsUp) {
+            return;
+        }
+        this.matches[Number(event.currentTarget.dataset.left)] = Number(event.currentTarget.dataset.right);
+        this.paintPicked();
+    }
+
+    nextOpenLeft(from) {
+        const count = this.matches.length;
+        for (let step = 1; step <= count; step += 1) {
+            const index = (from + step) % count;
+            if (null === this.matches[index]) {
+                return index;
+            }
+        }
+
+        return null;
+    }
+
+    paintMatches() {
+        const matching = this.state.matching || {};
+        this.screenTarget.querySelectorAll('[data-left]:not([data-right])').forEach((button) => {
+            const index = Number(button.dataset.left);
+            button.classList.toggle('is-sel', index === this.activeLeft);
+            button.setAttribute('aria-pressed', String(index === this.activeLeft));
+        });
+        this.screenTarget.querySelectorAll('[data-right]:not([data-left])').forEach((button) => {
+            const owner = this.matches.indexOf(Number(button.dataset.right));
+            button.classList.toggle('is-used', owner >= 0);
+            button.setAttribute('aria-pressed', String(owner >= 0));
+            if (owner >= 0) {
+                button.style.setProperty('--c', matchColor(owner));
+            } else {
+                button.style.removeProperty('--c');
+            }
+            const tag = button.querySelector('[data-tag]');
+            if (tag) {
+                tag.innerHTML = owner >= 0 ? matchTag(matching, owner) : '';
+            }
+        });
+        this.screenTarget.querySelectorAll('[data-left][data-right]').forEach((button) => {
+            const chosen = this.matches[Number(button.dataset.left)] === Number(button.dataset.right);
+            button.classList.toggle('is-sel', chosen);
+            button.setAttribute('aria-pressed', String(chosen));
+        });
+        const validate = this.screenTarget.querySelector('[data-validate]');
+        if (validate) {
+            validate.disabled = this.matches.length === 0 || this.matches.includes(null);
+        }
     }
 
     slide(event) {
@@ -182,6 +280,9 @@ export default class extends Controller {
                 break;
             case 'order':
                 if (this.picked.length === (this.state.answers || []).length) this.send({ order: this.picked }, null);
+                break;
+            case 'pairs':
+                if (this.matches.length > 0 && !this.matches.includes(null)) this.send({ matches: this.matches }, null);
                 break;
             case 'number': {
                 const input = this.screenTarget.querySelector('[data-number]');
@@ -231,6 +332,11 @@ export default class extends Controller {
     // « Valider » follows the ticks of a QCM multiple or an order only: a number or a word ticks
     // nothing, and reading `picked` there left the slider's button greyed for good.
     paintPicked() {
+        if ('pairs' === this.state.kind) {
+            this.paintMatches();
+
+            return;
+        }
         if (this.state.isVote || !['multi', 'order'].includes(this.state.kind)) {
             return;
         }
@@ -285,6 +391,8 @@ export default class extends Controller {
             this.memory.sent = true === state.answered;
             this.memory.pick = null;
             this.picked = [];
+            this.matches = (state.matching?.left || []).map(() => null);
+            this.activeLeft = this.matches.length > 0 ? 0 : null;
             this.timeIsUp = false;
         }
         if ('results' === state.type) {

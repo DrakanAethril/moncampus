@@ -14,7 +14,9 @@ use App\Enum\QuestionType;
  * - order: every shape tapped in the right order, then « Valider » (remise en ordre - Kahoot's
  *   Puzzle; the labels are on the board, the phone has the shapes, as everywhere in the room);
  * - number: a slider when the question has a range, else a field (numérique);
- * - text: a word typed (réponse courte).
+ * - text: a word typed (réponse courte);
+ * - pairs: each left item given its right-hand one, then « Valider » (apparier, six pairs at most -
+ *   App\Service\QuizLive\LiveMatching, which also decides when it is played as a sort instead).
  */
 enum LiveAnswerKind: string
 {
@@ -23,6 +25,7 @@ enum LiveAnswerKind: string
     case Order = 'order';
     case Number = 'number';
     case Text = 'text';
+    case Pairs = 'pairs';
 
     /** Null for a type the room does not play (QuestionType::isAvailableInLiveContest()). */
     public static function of(QuestionType $type): ?self
@@ -33,7 +36,8 @@ enum LiveAnswerKind: string
             QuestionType::Ordre => self::Order,
             QuestionType::Numerique => self::Number,
             QuestionType::ReponseCourte => self::Text,
-            QuestionType::TexteATrous, QuestionType::Zone, QuestionType::Legende, QuestionType::Apparier, QuestionType::Calculee => null,
+            QuestionType::Apparier => self::Pairs,
+            QuestionType::TexteATrous, QuestionType::Zone, QuestionType::Legende, QuestionType::Calculee => null,
         };
     }
 
