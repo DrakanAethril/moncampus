@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.21'
+      date: '2026-11-21'
+      summary: "Les questions d'appariement se jouent désormais en concours live, sur le téléphone comme à l'écran projeté."
+      entries:
+          - type: nouveaute
+            title: "Concours live : les questions « Apparier » sont jouables, jusqu'à 6 paires"
+            detail: "Sur le téléphone, on relie chaque élément à sa réponse d'une touche, ou on le classe dans une catégorie quand les réponses se répètent ; les résultats projetés montrent, paire par paire, la part de la salle qui l'a trouvée."
+          - type: modification
+            title: "Éditeur de quiz : une question d'appariement de plus de 6 paires prévient qu'elle ne sera pas jouée en concours live"
     - version: '2026.11.19.2'
       date: '2026-11-19'
       summary: "Dans le CRM des inscriptions, toujours en essai auprès de l'administration, un dossier passe par deux étapes de plus et commence en « Candidature en attente » ; la liste d'une formation se filtre par situation."
