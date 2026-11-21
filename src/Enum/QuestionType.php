@@ -72,16 +72,17 @@ enum QuestionType: string
     /**
      * Whether a live concours plays this question. Since the Kahoot import (2026-11-05) the room
      * plays every type a Kahoot carries - one or several right propositions (up to six), a remise en
-     * ordre tapped shape by shape, a number on a slider, a word typed, a vote - so what stays out is
-     * what a projected board cannot run:
-     * - texte à trous, zone, légende and apparier answer *into a support* (blanks, zones, two
-     *   columns) the phone does not have, and the board cannot show who placed what;
+     * ordre tapped shape by shape, a number on a slider, a word typed, a vote - and, since 2026-11-21,
+     * an appariement of up to six pairs (App\Service\QuizLive\LiveMatching). What stays out is what a
+     * projected board cannot run:
+     * - texte à trous, zone and légende answer *into a support* (blanks, zones) the phone does not
+     *   have, and the board cannot show who placed what;
      * - a calculée asks each student a *different* thing, which a projected board cannot show at all.
      * A launch leaves them out and says so (App\Service\QuizLiveSessionService::createSession()).
      */
     public function isAvailableInLiveContest(): bool
     {
-        return !\in_array($this, [self::TexteATrous, self::Zone, self::Legende, self::Apparier, self::Calculee], true);
+        return !\in_array($this, [self::TexteATrous, self::Zone, self::Legende, self::Calculee], true);
     }
 
     /**
