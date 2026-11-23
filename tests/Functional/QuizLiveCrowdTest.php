@@ -87,6 +87,49 @@ class QuizLiveCrowdTest extends FunctionalTestCase
         $this->service()->submitAnswerFor($this->live($sessionId), $this->player($sessionId, 2), new LiveResponse([$right]), $start->modify(\sprintf('+%d seconds', 21 + $grace)));
     }
 
+    /**
+     * What the session's lock used to guarantee, held without it: an answer is one INSERT, so the
+     * table's UNIQUE (participant, question) is what keeps a repeated POST from counting twice and
+     * an answer from slipping in after the question closed.
+     */
+    public function testWithoutTheLockAnAnswerCountsOnceAndNeverAfterTheClose(): void
+    {
+        $sessionId = $this->roomAtItsFirstQuestion(3);
+        $right = $this->rightAnswerId($sessionId);
+
+        $first = $this->service()->submitAnswerFor($this->live($sessionId), $this->player($sessionId, 0), new LiveResponse([$right]));
+        $again = $this->service()->submitAnswerFor($this->live($sessionId), $this->player($sessionId, 0), new LiveResponse([$right]));
+        self::assertSame($first->getPointsAwarded(), $again->getPointsAwarded(), 'the first answer stands');
+        $this->em->clear();
+        self::assertSame($first->getPointsAwarded(), $this->player($sessionId, 0)->getScore(), 'counted once');
+
+        // A request that read the question open, while the host closed it in the meantime.
+        $session = $this->live($sessionId);
+        $late = $this->player($sessionId, 1);
+        $this->service()->advance($session, $this->teacher(), LiveSessionStatus::Question);
+        self::assertSame(LiveSessionStatus::Results, $session->getStatus());
+        $session->setStatus(LiveSessionStatus::Question); // what that request still believes
+        try {
+            $this->service()->submitAnswerFor($session, $late, new LiveResponse([$right]));
+            self::fail('An answer after the close is refused.');
+        } catch (LiveAnswerTooLateException) {
+        }
+        $this->em->clear();
+        self::assertSame(0, $this->player($sessionId, 1)->getScore());
+
+        // The phones are sent the ranking without its faces, the projector with them.
+        $phone = $this->service()->buildPlayerSnapshot($this->live($sessionId));
+        $board = $this->service()->buildHostSnapshot($this->live($sessionId));
+        self::assertSame('results', $phone['type']);
+        self::assertIsArray($phone['leaderboard']);
+        self::assertIsArray($phone['leaderboard'][0]);
+        self::assertArrayNotHasKey('avatar', $phone['leaderboard'][0]);
+        self::assertSame(['participantId', 'displayName', 'score', 'rank'], array_keys($phone['leaderboard'][0]), 'what the mobile app reads');
+        self::assertIsArray($board['leaderboard']);
+        self::assertIsArray($board['leaderboard'][0]);
+        self::assertArrayHasKey('avatar', $board['leaderboard'][0]);
+    }
+
     public function testThePhoneIsToldItsAnswerCameTooLate(): void
     {
         $session = $this->service()->createSession([$this->quiz], null, $this->teacher, 20, null, true);

@@ -1,13 +1,8 @@
 {# A live contest's address when it cannot be played from here: over, for its class only (signed in
    or not), or closed to an account the host took out. In the contest's theme, like the rest. #}
-{% extends 'base.html.twig' %}
+{% extends 'quiz_live/_phone_page.html.twig' %}
 
 {% block title %}{{ session.quizInstance.name }} - {{ 'quizLivePlayPageHeading'|trans }}{% endblock %}
-
-{% block stylesheets %}
-    {{ parent() }}
-    {{ include('quiz_live/_stylesheets.html.twig', {slugs: [theme.slug], page: true}) }}
-{% endblock %}
 
 {% block body %}
     {% set texts = {
