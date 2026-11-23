@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
-import { esc, fmt, matchColor, matchTag, paintFaces, phoneMessage, phoneScreen } from '../quiz_live/render.js';
+import { esc, fmt, matchColor, matchTag, mine, paintFaces, phoneMessage, phoneScreen, verdict } from '../quiz_live/render.js';
 import { confetti, countUp } from '../quiz_live/effects.js';
 
 /**
@@ -37,7 +37,8 @@ export default class extends Controller {
     connect() {
         const theme = this.themeValue;
         this.ctx = { ...this.contextValue, words: theme.words || {}, slug: theme.slug };
-        this.memory = { sent: false, pick: null, streak: this.loadStreak(), previousRank: null, score: undefined };
+        this.clockOffset = 0;
+        this.memory = { sent: false, late: false, pick: null, streak: this.loadStreak(), previousRank: null, score: undefined };
         this.picked = [];
         this.matches = [];
         this.activeLeft = null;
@@ -298,8 +299,9 @@ export default class extends Controller {
         }
     }
 
-    // A 409 is the server's « too late » or « already answered »: the question stays locked.
-    // Anything else - no network, a server that did not answer - offers to send it again.
+    // A 409 is the server's refusal: the question stays locked, and « too late » is said - the
+    // answer was never counted. Anything else - no network, a server that did not answer - offers
+    // to send it again.
     send(body, pick) {
         this.memory.sent = true;
         this.memory.pick = pick;
@@ -311,10 +313,35 @@ export default class extends Controller {
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfTokenValue },
             body: JSON.stringify(body),
         }).then((response) => {
-            if (!response.ok && 409 !== response.status) {
+            if (409 === response.status) {
+                response.json().then((refusal) => {
+                    if (refusal && refusal.late && this.state === question) {
+                        this.memory.late = true;
+                        this.render();
+                    }
+                }).catch(() => {});
+
+                return;
+            }
+            if (!response.ok) {
                 this.lost(question);
             }
         }).catch(() => this.lost(question));
+    }
+
+    // The server's clock, as far as this page can tell: every state carries the moment it left the
+    // server (serverNow), and a phone's own clock may be seconds off - ahead, it greyed its buttons
+    // before the end; behind, it kept taking answers the server then refused. What the trip took
+    // makes this page's clock a little late, which the server's grace covers.
+    syncClock(state) {
+        const sent = Date.parse(state.serverNow || '');
+        if (Number.isFinite(sent)) {
+            this.clockOffset = sent - Date.now();
+        }
+    }
+
+    now() {
+        return Date.now() + this.clockOffset;
     }
 
     lost(question) {
@@ -360,6 +387,7 @@ export default class extends Controller {
     // ------------------------------------------------------------------ the phases
 
     apply(state) {
+        this.syncClock(state);
         if ('lobby' === state.type && 'lobby' === this.state?.type) {
             // Somebody came or went. Fewer players than before may mean this one was taken out.
             const before = this.state.participantCount ?? 0;
@@ -389,6 +417,7 @@ export default class extends Controller {
 
         if (key !== this.shownKey && 'question-opened' === state.type) {
             this.memory.sent = true === state.answered;
+            this.memory.late = false;
             this.memory.pick = null;
             this.picked = [];
             this.matches = (state.matching?.left || []).map(() => null);
@@ -402,7 +431,7 @@ export default class extends Controller {
             // The rank before this question, for « ▲ 2 places »: the previous board's.
             this.memory.previousRank = this.lastRank ?? null;
         }
-        const row = (state.leaderboard || state.finalLeaderboard || []).find((entry) => entry.participantId === this.ctx.me.participantId);
+        const row = mine(state, this.ctx);
         if (row) {
             this.memory.score = row.score;
             if ('scoreboard' === state.type || 'results' === state.type) {
@@ -426,7 +455,7 @@ export default class extends Controller {
 
     /** The run of right answers this page has seen, kept for a reload of the same contest. */
     settle(state) {
-        const outcome = (state.outcomes || {})[String(this.ctx.me.participantId)];
+        const outcome = verdict(state, this.ctx.me.participantId);
         if (!state.isVote) {
             this.memory.streak = outcome && outcome.correct ? this.memory.streak + 1 : 0;
             this.saveStreak();
@@ -457,7 +486,7 @@ export default class extends Controller {
         const deadline = new Date(state.serverTime).getTime() + state.countdownSeconds * 1000;
         let shown = null;
         const tick = () => {
-            const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+            const remaining = Math.max(0, Math.ceil((deadline - this.now()) / 1000));
             const text = remaining > 1 ? String(remaining - 1) : (this.ctx.words.go || 'Go');
             if (text !== shown) {
                 shown = text;
@@ -479,7 +508,9 @@ export default class extends Controller {
         const total = state.secondsPerQuestion * 1000;
         const deadline = new Date(state.phaseStartedAt).getTime() + total;
         const tick = () => {
-            const left = Math.max(0, deadline - Date.now());
+            // The start is the next whole second (the server rounds it up): the bar may begin a
+            // little before it, full.
+            const left = Math.min(total, Math.max(0, deadline - this.now()));
             const bar = this.screenTarget.querySelector('[data-bind="time"]');
             if (bar) {
                 bar.style.width = `${(left / total) * 100}%`;

@@ -38,6 +38,8 @@ function topologyPicture() {
 function sample(module) {
     const players = NAMES.map((name, i) => ({ id: i + 1, displayName: name, avatar: { photo: null, drawn: module.random(seeded(1000 + i * 77)) }, score: SCORES[i] }));
     const ranked = players.slice().sort((a, b) => b.score - a.score).map((p, i) => ({ participantId: p.id, displayName: p.displayName, score: p.score, rank: i + 1, avatar: p.avatar }));
+    // What the phones are sent of it (QuizLiveSessionService::forPhones()), beside the projector's.
+    const standings = ranked.map((row) => [row.participantId, row.score, row.displayName]);
     const options = ['En bus', 'En anneau', 'En étoile', 'Maillée'];
     const answers = options.map((label, i) => ({ answerId: 100 + i, shapeIndex: i, shape: SHAPES[i], label }));
     const question = {
@@ -53,8 +55,9 @@ function sample(module) {
         results: {
             type: 'results', questionIndex: 2, totalQuestions: 8, kind: 'choice', isVote: false, participantCount: 12, answeredCount: 12, correctCount: 9,
             outcomes: { 4: { answered: true, correct: true, points: 940 } }, leaderboard: ranked, rows: [], label: 'Le RGPD s’applique aussi aux associations.',
+            verdicts: { 4: [1, 1, 940] }, standings,
         },
-        podium: { type: 'session-finished', finalLeaderboard: ranked, podium: ranked.slice(0, 3) },
+        podium: { type: 'session-finished', finalLeaderboard: ranked, podium: ranked.slice(0, 3), standings },
     };
 }
 

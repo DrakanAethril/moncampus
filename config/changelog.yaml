@@ -26,6 +26,22 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.23'
+      date: '2026-11-23'
+      summary: "Les concours live restent fluides avec une classe entière : les réponses sont enregistrées aussitôt, le chrono du téléphone suit celui de l'écran projeté et les pages du téléphone sont bien plus légères."
+      entries:
+          - type: fix
+            title: "Concours live : les réponses sont prises en compte immédiatement, même avec beaucoup de joueurs"
+            detail: "Dans une salle nombreuse, une réponse pouvait attendre plusieurs secondes avant d'être enregistrée, au point d'être parfois refusée comme arrivée trop tard."
+          - type: fix
+            title: "Concours live : le temps restant sur le téléphone est celui de l'écran projeté"
+            detail: "Un téléphone dont l'horloge avançait grisait ses réponses avant la fin du temps ; la rapidité d'une réponse se compte désormais à son arrivée."
+          - type: modification
+            title: "Concours live : une réponse arrivée après la fin du temps affiche « Trop tard ! » au lieu de paraître envoyée"
+          - type: modification
+            title: "Concours live : rejoindre une partie et afficher les résultats demandent beaucoup moins de données au téléphone"
+          - type: modification
+            title: "e-CO : une balise peut être scannée à nouveau depuis la modification d'un parcours"
     - version: '2026.11.21'
       date: '2026-11-21'
       summary: "Les questions d'appariement se jouent désormais en concours live, sur le téléphone comme à l'écran projeté."
