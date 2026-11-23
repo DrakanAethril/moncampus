@@ -9,6 +9,7 @@ use App\Entity\QuizLiveAnswer;
 use App\Entity\QuizLiveParticipant;
 use App\Entity\QuizLiveSession;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -61,27 +62,41 @@ class QuizLiveAnswerRepository extends ServiceEntityRepository
     }
 
     /**
-     * The participants who already have a row for this question, answered or backfilled - what
-     * closing a question needs to know whom to backfill, in one query.
+     * Writes an answer in one statement, outside the ORM's unit of work: the answer door takes no
+     * lock, and a second answer of the same player to the same question - or an answer arriving
+     * after the question closed - must fail on the table's UNIQUE (participant, question) as a
+     * plain exception, without closing the entity manager the way a failed flush would.
      *
-     * @return array<int, true> keyed by participant id
+     * @throws \Doctrine\DBAL\Exception\UniqueConstraintViolationException
      */
-    public function participantIdsWithRow(QuizInstanceQuestion $question): array
+    public function insert(QuizLiveAnswer $answer): void
     {
-        /** @var list<array{id: int|string}> $rows */
-        $rows = $this->createQueryBuilder('a')
-            ->select('IDENTITY(a.participant) AS id')
-            ->where('a.instanceQuestion = :question')
-            ->setParameter('question', $question)
-            ->getQuery()
-            ->getScalarResult();
+        $this->getEntityManager()->getConnection()->insert('quiz_live_answer', [
+            'participant_id' => $answer->getParticipant()?->getId(),
+            'instance_question_id' => $answer->getInstanceQuestion()?->getId(),
+            'response' => null === $answer->getResponse() ? null : json_encode($answer->getResponse(), \JSON_PRESERVE_ZERO_FRACTION | \JSON_THROW_ON_ERROR),
+            'is_correct' => $answer->getIsCorrect(),
+            'answered_at' => $answer->getAnsweredAt(),
+            'points_awarded' => $answer->getPointsAwarded(),
+        ], [
+            'is_correct' => Types::BOOLEAN,
+            'answered_at' => Types::DATETIME_IMMUTABLE,
+        ]);
+    }
 
-        $ids = [];
-        foreach ($rows as $row) {
-            $ids[(int) $row['id']] = true;
-        }
-
-        return $ids;
+    /**
+     * The « no answer » row of every player of the room who has none for this question - one
+     * statement, whatever the size of the room. INSERT IGNORE skips whoever has a row, answers
+     * written by a request running at the same instant included (MySQL and MariaDB alike).
+     */
+    public function backfillUnanswered(QuizLiveSession $session, QuizInstanceQuestion $question, ?bool $isCorrect): void
+    {
+        $this->getEntityManager()->getConnection()->executeStatement(
+            'INSERT IGNORE INTO quiz_live_answer (participant_id, instance_question_id, response, is_correct, answered_at, points_awarded)
+             SELECT p.id, :question, NULL, :correct, NULL, 0 FROM quiz_live_participant p WHERE p.session_id = :session',
+            ['question' => $question->getId(), 'correct' => $isCorrect, 'session' => $session->getId()],
+            ['correct' => Types::BOOLEAN],
+        );
     }
 
     // The whole contest at once, for the analysis of a finished one (LiveQuestionAnalysis).

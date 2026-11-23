@@ -24,6 +24,8 @@
  */
 return [
     'app' => ['path' => './assets/app.js', 'entrypoint' => true],
+    // A live contest's phone pages (templates/quiz_live/_phone_page.html.twig): the contest alone.
+    'quiz_live_phone' => ['path' => './assets/quiz_live_phone.js', 'entrypoint' => true],
     '@hotwired/stimulus' => ['version' => '3.2.2'],
     '@symfony/stimulus-bundle' => ['path' => './vendor/symfony/stimulus-bundle/assets/dist/loader.js'],
     '@hotwired/turbo' => ['version' => '8.0.23'],

@@ -29,6 +29,14 @@
     -webkit-tap-highlight-color: transparent;
 }
 .ql *, .ql *::before, .ql *::after { box-sizing: border-box; }
+/* What these screens used to take from Tabler's reboot, which the contest's phone pages no longer
+   load (templates/quiz_live/_phone_page.html.twig): the same values, at no specificity, so that
+   every class of this file still wins - and identical where Tabler is loaded (the gallery). */
+:where(.ql) { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-feature-settings: "liga" 0, "cv03", "cv04", "cv11"; }
+:where(.ql) :where(h1, h2, h3, h4, h5, h6) { margin-top: 0; margin-bottom: .5rem; }
+:where(.ql) :where(p) { margin-top: 0; margin-bottom: 1rem; }
+:where(.ql) :where(button, input, select, textarea) { margin: 0; font-family: inherit; font-size: inherit; line-height: inherit; }
+:where(.ql) :where(b, strong) { font-weight: bolder; }
 .ql [hidden] { display: none !important; }
 .ql button { font: inherit; }
 /* Every heading is in the theme's ink: Tabler colours h1-h6 with its own navy, unreadable on a dark theme. */

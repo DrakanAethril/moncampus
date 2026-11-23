@@ -29,6 +29,7 @@ use App\Service\QuizLive\LiveResponse;
 use App\Service\QuizLive\LiveScoring;
 use App\Service\QuizLive\LiveThemeCatalog;
 use App\Util\BlankTextParser;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -55,7 +56,7 @@ use Symfony\Component\Mercure\Update;
  *
  * Every transition happens under a lock on the session row: two clicks on « Suivant », the host's
  * timer and the last student's answer may all arrive in the same instant, and each must move the
- * room one step, once.
+ * room one step, once. An answer is not a transition and takes no lock (submitAnswerFor()).
  *
  * Since 2026-11-07 (design/validated/quiz-live-public.md) a contest belongs to a class or to none,
  * and may be public: whoever scans its QR code plays, an account under its own name and avatar
@@ -395,84 +396,95 @@ class QuizLiveSessionService
     /**
      * An answer of a player, account or guest - the room's only door for one.
      *
-     * Answers queue on the session's lock: the whole room taps within the same seconds. So the
-     * answer is dated when it *arrives*, before that queue - its speed points and whether it came
-     * in time are the player's, never the time spent behind thirty others -, and what runs under
-     * the lock is a handful of queries whatever the size of the room (two COUNTs, never a walk
-     * through every participant's answers). $receivedAt is for the tests: the screens' door leaves
-     * it to the arrival.
+     * **Answers take no lock.** The whole room taps within the same seconds, and the session's
+     * lock served them one at a time: measured on 2026-11-23 with 100 players and a database two
+     * milliseconds away, the last answer waited two seconds - the tap that « did not take ». So an
+     * answer is one INSERT, and what the lock used to guarantee is held elsewhere:
+     *
+     * - one answer per player and question is the table's UNIQUE (participant, question): a second
+     *   POST hits it and is answered with the first one;
+     * - an answer that lands once the question is closed hits the row closeQuestion() wrote for
+     *   whoever had not answered, and is refused as late;
+     * - the score moves by an atomic UPDATE, and only its owner's answers move it;
+     * - only the answer that completes the room takes the lock, to close the question once.
+     *
+     * The answer is dated when it arrives - its speed points and whether it came in time are the
+     * player's. $receivedAt is for the tests: the screens' door leaves it to the arrival.
      */
     public function submitAnswerFor(QuizLiveSession $session, QuizLiveParticipant $participant, LiveResponse $response, ?\DateTimeImmutable $receivedAt = null): QuizLiveAnswer
     {
         $receivedAt ??= new \DateTimeImmutable();
-        $closed = false;
-        $answeredCount = 0;
-        $participantCount = 0;
-        $answer = $this->locked($session, function () use ($session, $participant, $response, $receivedAt, &$closed, &$answeredCount, &$participantCount): QuizLiveAnswer {
-            if (LiveSessionStatus::Question !== $session->getStatus() || $session->isQuestionTimeUp($receivedAt, self::ANSWER_GRACE_SECONDS)) {
-                throw new LiveAnswerTooLateException('This question is no longer accepting answers.');
+        if (LiveSessionStatus::Question !== $session->getStatus() || $session->isQuestionTimeUp($receivedAt, self::ANSWER_GRACE_SECONDS)) {
+            throw new LiveAnswerTooLateException('This question is no longer accepting answers.');
+        }
+
+        $question = $session->getCurrentQuestion() ?? throw new LiveSessionStateException('No active question.');
+        $kind = LiveAnswerKind::of($question->getType()) ?? throw new LiveSessionStateException('This question cannot be played live.');
+        $answerIds = array_map(static fn (QuizInstanceAnswer $answer): int => (int) $answer->getId(), $question->getAnswers()->toArray());
+        $matching = LiveAnswerKind::Pairs === $kind ? $this->matchingOf($session, $question) : null;
+        if (!$response->isWellFormedFor($kind, array_values($answerIds), $matching)) {
+            throw new LiveSessionStateException('Invalid answer for this question.'); // never trust the client
+        }
+
+        $correct = $question->getType()->hasRightAnswer() ? $this->isCorrect($question, $response, $matching) : null;
+        $points = LiveScoring::points(
+            true === $correct,
+            $this->secondsBetween($session->getPhaseStartedAt(), $receivedAt),
+            $question->resolveSeconds($session->getQuizInstance()->getSecondsPerQuestion()),
+        );
+
+        $liveAnswer = new QuizLiveAnswer($participant, $question);
+        $liveAnswer->setResponse($response->toArray());
+        $liveAnswer->setIsCorrect($correct);
+        $liveAnswer->setAnsweredAt($receivedAt);
+        $liveAnswer->setPointsAwarded($points);
+
+        try {
+            $this->answerRepository->insert($liveAnswer);
+        } catch (UniqueConstraintViolationException) {
+            $existing = $this->answerRepository->findOneFor($participant, $question);
+            if (null !== $existing?->getResponse()) {
+                return $existing; // first-write-wins, a repeated POST is a no-op
             }
 
-            $question = $session->getCurrentQuestion() ?? throw new LiveSessionStateException('No active question.');
+            throw new LiveAnswerTooLateException('This question is no longer accepting answers.');
+        }
+        $this->participantRepository->addScore($participant, $points);
 
-            $existing = $participant->findAnswerFor($question);
-            if (null !== $existing) {
-                return $existing; // first-write-wins, a duplicate/late POST is a no-op
+        // Counted once this answer is written, so that of two last answers arriving together, the
+        // later one at least sees the room complete.
+        $answeredCount = $this->answerRepository->countAnswered($question);
+        $participantCount = $this->participantRepository->countForSession($session);
+        if ($answeredCount >= $participantCount) {
+            // Kahoot closes a question as soon as the whole room has answered.
+            $this->closeOnceAllAnswered($session, (int) $session->getCurrentQuestionIndex());
+        } else {
+            // Host-only tally - never broadcast who answered what to other players.
+            $this->publishToHost($session, [
+                'type' => 'answer-received',
+                'answeredCount' => $answeredCount,
+                'participantCount' => $participantCount,
+            ]);
+        }
+
+        return $liveAnswer;
+    }
+
+    /** Closes the question the room has finished answering - once, whoever asks second. */
+    private function closeOnceAllAnswered(QuizLiveSession $session, int $index): void
+    {
+        $closed = $this->locked($session, function () use ($session, $index): bool {
+            if (LiveSessionStatus::Question !== $session->getStatus() || $index !== $session->getCurrentQuestionIndex()) {
+                return false;
             }
+            $this->closeQuestion($session);
 
-            $kind = LiveAnswerKind::of($question->getType()) ?? throw new LiveSessionStateException('This question cannot be played live.');
-            $answerIds = array_map(static fn (QuizInstanceAnswer $answer): int => (int) $answer->getId(), $question->getAnswers()->toArray());
-            $matching = LiveAnswerKind::Pairs === $kind ? $this->matchingOf($session, $question) : null;
-            if (!$response->isWellFormedFor($kind, array_values($answerIds), $matching)) {
-                throw new LiveSessionStateException('Invalid answer for this question.'); // never trust the client
-            }
-
-            $answeredAt = $receivedAt;
-            $correct = $question->getType()->hasRightAnswer() ? $this->isCorrect($question, $response, $matching) : null;
-            $points = LiveScoring::points(
-                true === $correct,
-                $this->secondsBetween($session->getPhaseStartedAt(), $answeredAt),
-                $question->resolveSeconds($session->getQuizInstance()->getSecondsPerQuestion()),
-            );
-
-            // Counted before this answer is written: it is not in the database yet.
-            $answeredCount = $this->answerRepository->countAnswered($question) + 1;
-            $participantCount = $this->participantRepository->countForSession($session);
-
-            $liveAnswer = new QuizLiveAnswer($participant, $question);
-            $liveAnswer->setResponse($response->toArray());
-            $liveAnswer->setIsCorrect($correct);
-            $liveAnswer->setAnsweredAt($answeredAt);
-            $liveAnswer->setPointsAwarded($points);
-            $participant->addAnswer($liveAnswer);
-            $participant->addScore($points);
-            $this->entityManager->persist($liveAnswer);
-
-            // Kahoot closes a question as soon as the whole room has answered, this answer included.
-            if ($answeredCount >= $participantCount) {
-                $this->entityManager->flush();
-                $this->closeQuestion($session);
-                $closed = true;
-            }
-
-            return $liveAnswer;
+            return true;
         });
 
         if ($closed) {
             $this->publishState($session);
-        } else {
-            // Host-only tally - never broadcast who answered what to other players. An answer
-            // already recorded (a repeated POST) moves no figure, and announces none.
-            if ($answeredCount > 0) {
-                $this->publishToHost($session, [
-                    'type' => 'answer-received',
-                    'answeredCount' => $answeredCount,
-                    'participantCount' => $participantCount,
-                ]);
-            }
         }
-
-        return $answer;
     }
 
     public function finish(QuizLiveSession $session, User $host): void
@@ -577,15 +589,47 @@ class QuizLiveSessionService
     private function snapshotFor(QuizLiveSession $session, bool $forHost): array
     {
         return match ($session->getStatus()) {
-            LiveSessionStatus::Lobby => $forHost ? $this->lobbyPayload($session) : ['type' => 'lobby', 'participantCount' => \count($session->getParticipants())],
+            LiveSessionStatus::Lobby => $forHost ? $this->lobbyPayload($session) : ['type' => 'lobby', 'participantCount' => $this->participantRepository->countForSession($session)],
             LiveSessionStatus::Countdown => $this->countdownPayload($session),
             LiveSessionStatus::Reading => $this->readingPayload($session, $forHost),
             LiveSessionStatus::Question => $this->questionOpenedPayload($session, $forHost),
-            LiveSessionStatus::Results => $this->resultsPayload($session),
-            LiveSessionStatus::Scoreboard => $this->scoreboardPayload($session),
-            LiveSessionStatus::Finished => $this->sessionFinishedPayload($session),
+            LiveSessionStatus::Results => $this->forPhones($this->resultsPayload($session), $forHost),
+            LiveSessionStatus::Scoreboard => $this->forPhones($this->scoreboardPayload($session), $forHost),
+            LiveSessionStatus::Finished => $this->forPhones($this->sessionFinishedPayload($session), $forHost),
             LiveSessionStatus::Cancelled => ['type' => 'session-cancelled'],
         };
+    }
+
+    /**
+     * What a phone is sent of a ranking: every phone gets the same broadcast, so whatever it
+     * carries is multiplied by the size of the room - with 100 players the results screen weighed
+     * 21 kB a phone, 2 MB poured onto the classroom's Wi-Fi at once. A phone draws its own row and
+     * the one ahead of it, never a face of the ranking and never the board's top five (the
+     * projector does), so neither is sent. The fields the mobile app reads stay as they were.
+     *
+     * @param array<string, mixed> $payload
+     *
+     * @return array<string, mixed>
+     */
+    private function forPhones(array $payload, bool $forHost = false): array
+    {
+        if ($forHost) {
+            return $payload;
+        }
+        unset($payload['top']);
+        foreach (['leaderboard', 'finalLeaderboard', 'podium'] as $key) {
+            if (\is_array($payload[$key] ?? null)) {
+                $payload[$key] = array_map(static function (mixed $row): mixed {
+                    if (\is_array($row)) {
+                        unset($row['avatar']);
+                    }
+
+                    return $row;
+                }, $payload[$key]);
+            }
+        }
+
+        return $payload;
     }
 
     /**
@@ -704,16 +748,9 @@ class QuizLiveSessionService
 
         // Backfill non-answerers so the answer distribution reflects everyone, not just
         // responders - even before the timer strictly elapsed, since the host can close early.
-        // Who already has a row is one query, not one per participant.
-        $withRow = $this->answerRepository->participantIdsWithRow($question);
-        foreach ($session->getParticipants() as $participant) {
-            if (!isset($withRow[(int) $participant->getId()])) {
-                $noAnswer = new QuizLiveAnswer($participant, $question);
-                $noAnswer->setIsCorrect($question->getType()->hasRightAnswer() ? false : null);
-                $participant->addAnswer($noAnswer);
-                $this->entityManager->persist($noAnswer);
-            }
-        }
+        // One statement for the whole room, which skips whoever answered - and the row it writes
+        // is what refuses an answer arriving after this (submitAnswerFor() takes no lock).
+        $this->answerRepository->backfillUnanswered($session, $question, $question->getType()->hasRightAnswer() ? false : null);
 
         $session->setStatus(LiveSessionStatus::Results);
     }
@@ -747,8 +784,12 @@ class QuizLiveSessionService
     /** Publishes the state the session is now in, to the host and to the players. */
     private function publishState(QuizLiveSession $session): void
     {
-        $this->publishToHost($session, $this->snapshotFor($session, true));
-        $this->publishToPlayers($session, $this->snapshotFor($session, false));
+        $host = $this->snapshotFor($session, true);
+        $this->publishToHost($session, $host);
+        // A ranking is read once, and the phones' version cut from it.
+        $this->publishToPlayers($session, \in_array($session->getStatus(), [LiveSessionStatus::Results, LiveSessionStatus::Scoreboard, LiveSessionStatus::Finished], true)
+            ? $this->forPhones($host)
+            : $this->snapshotFor($session, false));
     }
 
     /**

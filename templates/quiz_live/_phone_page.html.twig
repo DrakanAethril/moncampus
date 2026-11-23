@@ -1,0 +1,14 @@
+{# The page every phone of a live contest is shown - /live, the guest page, the game, the closed
+   contest - in its theme (`theme`, a LiveTheme). It loads the contest's stylesheets and the
+   contest's entrypoint (assets/quiz_live_phone.js), never the platform's: a class scans the QR code
+   within the same minute on the same Wi-Fi, and what `app` weighs (93 requests, 690 kB) multiplied
+   by the class was what made getting in slow. Nothing here uses Tabler nor app.css. #}
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+    {{ include('quiz_live/_stylesheets.html.twig', {slugs: [theme.slug], page: true}) }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ importmap('quiz_live_phone') }}
+{% endblock %}

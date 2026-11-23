@@ -44,6 +44,28 @@ class QuizLiveParticipantRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * Adds an answer's points to its player's score in one atomic UPDATE - the answer door takes no
+     * lock - and to the object in hand, so that what this request draws next is up to date.
+     */
+    public function addScore(QuizLiveParticipant $participant, int $points): void
+    {
+        if (0 === $points) {
+            return;
+        }
+        $this->getEntityManager()->getConnection()->executeStatement(
+            'UPDATE quiz_live_participant SET score = score + :points WHERE id = :id',
+            ['points' => $points, 'id' => $participant->getId()],
+        );
+        // The same figure on the managed object, then marked as already written: a later flush
+        // must not write it a second time.
+        $participant->addScore($points);
+        $uow = $this->getEntityManager()->getUnitOfWork();
+        if ($uow->isInIdentityMap($participant)) {
+            $uow->setOriginalEntityProperty(spl_object_id($participant), 'score', $participant->getScore());
+        }
+    }
+
     // Ranked leaderboard for a session - highest score first, join date as a stable tiebreaker. A
     // left join: a guest has no account, and an inner one would drop every guest from the board.
     /** @return list<QuizLiveParticipant> */
