@@ -32,8 +32,7 @@ class QuizLiveAnswerRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    // Powers the projector's live "N ont répondu" tally (QuizLiveSessionService::submitAnswer()'s
-    // publish payload) and the Reveal screen's per-shape answer distribution.
+    // Powers the Reveal screen's per-shape answer distribution.
     /** @return list<QuizLiveAnswer> */
     public function findForQuestion(QuizInstanceQuestion $question): array
     {
@@ -43,6 +42,46 @@ class QuizLiveAnswerRepository extends ServiceEntityRepository
             ->setParameter('question', $question)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * How many players have answered this question - a backfilled « no answer » row (null response)
+     * is not an answer. One COUNT: the answer door runs it under the session's lock, where walking
+     * every participant's collection cost a query per player.
+     */
+    public function countAnswered(QuizInstanceQuestion $question): int
+    {
+        return (int) $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->where('a.instanceQuestion = :question')
+            ->andWhere('a.response IS NOT NULL')
+            ->setParameter('question', $question)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * The participants who already have a row for this question, answered or backfilled - what
+     * closing a question needs to know whom to backfill, in one query.
+     *
+     * @return array<int, true> keyed by participant id
+     */
+    public function participantIdsWithRow(QuizInstanceQuestion $question): array
+    {
+        /** @var list<array{id: int|string}> $rows */
+        $rows = $this->createQueryBuilder('a')
+            ->select('IDENTITY(a.participant) AS id')
+            ->where('a.instanceQuestion = :question')
+            ->setParameter('question', $question)
+            ->getQuery()
+            ->getScalarResult();
+
+        $ids = [];
+        foreach ($rows as $row) {
+            $ids[(int) $row['id']] = true;
+        }
+
+        return $ids;
     }
 
     // The whole contest at once, for the analysis of a finished one (LiveQuestionAnalysis).

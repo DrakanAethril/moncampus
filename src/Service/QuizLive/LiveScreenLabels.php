@@ -51,6 +51,8 @@ final class LiveScreenLabels
         'validate' => 'quizLiveScreenValidate',
         'retry' => 'quizLiveScreenRetry',
         'waitingOthers' => 'quizLiveScreenWaitingOthers',
+        'tooLateTitle' => 'quizLiveScreenTooLateTitle',
+        'tooLateText' => 'quizLiveScreenTooLateText',
         'outOf' => 'quizLiveScreenOutOf',
         'sameVote' => 'quizLiveScreenSameVote',
         'voteNoPoints' => 'quizLiveScreenVoteNoPoints',

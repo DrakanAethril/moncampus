@@ -403,6 +403,12 @@ export function phoneSent(state, ctx, me) {
     return scr(`${phoneHead(state, ctx, me)}<div class="ql-grow ql-center ql-pad ql-gap20"><svg class="ql-wait ql-shp" viewBox="0 0 24 24" aria-hidden="true"><g style="fill:${colorOf(position)}">${SHAPE_PATHS[SHAPE_ORDER[position]]}</g></svg><h2 class="fd ql-title-l ql-hero">${esc(ctx.words.sent)}</h2><p class="ql-muted ql-m0">${esc(ctx.labels.waitingOthers)}</p><div class="ql-dots" aria-hidden="true"><i></i><i></i><i></i></div></div>`);
 }
 
+// The server refused the answer: it reached it once the question was over. Said, so that the player
+// does not take for sent an answer that was never counted.
+export function phoneLate(state, ctx, me) {
+    return scr(`${phoneHead(state, ctx, me)}<div class="ql-grow ql-center ql-pad ql-gap20"><h2 class="fd ql-title-l ql-hero">${esc(ctx.labels.tooLateTitle)}</h2><p class="ql-muted ql-m0 ql-maxw">${esc(ctx.labels.tooLateText)}</p></div>`);
+}
+
 function rightAnswer(state) {
     const rows = state.rows || [];
     if ('order' === state.kind) {
@@ -494,7 +500,12 @@ export function phoneScreen(state, ctx, memory = {}) {
         case 'lobby': return phoneLobby(state, ctx);
         case 'countdown-started': return phoneCountdown(ctx);
         case 'question-reading': return phoneReading(state, ctx, me);
-        case 'question-opened': return memory.sent || true === state.answered ? phoneSent(state, ctx, me) : phoneQuestion(state, ctx, me);
+        case 'question-opened':
+            if (memory.late && true !== state.answered) {
+                return phoneLate(state, ctx, me);
+            }
+
+            return memory.sent || true === state.answered ? phoneSent(state, ctx, me) : phoneQuestion(state, ctx, me);
         case 'results': return phoneResults(state, ctx, memory);
         case 'scoreboard': return phoneScoreboard(state, ctx, memory);
         case 'session-finished': return phoneFinished(state, ctx);

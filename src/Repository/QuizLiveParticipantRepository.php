@@ -33,6 +33,17 @@ class QuizLiveParticipantRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /** How many players the room holds, without loading them. */
+    public function countForSession(QuizLiveSession $session): int
+    {
+        return (int) $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->where('p.session = :session')
+            ->setParameter('session', $session)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     // Ranked leaderboard for a session - highest score first, join date as a stable tiebreaker. A
     // left join: a guest has no account, and an inner one would drop every guest from the board.
     /** @return list<QuizLiveParticipant> */

@@ -12,6 +12,7 @@ use App\Repository\QuizLiveSessionRepository;
 use App\Security\FeatureAccess;
 use App\Service\FixedAvatars;
 use App\Service\JsonRequestPayload;
+use App\Service\LiveAnswerTooLateException;
 use App\Service\LiveGuestRefusedException;
 use App\Service\LiveSessionStateException;
 use App\Service\QuizLive\LiveGuestToken;
@@ -223,6 +224,9 @@ class PlayController extends AbstractController
 
         try {
             $service->submitAnswerFor($session, $participant, LiveResponse::fromPayload(JsonRequestPayload::fromRequest($request)));
+        } catch (LiveAnswerTooLateException $exception) {
+            // The phone says « Trop tard » rather than leaving an answer shown as sent.
+            return $this->json(['error' => $exception->getMessage(), 'late' => true], 409);
         } catch (LiveSessionStateException $exception) {
             return $this->json(['error' => $exception->getMessage()], 409);
         }
