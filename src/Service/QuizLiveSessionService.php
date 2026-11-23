@@ -601,11 +601,17 @@ class QuizLiveSessionService
     }
 
     /**
-     * What a phone is sent of a ranking: every phone gets the same broadcast, so whatever it
-     * carries is multiplied by the size of the room - with 100 players the results screen weighed
-     * 21 kB a phone, 2 MB poured onto the classroom's Wi-Fi at once. A phone draws its own row and
-     * the one ahead of it, never a face of the ranking and never the board's top five (the
-     * projector does), so neither is sent. The fields the mobile app reads stay as they were.
+     * What a phone is sent of a ranking. Every phone gets the same broadcast, so whatever it carries
+     * is multiplied by the size of the room: with 100 players the results screen weighed 21 kB a
+     * phone, 2 MB poured onto the classroom's Wi-Fi at once. A phone draws its own verdict, its own
+     * row and the one ahead of it (assets/quiz_live/render.js) - never a face of the ranking, never
+     * the board's top five or podium, which the projector draws. So it is sent, instead of the
+     * projector's `leaderboard` / `finalLeaderboard` / `podium` / `top` / `outcomes`:
+     *
+     * - `standings`: the ranking in order, one `[participantId, score, displayName]` a player;
+     * - `verdicts`: per participant id, `[answered, correct, points]` - 1/0, and null for a vote.
+     *
+     * The web page is the only phone client (the Flutter app is no longer used).
      *
      * @param array<string, mixed> $payload
      *
@@ -616,18 +622,25 @@ class QuizLiveSessionService
         if ($forHost) {
             return $payload;
         }
-        unset($payload['top']);
-        foreach (['leaderboard', 'finalLeaderboard', 'podium'] as $key) {
-            if (\is_array($payload[$key] ?? null)) {
-                $payload[$key] = array_map(static function (mixed $row): mixed {
-                    if (\is_array($row)) {
-                        unset($row['avatar']);
-                    }
 
-                    return $row;
-                }, $payload[$key]);
-            }
+        $ranking = $payload['leaderboard'] ?? $payload['finalLeaderboard'] ?? null;
+        if (\is_array($ranking)) {
+            $payload['standings'] = array_values(array_map(
+                static fn (array $row): array => [$row['participantId'] ?? null, $row['score'] ?? 0, $row['displayName'] ?? null],
+                array_filter($ranking, \is_array(...)),
+            ));
         }
+        if (\is_array($payload['outcomes'] ?? null)) {
+            $payload['verdicts'] = array_map(
+                static fn (array $outcome): array => [
+                    true === ($outcome['answered'] ?? false) ? 1 : 0,
+                    null === ($outcome['correct'] ?? null) ? null : (true === $outcome['correct'] ? 1 : 0),
+                    $outcome['points'] ?? 0,
+                ],
+                array_filter($payload['outcomes'], \is_array(...)),
+            );
+        }
+        unset($payload['leaderboard'], $payload['finalLeaderboard'], $payload['podium'], $payload['top'], $payload['outcomes']);
 
         return $payload;
     }

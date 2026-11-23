@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
-import { esc, fmt, matchColor, matchTag, paintFaces, phoneMessage, phoneScreen } from '../quiz_live/render.js';
+import { esc, fmt, matchColor, matchTag, mine, paintFaces, phoneMessage, phoneScreen, verdict } from '../quiz_live/render.js';
 import { confetti, countUp } from '../quiz_live/effects.js';
 
 /**
@@ -431,7 +431,7 @@ export default class extends Controller {
             // The rank before this question, for « ▲ 2 places »: the previous board's.
             this.memory.previousRank = this.lastRank ?? null;
         }
-        const row = (state.leaderboard || state.finalLeaderboard || []).find((entry) => entry.participantId === this.ctx.me.participantId);
+        const row = mine(state, this.ctx);
         if (row) {
             this.memory.score = row.score;
             if ('scoreboard' === state.type || 'results' === state.type) {
@@ -455,7 +455,7 @@ export default class extends Controller {
 
     /** The run of right answers this page has seen, kept for a reload of the same contest. */
     settle(state) {
-        const outcome = (state.outcomes || {})[String(this.ctx.me.participantId)];
+        const outcome = verdict(state, this.ctx.me.participantId);
         if (!state.isVote) {
             this.memory.streak = outcome && outcome.correct ? this.memory.streak + 1 : 0;
             this.saveStreak();

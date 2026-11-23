@@ -181,7 +181,11 @@ class QuizLiveSessionTest extends FunctionalTestCase
         // After the last question, the podium - no scoreboard in between.
         $this->advance(LiveSessionStatus::Results);
         self::assertSame(LiveSessionStatus::Finished, $this->live()->getStatus());
-        self::assertSame('Alice', $this->firstName($service->buildPlayerSnapshot($this->live()), 'podium'));
+        self::assertSame('Alice', $this->firstName($service->buildHostSnapshot($this->live()), 'podium'));
+        $phone = $service->buildPlayerSnapshot($this->live());
+        self::assertIsArray($phone['standings'] ?? null);
+        self::assertIsArray($phone['standings'][0] ?? null);
+        self::assertSame('Alice', $phone['standings'][0][2], 'the phone reads its podium place off the standings');
         self::assertCount(12, $this->em->getRepository(QuizLiveAnswer::class)->findBy(['participant' => $this->live()->getParticipants()->toArray()]));
     }
 
@@ -413,6 +417,15 @@ class QuizLiveSessionTest extends FunctionalTestCase
      */
     private function outcome(array $payload, User $student): array
     {
+        // A phone is sent its verdict as [answered, correct, points] (QuizLiveSessionService::forPhones()).
+        if (\is_array($payload['verdicts'] ?? null)) {
+            $verdict = $payload['verdicts'][(string) $this->participant($student)->getId()] ?? null;
+            self::assertIsArray($verdict);
+            self::assertCount(3, $verdict);
+            self::assertIsInt($verdict[2]);
+
+            return ['answered' => 1 === $verdict[0], 'correct' => null === $verdict[1] ? null : 1 === $verdict[1], 'points' => $verdict[2]];
+        }
         $outcomes = $payload['outcomes'] ?? null;
         self::assertIsArray($outcomes);
         $outcome = $outcomes[(string) $this->participant($student)->getId()] ?? null;
