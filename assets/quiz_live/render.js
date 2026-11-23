@@ -301,10 +301,23 @@ function phoneHead(state, ctx, me) {
     return `<div class="ql-phead">${face(ctx.me.avatar, ctx.me.name, 38)}<span class="ql-who">${esc(ctx.me.name)}</span>${counter}${score}</div>`;
 }
 
-function mine(state, ctx) {
-    const rows = state.leaderboard || state.finalLeaderboard || [];
+// The ranking a phone is sent (QuizLiveSessionService::forPhones()): `standings`, one
+// [participantId, score, displayName] a player, in rank order - the projector's leaderboard without
+// its faces, which a phone never draws.
+export function standings(state) {
+    return (state.standings || []).map(([participantId, score, displayName], index) => ({ participantId, score, displayName, rank: index + 1 }));
+}
 
-    return rows.find((row) => row.participantId === ctx.me.participantId) || null;
+export function mine(state, ctx) {
+    return standings(state).find((row) => row.participantId === ctx.me.participantId) || null;
+}
+
+// A phone's verdict on the question just closed: `verdicts`, [answered, correct, points] under each
+// participant id - 1/0, correct null for a vote.
+export function verdict(state, participantId) {
+    const entry = (state.verdicts || {})[String(participantId)];
+
+    return entry ? { answered: 1 === entry[0], correct: null === entry[1] ? null : 1 === entry[1], points: entry[2] || 0 } : null;
 }
 
 export function phoneLobby(state, ctx) {
@@ -427,7 +440,7 @@ function rightAnswer(state) {
  * remembers: the pick it sent (for a vote's share) and the run of right answers.
  */
 export function phoneResults(state, ctx, memory) {
-    const outcome = (state.outcomes || {})[String(ctx.me.participantId)] || { answered: false, correct: null, points: 0 };
+    const outcome = verdict(state, ctx.me.participantId) || { answered: false, correct: null, points: 0 };
     const row = mine(state, ctx);
     const me = { score: row ? row.score : 0 };
     const rank = row ? `${ordinal(row.rank)} ${esc(ctx.labels.outOf)} ${state.participantCount}` : '';
@@ -461,7 +474,7 @@ export function phoneScoreboard(state, ctx, memory) {
     if (!row) {
         return scr(`${phoneHead(state, ctx, {})}<div class="ql-grow ql-center ql-pad"><p class="ql-stmt">${esc(ctx.labels.lookAtBoard)}</p></div>`);
     }
-    const all = state.leaderboard || [];
+    const all = standings(state);
     const ahead = row.rank > 1 ? all[row.rank - 2] : null;
     const before = memory.previousRank;
     let move = '';

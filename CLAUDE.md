@@ -24,7 +24,8 @@ as a description of this app.
 
 Companion repositories (separate git repos, same staging workflow):
 - `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app (APK and
-  IPA). Its **web build at `/campus-app/` is retired** (2026-11-04): the site itself is the
+  IPA), **no longer used** (2026-11-23): the PWA is the reference, and no payload or API field has to
+  stay readable by it. Its **web build at `/campus-app/` is retired** (2026-11-04): the site itself is the
   installable app, « Formatool » (see « Installer Formatool » below), and only two PWAs come from
   this server, Formatool (scope `/`) and e-CO (`/eco-app/`). `public/campus-app/` now holds one
   file, the kill-switch service worker `campus_sw.js` at the old worker's address (it clears the
@@ -307,8 +308,9 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   answer completing the room takes the lock, to close once (`QuizLiveCrowdTest`). An answer is dated
   when it arrives. The screens count a question's time on the **server's** clock (`serverNow` in each
   state), the projector closes `ANSWER_GRACE_SECONDS` after the clock, and a late answer is answered
-  « Trop tard », never shown as sent. The phones are sent rankings without faces nor the top five
-  (`forPhones()` - the mobile app reads neither), and **the phone pages load
+  « Trop tard », never shown as sent. The phones are sent a compact ranking, never the projector's
+  (`forPhones()`: `standings` `[id, score, name]` in rank order and `verdicts` `[answered, correct,
+  points]` - 4 kB a phone at 100 players where the leaderboard with its faces weighed 21), and **the phone pages load
   `quiz_live/_phone_page.html.twig` and the `quiz_live_phone` entrypoint, never `app`**: a class
   scanning the QR code fetched 93 requests and 690 kB each, now 37 and ~140 kB. The room plays **every type a Kahoot carries**
   (`App\Service\QuizLive\LiveAnswerKind`): QCM and QCM multiple up to six shapes, ordre tapped shape
@@ -320,7 +322,8 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   a right column that only repeats a few values is played as a **sort**, one button per value; the
   results show, per pair, the share of the room that found it). Texte à trous, zones, calculée and an
   appariement of more than six pairs are left out at launch and named. **Students play from the web page - the installed Formatool on a
-  phone**: the Flutter app is no longer modified (the user's decision of 2026-11-05), so the player
+  phone**: the Flutter app is no longer modified (the user's decision of 2026-11-05) and no longer used
+  (2026-11-23: nothing the live contest sends needs to stay readable by it), so the player
   page carries what the app used to - it asks for its phase again (`…/play/state`, the projector's
   `…/projector/state`) when it comes back from the background, the network or a reconnected stream
   (the hub replays nothing), keeps the screen awake (Screen Wake Lock) and offers an answer the

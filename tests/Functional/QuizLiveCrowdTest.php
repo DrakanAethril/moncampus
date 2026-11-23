@@ -117,17 +117,26 @@ class QuizLiveCrowdTest extends FunctionalTestCase
         $this->em->clear();
         self::assertSame(0, $this->player($sessionId, 1)->getScore());
 
-        // The phones are sent the ranking without its faces, the projector with them.
+        // The phones are sent the ranking as compact standings and verdicts, the projector whole.
         $phone = $this->service()->buildPlayerSnapshot($this->live($sessionId));
         $board = $this->service()->buildHostSnapshot($this->live($sessionId));
         self::assertSame('results', $phone['type']);
-        self::assertIsArray($phone['leaderboard']);
-        self::assertIsArray($phone['leaderboard'][0]);
-        self::assertArrayNotHasKey('avatar', $phone['leaderboard'][0]);
-        self::assertSame(['participantId', 'displayName', 'score', 'rank'], array_keys($phone['leaderboard'][0]), 'what the mobile app reads');
-        self::assertIsArray($board['leaderboard']);
+        foreach (['leaderboard', 'outcomes', 'top', 'podium'] as $key) {
+            self::assertArrayNotHasKey($key, $phone);
+        }
+        $winner = (int) $this->player($sessionId, 0)->getId();
+        $refused = (int) $this->player($sessionId, 1)->getId();
+        $points = $first->getPointsAwarded();
+        self::assertIsArray($phone['standings'] ?? null);
+        self::assertSame([$winner, $points, 'Joueur 0'], $phone['standings'][0], '[participantId, score, displayName], in rank order');
+        self::assertCount(3, $phone['standings']);
+        self::assertIsArray($phone['verdicts'] ?? null);
+        self::assertSame([1, 1, $points], $phone['verdicts'][(string) $winner]);
+        self::assertSame([0, 0, 0], $phone['verdicts'][(string) $refused]);
+        self::assertIsArray($board['leaderboard'] ?? null);
         self::assertIsArray($board['leaderboard'][0]);
-        self::assertArrayHasKey('avatar', $board['leaderboard'][0]);
+        self::assertArrayHasKey('avatar', $board['leaderboard'][0], 'the projector draws the faces');
+        self::assertIsArray($board['outcomes'] ?? null);
     }
 
     public function testThePhoneIsToldItsAnswerCameTooLate(): void
