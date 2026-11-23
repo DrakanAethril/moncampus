@@ -300,7 +300,12 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   host's screen posts it) or « Passer » -, the results, the scoreboard (skipped after a vote and after
   the last question), the podium. Every transition names the step it was asked on and runs under a
   lock on the session row (`QuizLiveSessionService::locked()`, not `wrapInTransaction()`, which closes
-  the entity manager on a refused answer). The room plays **every type a Kahoot carries**
+  the entity manager on a refused answer). **An answer is dated when it reaches the server, before that
+  lock** (31 phones tap within the same seconds: queueing must cost nobody points or the deadline), and
+  the work under the lock does not grow with the room (`QuizLiveCrowdTest` pins it). The screens count a
+  question's time on the **server's** clock (`serverNow` in each state - a phone a few seconds ahead used
+  to grey its buttons early), the projector closes `ANSWER_GRACE_SECONDS` after the clock, and a late
+  answer is answered « Trop tard », never shown as sent. The room plays **every type a Kahoot carries**
   (`App\Service\QuizLive\LiveAnswerKind`): QCM and QCM multiple up to six shapes, ordre tapped shape
   by shape, numérique on a slider (`numericConfig.range`), réponse courte, vrai/faux and the
   **`vote`** type - propositions with no right one, played live only (`QuestionType::

@@ -165,7 +165,22 @@ export default class extends Controller {
         }
     }
 
+    // The server's clock, as far as this screen can tell (see quiz_live_play_controller.js): the
+    // projector closes the question when its clock runs out, so a computer a few seconds ahead
+    // used to cut every phone short.
+    syncClock(state) {
+        const sent = Date.parse(state.serverNow || '');
+        if (Number.isFinite(sent)) {
+            this.clockOffset = sent - Date.now();
+        }
+    }
+
+    now() {
+        return Date.now() + (this.clockOffset || 0);
+    }
+
     apply(state) {
+        this.syncClock(state);
         // Partial updates: the room stays on its screen.
         if ('answer-received' === state.type) {
             this.bind('answered', state.answeredCount);
@@ -257,7 +272,7 @@ export default class extends Controller {
         let shown = null;
         let advanced = false;
         const tick = () => {
-            const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+            const remaining = Math.max(0, Math.ceil((deadline - this.now()) / 1000));
             const text = remaining > 1 ? String(remaining - 1) : (this.ctx.words.go || 'Go');
             if (text !== shown) {
                 shown = text;
@@ -285,16 +300,19 @@ export default class extends Controller {
         }
         const total = state.secondsPerQuestion * 1000;
         const deadline = new Date(state.phaseStartedAt).getTime() + total;
+        // The question is closed once the server's grace is over too: an answer tapped at the last
+        // moment is still on its way.
+        const closesAt = deadline + (state.graceSeconds || 0) * 1000;
         let closed = false;
         const tick = () => {
-            const left = Math.max(0, deadline - Date.now());
+            const left = Math.min(total, Math.max(0, deadline - this.now()));
             const ring = this.roomTarget.querySelector('[data-bind="clock"]');
             if (ring) {
                 ring.setAttribute('stroke-dashoffset', (326.7 * (1 - left / total)).toFixed(1));
                 ring.setAttribute('stroke', left < 5000 ? 'var(--ko)' : 'var(--accent)');
             }
             this.bind('clockn', Math.ceil(left / 1000));
-            if (left <= 0 && !closed) {
+            if (this.now() >= closesAt && !closed) {
                 closed = true;
                 this.post();
             }

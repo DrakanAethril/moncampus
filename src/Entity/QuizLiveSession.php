@@ -264,7 +264,11 @@ class QuizLiveSession
     // instant. Stretching one participant's phase would either hold the room or leave them
     // answering a question that has already been corrected on screen. What an aménagement is for -
     // composing an évaluation without the clock deciding the mark - is not what a live round is.
-    public function isQuestionTimeUp(): bool
+    //
+    // $at is the moment the answer *reached the server*, not the moment it is looked at: answers
+    // queue behind one another on the session's lock, and a player served thirtieth must not be
+    // judged on the time they spent waiting. $graceSeconds covers the trip from the phone.
+    public function isQuestionTimeUp(?\DateTimeImmutable $at = null, int $graceSeconds = 0): bool
     {
         if (LiveSessionStatus::Question !== $this->status || null === $this->phaseStartedAt) {
             return false;
@@ -278,6 +282,6 @@ class QuizLiveSession
             return false;
         }
 
-        return new \DateTimeImmutable() > $this->phaseStartedAt->modify(\sprintf('+%d seconds', $seconds));
+        return ($at ?? new \DateTimeImmutable()) > $this->phaseStartedAt->modify(\sprintf('+%d seconds', $seconds + $graceSeconds));
     }
 }
