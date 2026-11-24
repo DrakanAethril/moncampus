@@ -67,6 +67,27 @@ class EcoTraceCleanerTest extends TestCase
         self::assertGreaterThan(200.0, $this->metresOf($pings));
     }
 
+    public function testTheRawDistanceCountsEveryFixTheCleanedOneRefuses(): void
+    {
+        // The same walk and jump, then 2 m of wander at the end: the raw sum keeps all of it.
+        $pings = [
+            $this->ping(0, 0.0),
+            $this->ping(5, self::STEP),
+            $this->ping(10, 2 * self::STEP, longitude: 0.0014),
+            $this->ping(15, 3 * self::STEP),
+            $this->ping(20, 4 * self::STEP),
+            $this->ping(25, 4 * self::STEP + 0.000018),
+        ];
+        $points = array_map(static fn (EcoPositionPing $ping): array => [(float) $ping->getLatitude(), (float) $ping->getLongitude()], $pings);
+
+        $raw = new EcoDistanceCalculator()->pathMeters($points);
+
+        self::assertEqualsWithDelta(44.5, $this->metresOf($this->cleaner->plausible($pings)), 1.0);
+        // 11 + ~111 + ~111 + 11 + 2: the jump there and back, and the wander, all summed.
+        self::assertEqualsWithDelta(246.0, $raw, 3.0);
+        self::assertSame(0.0, new EcoDistanceCalculator()->pathMeters([$points[0]]));
+    }
+
     public function testTheSpeedIsReadFromTheLastFixKeptNotTheLastFixSeen(): void
     {
         // Two jumps in a row: the second is judged against the fix before the first, not against it.

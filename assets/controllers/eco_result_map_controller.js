@@ -19,6 +19,9 @@ export default class extends Controller {
         refusedScans: Array,
         legs: Array,
         compared: Object,
+        raw: Object,
+        rawLabel: String,
+        droppedLabel: String,
         expandLabel: String,
         collapseLabel: String,
     };
@@ -36,6 +39,7 @@ export default class extends Controller {
         const refusedScans = this.refusedScansValue;
         const legs = this.legsValue;
         const compared = this.comparedValue;
+        const raw = this.rawValue;
 
         this.map = createMap(this.element);
 
@@ -62,6 +66,8 @@ export default class extends Controller {
         // line, one zoom-out away. Falls back to the trace when no checkpoint was ever located.
         frameOn(this.map, checkpoints.map((checkpoint) => [checkpoint.latitude, checkpoint.longitude]), trace);
 
+        this.addRawTraceToggle(raw);
+
         this.removeFullscreenControl = addFullscreenControl(this.map, this.element, {
             expandLabel: this.expandLabelValue,
             collapseLabel: this.collapseLabelValue,
@@ -75,6 +81,52 @@ export default class extends Controller {
     disconnect() {
         this.removeFullscreenControl?.();
         this.map?.remove();
+    }
+
+    /**
+     * The trace as the phone sent it, before any fix was refused: off until the checkbox asks for
+     * it. A thin dashed line through every fix, and a dot on each one the cleaning took out - the
+     * difference between the two lines is the difference between the two distances. The toggle
+     * sits on the map rather than under it, so it stays in reach in fullscreen.
+     */
+    addRawTraceToggle(raw) {
+        const points = raw?.trace ?? [];
+        if (points.length < 2) {
+            return;
+        }
+
+        const color = '#C2410C';
+        const layer = L.layerGroup([
+            L.polyline(points, { color, weight: 2, opacity: 0.9, dashArray: '3 5', interactive: false }),
+            ...(raw.dropped ?? []).map((point) => L.circleMarker(point, {
+                radius: 3.5,
+                color,
+                weight: 1.5,
+                fillColor: '#FFFFFF',
+                fillOpacity: 1,
+            }).bindTooltip(this.droppedLabelValue)),
+        ]);
+
+        const control = L.control({ position: 'bottomleft' });
+        control.onAdd = () => {
+            const container = L.DomUtil.create('label', 'leaflet-bar eco-map__raw-toggle');
+            const checkbox = L.DomUtil.create('input', '', container);
+            checkbox.type = 'checkbox';
+            L.DomUtil.create('span', 'eco-map__raw-swatch', container);
+            L.DomUtil.create('span', '', container).textContent = this.rawLabelValue;
+
+            L.DomEvent.disableClickPropagation(container);
+            L.DomEvent.on(checkbox, 'change', () => {
+                if (checkbox.checked) {
+                    layer.addTo(this.map);
+                } else {
+                    layer.remove();
+                }
+            });
+
+            return container;
+        };
+        control.addTo(this.map);
     }
 
     /** Chevrons laid along the trace, each turned to the heading the runner was following. */
