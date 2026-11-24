@@ -827,7 +827,7 @@ class EcoCourseController extends AbstractController
 
         $response = new StreamedResponse(function () use ($stats): void {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Coureur', 'Balises', 'Total balises', 'Temps (s)', 'Ecart au 1er (s)', 'Distance (m)', 'Ecart au meilleur (m)', "Sorties d'app", 'Erreurs de scan', 'Denivele positif (m)', 'Source du denivele', 'Part hors chemin (%)']);
+            fputcsv($handle, ['Coureur', 'Balises', 'Total balises', 'Temps (s)', 'Ecart au 1er (s)', 'Distance (m)', 'Ecart au meilleur (m)', 'Distance brute (m)', "Sorties d'app", 'Erreurs de scan', 'Denivele positif (m)', 'Source du denivele', 'Part hors chemin (%)']);
             foreach ($stats['runners'] as $row) {
                 fputcsv($handle, [
                     $row['pseudo'],
@@ -837,6 +837,7 @@ class EcoCourseController extends AbstractController
                     $row['gapSeconds'] ?? '',
                     round($row['distanceMeters']),
                     null !== $row['gapMeters'] ? round($row['gapMeters']) : '',
+                    round($row['rawDistanceMeters']),
                     $row['appExitCount'],
                     $row['scanErrorCount'],
                     null !== $row['elevationGain'] ? round($row['elevationGain']) : '',
