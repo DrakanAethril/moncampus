@@ -3969,6 +3969,7 @@ ecoStatsFilterIncompleteLabel: 'Incomplets'
 ecoStatsRunnerColumnLabel: 'Coureur'
 ecoStatsCheckpointsColumnLabel: 'Balises'
 ecoStatsTimeColumnLabel: 'Temps'
+ecoStatsRawDistanceColumnLabel: 'Distance brute'
 ecoStatsDistanceColumnLabel: 'Distance'
 ecoStatsAppExitsColumnLabel: "Sorties d'app"
 ecoStatsScanErrorsColumnLabel: 'Erreurs de scan'

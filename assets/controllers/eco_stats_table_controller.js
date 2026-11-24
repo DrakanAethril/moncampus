@@ -2,7 +2,7 @@ import { Controller } from '@hotwired/stimulus';
 
 /**
  * The "Coureurs" block of the course statistics screen (1j): collapse/expand, the
- * Tous / Complets / Incomplets filter, and sorting by runner, time or distance.
+ * Tous / Complets / Incomplets filter, and sorting by runner, time, distance or raw distance.
  *
  * Everything happens on rows already in the DOM - the table is the whole class, never paginated,
  * so there is nothing to fetch and re-sorting is just a reorder of <tr> nodes.
@@ -81,8 +81,8 @@ export default class extends Controller {
     }
 
     numericValue(row) {
-        const raw = this.sortKey === 'duration' ? row.dataset.duration : row.dataset.distance;
+        const value = { duration: row.dataset.duration, distance: row.dataset.distance, rawDistance: row.dataset.rawDistance }[this.sortKey];
 
-        return raw === '' || raw === undefined ? null : Number(raw);
+        return value === '' || value === undefined ? null : Number(value);
     }
 }

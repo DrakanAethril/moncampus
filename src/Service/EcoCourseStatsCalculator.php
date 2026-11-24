@@ -46,6 +46,7 @@ use App\Enum\EcoScanResult;
  *     isComplete: bool,
  *     durationSeconds: ?int,
  *     distanceMeters: float,
+ *     rawDistanceMeters: float,
  *     appExitCount: int,
  *     scanErrorCount: int,
  *     hasSos: bool,
@@ -106,6 +107,8 @@ class EcoCourseStatsCalculator
                 // their last scan instead of left blank.
                 'durationSeconds' => $stats['durationSeconds'] ?? $this->timeOnCourseSeconds($runner),
                 'distanceMeters' => $stats['distanceMeters'],
+                // Every fix the phone sent, summed unfiltered - shown beside the cleaned figure.
+                'rawDistanceMeters' => $stats['rawDistanceMeters'],
                 'appExitCount' => \count($stats['appEvents']),
                 'scanErrorCount' => $stats['scanFailureCount'],
                 // A runner who pressed SOS keeps a red row for the rest of the course's life, even
@@ -187,6 +190,8 @@ class EcoCourseStatsCalculator
             'bestDurationSeconds' => $bestDurationRow['durationSeconds'] ?? null,
             'bestDurationPseudo' => $bestDurationRow['pseudo'] ?? null,
             'averageDistanceMeters' => [] !== $travelled ? array_sum(array_column($travelled, 'distanceMeters')) / \count($travelled) : null,
+            // Over the same runs as the cleaned average, so the two read against each other.
+            'averageRawDistanceMeters' => [] !== $travelled ? array_sum(array_column($travelled, 'rawDistanceMeters')) / \count($travelled) : null,
             'bestDistanceMeters' => $bestDistanceRow['distanceMeters'] ?? null,
             'bestDistancePseudo' => $bestDistanceRow['pseudo'] ?? null,
         ];

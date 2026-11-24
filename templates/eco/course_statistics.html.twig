@@ -63,7 +63,10 @@
         </div>
         <div class="eco-kpi">
             <div class="eco-kpi__label">{{ 'ecoStatsAverageDistanceKpiLabel'|trans }}</div>
-            <div class="eco-kpi__value">{{ fmt.km(kpis.averageDistanceMeters) }}</div>
+            <div class="eco-kpi__value">
+                {{- fmt.km(kpis.averageDistanceMeters) -}}
+                {%- if kpis.averageRawDistanceMeters is not null %} <span class="eco-kpi__suffix" title="{{ 'ecoResultsRawDistanceHintText'|trans }}">· {{ 'ecoResultsRawDistanceSuffixLabel'|trans({'%km%': (kpis.averageRawDistanceMeters / 1000)|number_format(1, ',')}) }}</span>{% endif -%}
+            </div>
         </div>
         <div class="eco-kpi">
             <div class="eco-kpi__label">{{ 'ecoStatsBestRouteKpiLabel'|trans }}</div>
@@ -104,6 +107,7 @@
                         <th>{{ 'ecoStatsCheckpointsColumnLabel'|trans }}</th>
                         <th><button type="button" class="eco-sort" data-action="eco-stats-table#sort" data-eco-stats-table-sort-param="duration" data-eco-stats-table-target="sortOption">{{ 'ecoStatsTimeColumnLabel'|trans }} <span class="eco-sort__arrow">⇅</span></button></th>
                         <th><button type="button" class="eco-sort" data-action="eco-stats-table#sort" data-eco-stats-table-sort-param="distance" data-eco-stats-table-target="sortOption">{{ 'ecoStatsDistanceColumnLabel'|trans }} <span class="eco-sort__arrow">⇅</span></button></th>
+                        <th title="{{ 'ecoResultsRawDistanceHintText'|trans }}"><button type="button" class="eco-sort" data-action="eco-stats-table#sort" data-eco-stats-table-sort-param="rawDistance" data-eco-stats-table-target="sortOption">{{ 'ecoStatsRawDistanceColumnLabel'|trans }} <span class="eco-sort__arrow">⇅</span></button></th>
                         <th>{{ 'ecoStatsClimbColumnLabel'|trans }}</th>
                         <th>{{ 'ecoStatsOffPathColumnLabel'|trans }}</th>
                         <th>{{ 'ecoStatsAppExitsColumnLabel'|trans }}</th>
@@ -120,6 +124,7 @@
                             data-pseudo="{{ row.pseudo|lower }}"
                             data-duration="{{ row.durationSeconds is null ? '' : row.durationSeconds }}"
                             data-distance="{{ row.distanceMeters|round }}"
+                            data-raw-distance="{{ row.rawDistanceMeters|round }}"
                             data-complete="{{ row.isComplete ? '1' : '0' }}">
                             <td class="fw-bold">{{ row.pseudo }}</td>
                             <td class="text-secondary">{{ row.checkpointsValidated }}/{{ row.checkpointsTotal }}</td>
@@ -131,6 +136,7 @@
                                 {{ fmt.km(row.distanceMeters) }}
                                 {%- if row.gapMeters %} <span class="eco-num__gap">(+{{ (row.gapMeters / 1000)|number_format(1, ',') }} km)</span>{% endif -%}
                             </td>
+                            <td class="eco-num text-secondary">{{ fmt.km(row.rawDistanceMeters) }}</td>
                             {# The phone's altitude is noise: only the IGN's climb is worth a column. #}
                             <td class="eco-num text-secondary">{{ row.elevationSource == 'ign' ? '+' ~ row.elevationGain|round ~ ' m' : '—' }}</td>
                             <td class="eco-num text-secondary">{{ row.offPathShare is not null ? (row.offPathShare * 100)|round ~ ' %' : '—' }}</td>
@@ -141,7 +147,7 @@
                             </td>
                         </tr>
                     {% else %}
-                        <tr><td colspan="9" class="text-secondary">{{ 'ecoCourseNoneYetText'|trans }}</td></tr>
+                        <tr><td colspan="10" class="text-secondary">{{ 'ecoCourseNoneYetText'|trans }}</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
