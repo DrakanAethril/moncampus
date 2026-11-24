@@ -6101,6 +6101,10 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .eco-map:fullscreen { height: 100%; border-radius: 0; }
 .eco-map__legend-swatch--worst { background: #b8493d; }
 .eco-map__legend-swatch--best { background: #1f7a54; }
+/* The raw-trace switch on the results map (eco_result_map_controller.js), bottom left. */
+.eco-map.leaflet-container .eco-map__raw-toggle { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 4px 8px; background: #fff; color: #1f2933; font: 400 12px var(--cm-font-ui); cursor: pointer; user-select: none; }
+.eco-map__raw-toggle input { margin: 0; cursor: pointer; }
+.eco-map__raw-swatch { width: 16px; height: 0; border-top: 2px dashed #c2410c; }
 
 /* IGN layer switcher (eco_map.js). Leaflet's own toggle is a PNG next to its CSS, which the vendored
    stylesheet does not carry: the stack of sheets is drawn here instead. */

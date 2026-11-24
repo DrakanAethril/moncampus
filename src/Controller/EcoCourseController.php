@@ -385,7 +385,7 @@ class EcoCourseController extends AbstractController
             'stats' => $stats,
             'analysis' => $analysis,
             'map' => null !== $selectedRunner && null !== $stats
-                ? $this->resultMap($selectedRunner, $stats['pings'], $analysis['stops'], $analysis['legs'], $comparedRunner, $comparedLegs, $runnerTrace, $translator)
+                ? $this->resultMap($selectedRunner, $stats['pings'], $stats['rawPings'], $analysis['stops'], $analysis['legs'], $comparedRunner, $comparedLegs, $runnerTrace, $translator)
                 : null,
         ]);
     }
@@ -407,7 +407,8 @@ class EcoCourseController extends AbstractController
      * with whether that runner validated it. Null when there is nothing to draw - a runner who
      * never sent a position, or a parcours whose checkpoints were never located.
      *
-     * @param list<EcoPositionPing>      $pings
+     * @param list<EcoPositionPing>      $pings    the trace every figure reads
+     * @param list<EcoPositionPing>      $rawPings every fix the phone sent, the refused ones included
      * @param list<array<string, mixed>> $stops
      * @param list<array<string, mixed>> $legs
      *
@@ -416,6 +417,7 @@ class EcoCourseController extends AbstractController
     private function resultMap(
         EcoRunner $runner,
         array $pings,
+        array $rawPings,
         array $stops,
         array $legs,
         ?EcoRunner $comparedRunner,
@@ -513,6 +515,9 @@ class EcoCourseController extends AbstractController
             // Where a refused scan was actually made, and which checkpoint it claimed: a dashed
             // line between the two is what makes "1 390 m" readable at a glance.
             'refusedScans' => $this->refusedScans($runner),
+            // The trace as the phone sent it, hidden until asked for: the line through every fix,
+            // and a dot on each fix the cleaning took out, so the two lines can be told apart.
+            'raw' => $this->rawTrace($pings, $rawPings),
             'compared' => null !== $comparedRunner
                 ? [
                     'pseudo' => $comparedRunner->getPseudo() ?? '',
@@ -662,6 +667,28 @@ class EcoCourseController extends AbstractController
         }
 
         return $lines;
+    }
+
+    /**
+     * @param list<EcoPositionPing> $pings
+     * @param list<EcoPositionPing> $rawPings
+     *
+     * @return array{trace: list<array{float, float}>, dropped: list<array{float, float}>}
+     */
+    private function rawTrace(array $pings, array $rawPings): array
+    {
+        $kept = [];
+        foreach ($pings as $ping) {
+            $kept[spl_object_id($ping)] = true;
+        }
+
+        return [
+            'trace' => $this->traceOf($rawPings),
+            'dropped' => $this->traceOf(array_values(array_filter(
+                $rawPings,
+                static fn (EcoPositionPing $ping): bool => !isset($kept[spl_object_id($ping)]),
+            ))),
+        ];
     }
 
     /**
