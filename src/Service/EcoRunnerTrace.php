@@ -27,4 +27,17 @@ class EcoRunnerTrace
     {
         return $this->traceCleaner->plausible($this->pingRepository->findForRunner($runner));
     }
+
+    /**
+     * The same trace, and every fix the phone sent beside it, untouched - for the raw distance and
+     * the raw line the results screen offers next to the cleaned ones. Read in one query.
+     *
+     * @return array{plausible: list<EcoPositionPing>, raw: list<EcoPositionPing>}
+     */
+    public function withRaw(EcoRunner $runner): array
+    {
+        $raw = $this->pingRepository->findForRunner($runner);
+
+        return ['plausible' => $this->traceCleaner->plausible($raw), 'raw' => $raw];
+    }
 }

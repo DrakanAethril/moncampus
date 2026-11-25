@@ -27,20 +27,21 @@ class EcoRunnerStatsCalculator
         private readonly EcoAppEventRepository $appEventRepository,
         private readonly EcoTraceCleaner $traceCleaner,
         private readonly EcoTerrainStats $terrainStats,
+        private readonly EcoDistanceCalculator $distanceCalculator,
     ) {
     }
 
-    /** @return array{durationSeconds: ?int, distanceMeters: float, averageSpeedKmh: ?float, elevation: ?array{gain: float, loss: float, source: 'ign'|'gps'}, effortKm: ?float, effortSpeedKmh: ?float, terrain: ?EcoTerrainSplit, checkpointsValidated: int, checkpointsTotal: int, scanFailureCount: int, appEvents: list<EcoAppEvent>, pings: list<EcoPositionPing>} */
+    /** @return array{durationSeconds: ?int, distanceMeters: float, rawDistanceMeters: float, averageSpeedKmh: ?float, elevation: ?array{gain: float, loss: float, source: 'ign'|'gps'}, effortKm: ?float, effortSpeedKmh: ?float, terrain: ?EcoTerrainSplit, checkpointsValidated: int, checkpointsTotal: int, scanFailureCount: int, appEvents: list<EcoAppEvent>, pings: list<EcoPositionPing>, rawPings: list<EcoPositionPing>} */
     public function calculate(EcoRunner $runner): array
     {
         // Jumps already out (EcoRunnerTrace), and wander filtered rather than summed fix by fix:
         // see EcoTraceCleaner for why the raw sum reads several hundred metres long on a trace
         // that never left the wood.
-        $pings = $this->trace->of($runner);
-        $distanceMeters = $this->traceCleaner->travelledMeters(array_map(
-            static fn (EcoPositionPing $ping): array => [(float) $ping->getLatitude(), (float) $ping->getLongitude()],
-            $pings,
-        ));
+        ['plausible' => $pings, 'raw' => $rawPings] = $this->trace->withRaw($runner);
+        $distanceMeters = $this->traceCleaner->travelledMeters(self::points($pings));
+        // Beside it, the sum of every fix the phone sent, nothing refused: what a teacher compares
+        // the cleaned figure with when a distance looks short or long.
+        $rawDistanceMeters = $this->distanceCalculator->pathMeters(self::points($rawPings));
 
         $durationSeconds = null !== $runner->getStartedAt() && null !== $runner->getFinishedAt()
             ? $runner->getFinishedAt()->getTimestamp() - $runner->getStartedAt()->getTimestamp()
@@ -65,6 +66,7 @@ class EcoRunnerStatsCalculator
         return [
             'durationSeconds' => $durationSeconds,
             'distanceMeters' => $distanceMeters,
+            'rawDistanceMeters' => $rawDistanceMeters,
             'averageSpeedKmh' => $averageSpeedKmh,
             'elevation' => $elevation,
             'effortKm' => $effortKm,
@@ -77,6 +79,20 @@ class EcoRunnerStatsCalculator
             'scanFailureCount' => $failureCount,
             'appEvents' => $this->appEventRepository->findBy(['runner' => $runner], ['leftAt' => 'ASC']),
             'pings' => $pings,
+            'rawPings' => $rawPings,
         ];
+    }
+
+    /**
+     * @param list<EcoPositionPing> $pings
+     *
+     * @return list<array{float, float}>
+     */
+    private static function points(array $pings): array
+    {
+        return array_map(
+            static fn (EcoPositionPing $ping): array => [(float) $ping->getLatitude(), (float) $ping->getLongitude()],
+            $pings,
+        );
     }
 }
