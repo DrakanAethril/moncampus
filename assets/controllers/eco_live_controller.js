@@ -9,7 +9,7 @@ import { Controller } from '@hotwired/stimulus';
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['row'];
+    static targets = ['row', 'reports'];
 
     static values = {
         url: String,
@@ -18,6 +18,12 @@ export default class extends Controller {
         resultsUrl: String,
         finishedLabel: String,
         seeRaceLabel: String,
+        // « Balise introuvable »: the block of flags reported missing, asked again whenever its
+        // signature in the polled data moves (a report, a neutralisation).
+        reportsUrl: String,
+        reportsSignature: String,
+        // « 1 signalée », with __COUNT__ where the number goes.
+        reportedLabel: String,
         intervalMs: { type: Number, default: 10000 },
     };
 
@@ -33,7 +39,25 @@ export default class extends Controller {
     poll() {
         fetch(this.urlValue, { headers: { Accept: 'application/json' } })
             .then((response) => response.json())
-            .then((data) => this.applyRows(data.runners))
+            .then((data) => {
+                this.applyRows(data.runners);
+                this.refreshReports(data.reportsSignature);
+            })
+            .catch(() => {});
+    }
+
+    refreshReports(signature) {
+        if (!signature || signature === this.reportsSignatureValue || !this.hasReportsTarget) {
+            return;
+        }
+
+        fetch(this.reportsUrlValue, { headers: { Accept: 'text/html' } })
+            .then((response) => (response.ok ? response.text() : Promise.reject(response)))
+            .then((html) => {
+                // Our own server's fragment, rendered by Twig with its escaping: safe as markup.
+                this.reportsTarget.innerHTML = html;
+                this.reportsSignatureValue = signature;
+            })
             .catch(() => {});
     }
 
@@ -52,6 +76,12 @@ export default class extends Controller {
                 checkpointsCell.textContent = row.status === 'finished'
                     ? this.finishedLabelValue
                     : `${row.checkpointsValidated}/${row.checkpointsTotal}`;
+            }
+
+            const reportedCell = rowElement.querySelector('[data-eco-live-target="reported"]');
+            if (reportedCell) {
+                reportedCell.hidden = !row.reportedCount;
+                reportedCell.textContent = this.reportedLabelValue.replace('__COUNT__', String(row.reportedCount ?? 0));
             }
 
             const pseudoCell = rowElement.querySelector('[data-eco-live-target="pseudo"]');

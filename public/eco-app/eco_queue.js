@@ -149,7 +149,18 @@
         for (const item of await items(type)) {
             if (!item.token) return;
             try {
-                if ('scan' === type) {
+                if ('scan' === type && 'report' === item.payload.kind) {
+                    // « Balise introuvable », kept in the scan queue so the next flag's scan
+                    // reaches the server after it (QueueProcessor does the same).
+                    const { checkpointId, latitude, longitude, reportedAt } = item.payload;
+                    await post(origin, '/api/eco/runner/report', {
+                        token: item.token,
+                        checkpointId,
+                        ...(latitude != null ? { latitude } : {}),
+                        ...(longitude != null ? { longitude } : {}),
+                        ...(reportedAt != null ? { reportedAt } : {}),
+                    });
+                } else if ('scan' === type) {
                     const { code, method, latitude, longitude, scannedAt } = item.payload;
                     await post(origin, '/api/eco/runner/scan', {
                         token: item.token,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\EcoRunnerStatus;
+use App\Enum\EcoScanResult;
 use App\Repository\EcoRunnerRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -90,12 +91,18 @@ class EcoRunner
     #[ORM\OrderBy(['scannedAt' => 'ASC'])]
     private Collection $scans;
 
+    /** @var Collection<int, EcoCheckpointReport> */
+    #[ORM\OneToMany(mappedBy: 'runner', targetEntity: EcoCheckpointReport::class)]
+    #[ORM\OrderBy(['reportedAt' => 'ASC'])]
+    private Collection $checkpointReports;
+
     public function __construct(EcoCourse $course, string $pseudo, string $joinToken)
     {
         $this->course = $course;
         $this->pseudo = $pseudo;
         $this->joinToken = $joinToken;
         $this->scans = new ArrayCollection();
+        $this->checkpointReports = new ArrayCollection();
         $this->joinedAt = new \DateTimeImmutable();
     }
 
@@ -249,5 +256,87 @@ class EcoRunner
     public function getScans(): Collection
     {
         return $this->scans;
+    }
+
+    /** @return Collection<int, EcoCheckpointReport> */
+    public function getCheckpointReports(): Collection
+    {
+        return $this->checkpointReports;
+    }
+
+    public function reportOf(EcoCheckpoint $checkpoint): ?EcoCheckpointReport
+    {
+        foreach ($this->checkpointReports as $report) {
+            if ($report->getCheckpoint() === $checkpoint) {
+                return $report;
+            }
+        }
+
+        return null;
+    }
+
+    public function addCheckpointReport(EcoCheckpointReport $report): static
+    {
+        if (!$this->checkpointReports->contains($report)) {
+            $this->checkpointReports->add($report);
+        }
+
+        return $this;
+    }
+
+    /**
+     * The ids of the race's flags this runner has validated - distinct, a flag scanned twice counts
+     * once. The one reading of « validated » for the scan rules, the runner API and the counts.
+     *
+     * @return list<int>
+     */
+    public function validatedCheckpointIds(): array
+    {
+        $ids = [];
+        foreach ($this->scans as $scan) {
+            if (EcoScanResult::Success === $scan->getResult()) {
+                $ids[(int) $scan->getCheckpoint()->getId()] = true;
+            }
+        }
+
+        return array_keys($ids);
+    }
+
+    /**
+     * The flags this runner no longer has to find, though they did not validate them: the ones
+     * they reported missing, and the ones the teacher neutralised for the whole race. A race run
+     * in order passes over them (EcoScanService), and so does the app's « prochaine balise ».
+     *
+     * @return list<int>
+     */
+    public function passedOverCheckpointIds(): array
+    {
+        $ids = [];
+        foreach ($this->checkpointReports as $report) {
+            $ids[(int) $report->getCheckpoint()->getId()] = true;
+        }
+        $course = $this->getCourse();
+        foreach ($course->getRaceCheckpoints() as $checkpoint) {
+            if ($course->isNeutralized($checkpoint)) {
+                $ids[(int) $checkpoint->getId()] = true;
+            }
+        }
+
+        return array_keys($ids);
+    }
+
+    /**
+     * How many of the flags a complete run needs (EcoCourse::getCountedCheckpoints()) this runner
+     * validated: a flag the teacher neutralised neither adds to the total nor to the count, even
+     * for whoever found it before it went.
+     */
+    public function countedValidatedCount(): int
+    {
+        $validated = $this->validatedCheckpointIds();
+
+        return \count(array_filter(
+            $this->getCourse()->getCountedCheckpoints(),
+            static fn (EcoCheckpoint $checkpoint): bool => \in_array((int) $checkpoint->getId(), $validated, true),
+        ));
     }
 }

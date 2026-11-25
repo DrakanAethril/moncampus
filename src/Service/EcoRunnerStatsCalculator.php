@@ -57,10 +57,6 @@ class EcoRunnerStatsCalculator
         $effortKm = 'ign' === ($elevation['source'] ?? null) ? EcoTerrainStats::effortKm($distanceMeters, $elevation['gain']) : null;
 
         $scans = $runner->getScans()->toArray();
-        $successfulCheckpointIds = array_unique(array_map(
-            static fn (EcoCheckpointScan $scan): int => $scan->getCheckpoint()->getId(),
-            array_filter($scans, static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()),
-        ));
         $failureCount = \count(array_filter($scans, static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success !== $scan->getResult()));
 
         return [
@@ -74,8 +70,9 @@ class EcoRunnerStatsCalculator
                 ? $effortKm / ($durationSeconds / 3600)
                 : null,
             'terrain' => $this->terrainStats->split($fixes),
-            'checkpointsValidated' => \count($successfulCheckpointIds),
-            'checkpointsTotal' => \count($runner->getCourse()->getRaceCheckpoints()),
+            // Over the flags a complete run needs: one the teacher neutralised counts on neither side.
+            'checkpointsValidated' => $runner->countedValidatedCount(),
+            'checkpointsTotal' => \count($runner->getCourse()->getCountedCheckpoints()),
             'scanFailureCount' => $failureCount,
             'appEvents' => $this->appEventRepository->findBy(['runner' => $runner], ['leftAt' => 'ASC']),
             'pings' => $pings,

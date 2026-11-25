@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\EcoCheckpoint;
-use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoRunner;
 use App\Enum\EcoCheckpointType;
-use App\Enum\EcoScanResult;
 
 /**
  * The recap a runner reads on their own phone once they have scanned the finish - the same
@@ -62,17 +60,11 @@ class EcoRunnerSummaryBuilder
         $analysis = $this->analyzer->analyse($runner, [$runner]);
 
         $regular = array_filter(
-            $course->getRaceCheckpoints(),
+            $course->getCountedCheckpoints(),
             static fn (EcoCheckpoint $checkpoint): bool => EcoCheckpointType::Checkpoint === $checkpoint->getType(),
         );
-        $validatedRegular = array_unique(array_map(
-            static fn (EcoCheckpointScan $scan): int => (int) $scan->getCheckpoint()->getId(),
-            array_filter(
-                $runner->getScans()->toArray(),
-                static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()
-                    && EcoCheckpointType::Checkpoint === $scan->getCheckpoint()->getType(),
-            ),
-        ));
+        $regularIds = array_map(static fn (EcoCheckpoint $checkpoint): int => (int) $checkpoint->getId(), $regular);
+        $validatedRegular = array_intersect($runner->validatedCheckpointIds(), $regularIds);
 
         $elevation = $stats['elevation'];
 

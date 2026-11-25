@@ -3889,6 +3889,19 @@ ecoLiveDelayMinutesLabel: 'il y a %minutes% min'
 ecoLiveDelayHoursLabel: 'il y a %hours% h %minutes% min'
 ecoLiveNoRunnersText: "Aucun coureur pour le moment."
 ecoLiveRefreshNoteText: "Position remontée toutes les 5 s côté coureur ; en zone blanche les événements sont mis en file et synchronisés au retour du réseau. Liste rafraîchie toutes les 10 s."
+ecoLiveReportsTitle: "Balises introuvables"
+ecoLiveReportsHint: "Signalées par les coureurs depuis l'app"
+ecoLiveReportsEmptyText: "Aucune balise signalée. Un coureur qui ne trouve pas sa balise peut la signaler depuis l'app et passer à la suivante."
+ecoLiveReportsNoReportText: "Neutralisée sans signalement."
+ecoLiveReportsReportedByText: "Signalée par %count% coureur(s) depuis %time% : %names%"
+ecoLiveReportsNeutralizedBadge: "Neutralisée"
+ecoLiveReportsNeutralizeAction: "Neutraliser"
+ecoLiveReportsRestoreAction: "Rétablir"
+ecoLiveReportsPickLabel: "Balise à neutraliser"
+ecoLiveReportsPickPlaceholder: "Neutraliser une autre balise…"
+ecoLiveReportedCountLabel: "· %count% signalée(s)"
+ecoResultsMapReportedLabel: "Signalée introuvable à %time%"
+ecoResultsMapNeutralizedLabel: "Neutralisée pour la course"
 
 ecoCourseResultsBreadcrumbLabel: 'Résultats'
 ecoCourseResultsPageHeadingTemplate: 'Résultats — %name%'

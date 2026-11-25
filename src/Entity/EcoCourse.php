@@ -108,6 +108,20 @@ class EcoCourse
     #[ORM\OneToMany(mappedBy: 'course', targetEntity: EcoTeam::class, cascade: ['persist'], orphanRemoval: true)]
     private Collection $teams;
 
+    /**
+     * Flags the teacher took out of this race once it was under way - gone from the terrain, found
+     * by nobody (see EcoCheckpointReport). Nobody has to find them any more: a race run in order
+     * passes over them, and a run is complete without them. Never copied by a duplicate: the next
+     * race on this parcours may well have its flag back.
+     *
+     * @var Collection<int, EcoCheckpoint>
+     */
+    #[ORM\ManyToMany(targetEntity: EcoCheckpoint::class)]
+    #[ORM\JoinTable(name: 'eco_course_neutralized_checkpoint')]
+    #[ORM\JoinColumn(name: 'course_id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'checkpoint_id', onDelete: 'CASCADE')]
+    private Collection $neutralizedCheckpoints;
+
     public function __construct(EcoParcours $parcours, User $teacher)
     {
         $this->parcours = $parcours;
@@ -115,6 +129,7 @@ class EcoCourse
         $this->runners = new ArrayCollection();
         $this->teams = new ArrayCollection();
         $this->specificSelection = new ArrayCollection();
+        $this->neutralizedCheckpoints = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -357,6 +372,44 @@ class EcoCourse
     public function hasRaceCheckpoint(EcoCheckpoint $checkpoint): bool
     {
         return \in_array($checkpoint, $this->getRaceCheckpoints(), true);
+    }
+
+    public function isNeutralized(EcoCheckpoint $checkpoint): bool
+    {
+        return $this->neutralizedCheckpoints->contains($checkpoint);
+    }
+
+    /** Only a regular flag of the race: Départ and Arrivée are what a race is timed between. */
+    public function neutralize(EcoCheckpoint $checkpoint): static
+    {
+        if (EcoCheckpointType::Checkpoint === $checkpoint->getType()
+            && $this->hasRaceCheckpoint($checkpoint)
+            && !$this->neutralizedCheckpoints->contains($checkpoint)) {
+            $this->neutralizedCheckpoints->add($checkpoint);
+        }
+
+        return $this;
+    }
+
+    public function restore(EcoCheckpoint $checkpoint): static
+    {
+        $this->neutralizedCheckpoints->removeElement($checkpoint);
+
+        return $this;
+    }
+
+    /**
+     * The race's flags a run must hold to be complete: getRaceCheckpoints() without the ones the
+     * teacher neutralised. What every count of « n / total » and the ranking read.
+     *
+     * @return list<EcoCheckpoint>
+     */
+    public function getCountedCheckpoints(): array
+    {
+        return array_values(array_filter(
+            $this->getRaceCheckpoints(),
+            fn (EcoCheckpoint $checkpoint): bool => !$this->neutralizedCheckpoints->contains($checkpoint),
+        ));
     }
 
     #[Assert\Callback]
