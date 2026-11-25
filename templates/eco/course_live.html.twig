@@ -90,9 +90,15 @@
         <div class="col-12 col-xl-5">
             <div class="card h-100" data-controller="eco-live"
                  data-eco-live-url-value="{{ path('app_eco_course_live_data', {id: course.id}) }}"
+                 data-eco-live-reports-url-value="{{ path('app_eco_course_live_reports', {id: course.id}) }}"
+                 data-eco-live-reports-signature-value="{{ reportsSignature }}"
                  data-eco-live-results-url-value="{{ path('app_eco_course_results', {id: course.id}) }}"
                  data-eco-live-finished-label-value="{{ 'ecoLiveFinishedLabel'|trans }}"
-                 data-eco-live-see-race-label-value="{{ 'ecoLiveSeeRaceTitle'|trans }}">
+                 data-eco-live-see-race-label-value="{{ 'ecoLiveSeeRaceTitle'|trans }}"
+                 data-eco-live-reported-label-value="{{ 'ecoLiveReportedCountLabel'|trans({'%count%': '__COUNT__'}) }}">
+                <div data-eco-live-target="reports">
+                    {{ include('eco/_live_reports.html.twig') }}
+                </div>
                 <div class="table-responsive">
                     <table class="table table-vcenter card-table">
                         <thead>
@@ -115,12 +121,16 @@
                                         {%- endif -%}
                                         {{ row.sosActive ? ' 🆘' }}
                                     </td>
-                                    <td data-eco-live-target="checkpoints">
-                                        {% if row.status == 'finished' %}
-                                            {{ 'ecoLiveFinishedLabel'|trans }}
-                                        {% else %}
-                                            {{ row.checkpointsValidated }}/{{ row.checkpointsTotal }}
-                                        {% endif %}
+                                    <td>
+                                        <span data-eco-live-target="checkpoints">
+                                            {%- if row.status == 'finished' -%}
+                                                {{ 'ecoLiveFinishedLabel'|trans }}
+                                            {%- else -%}
+                                                {{ row.checkpointsValidated }}/{{ row.checkpointsTotal }}
+                                            {%- endif -%}
+                                        </span>
+                                        {# « Balise introuvable »: what this runner gave up on, beside their count. #}
+                                        <span class="text-warning ms-1" data-eco-live-target="reported"{{ row.reportedCount == 0 ? ' hidden' }}>{{ 'ecoLiveReportedCountLabel'|trans({'%count%': row.reportedCount}) }}</span>
                                     </td>
                                     {# Wording comes from EcoLiveTrackingService so this cell reads the same
                                        before and after the 10 s refresh does it over in JS. #}

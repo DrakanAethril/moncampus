@@ -13,7 +13,6 @@ use App\Entity\EcoRunner;
 use App\Enum\EcoCourseStatus;
 use App\Enum\EcoRunnerStatus;
 use App\Enum\EcoScanMethod;
-use App\Enum\EcoScanResult;
 use App\Repository\EcoAppEventRepository;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoRunnerRepository;
@@ -132,6 +131,49 @@ class EcoRunnerApiController extends AbstractController
         $scan = $scanService->scan($runner, $checkpoint, $latitude, $longitude, $scannedAt, $method);
 
         return $this->json($this->formatScan($scan));
+    }
+
+    /**
+     * « Balise introuvable » (EcoScanService::report()): the runner gives up on a flag missing from
+     * the terrain, by its id - they never hold its code. Answers the race state, which now passes
+     * over that flag, so the app shows the next one straight away. A flag the runner may not report
+     * (Départ, Arrivée, one already validated, a runner not on the course) is a 409: the server has
+     * answered, the app's queue drops it rather than send it again.
+     */
+    #[Route(path: '/api/eco/runner/report', name: 'api_eco_runner_report', methods: ['POST'])]
+    public function report(Request $request, EcoRunnerRepository $runnerRepository, EcoScanService $scanService): JsonResponse
+    {
+        $payload = JsonRequestPayload::fromRequest($request);
+        $runner = $this->resolveRunner($payload->string('token'), $runnerRepository);
+        if (null === $runner) {
+            return $this->json(['error' => 'invalidToken'], 401);
+        }
+
+        $checkpointId = $payload->int('checkpointId');
+        $checkpoint = null;
+        foreach ($runner->getCourse()->getRaceCheckpoints() as $candidate) {
+            if ($candidate->getId() === $checkpointId) {
+                $checkpoint = $candidate;
+
+                break;
+            }
+        }
+        if (null === $checkpoint) {
+            return $this->json(['error' => 'checkpointNotFound'], 404);
+        }
+
+        $report = $scanService->report(
+            $runner,
+            $checkpoint,
+            $payload->float('latitude'),
+            $payload->float('longitude'),
+            $this->phoneTime($payload->instant('reportedAt'), $runner),
+        );
+        if (null === $report) {
+            return $this->json(['error' => 'reportRefused'], 409);
+        }
+
+        return $this->json($this->formatJoin($runner, $runner->getCourse()));
     }
 
     /**
@@ -311,13 +353,8 @@ class EcoRunnerApiController extends AbstractController
         // Checkpoints already successfully scanned - essential for both normal progress display
         // and "reprise après crash" (GET /state reuses this same method): the app must never
         // assume its own local state survived, only what the server actually recorded.
-        $validatedIds = array_unique(array_map(
-            static fn (EcoCheckpointScan $scan): int => $scan->getCheckpoint()->getId(),
-            array_filter(
-                $runner->getScans()->toArray(),
-                static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult(),
-            ),
-        ));
+        $validatedIds = $runner->validatedCheckpointIds();
+        $passedOverIds = $runner->passedOverCheckpointIds();
 
         return [
             'runnerId' => $runner->getId(),
@@ -335,8 +372,11 @@ class EcoRunnerApiController extends AbstractController
             'timeLimitMinutes' => $course->getTimeLimitMinutes(),
             'startedAt' => $runner->getStartedAt()?->format(\DateTimeInterface::ATOM),
             'finishedAt' => $runner->getFinishedAt()?->format(\DateTimeInterface::ATOM),
-            'validatedCheckpointIds' => array_values($validatedIds),
-            'checkpoints' => $this->formatCheckpointsForMap($course, $validatedIds),
+            'validatedCheckpointIds' => $validatedIds,
+            // The flags this runner no longer has to find: reported missing, or neutralised by the
+            // teacher. The app's « prochaine balise » passes over them, as the server's order does.
+            'passedOverCheckpointIds' => array_values(array_diff($passedOverIds, $validatedIds)),
+            'checkpoints' => $this->formatCheckpointsForMap($runner, $course, $validatedIds, $passedOverIds),
         ];
     }
 
@@ -344,21 +384,24 @@ class EcoRunnerApiController extends AbstractController
     // client and then merely hidden in the UI, since a runner could otherwise just read them out
     // of the raw API response regardless of what the teacher configured. The runner's own
     // position is never part of this payload at all (see e-CO.dc.html's own note on that).
-    /** @param list<int> $validatedIds */
-    private function formatCheckpointsForMap(EcoCourse $course, array $validatedIds): array
+    /**
+     * @param list<int> $validatedIds
+     * @param list<int> $passedOverIds
+     */
+    private function formatCheckpointsForMap(EcoRunner $runner, EcoCourse $course, array $validatedIds, array $passedOverIds): array
     {
         $checkpoints = $course->getRaceCheckpoints();
 
         $nextId = null;
         foreach ($checkpoints as $checkpoint) {
-            if (!\in_array($checkpoint->getId(), $validatedIds, true)) {
+            if (!\in_array($checkpoint->getId(), $validatedIds, true) && !\in_array($checkpoint->getId(), $passedOverIds, true)) {
                 $nextId = $checkpoint->getId();
 
                 break;
             }
         }
 
-        return array_map(function (EcoCheckpoint $checkpoint) use ($course, $validatedIds, $nextId): array {
+        return array_map(function (EcoCheckpoint $checkpoint) use ($runner, $course, $validatedIds, $nextId): array {
             $isValidated = \in_array($checkpoint->getId(), $validatedIds, true);
             $isNext = $checkpoint->getId() === $nextId;
 
@@ -385,6 +428,10 @@ class EcoRunnerApiController extends AbstractController
                 // What the runner map (3f) has to tell apart: validated, next, still to find.
                 'isValidated' => $isValidated,
                 'isNext' => $isNext,
+                // « Signalée absente » by this runner, « neutralisée » by the teacher: both off
+                // the runner's list of flags to find.
+                'isReported' => null !== $runner->reportOf($checkpoint),
+                'isNeutralized' => $course->isNeutralized($checkpoint),
                 'latitude' => $showCoordinates ? $checkpoint->getLatitude() : null,
                 'longitude' => $showCoordinates ? $checkpoint->getLongitude() : null,
             ];

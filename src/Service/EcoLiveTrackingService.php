@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoRunner;
 use App\Enum\EcoRunnerStatus;
-use App\Enum\EcoScanResult;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -70,24 +68,22 @@ class EcoLiveTrackingService
         return (new \DateTimeImmutable())->getTimestamp() - $lastPositionAt->getTimestamp() > self::STALE_SIGNAL_SECONDS;
     }
 
-    /** @return array{id: int, pseudo: string, status: string, checkpointsValidated: int, checkpointsTotal: int, sosActive: bool, isStale: bool, lastSignalSeconds: ?int, appLeftSeconds: ?int, signalLabel: string, signalWarning: bool, latitude: ?float, longitude: ?float, mapState: string, mapLabel: string} */
+    /** @return array{id: int, pseudo: string, status: string, checkpointsValidated: int, checkpointsTotal: int, reportedCount: int, sosActive: bool, isStale: bool, lastSignalSeconds: ?int, appLeftSeconds: ?int, signalLabel: string, signalWarning: bool, latitude: ?float, longitude: ?float, mapState: string, mapLabel: string} */
     public function runnerLiveRow(EcoRunner $runner): array
     {
         $now = new \DateTimeImmutable();
         $lastPositionAt = $runner->getLastPositionAt();
         $appLeftAt = $runner->getAppLeftAt();
 
-        $validatedCount = \count(array_unique(array_map(
-            static fn (EcoCheckpointScan $scan): int => $scan->getCheckpoint()->getId(),
-            array_filter($runner->getScans()->toArray(), static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()),
-        )));
-
         return [
             'id' => $runner->getId(),
             'pseudo' => $runner->getPseudo() ?? '',
             'status' => $runner->getStatus()->value,
-            'checkpointsValidated' => $validatedCount,
-            'checkpointsTotal' => \count($runner->getCourse()->getRaceCheckpoints()),
+            'checkpointsValidated' => $runner->countedValidatedCount(),
+            'checkpointsTotal' => \count($runner->getCourse()->getCountedCheckpoints()),
+            // « Balise introuvable »: the flags this runner reported, which the teacher reads
+            // beside their count before deciding to neutralise one.
+            'reportedCount' => $runner->getCheckpointReports()->count(),
             'sosActive' => $runner->isSosActive(),
             'isStale' => $this->isStale($runner),
             // max(0, ...) - a runner's phone clock can drift slightly ahead of the server's, which

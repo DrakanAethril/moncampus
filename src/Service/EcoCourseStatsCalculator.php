@@ -77,7 +77,7 @@ class EcoCourseStatsCalculator
     {
         /** @var list<EcoRunner> $runners */
         $runners = array_values($course->getRunners()->toArray());
-        $checkpointTotal = \count($course->getRaceCheckpoints());
+        $checkpointTotal = \count($course->getCountedCheckpoints());
 
         $rows = [];
         $segments = [];

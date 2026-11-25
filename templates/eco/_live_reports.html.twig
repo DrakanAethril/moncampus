@@ -1,0 +1,58 @@
+{# Flags missing from the terrain (EcoCheckpointNeutralizationController): what the runners reported
+   with « Balise introuvable », and the teacher's neutralisation. Rendered with the live screen and
+   asked again by eco_live_controller.js when a report arrives. #}
+<div class="card-body border-bottom">
+    <div class="d-flex align-items-baseline gap-2 mb-2">
+        <h3 class="card-title mb-0">{{ 'ecoLiveReportsTitle'|trans }}</h3>
+        <span class="text-secondary" style="font-size: 12.5px;">{{ 'ecoLiveReportsHint'|trans }}</span>
+    </div>
+
+    {% for report in reports %}
+        <div class="d-flex align-items-center gap-2 py-2{{ not loop.last ? ' border-bottom' }}">
+            <div class="flex-fill">
+                <span class="fw-bold">{{ report.name }}</span>
+                {% if report.neutralized %}
+                    <twig:Cm:Badge tone="gray">{{ 'ecoLiveReportsNeutralizedBadge'|trans }}</twig:Cm:Badge>
+                {% endif %}
+                <div class="text-secondary" style="font-size: 12.5px;">
+                    {%- if report.reporters is empty -%}
+                        {{ 'ecoLiveReportsNoReportText'|trans }}
+                    {%- else -%}
+                        {{ 'ecoLiveReportsReportedByText'|trans({
+                            '%count%': report.reporters|length,
+                            '%names%': report.reporters|join(', '),
+                            '%time%': report.firstReportedAt|date('H:i'),
+                        }) }}
+                    {%- endif -%}
+                </div>
+            </div>
+            <form method="post" action="{{ path('app_eco_course_checkpoint_neutralize', {id: course.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('eco_course_checkpoint_neutralize') }}">
+                <input type="hidden" name="checkpoint" value="{{ report.checkpoint.id }}">
+                {% if report.neutralized %}
+                    <input type="hidden" name="action" value="restore">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">{{ 'ecoLiveReportsRestoreAction'|trans }}</button>
+                {% else %}
+                    <input type="hidden" name="action" value="neutralize">
+                    <button type="submit" class="btn btn-sm btn-warning">{{ 'ecoLiveReportsNeutralizeAction'|trans }}</button>
+                {% endif %}
+            </form>
+        </div>
+    {% else %}
+        <p class="text-secondary mb-2" style="font-size: 12.5px;">{{ 'ecoLiveReportsEmptyText'|trans }}</p>
+    {% endfor %}
+
+    {% if neutralizable is not empty %}
+        <form method="post" action="{{ path('app_eco_course_checkpoint_neutralize', {id: course.id}) }}" class="d-flex gap-2 mt-2">
+            <input type="hidden" name="_token" value="{{ csrf_token('eco_course_checkpoint_neutralize') }}">
+            <input type="hidden" name="action" value="neutralize">
+            <select name="checkpoint" class="form-select form-select-sm" required aria-label="{{ 'ecoLiveReportsPickLabel'|trans }}">
+                <option value="">{{ 'ecoLiveReportsPickPlaceholder'|trans }}</option>
+                {% for checkpoint in neutralizable %}
+                    <option value="{{ checkpoint.id }}">{{ checkpoint.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline-warning text-nowrap">{{ 'ecoLiveReportsNeutralizeAction'|trans }}</button>
+        </form>
+    {% endif %}
+</div>

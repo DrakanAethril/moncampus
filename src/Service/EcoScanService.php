@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\EcoCheckpoint;
+use App\Entity\EcoCheckpointReport;
 use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoRunner;
 use App\Enum\EcoCheckpointType;
@@ -26,6 +27,10 @@ use Doctrine\ORM\EntityManagerInterface;
  * every mode requires). « Next » is read over the race's own flags (EcoCourse::getRaceCheckpoints()):
  * a flag the course leaves out is never the one expected. The caller only ever hands in a flag of
  * the race - the runner API answers checkpointNotFound for any other.
+ *
+ * A flag missing from the terrain does not stop the race: the runner reports it (« Balise
+ * introuvable », report()) and the next flag becomes the one expected for them; the teacher
+ * neutralises it for everybody (EcoCourse::$neutralizedCheckpoints). Neither validates it.
  */
 class EcoScanService
 {
@@ -96,23 +101,61 @@ class EcoScanService
     }
 
     // The first checkpoint of the race (Checkpoint or Finish), in the race's own order, this runner
-    // hasn't already successfully scanned - what a race run in order requires the next scan to
-    // match. In « Balises spécifiques » that order is the teacher's, not the parcours'.
+    // hasn't already successfully scanned nor been let off - what a race run in order requires the
+    // next scan to match. In « Balises spécifiques » that order is the teacher's, not the parcours'.
+    // A flag reported missing by this runner, or neutralised by the teacher, is passed over: one
+    // flag taken from the terrain otherwise refused every flag after it, to every runner.
     private function isNextExpected(EcoRunner $runner, EcoCheckpoint $candidate): bool
     {
-        $validatedIds = array_map(
-            static fn (EcoCheckpointScan $scan): int => (int) $scan->getCheckpoint()->getId(),
-            array_filter($runner->getScans()->toArray(), static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()),
-        );
-
-        $remaining = array_values(array_filter(
-            $runner->getCourse()->getRaceCheckpoints(),
-            static fn (EcoCheckpoint $checkpoint): bool => EcoCheckpointType::Start !== $checkpoint->getType() && !\in_array((int) $checkpoint->getId(), $validatedIds, true),
-        ));
-
-        $expected = $remaining[0] ?? null;
+        $expected = self::nextExpected($runner);
 
         return null !== $expected && $expected->getId() === $candidate->getId();
+    }
+
+    /** The flag a race run in order expects next from this runner; null once there is none left. */
+    public static function nextExpected(EcoRunner $runner): ?EcoCheckpoint
+    {
+        $settled = [...$runner->validatedCheckpointIds(), ...$runner->passedOverCheckpointIds()];
+
+        foreach ($runner->getCourse()->getRaceCheckpoints() as $checkpoint) {
+            if (EcoCheckpointType::Start !== $checkpoint->getType() && !\in_array((int) $checkpoint->getId(), $settled, true)) {
+                return $checkpoint;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * « Balise introuvable »: the runner gives up on a regular flag of their race they have not
+     * validated. Refused (null) for Départ and Arrivée - the race is timed between them - and for
+     * a runner not on the course. Reporting a flag twice answers the first report.
+     */
+    public function report(EcoRunner $runner, EcoCheckpoint $checkpoint, ?float $latitude, ?float $longitude, \DateTimeImmutable $reportedAt): ?EcoCheckpointReport
+    {
+        if (EcoCheckpointType::Checkpoint !== $checkpoint->getType()
+            || EcoRunnerStatus::Racing !== $runner->getStatus()
+            || !$runner->getCourse()->hasRaceCheckpoint($checkpoint)
+            || \in_array((int) $checkpoint->getId(), $runner->validatedCheckpointIds(), true)) {
+            return null;
+        }
+
+        $existing = $runner->reportOf($checkpoint);
+        if (null !== $existing) {
+            return $existing;
+        }
+
+        $report = new EcoCheckpointReport($runner, $checkpoint, $reportedAt, $latitude, $longitude);
+        $runner->addCheckpointReport($report);
+        $this->entityManager->persist($report);
+
+        if (null !== $latitude && null !== $longitude) {
+            $runner->updateLastPosition($latitude, $longitude, $reportedAt);
+        }
+
+        $this->entityManager->flush();
+
+        return $report;
     }
 
     private function applyRaceStateTransition(EcoRunner $runner, EcoCheckpoint $checkpoint, \DateTimeImmutable $scannedAt): void
