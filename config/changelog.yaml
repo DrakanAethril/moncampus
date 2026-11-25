@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.25'
+      date: '2026-11-25'
+      summary: "Les résultats d'une course e-CO donnent désormais aussi la distance brute, mesurée sur tous les points GPS reçus, à côté de la distance retenue après nettoyage du tracé."
+      entries:
+          - type: nouveaute
+            title: "e-CO : distance brute et tracé brut dans les résultats d'un coureur"
+            detail: "La carte peut superposer, à la demande, le tracé de tous les points reçus et montrer ceux qui ont été écartés."
+          - type: nouveaute
+            title: "e-CO : distance brute dans les statistiques de la course et dans leur export CSV"
     - version: '2026.11.23'
       date: '2026-11-23'
       summary: "Les concours live restent fluides avec une classe entière : les réponses sont enregistrées aussitôt, le chrono du téléphone suit celui de l'écran projeté et les pages du téléphone sont bien plus légères."
