@@ -21,6 +21,7 @@ use App\Repository\EcoCourseRepository;
 use App\Repository\EcoParcoursRepository;
 use App\Repository\EcoRunnerRepository;
 use App\Security\Voter\EcoParcoursVoter;
+use App\Service\Eco\EcoCheckpointReports;
 use App\Service\EcoCourseCodeGenerator;
 use App\Service\EcoCourseStatsCalculator;
 use App\Service\EcoLiveTrackingService;
@@ -238,7 +239,7 @@ class EcoCourseController extends AbstractController
     }
 
     #[Route(path: '/eco/courses/{id}/live', name: 'app_eco_course_live')]
-    public function live(int $id, EcoCourseRepository $repository, EcoLiveTrackingService $liveTracking): Response
+    public function live(int $id, EcoCourseRepository $repository, EcoLiveTrackingService $liveTracking, EcoCheckpointReports $reports): Response
     {
         $course = $this->findCourseOrNotFound($repository, $id);
         $runners = $liveTracking->sortedBySeverity($course->getRunners()->toArray());
@@ -262,6 +263,10 @@ class EcoCourseController extends AbstractController
                 ? intdiv((new \DateTimeImmutable())->getTimestamp() - $startedAt->getTimestamp(), 60)
                 : null,
             'mapCheckpoints' => $this->liveMapCheckpoints($course),
+            // Flags missing from the terrain (EcoCheckpointNeutralizationController).
+            'reports' => $reports->forCourse($course),
+            'neutralizable' => $reports->neutralizable($course),
+            'reportsSignature' => $reports->signature($course),
         ]);
     }
 
@@ -296,13 +301,16 @@ class EcoCourseController extends AbstractController
     // Polled every ~10s by assets/controllers/eco_live_controller.js (screen 1h's "rafraîchie
     // toutes les 10 s").
     #[Route(path: '/eco/courses/{id}/live/data', name: 'app_eco_course_live_data')]
-    public function liveData(int $id, EcoCourseRepository $repository, EcoLiveTrackingService $liveTracking): JsonResponse
+    public function liveData(int $id, EcoCourseRepository $repository, EcoLiveTrackingService $liveTracking, EcoCheckpointReports $reports): JsonResponse
     {
         $course = $this->findCourseOrNotFound($repository, $id);
         $runners = $liveTracking->sortedBySeverity($course->getRunners()->toArray());
 
         return $this->json([
             'runners' => array_map(fn (EcoRunner $runner): array => $liveTracking->runnerLiveRow($runner), $runners),
+            // Moves when a flag is reported missing or (un)neutralised: the screen then asks for
+            // that block again.
+            'reportsSignature' => $reports->signature($course),
         ]);
     }
 
@@ -468,6 +476,15 @@ class EcoCourseController extends AbstractController
                 $searchSeconds[$checkpointId] ?? null,
                 $translator,
             );
+            // « Balise introuvable » and the teacher's neutralisation: why a flag the runner did not
+            // validate may still not count against them.
+            $report = $runner->reportOf($checkpoint);
+            if (null !== $report) {
+                $lines[] = $translator->trans('ecoResultsMapReportedLabel', ['%time%' => $report->getReportedAt()->format('H:i:s')]);
+            }
+            if ($runner->getCourse()->isNeutralized($checkpoint)) {
+                $lines[] = $translator->trans('ecoResultsMapNeutralizedLabel');
+            }
 
             $sharedIndex = $this->coLocatedIndex($drawn, $latitude, $longitude);
             if (null !== $sharedIndex) {
@@ -895,7 +912,7 @@ class EcoCourseController extends AbstractController
      */
     private function ranks(array $runners, EcoRaceRanking $ranking): array
     {
-        $checkpointTotal = [] !== $runners ? \count($runners[0]->getCourse()->getRaceCheckpoints()) : 0;
+        $checkpointTotal = [] !== $runners ? \count($runners[0]->getCourse()->getCountedCheckpoints()) : 0;
 
         $runs = [];
         foreach ($runners as $runner) {
@@ -908,10 +925,8 @@ class EcoCourseController extends AbstractController
                     ? $finishedAt->getTimestamp() - $startedAt->getTimestamp()
                     : null,
                 // Distinct checkpoints, not scans: scanning the same control twice validates it once.
-                'validatedCheckpoints' => \count(array_unique(array_map(
-                    static fn (EcoCheckpointScan $scan): int => (int) $scan->getCheckpoint()->getId(),
-                    array_filter($runner->getScans()->toArray(), static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()),
-                ))),
+                // A neutralised flag is in neither this count nor the total.
+                'validatedCheckpoints' => $runner->countedValidatedCount(),
             ];
         }
 

@@ -1158,7 +1158,14 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   rule. A « Balises spécifiques » course runs on Départ, Arrivée and the flags it names, in order or
   not: **`EcoCourse::getRaceCheckpoints()` is the only list a course is read through** (scan,
   ranking, maps, statistics, runner API), never the parcours' own - and the runner app is sent
-  `runnerMode()` (imposed/free order), which it already understands. **Any flag may be renamed**
+  `runnerMode()` (imposed/free order), which it already understands. **A flag missing from the terrain stops nobody**: the runner taps « Balise introuvable ? »
+(`POST /api/eco/runner/report`, `EcoCheckpointReport`, queued offline *with the scans* so the next
+scan reaches the server after it) and a race run in order passes over it for them
+(`EcoScanService::nextExpected()`); it validates nothing. The live screen lists the reports and
+the teacher **neutralises** a flag for the whole race (`EcoCourse::$neutralizedCheckpoints`,
+`EcoCheckpointNeutralizationController`): nobody has to find it and every count and the ranking read
+`EcoCourse::getCountedCheckpoints()`, never `getRaceCheckpoints()`, for « complete ».
+**Any flag may be renamed**
 (screen 1e, `App\Service\Eco\EcoCheckpointRenamer`), Départ and Arrivée included: a flag's role
 is its type and position, never its name - nothing may test a name. A course not yet closed has
 an « Affiche QR » (`app_eco_course_join_pdf`): an A4 page whose QR opens `/eco-app/?code=…`, which

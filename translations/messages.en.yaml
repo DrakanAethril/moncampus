@@ -3267,6 +3267,19 @@ ecoLiveDelayMinutesLabel: '%minutes% min ago'
 ecoLiveDelayHoursLabel: '%hours% h %minutes% min ago'
 ecoLiveNoRunnersText: 'No runners yet.'
 ecoLiveRefreshNoteText: "Position reported every 5s from the runner's phone; in areas without signal, events are queued and synced once back online. List refreshes every 10s."
+ecoLiveReportsTitle: "Missing checkpoints"
+ecoLiveReportsHint: "Reported by runners from the app"
+ecoLiveReportsEmptyText: "No checkpoint reported. A runner who cannot find their checkpoint can report it from the app and move on to the next one."
+ecoLiveReportsNoReportText: "Neutralised without a report."
+ecoLiveReportsReportedByText: "Reported by %count% runner(s) since %time%: %names%"
+ecoLiveReportsNeutralizedBadge: "Neutralised"
+ecoLiveReportsNeutralizeAction: "Neutralise"
+ecoLiveReportsRestoreAction: "Restore"
+ecoLiveReportsPickLabel: "Checkpoint to neutralise"
+ecoLiveReportsPickPlaceholder: "Neutralise another checkpoint…"
+ecoLiveReportedCountLabel: "· %count% reported"
+ecoResultsMapReportedLabel: "Reported missing at %time%"
+ecoResultsMapNeutralizedLabel: "Neutralised for the race"
 
 ecoCourseResultsBreadcrumbLabel: 'Results'
 ecoCourseResultsPageHeadingTemplate: 'Results — %name%'
