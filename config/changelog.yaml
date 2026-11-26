@@ -26,6 +26,17 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.26.2'
+      date: '2026-11-26'
+      summary: "Dans le CRM des inscriptions, toujours en essai auprès de l'administration, les boutons « Nouveau dossier » et « Corriger » fonctionnent de nouveau partout, et les documents choisis par l'équipe remontent sur l'accueil quand un dossier les attend."
+      entries:
+          - type: fix
+            title: "CRM : « Nouveau dossier » et « Corriger le dossier » s'ouvrent de nouveau depuis toutes les pages"
+          - type: nouveaute
+            title: "CRM : « Action requise » sur l'accueil de l'administration"
+            detail: "Chaque type de document peut être marqué « Remonter sur l'accueil » ; les dossiers arrivés à son étape sans l'avoir rempli y sont listés, par étape et par document."
+          - type: modification
+            title: "CRM : « Candidature en attente » en tête des situations et affichée par défaut, « En cours » devient « Admis »"
     - version: '2026.11.26'
       date: '2026-11-26'
       summary: "Dans une course e-CO en ordre imposé, une balise disparue du terrain ne bloque plus les coureurs : ils la signalent et passent à la suivante, et l'enseignant peut la neutraliser pour toute la course."
