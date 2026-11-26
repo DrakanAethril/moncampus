@@ -146,6 +146,7 @@ final readonly class CrmPieceEditor
         $piece->setForeignOnly($input->foreignOnly);
         $piece->setDefaultConstraint($input->defaultConstraint);
         $piece->setFutureDateAllowed($input->futureDateAllowed);
+        $piece->setHomeAlert($input->homeAlert);
         $piece->setChoices($kind->hasChoices() ? $input->choices : []);
         $piece->setLastValueCompletes(CrmPieceKind::List === $kind && $input->lastValueCompletes);
         $piece->setAsksPaymentMode(CrmPieceKind::Amount === $kind && ($input->asksPaymentMode || CrmPiece::DEPOSIT === $piece->getCode()));

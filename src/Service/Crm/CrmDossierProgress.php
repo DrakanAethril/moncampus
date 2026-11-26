@@ -31,6 +31,10 @@ use App\Enum\CrmStep;
  *   applies to it and its required ones are not all done - whatever its step.
  * - What was entered for a piece that no longer applies (another modality, a hidden piece) is
  *   **kept**, shown apart, and no longer counts.
+ * - A piece is **awaited** when it applies, is not done, and could be: its stage is the dossier's
+ *   step or one before it (all of them once « Complet »), optional pieces included; a follow-up
+ *   document whatever the step. « Action requise » on the staff's home lists those
+ *   (App\Service\Crm\CrmActionRequired).
  */
 final readonly class CrmDossierProgress
 {
@@ -124,6 +128,31 @@ final readonly class CrmDossierProgress
     public function isInProgress(CrmPiece $piece): bool
     {
         return null !== $this->entry($piece) && !$this->isDone($piece);
+    }
+
+    /** Whether the piece could be filled in now and is not (see the class comment). */
+    public function awaits(CrmPiece $piece): bool
+    {
+        if (!$this->applies($piece) || $this->isDone($piece)) {
+            return false;
+        }
+        $phase = $piece->getPhase();
+        if (!$phase->countsTowardsCompletion()) {
+            return true;
+        }
+        $step = $this->step();
+        if (CrmStep::Complete === $step) {
+            return true;
+        }
+        $stages = CrmPhase::stages();
+        $reached = null;
+        foreach ($stages as $index => $stage) {
+            if ($stage->step() === $step) {
+                $reached = $index;
+            }
+        }
+
+        return null !== $reached && array_search($phase, $stages, true) <= $reached;
     }
 
     /** @return array{done: int, total: int} the required pieces of a stage */

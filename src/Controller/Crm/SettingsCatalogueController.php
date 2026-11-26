@@ -82,7 +82,7 @@ class SettingsCatalogueController extends AbstractController
         return $this->redirect($this->generateUrl('app_crm_settings', ['tab' => 'pieces']).'#piece-'.$piece->getCode());
     }
 
-    /** The table's own boxes: the modalities, « Complétude », the default constraint, a date to come. */
+    /** The table's own boxes: the modalities, « Complétude », the default constraint, a date to come, « Accueil ». */
     #[Route(path: '/crm/settings/pieces/{id}/inline', name: 'app_crm_settings_piece_inline', methods: ['POST'])]
     public function inline(Request $request, CrmPiece $piece, CrmPieceEditor $editor): Response
     {
@@ -105,6 +105,7 @@ class SettingsCatalogueController extends AbstractController
             $piece->getChoices(),
             $piece->isLastValueCompletes(),
             $piece->isAsksPaymentMode(),
+            $request->request->getBoolean('homeAlert'),
         );
         try {
             $editor->update($piece, $input);
@@ -216,6 +217,7 @@ class SettingsCatalogueController extends AbstractController
             preg_split('/\R/u', $request->request->getString('choices')) ?: [],
             $request->request->getBoolean('lastValueCompletes'),
             $request->request->getBoolean('asksPaymentMode'),
+            $request->request->getBoolean('homeAlert'),
         );
     }
 

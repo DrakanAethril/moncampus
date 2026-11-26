@@ -272,4 +272,58 @@ class CrmDossierProgressTest extends TestCase
         self::assertTrue($progress->isInProgress($status));
         self::assertSame(CrmStep::Documents, $progress->step());
     }
+
+    public function testAPieceIsAwaitedOnceItsStageIsReachedAndUntilItIsDone(): void
+    {
+        $pre = self::piece('preins', CrmPhase::PreEnrolment);
+        $sent = self::piece('sent', CrmPhase::Enrolment);
+        $late = self::piece('late', CrmPhase::PreEnrolment);
+        $this->settings->setPieceConstraint('late', CrmPieceConstraint::Optional);
+        $doc = self::piece('positioning', CrmPhase::Documents);
+        $npec = self::piece('npec', CrmPhase::FollowUp);
+        $catalogue = [$pre, $late, $sent, $doc, $npec];
+        $dossier = $this->dossier();
+
+        $progress = CrmDossierProgress::of($dossier, $this->settings, $catalogue);
+        self::assertTrue($progress->awaits($pre));
+        self::assertTrue($progress->awaits($late), 'an optional piece of a stage reached');
+        self::assertFalse($progress->awaits($sent), 'a later stage is not reached yet');
+        self::assertFalse($progress->awaits($doc));
+        self::assertTrue($progress->awaits($npec), 'a follow-up document waits whatever the step');
+
+        self::enter($dossier, $pre);
+        $progress = CrmDossierProgress::of($dossier, $this->settings, $catalogue);
+        self::assertFalse($progress->awaits($pre), 'done');
+        self::assertTrue($progress->awaits($late), 'an earlier stage, still not filled');
+        self::assertTrue($progress->awaits($sent));
+        self::assertFalse($progress->awaits($doc));
+
+        self::enter($dossier, $sent);
+        self::enter($dossier, $doc);
+        $progress = CrmDossierProgress::of($dossier, $this->settings, $catalogue);
+        self::assertSame(CrmStep::Complete, $progress->step());
+        self::assertTrue($progress->awaits($late));
+        self::assertFalse($progress->awaits($doc));
+    }
+
+    public function testAPieceNotAskedOfTheDossierIsNeverAwaited(): void
+    {
+        $pre = self::piece('preins', CrmPhase::PreEnrolment);
+        $apprentice = self::piece('contract', CrmPhase::PreEnrolment, modalities: [CrmModality::Apprenticeship]);
+        $progress = CrmDossierProgress::of($this->dossier(), $this->settings, [$pre, $apprentice]);
+
+        self::assertFalse($progress->awaits($apprentice));
+        self::assertFalse(CrmDossierProgress::of($this->dossier(CrmModality::Unspecified), $this->settings, [$pre])->awaits($pre));
+    }
+
+    public function testAStatusListShortOfItsLastValueIsStillAwaited(): void
+    {
+        $convention = self::piece('convention', CrmPhase::PreEnrolment, CrmPieceKind::List);
+        $convention->setChoices(['Envoyée', 'Signée']);
+        $convention->setLastValueCompletes(true);
+        $dossier = $this->dossier();
+        self::enter($dossier, $convention, 'Envoyée');
+
+        self::assertTrue(CrmDossierProgress::of($dossier, $this->settings, [$convention])->awaits($convention));
+    }
 }

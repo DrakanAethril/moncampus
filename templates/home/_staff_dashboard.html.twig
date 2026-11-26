@@ -1,4 +1,4 @@
-{# Staff (staff-a/b) - banner relances, events, all-classes day matrix with formation colors. #}
+{# Staff (staff-a/b) - banner relances, the CRM's « Action requise », events, all-classes day matrix with formation colors. #}
 
 {% if staff.banner %}
     <div class="cm-dash-banner">
@@ -51,6 +51,8 @@
         </span>
     </div>
 {% endif %}
+
+{% if staff.crmActions and staff.crmActions.groups is not empty %}{% include 'home/_crm_action_required.html.twig' with {actions: staff.crmActions} only %}{% endif %}
 
 {% if feature('agenda') %}{% include 'home/_events_row.html.twig' with {events: events} %}{% endif %}
 

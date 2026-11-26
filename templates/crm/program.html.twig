@@ -2,7 +2,7 @@
 
 {# A formation's page: its figures, then one list of its candidates by surname - the modality and a
    mark per stage before the documents, then « dossier complet ». The list shows the situation the
-   select names, « En cours » by default; the export has every situation, with mails and phones. A
+   select names, « Candidature en attente » by default; the export has every situation, with mails and phones. A
    formation that asks for an option filters by option, and so does its export. #}
 
 {% block title %}{{ program.shortName }} · {{ 'crmNavLabel'|trans }}{% endblock %}
@@ -30,7 +30,7 @@
             <span>{{ 'crmOptionLabel'|trans }}</span>
             <nav class="cm-crm-seg" aria-label="{{ 'crmOptionLabel'|trans }}">
                 {% for link in board.optionLinks %}
-                    {% set params = {id: program.id}|merge(link.key is null ? {} : {option: link.key})|merge(board.situation.value != 'active' ? {situation: board.situation.value} : {}) %}
+                    {% set params = {id: program.id}|merge(link.key is null ? {} : {option: link.key})|merge(board.situation.value != 'pending' ? {situation: board.situation.value} : {}) %}
                     <a href="{{ path('app_crm_program', params) }}"{% if board.option == link.key %} aria-current="true"{% endif %}>{{ link.key is null ? 'crmAllLabel'|trans : (link.key == 'none' ? 'crmToSpecifyLabel'|trans : link.label) }}<span class="n">{{ link.count }}</span></a>
                 {% endfor %}
             </nav>
