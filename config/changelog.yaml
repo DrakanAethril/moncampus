@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.11.26'
+      date: '2026-11-26'
+      summary: "Dans une course e-CO en ordre imposé, une balise disparue du terrain ne bloque plus les coureurs : ils la signalent et passent à la suivante, et l'enseignant peut la neutraliser pour toute la course."
+      entries:
+          - type: nouveaute
+            title: "e-CO : signaler une balise introuvable et continuer la course"
+            detail: "Le signalement apparaît en direct sur le suivi de la course ; une balise neutralisée ne compte plus pour un parcours complet ni pour le classement."
     - version: '2026.11.25'
       date: '2026-11-25'
       summary: "Les résultats d'une course e-CO donnent désormais aussi la distance brute, mesurée sur tous les points GPS reçus, à côté de la distance retenue après nettoyage du tracé."
