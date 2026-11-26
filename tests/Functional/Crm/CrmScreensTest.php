@@ -319,7 +319,9 @@ class CrmScreensTest extends FunctionalTestCase
         $settings = static::getContainer()->get(CrmSettings::class);
         $loaded = $this->crmEntityManager()->find(CrmDossier::class, $dossier->getId()) ?? self::fail('dossier');
         $progress = $settings->progress($loaded);
-        foreach ([CrmPhase::PreEnrolment, CrmPhase::FileSending] as $phase) {
+        // CI's catalogue is the shipped one (its own label and stage for this code), the local one the fixture's.
+        $stages = CrmPhase::stages();
+        foreach (\array_slice($stages, 0, (int) array_search($piece->getPhase(), $stages, true)) as $phase) {
             foreach ($progress->applicableIn($phase) as $before) {
                 $value = match ($before->getKind()) {
                     CrmPieceKind::Check => [],
@@ -337,10 +339,10 @@ class CrmScreensTest extends FunctionalTestCase
         $card = $crawler->filter('.cm-home-crm-actions');
         self::assertCount(1, $card);
         self::assertSame('Action requise', trim($card->filter('.card-title')->text()));
-        self::assertContains('Inscription', $card->filter('.cm-home-crm-actions__step')->each(static fn ($n): string => trim($n->text())));
+        self::assertContains($piece->getPhase()->label(), $card->filter('.cm-home-crm-actions__step')->each(static fn ($n): string => trim($n->text())));
         $row = $card->filter('tbody tr:contains("MARTIN Hugo")');
         self::assertCount(1, $row);
-        self::assertSame(['MARTIN Hugo', $this->program->getShortName(), 'File completed'], $row->filter('td')->each(static fn ($n): string => trim($n->text())));
+        self::assertSame(['MARTIN Hugo', $this->program->getShortName(), $piece->getLabel()], $row->filter('td')->each(static fn ($n): string => trim($n->text())));
 
         // Filled in: nothing awaits it any more.
         $this->client->loginUser($this->admin);
