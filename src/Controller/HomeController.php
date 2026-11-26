@@ -11,6 +11,7 @@ use App\Entity\QuizLiveSession;
 use App\Entity\Ticket;
 use App\Entity\User;
 use App\Entity\WordCloud;
+use App\Enum\Feature;
 use App\Enum\StudentWorkState;
 use App\Repository\AgendaEventRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
@@ -24,12 +25,14 @@ use App\Repository\RoomRepository;
 use App\Repository\SurveyTargetRepository;
 use App\Repository\TicketRepository;
 use App\Repository\WordCloudRepository;
+use App\Security\FeatureAccess;
 use App\Security\ProgramTimetableAccess;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\AudienceTargetableVoter;
 use App\Service\AlternanceListStep;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceReminderBoard;
+use App\Service\Crm\CrmActionRequired;
 use App\Service\NameColorGenerator;
 use App\Service\StudentAlternanceProgramResolver;
 use App\Service\StudentWorkBoard;
@@ -82,6 +85,8 @@ class HomeController extends AbstractController
         private readonly StudentAlternanceProgramResolver $alternanceProgramResolver,
         private readonly TranslatorInterface $translator,
         private readonly SurveyTargetRepository $surveyTargetRepository,
+        private readonly FeatureAccess $featureAccess,
+        private readonly CrmActionRequired $crmActionRequired,
     ) {
     }
 
@@ -537,6 +542,9 @@ class HomeController extends AbstractController
             'bannerStep' => null !== $banner ? AlternanceListStep::forTarget($banner)?->key() : null,
             'engagementBanner' => $this->buildStaffEngagementBanner(),
             'timetable' => $this->buildStaffTimetable($today, null),
+            // « Action requise »: the CRM pieces ticked « Remonter sur l'accueil » that a dossier
+            // awaits - only for whoever the CRM is lit for, the dossiers being behind it.
+            'crmActions' => $this->featureAccess->isEnabled(Feature::Crm) ? $this->crmActionRequired->read() : null,
         ];
     }
 

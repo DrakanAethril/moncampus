@@ -6,13 +6,14 @@ namespace App\Enum;
 
 /**
  * Where a dossier stands apart from its pieces. A new dossier starts « Candidature en attente »
- * (CrmDossier::$situation). Only an active dossier counts in a formation's numbers; the others
- * keep their pieces and are listed under their own situation.
+ * (CrmDossier::$situation), the first of the list and the one a formation's board shows by
+ * default. Only an admitted dossier (« Admis », stored `active`) counts in a formation's numbers;
+ * the others keep their pieces and are listed under their own situation.
  */
 enum CrmSituation: string implements HasBadge
 {
-    case Active = 'active';
     case Pending = 'pending';
+    case Active = 'active';
     case Resigned = 'resigned';
     case Cancelled = 'cancelled';
 
@@ -39,7 +40,7 @@ enum CrmSituation: string implements HasBadge
     public function label(): string
     {
         return match ($this) {
-            self::Active => 'En cours',
+            self::Active => 'Admis',
             self::Pending => 'Candidature en attente',
             self::Resigned => 'Démission',
             self::Cancelled => 'Annulation',

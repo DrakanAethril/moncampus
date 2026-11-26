@@ -31,6 +31,7 @@ final readonly class CrmPieceInput
         public array $choices = [],
         public bool $lastValueCompletes = false,
         public bool $asksPaymentMode = false,
+        public bool $homeAlert = false,
     ) {
     }
 }

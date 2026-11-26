@@ -21,6 +21,8 @@ export default class extends Controller {
     }
 
     sync(changed) {
+        // « Modifier » the candidate reuses the controller for the guardians alone: no formation.
+        if (!this.hasProgramTarget) return;
         const program = this.programs[this.programTarget.value];
         if (this.hasOptionFieldTarget) {
             const options = program?.options ?? [];

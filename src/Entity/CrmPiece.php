@@ -86,6 +86,13 @@ class CrmPiece
     #[ORM\Column]
     private bool $asksPaymentMode = false;
 
+    /**
+     * « Remonter sur l'accueil »: while a dossier could have it (its stage is reached) and does not,
+     * it is listed under « Action requise » on the staff's home (App\Service\Crm\CrmActionRequired).
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $homeAlert = false;
+
     #[ORM\Column]
     private int $position;
 
@@ -269,6 +276,16 @@ class CrmPiece
     public function setAsksPaymentMode(bool $asksPaymentMode): void
     {
         $this->asksPaymentMode = $asksPaymentMode;
+    }
+
+    public function isHomeAlert(): bool
+    {
+        return $this->homeAlert;
+    }
+
+    public function setHomeAlert(bool $homeAlert): void
+    {
+        $this->homeAlert = $homeAlert;
     }
 
     public function getPosition(): int

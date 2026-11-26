@@ -909,7 +909,9 @@
         {% if is_granted('ROLE_ADMIN') and not is_granted('IS_IMPERSONATOR') %}
             {% include 'layout/_impersonation_modal.html.twig' %}
         {% endif %}
-        <div class="page-wrapper">
+        {# `page_wrapper_attributes`: a screen whose header buttons and body share one Stimulus
+           controller hangs it here, the one element holding both (the CRM's dialogs). #}
+        <div class="page-wrapper"{% block page_wrapper_attributes %}{% endblock %}>
             {% block page_header %}
                 <div class="page-header d-print-none">
                     <div class="container-xl">

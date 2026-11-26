@@ -13,7 +13,8 @@ use App\Repository\CrmDossierRepository;
 /**
  * A formation's page: one list of its candidates, by surname then first name, each with its
  * modality and a mark per stage before the documents, then « dossier complet ». The list shows one
- * situation at a time, « En cours » unless another is chosen; the export always has them all.
+ * situation at a time, « Candidature en attente » unless another is chosen; the export always has
+ * them all.
  *
  * A stage reads « done » once its required pieces are all done, « sans objet » when it asks the
  * dossier nothing required (a re-enrolment has no pré-inscription, « Non renseignée » asks nothing),
@@ -49,7 +50,7 @@ final readonly class CrmBoard
      */
     public function build(Program $program, ?string $option, ?CrmSituation $situation): array
     {
-        $situation ??= CrmSituation::Active;
+        $situation ??= CrmSituation::Pending;
         $all = $this->progressesOf($program);
         $asksOption = $this->settings->asksOption($program);
         $option = $asksOption ? $option : null;

@@ -1,0 +1,36 @@
+{# « Action requise » (CRM des inscriptions): the pieces ticked « Remonter sur l'accueil » that a
+   dossier awaits - its stage reached, the piece not filled in (App\Service\Crm\CrmActionRequired).
+   One block per stage, one table per piece; each line opens the dossier. #}
+<div class="card mb-3 cm-home-crm-actions">
+    <div class="card-header">
+        <h3 class="card-title">{{ 'homeCrmActionRequiredTitle'|trans }}</h3>
+        <div class="card-actions"><a href="{{ path('app_crm_home') }}">{{ 'homeCrmActionRequiredOpenCrm'|trans }}</a></div>
+    </div>
+    <div class="card-body">
+        {% for group in actions.groups %}
+            <h4 class="cm-home-crm-actions__step">{{ group.phase.labelKey|trans }}</h4>
+            {% for table in group.pieces %}
+                <div class="cm-home-crm-actions__piece">
+                    <div class="cm-home-crm-actions__head">
+                        <span>{{ table.piece.label }}</span>
+                        <twig:Cm:Badge tone="gold">{{ table.dossiers|length }}</twig:Cm:Badge>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table cm-table align-middle mb-0">
+                            <thead><tr><th>{{ 'homeCrmActionRequiredStudentColumn'|trans }}</th><th>{{ 'homeCrmActionRequiredProgramColumn'|trans }}</th><th>{{ 'homeCrmActionRequiredPieceColumn'|trans }}</th></tr></thead>
+                            <tbody>
+                                {% for dossier in table.dossiers %}
+                                    <tr>
+                                        <td><a href="{{ path('app_crm_dossier', {id: dossier.id}) }}">{{ dossier.candidate.fullName }}</a></td>
+                                        <td>{{ crm_program_name(dossier) }}{% if actions.years > 1 %} <span class="text-secondary">{{ dossier.program.schoolYear|crm_year }}</span>{% endif %}</td>
+                                        <td>{{ table.piece.label }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+</div>
