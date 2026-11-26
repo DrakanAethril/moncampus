@@ -48,6 +48,7 @@
                 <div class="cm-crm-checks">
                     <label><input type="checkbox" name="foreignOnly" value="1"{% if piece.foreignOnly %} checked{% endif %}>{{ 'crmForeignOnlyLabel'|trans }}</label>
                     <label><input type="checkbox" name="future" value="1"{% if piece.futureDateAllowed %} checked{% endif %}>{{ 'crmFutureAllowedLabel'|trans }}</label>
+                    <label><input type="checkbox" name="homeAlert" value="1"{% if piece.homeAlert %} checked{% endif %}>{{ 'crmHomeAlertLabel'|trans }}</label>
                 </div>
             </div>
         </div>

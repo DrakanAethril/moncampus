@@ -132,13 +132,15 @@ class CrmScreensTest extends FunctionalTestCase
         $names = fn (string $url): array => $this->client->request('GET', $url)->filter('.cm-crm-list .cm-crm-rowlink')->each(static fn ($n): string => trim($n->text()));
         $program = '/crm/programs/'.$this->program->getId();
         // A new dossier waits as « Candidature en attente »; the list shows one situation at a time,
-        // « En cours » unless another is chosen, in surname order the French way (É among the E).
-        self::assertSame([], $names($program));
-        self::assertSame(['ABADIE Zoé', 'ÉMERY Paul'], $names($program.'?situation=pending'));
+        // « Candidature en attente » unless another is chosen, in surname order the French way (É
+        // among the E).
+        self::assertSame(['ABADIE Zoé', 'ÉMERY Paul'], $names($program));
+        self::assertSame([], $names($program.'?situation=active'));
         self::assertSame(['DUPONT Léa'], $names($program.'?situation=resigned'));
         $crawler = $this->client->request('GET', $program);
-        self::assertSame(['active', 'pending', 'resigned', 'cancelled'], $crawler->filter('#crm-situation-filter option')->each(static fn ($n): string => (string) $n->attr('value')));
-        self::assertSame('active', $crawler->filter('#crm-situation-filter option[selected]')->attr('value'));
+        self::assertSame(['pending', 'active', 'resigned', 'cancelled'], $crawler->filter('#crm-situation-filter option')->each(static fn ($n): string => (string) $n->attr('value')));
+        self::assertSame('pending', $crawler->filter('#crm-situation-filter option[selected]')->attr('value'));
+        self::assertStringStartsWith('Admis', trim($crawler->filter('#crm-situation-filter option[value=active]')->text()));
         $crawler = $this->client->request('GET', $program.'?situation=pending');
         self::assertSame(['Candidat', 'Modalité', 'Pré-inscription', 'Envoi du dossier', 'Inscription', 'Pièces D.I.', 'Dossier complet'], $crawler->filter('.cm-crm-list thead th')->each(static fn ($n): string => trim($n->text())));
         // Zoé's pré-inscription is done: one green mark, on her row.
@@ -278,5 +280,75 @@ class CrmScreensTest extends FunctionalTestCase
         $other = $this->createProgram([], [], $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'crm.other.author'));
         $this->client->request('GET', '/crm/programs/'.$other->getId());
         self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testTheHeaderButtonsAndTheirDialogShareOneController(): void
+    {
+        $dossier = $this->newDossier();
+        $year = (int) $this->program->getSchoolYear()?->getId();
+        // « Nouveau dossier » and « Corriger » sit in the header, outside `main`: the controller
+        // that opens them must hold the header too.
+        foreach (['/crm', '/crm/years/'.$year, '/crm/programs/'.$this->program->getId(), '/crm/dossiers/'.$dossier->getId()] as $path) {
+            $crawler = $this->client->request('GET', $path);
+            $wrapper = $crawler->filter('.page-wrapper[data-controller~="crm-dialog"]');
+            self::assertCount(1, $wrapper, $path);
+            self::assertCount(1, $wrapper->filter('dialog.cm-crm-dialog'), $path);
+            self::assertGreaterThan(0, $wrapper->filter('.page-header [data-action="crm-dialog#open"], .page-body [data-crm-dialog-url-param*="/crm/new"]')->count(), $path);
+        }
+    }
+
+    public function testAPieceTickedForTheHomeIsListedUnderActionRequiredWhileADossierAwaitsIt(): void
+    {
+        $piece = $this->crmPiece('file_completed');
+        $crawler = $this->client->request('GET', '/crm/settings?tab=pieces');
+        self::assertCount(1, $crawler->filter('#piece-file_completed input[name=homeAlert]:not([checked])'), 'unticked by default');
+        $this->client->request('POST', '/crm/settings/pieces/'.$piece->getId().'/inline', [
+            '_token' => $this->csrfToken('crm'),
+            'modalities' => array_map(static fn (CrmModality $m): string => $m->value, $piece->getModalities()),
+            'defaultConstraint' => $piece->defaultConstraint()->value,
+            'homeAlert' => '1',
+        ]);
+        self::assertResponseRedirects();
+        $this->crmEntityManager()->clear();
+        self::assertTrue($this->crmEntityManager()->find(CrmPiece::class, $piece->getId())?->isHomeAlert());
+
+        $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'crm.home.staff');
+        $this->crmLightFor('ROLE_STAFF');
+        $dossier = $this->newDossier('Martin', 'Hugo', 'hugo@exemple.fr');
+        // Every piece before « file_completed »'s stage, so that its stage is reached.
+        $settings = static::getContainer()->get(CrmSettings::class);
+        $loaded = $this->crmEntityManager()->find(CrmDossier::class, $dossier->getId()) ?? self::fail('dossier');
+        $progress = $settings->progress($loaded);
+        // CI's catalogue is the shipped one (its own label and stage for this code), the local one the fixture's.
+        $stages = CrmPhase::stages();
+        foreach (\array_slice($stages, 0, (int) array_search($piece->getPhase(), $stages, true)) as $phase) {
+            foreach ($progress->applicableIn($phase) as $before) {
+                $value = match ($before->getKind()) {
+                    CrmPieceKind::Check => [],
+                    CrmPieceKind::Choice, CrmPieceKind::List => ['value' => $before->lastChoice() ?? ''],
+                    default => ['value' => '1'],
+                };
+                $this->client->request('POST', '/crm/dossiers/'.$dossier->getId().'/pieces/'.$before->getCode(), ['_token' => $this->csrfToken('crm'), 'date' => ''] + $value);
+                self::assertResponseRedirects();
+            }
+        }
+
+        $this->client->loginUser($staff);
+        $crawler = $this->client->request('GET', '/');
+        self::assertResponseIsSuccessful();
+        $card = $crawler->filter('.cm-home-crm-actions');
+        self::assertCount(1, $card);
+        self::assertSame('Action requise', trim($card->filter('.card-title')->text()));
+        self::assertContains($piece->getPhase()->label(), $card->filter('.cm-home-crm-actions__step')->each(static fn ($n): string => trim($n->text())));
+        $row = $card->filter('tbody tr:contains("MARTIN Hugo")');
+        self::assertCount(1, $row);
+        self::assertSame(['MARTIN Hugo', $this->program->getShortName(), $piece->getLabel()], $row->filter('td')->each(static fn ($n): string => trim($n->text())));
+
+        // Filled in: nothing awaits it any more.
+        $this->client->loginUser($this->admin);
+        $this->client->request('POST', '/crm/dossiers/'.$dossier->getId().'/pieces/file_completed', ['_token' => $this->csrfToken('crm'), 'date' => '']);
+        self::assertResponseRedirects();
+        $this->client->loginUser($staff);
+        self::assertCount(0, $this->client->request('GET', '/')->filter('.cm-home-crm-actions tbody tr:contains("MARTIN Hugo")'));
     }
 }

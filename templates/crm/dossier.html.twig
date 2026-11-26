@@ -73,7 +73,7 @@
             {% for phase in shownPhases %}
                 {% set count = progress.phaseCount(phase) %}
                 {% set complete = count.done == count.total %}
-                {# A complete pré-inscription on a dossier that is not « En cours »: the stage warns, and stays open to show it. #}
+                {# A complete pré-inscription on a dossier that is not « Admis »: the stage warns, and stays open to show it. #}
                 {% set notActiveWarning = phase.value == 'pre_enrolment' and complete and count.total > 0 and dossier.situation.value != 'active' %}
                 <details class="cm-crm-acc"{% if not complete or loop.last or notActiveWarning %} open{% endif %}>
                     <summary>

@@ -4024,6 +4024,17 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme=dark] .cm-dash-banner--ok { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
 [data-bs-theme=dark] .cm-dash-banner--danger { background: #40221c; border-color: #7a4033; color: #e09384; }
 
+/* « Action requise » (staff dashboard, CRM): one block per stage, one table per piece. */
+.cm-home-crm-actions__step {
+  margin: 18px 0 8px; font-family: 'Spectral', serif; font-size: 15px; font-weight: 600; color: var(--cm-ink);
+}
+.cm-home-crm-actions__step:first-child { margin-top: 0; }
+.cm-home-crm-actions__piece + .cm-home-crm-actions__piece { margin-top: 14px; }
+.cm-home-crm-actions__head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+  font-weight: 600; font-size: 13.5px; color: var(--cm-ink);
+}
+
 /* « Un problème à signaler ? » - full-width strip closing the student and teacher dashboards.
    Same skeleton as .cm-dash-banner (icon / body / action pushed right), and deliberately NOT its
    colours: gold there means "act on this now", and a standing door to the ticket manager is not an

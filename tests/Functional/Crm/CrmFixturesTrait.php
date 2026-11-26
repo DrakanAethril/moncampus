@@ -6,6 +6,7 @@ namespace App\Tests\Functional\Crm;
 
 use App\Entity\CrmOrigin;
 use App\Entity\CrmPiece;
+use App\Entity\FeatureRoleSetting;
 use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\User;
@@ -13,6 +14,7 @@ use App\Enum\CrmModality;
 use App\Enum\CrmPath;
 use App\Enum\CrmPhase;
 use App\Enum\CrmPieceKind;
+use App\Enum\Feature;
 use App\Service\Crm\CrmSettings;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -48,6 +50,19 @@ trait CrmFixturesTrait
         static::getContainer()->get(CrmSettings::class)->forgetCatalogue();
 
         return $piece;
+    }
+
+    /** The CRM lit for a role (off for every role but the administrators by default). */
+    private function crmLightFor(string $role): void
+    {
+        $entityManager = $this->crmEntityManager();
+        $setting = $entityManager->getRepository(FeatureRoleSetting::class)->findOneBy(['feature' => Feature::Crm, 'role' => $role]);
+        if ($setting instanceof FeatureRoleSetting) {
+            $setting->setEnabled(true);
+        } else {
+            $entityManager->persist(new FeatureRoleSetting(Feature::Crm, $role, true));
+        }
+        $entityManager->flush();
     }
 
     private function crmOrigin(string $label): CrmOrigin

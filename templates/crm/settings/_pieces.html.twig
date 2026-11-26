@@ -1,13 +1,13 @@
 {# Réglages › Pièces du dossier: every piece by stage - its kind, its path, the modalities it is asked
    for, whether it counts towards « Complet » (a document only: unticked, it moves to the « Documents
-   de suivi »; the other stages always count), its default constraint, a date to come - and adding one. #}
+   de suivi »; the other stages always count), its default constraint, a date to come, « Remonter sur l'accueil » - and adding one. #}
 <div class="cm-crm-callout">{{ 'crmPiecesCallout'|trans }}</div>
 <div class="cm-crm-tablewrap cm-crm-tablewrap--sticky" style="margin-top: 14px">
     <table class="cm-crm-table">
-        <thead><tr><th>{{ 'crmPieceColumn'|trans }}</th><th>{{ 'crmKindLabel'|trans }}</th><th>{{ 'crmPathLabel'|trans }}</th>{% for modality in modalities %}<th class="c">{{ modality.labelKey|trans }}</th>{% endfor %}<th class="c" title="{{ 'crmCompletionHint'|trans }}">{{ 'crmCompletionColumn'|trans }}</th><th>{{ 'crmDefaultConstraintLabel'|trans }}</th><th class="c">{{ 'crmFutureColumn'|trans }}</th><th>{{ 'crmConditionColumn'|trans }}</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'crmPieceColumn'|trans }}</th><th>{{ 'crmKindLabel'|trans }}</th><th>{{ 'crmPathLabel'|trans }}</th>{% for modality in modalities %}<th class="c">{{ modality.labelKey|trans }}</th>{% endfor %}<th class="c" title="{{ 'crmCompletionHint'|trans }}">{{ 'crmCompletionColumn'|trans }}</th><th>{{ 'crmDefaultConstraintLabel'|trans }}</th><th class="c">{{ 'crmFutureColumn'|trans }}</th><th class="c" title="{{ 'crmHomeAlertHint'|trans }}">{{ 'crmHomeAlertColumn'|trans }}</th><th>{{ 'crmConditionColumn'|trans }}</th><th></th></tr></thead>
         <tbody>
             {% for phase in phases %}
-                <tr class="is-section"><td colspan="{{ 8 + modalities|length }}">{{ phase.labelKey|trans }}</td></tr>
+                <tr class="is-section"><td colspan="{{ 9 + modalities|length }}">{{ phase.labelKey|trans }}</td></tr>
                 {% for piece in settings.catalogue|filter(p => p.phase == phase) %}
                     {% set formId = 'crm-piece-' ~ piece.id %}
                     {% set n = history[piece.id] ?? 0 %}
@@ -43,6 +43,7 @@
                             </select>
                         </td>
                         <td class="c"><input type="checkbox" form="{{ formId }}" name="future" value="1"{% if piece.futureDateAllowed %} checked{% endif %} aria-label="{{ piece.label }} : {{ 'crmFutureColumn'|trans }}" data-controller="auto-submit" data-action="change->auto-submit#submit"></td>
+                        <td class="c"><input type="checkbox" form="{{ formId }}" name="homeAlert" value="1"{% if piece.homeAlert %} checked{% endif %} aria-label="{{ piece.label }} : {{ 'crmHomeAlertLabel'|trans }}" data-controller="auto-submit" data-action="change->auto-submit#submit"></td>
                         <td class="cm-crm-faint" style="font-size: 12px">
                             {{ [piece.foreignOnly ? 'crmForeignOnlyLabel'|trans : '', (adapted[piece.code] ?? 0) ? 'crmAdaptedIn'|trans({'%count%': adapted[piece.code]}) : '']|filter(t => t)|join(' · ') }}
                         </td>
@@ -59,7 +60,7 @@
                         </td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="{{ 8 + modalities|length }}" class="cm-crm-faint">{{ phase.countsTowardsCompletion ? 'crmNoPieceInPhaseText'|trans : 'crmNoFollowUpPieceText'|trans }}</td></tr>
+                    <tr><td colspan="{{ 9 + modalities|length }}" class="cm-crm-faint">{{ phase.countsTowardsCompletion ? 'crmNoPieceInPhaseText'|trans : 'crmNoFollowUpPieceText'|trans }}</td></tr>
                 {% endfor %}
             {% endfor %}
         </tbody>
@@ -82,7 +83,7 @@
         <div class="cm-crm-field"><label for="crm-pa-paths">{{ 'crmPathLabel'|trans }}</label><select class="cm-select" id="crm-pa-paths" name="paths"><option value="both">{{ 'crmPathsBoth'|trans }}</option><option value="enrolment">{{ 'crmPathsEnrolmentOnly'|trans }}</option><option value="reenrolment">{{ 'crmPathsReenrolmentOnly'|trans }}</option></select></div>
         <div class="cm-crm-field"><span class="cm-crm-label">{{ 'crmModalitiesLabel'|trans }}</span><div class="cm-crm-checks">{% for modality in modalities %}<label><input type="checkbox" name="modalities[]" value="{{ modality.value }}" checked>{{ modality.labelKey|trans }}</label>{% endfor %}</div></div>
         <div class="cm-crm-field"><label for="crm-pa-constraint">{{ 'crmDefaultConstraintLabel'|trans }}</label><select class="cm-select" id="crm-pa-constraint" name="defaultConstraint">{% for constraint in enum('App\\Enum\\CrmPieceConstraint').cases() %}<option value="{{ constraint.value }}">{{ constraint.labelKey|trans }}</option>{% endfor %}</select></div>
-        <div class="cm-crm-field"><span class="cm-crm-label">{{ 'crmOptionsLabel'|trans }}</span><div class="cm-crm-checks"><label><input type="checkbox" name="foreignOnly" value="1">{{ 'crmForeignOnlyLabel'|trans }}</label><label><input type="checkbox" name="future" value="1">{{ 'crmFutureAllowedLabel'|trans }}</label></div></div>
+        <div class="cm-crm-field"><span class="cm-crm-label">{{ 'crmOptionsLabel'|trans }}</span><div class="cm-crm-checks"><label><input type="checkbox" name="foreignOnly" value="1">{{ 'crmForeignOnlyLabel'|trans }}</label><label><input type="checkbox" name="future" value="1">{{ 'crmFutureAllowedLabel'|trans }}</label><label><input type="checkbox" name="homeAlert" value="1">{{ 'crmHomeAlertLabel'|trans }}</label></div></div>
     </div>
     <div class="cm-crm-actions" style="margin-top: 14px"><twig:Cm:Button variant="primary" type="submit"><twig:ux:icon name="plus" width="14" height="14"/>{{ 'crmAddPieceAction'|trans }}</twig:Cm:Button></div>
 </form>
